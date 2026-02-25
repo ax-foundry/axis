@@ -1,0 +1,37 @@
+# =====================================================
+# AXIS Agent Registry
+# =====================================================
+#
+# Defines the AI agents shown in the SourceSelector and
+# throughout the AXIS dashboard. Each agent maps to a
+# `source_name` value in your monitoring/signals data.
+#
+# Copy this file to agents.yaml and customize:
+#   cp agents.yaml.example agents.yaml
+#
+# Fields:
+#   name        - Must match the source_name value in data (required)
+#   label       - Display name in the UI (required)
+#   role        - Short description shown under the name (optional)
+#   avatar      - Path served by the backend asset proxy (optional)
+#                  Place agent avatars in custom/agents/
+#                  Use paths like /api/config/assets/agents/my_agent.png
+#   description - Short summary shown on the agent card (optional)
+#   biography   - Full markdown bio shown in detail modal (optional)
+#   active      - Whether the agent is active (default: true)
+#   trace_names - Langfuse trace names that map to this agent (optional)
+#                  Useful when trace names differ from the agent name
+#                  e.g. ["my_agent-gpt4", "my_agent-gemini"]
+
+agents:
+  # Example agent configuration:
+  # - name: my_agent
+  #   label: "My Agent"
+  #   role: "Assistant"
+  #   avatar: "/api/config/assets/agents/my_agent.png"
+  #   description: "A helpful AI assistant."
+  #   biography: |
+  #     ## About My Agent
+  #     Detailed biography in markdown format.
+  #   active: true
+  []

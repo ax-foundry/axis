@@ -1,0 +1,1393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Human Signals - AXIS User Guide</title>
+<style>
+  /* ── Reset & Base ── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --primary: #4f46e5;
+    --primary-light: #eef2ff;
+    --primary-dark: #3730a3;
+    --green: #16a34a;
+    --green-light: #f0fdf4;
+    --green-border: #bbf7d0;
+    --yellow: #ca8a04;
+    --yellow-light: #fefce8;
+    --yellow-border: #fef08a;
+    --red: #dc2626;
+    --red-light: #fef2f2;
+    --red-border: #fecaca;
+    --blue: #2563eb;
+    --blue-light: #eff6ff;
+    --blue-border: #bfdbfe;
+    --gray-50: #f9fafb;
+    --gray-100: #f3f4f6;
+    --gray-200: #e5e7eb;
+    --gray-300: #d1d5db;
+    --gray-400: #9ca3af;
+    --gray-500: #6b7280;
+    --gray-600: #4b5563;
+    --gray-700: #374151;
+    --gray-800: #1f2937;
+    --gray-900: #111827;
+    --sidebar-w: 260px;
+    --content-max: 860px;
+    --toc-w: 220px;
+  }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    color: var(--gray-800);
+    line-height: 1.7;
+    background: #fff;
+  }
+  a { color: var(--primary); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code {
+    font-family: 'SF Mono', 'Fira Code', 'Fira Mono', Menlo, monospace;
+    font-size: 0.875em;
+    background: var(--gray-100);
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: var(--primary-dark);
+  }
+  pre { background: var(--gray-900); color: #e5e7eb; padding: 16px 20px; border-radius: 8px; overflow-x: auto; font-size: 0.85rem; line-height: 1.6; }
+  pre code { background: none; padding: 0; color: inherit; }
+  kbd {
+    display: inline-block; padding: 2px 6px; font-size: 0.8em;
+    border: 1px solid var(--gray-300); border-radius: 4px;
+    background: var(--gray-50); box-shadow: 0 1px 0 var(--gray-300);
+    font-family: inherit;
+  }
+
+  /* ── Top Nav ── */
+  .topnav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    height: 56px; background: var(--gray-900); color: #fff;
+    display: flex; align-items: center; padding: 0 24px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.3);
+  }
+  .topnav-logo { font-weight: 700; font-size: 1.1rem; letter-spacing: -0.02em; }
+  .topnav-logo span { color: var(--primary); }
+  .topnav-links { margin-left: auto; display: flex; gap: 24px; font-size: 0.875rem; }
+  .topnav-links a { color: var(--gray-300); }
+  .topnav-links a:hover { color: #fff; text-decoration: none; }
+  .topnav-links a.active { color: #fff; font-weight: 600; }
+
+  /* ── Layout ── */
+  .layout { display: flex; margin-top: 56px; min-height: calc(100vh - 56px); }
+
+  /* ── Sidebar ── */
+  .sidebar {
+    position: fixed; top: 56px; left: 0; bottom: 0;
+    width: var(--sidebar-w); background: var(--gray-50);
+    border-right: 1px solid var(--gray-200);
+    overflow-y: auto; padding: 20px 0; font-size: 0.85rem;
+  }
+  .sidebar-section { padding: 0 16px; margin-bottom: 20px; }
+  .sidebar-section-title {
+    font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.08em; color: var(--gray-400); margin-bottom: 8px;
+    padding-left: 8px;
+  }
+  .sidebar-link {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 12px; border-radius: 6px; color: var(--gray-600);
+    transition: all 0.15s;
+  }
+  .sidebar-link:hover { background: var(--gray-200); color: var(--gray-800); text-decoration: none; }
+  .sidebar-link.active { background: var(--primary-light); color: var(--primary); font-weight: 600; }
+  .sidebar-link svg { width: 16px; height: 16px; flex-shrink: 0; }
+
+  /* ── Main Content ── */
+  .main {
+    margin-left: var(--sidebar-w); flex: 1;
+    padding: 40px 40px 80px;
+    margin-right: calc(var(--toc-w) + 48px);
+  }
+  .content { max-width: var(--content-max); width: 100%; }
+
+  /* ── TOC (right rail) ── */
+  .toc {
+    position: fixed; top: 96px; right: 24px;
+    width: var(--toc-w); font-size: 0.78rem;
+  }
+  .toc-title { font-weight: 700; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--gray-400); margin-bottom: 10px; }
+  .toc-list { list-style: none; border-left: 2px solid var(--gray-200); }
+  .toc-list li { padding-left: 14px; margin-bottom: 6px; }
+  .toc-list a { color: var(--gray-500); }
+  .toc-list a:hover { color: var(--primary); text-decoration: none; }
+  .toc-list .indent { padding-left: 28px; }
+
+  /* ── Typography ── */
+  .content h1 { font-size: 2rem; font-weight: 800; letter-spacing: -0.03em; margin-bottom: 8px; color: var(--gray-900); }
+  .content h2 { font-size: 1.45rem; font-weight: 700; margin-top: 48px; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid var(--gray-200); color: var(--gray-900); }
+  .content h3 { font-size: 1.15rem; font-weight: 600; margin-top: 32px; margin-bottom: 12px; color: var(--gray-800); }
+  .content h4 { font-size: 1rem; font-weight: 600; margin-top: 24px; margin-bottom: 8px; color: var(--gray-700); }
+  .content p { margin-bottom: 16px; color: var(--gray-700); }
+  .content > ul, .content > ol { margin-bottom: 16px; padding-left: 24px; color: var(--gray-700); }
+  .content li { margin-bottom: 6px; }
+  .subtitle { font-size: 1.1rem; color: var(--gray-500); margin-bottom: 32px; }
+
+  /* ── Breadcrumb ── */
+  .breadcrumb { font-size: 0.8rem; color: var(--gray-400); margin-bottom: 12px; }
+  .breadcrumb a { color: var(--gray-400); }
+  .breadcrumb a:hover { color: var(--primary); }
+
+  /* ── Admonitions ── */
+  .admonition {
+    border-radius: 8px; padding: 16px 20px; margin: 20px 0;
+    border-left: 4px solid; font-size: 0.9rem;
+  }
+  .admonition-title {
+    font-weight: 700; font-size: 0.8rem; text-transform: uppercase;
+    letter-spacing: 0.04em; margin-bottom: 6px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .admonition.tip { background: var(--green-light); border-color: var(--green); }
+  .admonition.tip .admonition-title { color: var(--green); }
+  .admonition.info { background: var(--blue-light); border-color: var(--blue); }
+  .admonition.info .admonition-title { color: var(--blue); }
+  .admonition.warning { background: var(--yellow-light); border-color: var(--yellow); }
+  .admonition.warning .admonition-title { color: var(--yellow); }
+  .admonition.note { background: var(--gray-50); border-color: var(--gray-400); }
+  .admonition.note .admonition-title { color: var(--gray-600); }
+
+  /* ── Screenshot Frames ── */
+  .screenshot {
+    margin: 24px 0; border-radius: 10px; overflow: hidden;
+    border: 1px solid var(--gray-200); box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+  }
+  .screenshot-chrome {
+    background: var(--gray-100); padding: 8px 14px; display: flex;
+    align-items: center; gap: 8px; border-bottom: 1px solid var(--gray-200);
+  }
+  .screenshot-dots { display: flex; gap: 6px; }
+  .screenshot-dots span { width: 10px; height: 10px; border-radius: 50%; }
+  .screenshot-dots span:nth-child(1) { background: #f87171; }
+  .screenshot-dots span:nth-child(2) { background: #fbbf24; }
+  .screenshot-dots span:nth-child(3) { background: #34d399; }
+  .screenshot-title { font-size: 0.75rem; color: var(--gray-500); margin-left: 8px; }
+  .screenshot-body { background: #fff; position: relative; }
+  .screenshot-caption {
+    text-align: center; font-size: 0.8rem; color: var(--gray-500);
+    padding: 10px; font-style: italic; background: var(--gray-50);
+    border-top: 1px solid var(--gray-200);
+  }
+
+  /* ── Simulated UI ── */
+  .sim-ui { padding: 20px; font-family: inherit; }
+  .sim-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--gray-200); }
+  .sim-header-icon { width: 24px; height: 24px; color: var(--primary); }
+  .sim-header h3 { margin: 0; font-size: 1.1rem; }
+  .sim-header p { margin: 0; font-size: 0.8rem; color: var(--gray-500); }
+
+  .sim-filters { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+  .sim-filter-btn {
+    padding: 6px 14px; border-radius: 6px; font-size: 0.8rem;
+    border: 1px solid var(--gray-200); background: #fff; color: var(--gray-600);
+    display: flex; align-items: center; gap: 6px;
+  }
+  .sim-filter-btn.active { border-color: var(--primary); background: var(--primary-light); color: var(--primary); font-weight: 600; }
+  .sim-filter-btn svg { width: 14px; height: 14px; }
+
+  .sim-kpi-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 20px; }
+  .sim-kpi-row.five { grid-template-columns: repeat(5,1fr); }
+  .sim-kpi {
+    border: 1px solid var(--gray-200); border-radius: 8px; padding: 14px 16px;
+    background: #fff;
+  }
+  .sim-kpi.clickable { cursor: pointer; transition: all 0.15s; }
+  .sim-kpi.clickable:hover { border-color: rgba(79,70,229,0.4); box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+  .sim-kpi.selected { border-color: var(--primary); background: rgba(79,70,229,0.03); box-shadow: 0 0 0 2px var(--primary); }
+  .sim-kpi-label { font-size: 0.7rem; color: var(--gray-500); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 4px; }
+  .sim-kpi-value { font-size: 1.4rem; font-weight: 700; color: var(--gray-900); }
+  .sim-kpi-trend { font-size: 0.75rem; margin-top: 2px; }
+  .sim-kpi-trend.up { color: var(--green); }
+  .sim-kpi-trend.down { color: var(--red); }
+  .sim-kpi-icon { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+  .sim-kpi-icon-box { width: 28px; height: 28px; border-radius: 6px; background: var(--primary-light); display: flex; align-items: center; justify-content: center; }
+  .sim-kpi-icon-box svg { width: 14px; height: 14px; color: var(--primary); }
+  .sim-kpi-icon-box.highlight { background: var(--primary); }
+  .sim-kpi-icon-box.highlight svg { color: #fff; }
+  .sim-sparkline { margin-top: 4px; }
+
+  .sim-tabs { display: flex; border-bottom: 2px solid var(--gray-200); margin-bottom: 16px; }
+  .sim-tab {
+    padding: 8px 16px; font-size: 0.82rem; color: var(--gray-500);
+    border-bottom: 2px solid transparent; margin-bottom: -2px; cursor: pointer;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .sim-tab.active { color: var(--primary); border-color: var(--primary); font-weight: 600; }
+  .sim-tab .badge {
+    background: var(--red); color: #fff; font-size: 0.65rem;
+    padding: 1px 6px; border-radius: 10px; font-weight: 700;
+  }
+
+  .sim-chart-placeholder {
+    height: 200px; background: var(--gray-50); border: 1px solid var(--gray-200);
+    border-radius: 8px; display: flex; align-items: center; justify-content: center;
+    position: relative; overflow: hidden;
+  }
+  .sim-chart-placeholder.tall { height: 280px; }
+
+  .sim-trend-chart { position: relative; width: 100%; height: 100%; }
+  .sim-trend-chart svg { width: 100%; height: 100%; }
+
+  .sim-chart-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 14px; border-bottom: 1px solid var(--gray-200);
+  }
+  .sim-chart-header h4 { font-size: 0.85rem; margin: 0; color: var(--gray-700); }
+  .sim-chart-card { border: 1px solid var(--gray-200); border-radius: 8px; overflow: hidden; margin-bottom: 16px; }
+  .sim-chart-content { padding: 16px; }
+
+  .sim-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .sim-3col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+
+  /* Table simulation */
+  .sim-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+  .sim-table th { background: var(--gray-50); text-align: left; padding: 8px 12px; font-weight: 600; color: var(--gray-600); border-bottom: 1px solid var(--gray-200); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; }
+  .sim-table td { padding: 8px 12px; border-bottom: 1px solid var(--gray-100); color: var(--gray-700); }
+  .sim-table tr:hover td { background: var(--gray-50); }
+  .sim-badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 0.7rem; font-weight: 600; }
+  .sim-badge.green { background: var(--green-light); color: var(--green); border: 1px solid var(--green-border); }
+  .sim-badge.yellow { background: var(--yellow-light); color: var(--yellow); border: 1px solid var(--yellow-border); }
+  .sim-badge.red { background: var(--red-light); color: var(--red); border: 1px solid var(--red-border); }
+  .sim-badge.blue { background: var(--blue-light); color: var(--blue); border: 1px solid var(--blue-border); }
+  .sim-badge.gray { background: var(--gray-100); color: var(--gray-600); border: 1px solid var(--gray-200); }
+  .sim-badge.purple { background: #f5f3ff; color: #7c3aed; border: 1px solid #ddd6fe; }
+  .sim-badge.orange { background: #fff7ed; color: #ea580c; border: 1px solid #fed7aa; }
+  .sim-badge.teal { background: #f0fdfa; color: #0d9488; border: 1px solid #99f6e4; }
+  .sim-badge.colored { color: #fff; border: none; }
+  .sim-code { font-family: 'SF Mono', monospace; font-size: 0.75rem; color: var(--primary); }
+  .sim-eye-btn { width: 28px; height: 28px; border: 1px solid var(--gray-200); border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; color: var(--gray-400); cursor: pointer; background: #fff; }
+  .sim-eye-btn:hover { border-color: var(--primary); color: var(--primary); }
+
+  /* ── Annotation Overlay ── */
+  .annotation-overlay { position: absolute; pointer-events: none; }
+  .callout-num {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 24px; height: 24px; border-radius: 50%;
+    background: var(--primary); color: #fff; font-size: 0.7rem; font-weight: 700;
+    box-shadow: 0 2px 6px rgba(79,70,229,0.4);
+  }
+  .callout-ring {
+    position: absolute; border: 2px solid var(--primary);
+    border-radius: 8px; pointer-events: none;
+    box-shadow: 0 0 0 2px rgba(79,70,229,0.15);
+  }
+  .callout-legend { margin: 16px 0; font-size: 0.85rem; }
+  .callout-legend-item { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 8px; }
+  .callout-legend-item .callout-num { flex-shrink: 0; }
+
+  /* ── Step Boxes ── */
+  .step-grid { display: grid; grid-template-columns: 1fr; gap: 16px; margin: 20px 0; }
+  .step-box {
+    display: flex; gap: 16px; padding: 16px 20px;
+    border: 1px solid var(--gray-200); border-radius: 10px;
+    background: #fff; transition: box-shadow 0.15s;
+  }
+  .step-box:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+  .step-num {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: var(--primary); color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 0.85rem; flex-shrink: 0;
+  }
+  .step-content h4 { margin: 0 0 4px; font-size: 0.95rem; }
+  .step-content p { margin: 0; font-size: 0.88rem; color: var(--gray-600); }
+
+  /* ── Feature Cards ── */
+  .feature-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 20px 0; }
+  .feature-card {
+    border: 1px solid var(--gray-200); border-radius: 8px; padding: 16px;
+    transition: box-shadow 0.15s;
+  }
+  .feature-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+  .feature-card h4 { margin: 0 0 6px; font-size: 0.9rem; display: flex; align-items: center; gap: 8px; }
+  .feature-card p { margin: 0; font-size: 0.82rem; color: var(--gray-500); }
+  .feature-icon { font-size: 1.1rem; }
+
+  /* ── Alert Card Sim ── */
+  .sim-alert-card {
+    border: 1px solid var(--gray-200); border-radius: 8px; padding: 14px 18px;
+    border-left: 4px solid; margin-bottom: 10px;
+  }
+  .sim-alert-card.error { border-left-color: var(--red); }
+  .sim-alert-card.warning { border-left-color: var(--yellow); }
+  .sim-alert-title { font-weight: 600; font-size: 0.88rem; display: flex; align-items: center; gap: 8px; }
+  .sim-alert-meta { display: flex; gap: 12px; margin-top: 6px; font-size: 0.78rem; color: var(--gray-500); }
+  .sim-alert-values { display: flex; gap: 8px; margin-top: 8px; }
+  .sim-alert-val { background: var(--gray-50); border-radius: 6px; padding: 6px 10px; font-size: 0.75rem; }
+  .sim-alert-val .label { color: var(--gray-500); display: block; }
+  .sim-alert-val .val { font-weight: 700; font-family: monospace; }
+
+  /* ── Separator ── */
+  .section-sep { display: flex; align-items: center; gap: 12px; margin: 32px 0 24px; color: var(--gray-400); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; }
+  .section-sep::before, .section-sep::after { content: ''; flex: 1; height: 1px; background: var(--gray-200); }
+
+  /* ── Next Steps ── */
+  .next-steps { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin: 24px 0; }
+  .next-step-card {
+    border: 1px solid var(--gray-200); border-radius: 8px; padding: 16px;
+    transition: all 0.15s;
+  }
+  .next-step-card:hover { border-color: var(--primary); box-shadow: 0 2px 8px rgba(79,70,229,0.1); text-decoration: none; }
+  .next-step-card h4 { margin: 0 0 4px; font-size: 0.9rem; color: var(--gray-800); }
+  .next-step-card p { margin: 0; font-size: 0.78rem; color: var(--gray-500); }
+
+  /* ── Modal Sim ── */
+  .sim-modal-overlay {
+    background: rgba(0,0,0,0.04); border-radius: 8px; padding: 20px;
+    border: 1px solid var(--gray-200);
+  }
+  .sim-modal {
+    background: #fff; border-radius: 12px; max-width: 600px; margin: 0 auto;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.12); overflow: hidden;
+  }
+  .sim-modal-header { padding: 16px 20px; border-bottom: 1px solid var(--gray-200); display: flex; justify-content: space-between; align-items: center; }
+  .sim-modal-body { padding: 20px; }
+  .sim-modal-section { margin-bottom: 16px; }
+  .sim-modal-label { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--gray-500); margin-bottom: 4px; }
+  .sim-modal-box { background: var(--gray-50); border-radius: 6px; padding: 10px 14px; font-size: 0.82rem; color: var(--gray-700); }
+  .sim-modal-box.blue { background: var(--blue-light); border: 1px solid var(--blue-border); }
+  .sim-score-display { display: flex; align-items: center; gap: 16px; }
+  .sim-score-circle { width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; font-weight: 800; color: #fff; }
+  .sim-score-circle.green { background: var(--green); }
+  .sim-score-circle.red { background: var(--red); }
+  .sim-score-circle.yellow { background: var(--yellow); }
+  .sim-score-bar { flex: 1; height: 8px; border-radius: 4px; background: var(--gray-200); overflow: hidden; }
+  .sim-score-bar-fill { height: 100%; border-radius: 4px; }
+
+  /* ── Video placeholder ── */
+  .video-placeholder {
+    margin: 24px 0; border-radius: 10px; overflow: hidden;
+    border: 1px solid var(--gray-200); background: var(--gray-900);
+    height: 80px; display: flex; align-items: center; justify-content: center; color: #fff;
+    font-size: 0.85rem; gap: 8px;
+  }
+  .video-placeholder svg { width: 24px; height: 24px; }
+
+  /* ── Responsive ── */
+  @media (max-width: 1200px) {
+    .toc { display: none; }
+    .main { margin-right: 0; }
+  }
+  @media (max-width: 900px) {
+    .sidebar { display: none; }
+    .main { margin-left: 0; }
+    .sim-kpi-row { grid-template-columns: repeat(2,1fr); }
+    .sim-2col { grid-template-columns: 1fr; }
+    .sim-3col { grid-template-columns: 1fr; }
+    .feature-grid { grid-template-columns: 1fr; }
+    .next-steps { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- TOP NAV -->
+<nav class="topnav">
+  <div class="topnav-logo"><img src="../assets/axis_transparent.png" alt="AXIS"
+    style="height:20px;vertical-align:middle;margin-right:2px;"> Docs</div>
+    <div class="topnav-links">
+    <a href="../getting-started/">Getting Started</a>
+    <a href="../user-guide/" class="active">User Guide</a>
+    <a href="../configuration/">Configuration</a>
+    <a href="../architecture/">Architecture</a>
+    <a href="../api-reference/">API Reference</a>
+  </div>
+</nav>
+
+<!-- SIDEBAR -->
+<div class="layout">
+<aside class="sidebar">
+  <div class="sidebar-section">
+    <div class="sidebar-section-title">User Guide</div>
+    <a class="sidebar-link" href="../user-guide/">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      Overview
+    </a>
+    <a class="sidebar-link" href="evaluate-guide.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      Evaluate
+    </a>
+    <a class="sidebar-link" href="annotation-guide.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+      Annotation Studio
+    </a>
+    <a class="sidebar-link" href="monitoring-guide.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      Monitoring
+    </a>
+    <a class="sidebar-link" href="production-guide.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      Production
+    </a>
+    <a class="sidebar-link" href="calibration-guide.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+      CaliberHQ
+    </a>
+    <a class="sidebar-link active" href="human-signals-guide.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      Human Signals
+    </a>
+    <a class="sidebar-link" href="memory-guide.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+      Memory
+    </a>
+    <a class="sidebar-link" href="agent-replay-guide.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+      Agent Replay
+    </a>
+    <a class="sidebar-link" href="simulation-guide.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+      Simulation
+    </a>
+    <a class="sidebar-link" href="learn-guide.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+      Learn
+    </a>
+    <a class="sidebar-link" href="settings-guide.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+      Settings
+    </a>
+  </div>
+</aside>
+
+<!-- MAIN CONTENT -->
+<main class="main">
+<div class="content">
+
+<!-- Breadcrumb -->
+<div class="breadcrumb">
+  <a href="#">Docs</a> / <a href="#">User Guide</a> / <strong>Human Signals</strong>
+</div>
+
+<h1>Human Signals</h1>
+<p class="subtitle">Data-driven dashboard for human-in-the-loop metrics &mdash; track interventions, escalations, sentiment, and operational patterns across your AI agents.</p>
+
+<!-- ── Why ── -->
+<h2 id="why-human-signals">Why Use Human Signals?</h2>
+<p>Automated evaluation scores tell you <em>how well</em> your AI performs. Human Signals tells you <strong>what happens when humans step in</strong> &mdash; the overrides, escalations, sentiment shifts, and learnings that only surface through real operator interactions.</p>
+
+<div class="feature-grid">
+  <div class="feature-card">
+    <h4><span class="feature-icon">&#x26A1;</span> Intervention Tracking</h4>
+    <p>See when and why humans override AI decisions &mdash; correction, escalation, edge case, or full manual takeover.</p>
+  </div>
+  <div class="feature-card">
+    <h4><span class="feature-icon">&#x1F4CA;</span> Dynamic KPIs</h4>
+    <p>Auto-generated KPI cards with sparklines. Click any KPI to expand its weekly trend chart.</p>
+  </div>
+  <div class="feature-card">
+    <h4><span class="feature-icon">&#x1F50D;</span> Config-Driven Charts</h4>
+    <p>Bar, donut, stacked bar, horizontal bar, ranked list, and single stat charts &mdash; all driven by your display config.</p>
+  </div>
+  <div class="feature-card">
+    <h4><span class="feature-icon">&#x1F4AC;</span> Full Conversation View</h4>
+    <p>Drill into any case to see the complete chat thread, signal values, learnings, and feature requests.</p>
+  </div>
+</div>
+
+<!-- ── Quick Start ── -->
+<h2 id="quick-start">Quick Start</h2>
+<p>Get human signals data loaded in under two minutes:</p>
+
+<div class="step-grid">
+  <div class="step-box">
+    <div class="step-num">1</div>
+    <div class="step-content">
+      <h4>Navigate to Human Signals</h4>
+      <p>Click <strong>Human Signals</strong> in the left sidebar. If no data is loaded, you'll see the upload screen.</p>
+    </div>
+  </div>
+  <div class="step-box">
+    <div class="step-num">2</div>
+    <div class="step-content">
+      <h4>Upload CSV or Connect Database</h4>
+      <p>Drag a CSV file into the upload zone, or configure <code>config/human_signals_db.yaml</code> for automatic database import. The expected format uses <code>metric_name</code>, <code>dataset_id</code>, <code>signals</code>, <code>conversation</code>, and <code>timestamp</code> columns.</p>
+    </div>
+  </div>
+  <div class="step-box">
+    <div class="step-num">3</div>
+    <div class="step-content">
+      <h4>Explore Your Dashboard</h4>
+      <p>Once data loads, the dashboard populates with KPI cards, trend charts, distribution charts, and a case table. Use the time range selector and filters to slice by source, environment, or metric values.</p>
+    </div>
+  </div>
+</div>
+
+<div class="admonition tip">
+  <div class="admonition-title">&#x1F4A1; Tip</div>
+  For production deployments, configure <code>human_signals_db.yaml</code> with <code>auto_load: true</code>. The sync engine will pull data from your PostgreSQL database automatically on page load, using the DuckDB pipeline for fast queries.
+</div>
+
+<!-- ── Page Anatomy ── -->
+<h2 id="page-anatomy">Page Anatomy</h2>
+<p>Here's how the Human Signals dashboard is organized, with every major section labeled:</p>
+
+<!-- Annotated Screenshot Simulation -->
+<div class="screenshot">
+  <div class="screenshot-chrome">
+    <div class="screenshot-dots"><span></span><span></span><span></span></div>
+    <div class="screenshot-title">localhost:3500/human-signals</div>
+  </div>
+  <div class="screenshot-body">
+    <div class="sim-ui" style="position:relative;">
+      <!-- Header -->
+      <div class="sim-header" style="position:relative;">
+        <svg class="sim-header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        <div>
+          <h3 style="font-size:1rem;">Human Signals</h3>
+          <p>Human-in-the-loop insights and operational metrics</p>
+        </div>
+        <div style="margin-left:auto;">
+          <div class="sim-filter-btn active" style="font-size:0.75rem;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px;"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/></svg>
+            Last 30 days
+          </div>
+        </div>
+        <!-- Callout 1 -->
+        <div style="position:absolute;top:-4px;left:40px;"><span class="callout-num">1</span></div>
+        <!-- Callout 2 -->
+        <div style="position:absolute;top:-4px;right:-4px;"><span class="callout-num">2</span></div>
+      </div>
+
+      <!-- KPI Strip -->
+      <div class="sim-kpi-row five" style="position:relative;">
+        <div class="sim-kpi clickable selected">
+          <div class="sim-kpi-icon">
+            <div class="sim-kpi-icon-box highlight"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
+            <span class="sim-kpi-value" style="font-size:1.2rem;">247</span>
+          </div>
+          <svg class="sim-sparkline" width="60" height="18" viewBox="0 0 60 18"><polyline points="0,14 10,12 20,10 30,13 40,8 50,6 60,9" fill="none" stroke="#4f46e5" stroke-width="1.5" opacity="0.5"/></svg>
+          <div class="sim-kpi-label">Total Cases</div>
+        </div>
+        <div class="sim-kpi clickable">
+          <div class="sim-kpi-icon">
+            <div class="sim-kpi-icon-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg></div>
+            <span class="sim-kpi-value" style="font-size:1.2rem;">72.5%</span>
+          </div>
+          <svg class="sim-sparkline" width="60" height="18" viewBox="0 0 60 18"><polyline points="0,10 10,8 20,12 30,7 40,9 50,5 60,6" fill="none" stroke="#4f46e5" stroke-width="1.5" opacity="0.5"/></svg>
+          <div class="sim-kpi-label">Intervention Rate</div>
+        </div>
+        <div class="sim-kpi clickable">
+          <div class="sim-kpi-icon">
+            <div class="sim-kpi-icon-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg></div>
+            <span class="sim-kpi-value" style="font-size:1.2rem;">68.0%</span>
+          </div>
+          <svg class="sim-sparkline" width="60" height="18" viewBox="0 0 60 18"><polyline points="0,12 10,10 20,14 30,8 40,11 50,7 60,5" fill="none" stroke="#4f46e5" stroke-width="1.5" opacity="0.5"/></svg>
+          <div class="sim-kpi-label">Resolved Rate</div>
+        </div>
+        <div class="sim-kpi clickable">
+          <div class="sim-kpi-icon">
+            <div class="sim-kpi-icon-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+            <span class="sim-kpi-value" style="font-size:1.2rem;">41.3%</span>
+          </div>
+          <svg class="sim-sparkline" width="60" height="18" viewBox="0 0 60 18"><polyline points="0,8 10,10 20,6 30,12 40,9 50,11 60,7" fill="none" stroke="#4f46e5" stroke-width="1.5" opacity="0.5"/></svg>
+          <div class="sim-kpi-label">Escalation Rate</div>
+        </div>
+        <div class="sim-kpi">
+          <div class="sim-kpi-icon">
+            <div class="sim-kpi-icon-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+            <span class="sim-kpi-value" style="font-size:1.2rem;">8.4</span>
+          </div>
+          <div class="sim-kpi-label">Avg Messages</div>
+        </div>
+        <!-- Callout 3 -->
+        <div style="position:absolute;top:-8px;left:50%;transform:translateX(-50%);"><span class="callout-num">3</span></div>
+      </div>
+
+      <!-- Filters -->
+      <div style="position:relative;margin-bottom:16px;">
+        <div style="border:1px solid var(--gray-200);border-radius:8px;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;color:var(--gray-400);"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+            <span style="font-size:0.85rem;font-weight:600;color:var(--gray-800);">Filters</span>
+            <span style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:var(--primary);color:#fff;font-size:0.65rem;font-weight:700;">2</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-size:0.75rem;color:var(--gray-400);cursor:pointer;">Clear</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;color:var(--gray-400);"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+        </div>
+        <!-- Callout 4 -->
+        <div style="position:absolute;top:-8px;right:60px;"><span class="callout-num">4</span></div>
+      </div>
+
+      <!-- Chart section -->
+      <div style="position:relative;">
+        <div class="sim-chart-card">
+          <div class="sim-chart-header">
+            <h4>Signal Trends Over Time</h4>
+          </div>
+          <div class="sim-chart-content">
+            <div class="sim-chart-placeholder" style="height:180px;">
+              <svg viewBox="0 0 700 160" style="width:100%;height:100%;">
+                <line x1="50" y1="10" x2="50" y2="140" stroke="#e5e7eb" stroke-width="1"/>
+                <line x1="50" y1="140" x2="680" y2="140" stroke="#e5e7eb" stroke-width="1"/>
+                <line x1="50" y1="45" x2="680" y2="45" stroke="#e5e7eb" stroke-width="0.5" stroke-dasharray="4"/>
+                <line x1="50" y1="80" x2="680" y2="80" stroke="#e5e7eb" stroke-width="0.5" stroke-dasharray="4"/>
+                <line x1="50" y1="115" x2="680" y2="115" stroke="#e5e7eb" stroke-width="0.5" stroke-dasharray="4"/>
+                <text x="40" y="14" font-size="8" fill="#9ca3af" text-anchor="end">100%</text>
+                <text x="40" y="49" font-size="8" fill="#9ca3af" text-anchor="end">75%</text>
+                <text x="40" y="84" font-size="8" fill="#9ca3af" text-anchor="end">50%</text>
+                <text x="40" y="119" font-size="8" fill="#9ca3af" text-anchor="end">25%</text>
+                <text x="40" y="144" font-size="8" fill="#9ca3af" text-anchor="end">0%</text>
+                <!-- Intervention Rate line -->
+                <polyline points="70,50 140,48 210,55 280,42 350,46 420,38 490,44 560,36 630,40" fill="none" stroke="#4f46e5" stroke-width="2.5"/>
+                <!-- Resolved Rate line -->
+                <polyline points="70,60 140,56 210,64 280,52 350,58 420,50 490,54 560,46 630,48" fill="none" stroke="#16a34a" stroke-width="2.5"/>
+                <!-- Escalation Rate line -->
+                <polyline points="70,90 140,94 210,86 280,92 350,84 420,88 490,80 560,86 630,82" fill="none" stroke="#ca8a04" stroke-width="2.5"/>
+                <!-- Legend -->
+                <circle cx="200" cy="155" r="4" fill="#4f46e5"/><text x="208" y="158" font-size="8" fill="#6b7280">Intervention Rate</text>
+                <circle cx="310" cy="155" r="4" fill="#16a34a"/><text x="318" y="158" font-size="8" fill="#6b7280">Resolved Rate</text>
+                <circle cx="400" cy="155" r="4" fill="#ca8a04"/><text x="408" y="158" font-size="8" fill="#6b7280">Escalation Rate</text>
+              </svg>
+            </div>
+          </div>
+        </div>
+        <!-- Callout 5 -->
+        <div style="position:absolute;top:-8px;left:120px;"><span class="callout-num">5</span></div>
+      </div>
+
+      <!-- 2-col charts placeholder -->
+      <div class="sim-2col" style="position:relative;">
+        <div class="sim-chart-card">
+          <div class="sim-chart-header"><h4>Intervention Type</h4></div>
+          <div class="sim-chart-content">
+            <div class="sim-chart-placeholder" style="height:120px;">
+              <svg viewBox="0 0 200 100" style="width:100%;height:100%;">
+                <circle cx="100" cy="50" r="40" fill="none" stroke="#4f46e5" stroke-width="20" stroke-dasharray="75 176" stroke-dashoffset="0"/>
+                <circle cx="100" cy="50" r="40" fill="none" stroke="#ca8a04" stroke-width="20" stroke-dasharray="50 201" stroke-dashoffset="-75"/>
+                <circle cx="100" cy="50" r="40" fill="none" stroke="#16a34a" stroke-width="20" stroke-dasharray="40 211" stroke-dashoffset="-125"/>
+                <circle cx="100" cy="50" r="40" fill="none" stroke="#9ca3af" stroke-width="20" stroke-dasharray="86 165" stroke-dashoffset="-165"/>
+              </svg>
+            </div>
+          </div>
+        </div>
+        <div class="sim-chart-card">
+          <div class="sim-chart-header"><h4>Sentiment Distribution</h4></div>
+          <div class="sim-chart-content">
+            <div class="sim-chart-placeholder" style="height:120px;">
+              <svg viewBox="0 0 300 100" style="width:100%;height:100%;">
+                <rect x="30" y="20" width="60" height="60" rx="3" fill="#16a34a" opacity="0.8"/>
+                <rect x="100" y="35" width="60" height="45" rx="3" fill="#ca8a04" opacity="0.8"/>
+                <rect x="170" y="50" width="60" height="30" rx="3" fill="#dc2626" opacity="0.8"/>
+                <rect x="240" y="55" width="40" height="25" rx="3" fill="#9ca3af" opacity="0.6"/>
+                <text x="60" y="95" font-size="7" fill="#6b7280" text-anchor="middle">Positive</text>
+                <text x="130" y="95" font-size="7" fill="#6b7280" text-anchor="middle">Neutral</text>
+                <text x="200" y="95" font-size="7" fill="#6b7280" text-anchor="middle">Negative</text>
+                <text x="260" y="95" font-size="7" fill="#6b7280" text-anchor="middle">Mixed</text>
+              </svg>
+            </div>
+          </div>
+        </div>
+        <!-- Callout 6 -->
+        <div style="position:absolute;top:-8px;left:50%;transform:translateX(-50%);"><span class="callout-num">6</span></div>
+      </div>
+
+      <!-- Table preview -->
+      <div style="position:relative;margin-top:16px;">
+        <div style="border:1px solid var(--gray-200);border-radius:8px;overflow:hidden;">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--gray-200);">
+            <span style="font-size:0.85rem;font-weight:600;">Cases (247 total)</span>
+            <div class="sim-filter-btn" style="padding:3px 10px;font-size:0.7rem;">Columns 7/12</div>
+          </div>
+          <table class="sim-table">
+            <thead><tr><th>Case ID</th><th>Source</th><th>Intervention</th><th>Sentiment</th><th>Failed Step</th><th>Timestamp</th><th></th></tr></thead>
+            <tbody>
+              <tr>
+                <td><span class="sim-code">CS-001</span></td>
+                <td>alpha_bot</td>
+                <td><span class="sim-badge colored" style="background:#4f46e5;">correction</span></td>
+                <td><span class="sim-badge colored" style="background:#ca8a04;">neutral</span></td>
+                <td><span class="sim-badge colored" style="background:#dc2626;">retrieval</span></td>
+                <td style="font-size:0.75rem;">Jan 28, 2026</td>
+                <td><span class="sim-eye-btn" style="font-size:0.7rem;">&#x1F441;</span></td>
+              </tr>
+              <tr>
+                <td><span class="sim-code">CS-002</span></td>
+                <td>alpha_bot</td>
+                <td><span class="sim-badge colored" style="background:#ca8a04;">escalation</span></td>
+                <td><span class="sim-badge colored" style="background:#dc2626;">negative</span></td>
+                <td><span class="sim-badge colored" style="background:#ca8a04;">generation</span></td>
+                <td style="font-size:0.75rem;">Jan 27, 2026</td>
+                <td><span class="sim-eye-btn" style="font-size:0.7rem;">&#x1F441;</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <!-- Callout 7 -->
+        <div style="position:absolute;top:-8px;right:40px;"><span class="callout-num">7</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="screenshot-caption">The Human Signals dashboard showing the full page anatomy &mdash; header, time range, KPI strip, filters, charts, and case table.</div>
+</div>
+
+<!-- Callout Legend -->
+<div class="callout-legend">
+  <div class="callout-legend-item">
+    <span class="callout-num">1</span>
+    <div><strong>Page Header</strong> &mdash; MessageSquareText icon with title "Human Signals" and subtitle describing the page purpose.</div>
+  </div>
+  <div class="callout-legend-item">
+    <span class="callout-num">2</span>
+    <div><strong>Time Range Selector</strong> &mdash; Dropdown with presets (7d, 30d, 90d, 6mo, 1yr) and a custom date range picker with Start/End date inputs.</div>
+  </div>
+  <div class="callout-legend-item">
+    <span class="callout-num">3</span>
+    <div><strong>Dynamic KPI Strip</strong> &mdash; Grid of 2&ndash;5 cards, each with an icon, value, optional sparkline, and label. Click any card with a sparkline to expand a weekly trend chart below.</div>
+  </div>
+  <div class="callout-legend-item">
+    <span class="callout-num">4</span>
+    <div><strong>Dynamic Filters</strong> &mdash; Collapsible filter panel with source and metric dropdowns. Badge shows active filter count. Clear button resets all.</div>
+  </div>
+  <div class="callout-legend-item">
+    <span class="callout-num">5</span>
+    <div><strong>Signal Trend Chart</strong> &mdash; Multi-line time-series chart plotting boolean signal rates (as percentages) by week.</div>
+  </div>
+  <div class="callout-legend-item">
+    <span class="callout-num">6</span>
+    <div><strong>Chart Sections</strong> &mdash; Config-driven chart grids (bar, donut, stacked bar, horizontal bar, ranked list, single stat). Sections can be collapsible.</div>
+  </div>
+  <div class="callout-legend-item">
+    <span class="callout-num">7</span>
+    <div><strong>Case Table</strong> &mdash; Paginated table of individual signal records with column picker, sort, and eye icon to open the detail modal.</div>
+  </div>
+</div>
+
+<!-- ══════════════ KPI STRIP ══════════════ -->
+<h2 id="kpi-strip">KPI Strip</h2>
+<p>The KPI strip auto-generates cards from your <code>display_config.kpi_strip</code> configuration. Each card shows a metric icon, a large value, an optional sparkline, and a descriptive label.</p>
+
+<div class="screenshot">
+  <div class="screenshot-chrome">
+    <div class="screenshot-dots"><span></span><span></span><span></span></div>
+    <div class="screenshot-title">KPI Strip with expanded trend</div>
+  </div>
+  <div class="screenshot-body">
+    <div class="sim-ui">
+      <div class="sim-kpi-row five">
+        <div class="sim-kpi clickable">
+          <div class="sim-kpi-icon">
+            <div class="sim-kpi-icon-box highlight"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
+            <span class="sim-kpi-value" style="font-size:1.2rem;">247</span>
+          </div>
+          <div class="sim-kpi-label">Total Cases</div>
+        </div>
+        <div class="sim-kpi clickable selected">
+          <div class="sim-kpi-icon">
+            <div class="sim-kpi-icon-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg></div>
+            <span class="sim-kpi-value" style="font-size:1.2rem;">72.5%</span>
+          </div>
+          <svg class="sim-sparkline" width="60" height="18" viewBox="0 0 60 18"><polyline points="0,10 10,8 20,12 30,7 40,9 50,5 60,6" fill="none" stroke="#4f46e5" stroke-width="1.5" opacity="0.5"/></svg>
+          <div class="sim-kpi-label">Intervention Rate</div>
+        </div>
+        <div class="sim-kpi clickable">
+          <div class="sim-kpi-icon">
+            <div class="sim-kpi-icon-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg></div>
+            <span class="sim-kpi-value" style="font-size:1.2rem;">68.0%</span>
+          </div>
+          <svg class="sim-sparkline" width="60" height="18" viewBox="0 0 60 18"><polyline points="0,12 10,10 20,14 30,8 40,11 50,7 60,5" fill="none" stroke="#4f46e5" stroke-width="1.5" opacity="0.5"/></svg>
+          <div class="sim-kpi-label">Resolved Rate</div>
+        </div>
+        <div class="sim-kpi clickable">
+          <div class="sim-kpi-icon">
+            <div class="sim-kpi-icon-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+            <span class="sim-kpi-value" style="font-size:1.2rem;">41.3%</span>
+          </div>
+          <svg class="sim-sparkline" width="60" height="18" viewBox="0 0 60 18"><polyline points="0,8 10,10 20,6 30,12 40,9 50,11 60,7" fill="none" stroke="#4f46e5" stroke-width="1.5" opacity="0.5"/></svg>
+          <div class="sim-kpi-label">Escalation Rate</div>
+        </div>
+        <div class="sim-kpi">
+          <div class="sim-kpi-icon">
+            <div class="sim-kpi-icon-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+            <span class="sim-kpi-value" style="font-size:1.2rem;">8.4</span>
+          </div>
+          <div class="sim-kpi-label">Avg Messages</div>
+        </div>
+      </div>
+      <!-- Expanded trend chart -->
+      <div class="sim-chart-card">
+        <div class="sim-chart-header">
+          <h4>Intervention Rate &mdash; Weekly Trend</h4>
+          <span style="font-size:1rem;color:var(--gray-400);cursor:pointer;">&times;</span>
+        </div>
+        <div class="sim-chart-content">
+          <div class="sim-chart-placeholder" style="height:160px;">
+            <svg viewBox="0 0 700 140" style="width:100%;height:100%;">
+              <line x1="50" y1="10" x2="50" y2="120" stroke="#e5e7eb" stroke-width="1"/>
+              <line x1="50" y1="120" x2="680" y2="120" stroke="#e5e7eb" stroke-width="1"/>
+              <!-- Fill area -->
+              <path d="M70,50 140,45 210,55 280,38 350,42 420,35 490,40 560,30 630,34 630,120 70,120 Z" fill="#4f46e5" opacity="0.1"/>
+              <!-- Line -->
+              <polyline points="70,50 140,45 210,55 280,38 350,42 420,35 490,40 560,30 630,34" fill="none" stroke="#4f46e5" stroke-width="2.5"/>
+              <!-- Dots -->
+              <circle cx="70" cy="50" r="3" fill="#4f46e5"/><circle cx="140" cy="45" r="3" fill="#4f46e5"/><circle cx="210" cy="55" r="3" fill="#4f46e5"/><circle cx="280" cy="38" r="3" fill="#4f46e5"/><circle cx="350" cy="42" r="3" fill="#4f46e5"/><circle cx="420" cy="35" r="3" fill="#4f46e5"/><circle cx="490" cy="40" r="3" fill="#4f46e5"/><circle cx="560" cy="30" r="3" fill="#4f46e5"/><circle cx="630" cy="34" r="3" fill="#4f46e5"/>
+              <text x="40" y="14" font-size="8" fill="#9ca3af" text-anchor="end">90%</text>
+              <text x="40" y="124" font-size="8" fill="#9ca3af" text-anchor="end">50%</text>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="screenshot-caption">Clicking a KPI card with a sparkline expands a detailed weekly trend chart below the strip. Click the X to close it.</div>
+</div>
+
+<p><strong>KPI card types:</strong></p>
+<ul>
+  <li><strong>Aggregate KPIs</strong> &mdash; <code>total_cases</code> (count) and <code>avg_message_count</code> (average). No sparkline.</li>
+  <li><strong>Boolean rate KPIs</strong> &mdash; percentage of cases where a signal is true (e.g., intervention rate, escalation rate). Includes a sparkline and is clickable to expand a trend chart.</li>
+  <li><strong>Count KPIs</strong> &mdash; raw count of cases where a signal is true (e.g., actionable feedback count).</li>
+</ul>
+
+<div class="admonition info">
+  <div class="admonition-title">&#x2139;&#xFE0F; Info</div>
+  KPI cards are configured in <code>signals_metrics.yaml</code> under the <code>kpi_strip</code> key. Each entry specifies <code>label</code>, <code>icon</code>, <code>metric</code>, <code>signal</code>, <code>format</code> (percent or count), and <code>highlight</code> (fills the icon background).
+</div>
+
+<!-- ══════════════ FILTERS ══════════════ -->
+<h2 id="filters">Filters</h2>
+<p>The filter panel is collapsible &mdash; click the header bar to expand or collapse it. When expanded, it shows a responsive grid of dropdown selectors.</p>
+
+<p><strong>Two filter categories:</strong></p>
+<ul>
+  <li><strong>Source filters</strong> &mdash; filter by <code>source_component</code> and <code>environment</code> (single-select). Only appear if your data contains those fields.</li>
+  <li><strong>Metric filters</strong> &mdash; filter by signal values like <code>intervention_type</code>, <code>sentiment</code>, <code>failed_step</code> (multi-select with checkboxes). Only appear for signals with 8 or fewer unique values.</li>
+</ul>
+
+<p>The <strong>active filter count badge</strong> shows how many filters are currently applied. The <strong>Clear</strong> button resets all source and metric filters to their defaults.</p>
+
+<div class="admonition note">
+  <div class="admonition-title">&#x1F4DD; Note</div>
+  Filters apply globally &mdash; KPI cards, charts, trend lines, and the case table all update together when you change any filter.
+</div>
+
+<!-- ══════════════ CHART SECTION ══════════════ -->
+<h2 id="chart-section">Chart Section</h2>
+<p>The chart section contains two areas: the <strong>Signal Trends</strong> time-series chart and the <strong>config-driven chart sections</strong> with various visualization types.</p>
+
+<h3 id="signal-trends">Signal Trends Over Time</h3>
+<p>A multi-line chart plotting boolean signal rates as weekly percentages. Each line represents a KPI that has <code>format: percent</code> in the display config. The chart automatically extracts trend signals from your KPI configuration.</p>
+
+<h3 id="chart-types">Chart Types</h3>
+<p>Below the trend chart, chart sections render in configurable grid layouts (<code>full</code>, <code>grid_2</code>, or <code>grid_3</code>). Each section has a title and can be collapsible. The available chart types are:</p>
+
+<div class="screenshot">
+  <div class="screenshot-chrome">
+    <div class="screenshot-dots"><span></span><span></span><span></span></div>
+    <div class="screenshot-title">Chart Types</div>
+  </div>
+  <div class="screenshot-body">
+    <div class="sim-ui">
+      <div class="sim-2col">
+        <!-- Bar Chart -->
+        <div class="sim-chart-card">
+          <div class="sim-chart-header"><h4>Intervention Type (Bar)</h4></div>
+          <div class="sim-chart-content">
+            <div class="sim-chart-placeholder" style="height:140px;">
+              <svg viewBox="0 0 300 120" style="width:100%;height:100%;">
+                <rect x="30" y="20" width="50" height="80" rx="3" fill="#4f46e5" opacity="0.8"/>
+                <rect x="95" y="40" width="50" height="60" rx="3" fill="#ca8a04" opacity="0.8"/>
+                <rect x="160" y="55" width="50" height="45" rx="3" fill="#16a34a" opacity="0.8"/>
+                <rect x="225" y="70" width="50" height="30" rx="3" fill="#9ca3af" opacity="0.7"/>
+                <text x="55" y="112" font-size="7" fill="#6b7280" text-anchor="middle">correction</text>
+                <text x="120" y="112" font-size="7" fill="#6b7280" text-anchor="middle">escalation</text>
+                <text x="185" y="112" font-size="7" fill="#6b7280" text-anchor="middle">edge_case</text>
+                <text x="250" y="112" font-size="7" fill="#6b7280" text-anchor="middle">manual</text>
+              </svg>
+            </div>
+          </div>
+        </div>
+        <!-- Donut Chart -->
+        <div class="sim-chart-card">
+          <div class="sim-chart-header"><h4>Sentiment (Donut)</h4></div>
+          <div class="sim-chart-content">
+            <div class="sim-chart-placeholder" style="height:140px;">
+              <svg viewBox="0 0 200 120" style="width:100%;height:100%;">
+                <circle cx="100" cy="60" r="45" fill="none" stroke="#16a34a" stroke-width="22" stroke-dasharray="85 198" stroke-dashoffset="0"/>
+                <circle cx="100" cy="60" r="45" fill="none" stroke="#ca8a04" stroke-width="22" stroke-dasharray="65 218" stroke-dashoffset="-85"/>
+                <circle cx="100" cy="60" r="45" fill="none" stroke="#dc2626" stroke-width="22" stroke-dasharray="45 238" stroke-dashoffset="-150"/>
+                <circle cx="100" cy="60" r="45" fill="none" stroke="#9ca3af" stroke-width="22" stroke-dasharray="88 195" stroke-dashoffset="-195"/>
+                <text x="100" y="56" font-size="12" fill="var(--gray-800)" text-anchor="middle" font-weight="700">247</text>
+                <text x="100" y="68" font-size="7" fill="var(--gray-500)" text-anchor="middle">total</text>
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="sim-2col" style="margin-top:16px;">
+        <!-- Horizontal Bar -->
+        <div class="sim-chart-card">
+          <div class="sim-chart-header"><h4>Failed Step (Horizontal Bar)</h4></div>
+          <div class="sim-chart-content">
+            <div class="sim-chart-placeholder" style="height:140px;">
+              <svg viewBox="0 0 300 120" style="width:100%;height:100%;">
+                <text x="8" y="22" font-size="8" fill="#6b7280">retrieval</text>
+                <rect x="75" y="12" width="150" height="14" rx="2" fill="#4f46e5" opacity="0.8"/>
+                <text x="230" y="23" font-size="8" fill="#4f46e5" font-weight="700">38%</text>
+                <text x="8" y="47" font-size="8" fill="#6b7280">generation</text>
+                <rect x="75" y="37" width="100" height="14" rx="2" fill="#7c3aed" opacity="0.8"/>
+                <text x="180" y="48" font-size="8" fill="#7c3aed" font-weight="700">25%</text>
+                <text x="8" y="72" font-size="8" fill="#6b7280">reasoning</text>
+                <rect x="75" y="62" width="72" height="14" rx="2" fill="#2563eb" opacity="0.8"/>
+                <text x="152" y="73" font-size="8" fill="#2563eb" font-weight="700">18%</text>
+                <text x="8" y="97" font-size="8" fill="#6b7280">none</text>
+                <rect x="75" y="87" width="60" height="14" rx="2" fill="#9ca3af" opacity="0.7"/>
+                <text x="140" y="98" font-size="8" fill="#9ca3af" font-weight="700">15%</text>
+              </svg>
+            </div>
+          </div>
+        </div>
+        <!-- Stacked Bar -->
+        <div class="sim-chart-card">
+          <div class="sim-chart-header"><h4>Override Breakdown (Stacked Bar)</h4></div>
+          <div class="sim-chart-content">
+            <div class="sim-chart-placeholder" style="height:140px;">
+              <svg viewBox="0 0 300 120" style="width:100%;height:100%;">
+                <!-- Single stacked bar -->
+                <rect x="20" y="20" width="260" height="30" rx="4" fill="var(--gray-200)"/>
+                <rect x="20" y="20" width="104" height="30" rx="4" fill="#4f46e5" opacity="0.8"/>
+                <rect x="124" y="20" width="65" height="30" rx="4" fill="#ca8a04" opacity="0.8"/>
+                <rect x="189" y="20" width="52" height="30" rx="4" fill="#16a34a" opacity="0.8"/>
+                <rect x="241" y="20" width="39" height="30" rx="4" fill="#9ca3af" opacity="0.7"/>
+                <text x="72" y="39" font-size="8" fill="#fff" text-anchor="middle">40%</text>
+                <text x="157" y="39" font-size="8" fill="#fff" text-anchor="middle">25%</text>
+                <text x="215" y="39" font-size="8" fill="#fff" text-anchor="middle">20%</text>
+                <text x="261" y="39" font-size="8" fill="#fff" text-anchor="middle">15%</text>
+                <!-- Legend -->
+                <rect x="20" y="65" width="10" height="10" rx="2" fill="#4f46e5" opacity="0.8"/><text x="35" y="74" font-size="7" fill="#6b7280">full_override</text>
+                <rect x="105" y="65" width="10" height="10" rx="2" fill="#ca8a04" opacity="0.8"/><text x="120" y="74" font-size="7" fill="#6b7280">partial_edit</text>
+                <rect x="185" y="65" width="10" height="10" rx="2" fill="#16a34a" opacity="0.8"/><text x="200" y="74" font-size="7" fill="#6b7280">no_change</text>
+                <rect x="255" y="65" width="10" height="10" rx="2" fill="#9ca3af" opacity="0.7"/><text x="270" y="74" font-size="7" fill="#6b7280">other</text>
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="sim-2col" style="margin-top:16px;">
+        <!-- Ranked List -->
+        <div class="sim-chart-card">
+          <div class="sim-chart-header"><h4>Top Learning Categories (Ranked List)</h4></div>
+          <div class="sim-chart-content" style="padding:8px 14px;">
+            <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--gray-100);font-size:0.8rem;">
+              <span style="color:var(--gray-700);">1. Process Improvement</span>
+              <span style="color:var(--gray-500);font-weight:600;">34</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--gray-100);font-size:0.8rem;">
+              <span style="color:var(--gray-700);">2. Knowledge Gap</span>
+              <span style="color:var(--gray-500);font-weight:600;">28</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--gray-100);font-size:0.8rem;">
+              <span style="color:var(--gray-700);">3. Edge Case Handling</span>
+              <span style="color:var(--gray-500);font-weight:600;">19</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:0.8rem;">
+              <span style="color:var(--gray-700);">4. Prompt Tuning</span>
+              <span style="color:var(--gray-500);font-weight:600;">12</span>
+            </div>
+          </div>
+        </div>
+        <!-- Single Stat -->
+        <div class="sim-chart-card">
+          <div class="sim-chart-header"><h4>Actionable Feedback (Single Stat)</h4></div>
+          <div class="sim-chart-content" style="display:flex;align-items:center;justify-content:center;height:120px;">
+            <div style="text-align:center;">
+              <div style="font-size:2rem;font-weight:800;color:var(--primary);">58.3%</div>
+              <div style="font-size:0.82rem;color:var(--gray-500);">144 of 247 cases</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="screenshot-caption">Six chart types: bar, donut, horizontal bar, stacked bar, ranked list, and single stat. All driven by the display_config.chart_sections configuration.</div>
+</div>
+
+<table class="sim-table" style="margin:16px 0;">
+  <thead><tr><th>Chart Type</th><th>Config Value</th><th>Best For</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Bar</strong></td><td><code>bar</code></td><td>Comparing category counts (intervention types, failed steps)</td></tr>
+    <tr><td><strong>Donut</strong></td><td><code>donut</code></td><td>Proportional breakdowns (sentiment distribution)</td></tr>
+    <tr><td><strong>Horizontal Bar</strong></td><td><code>horizontal_bar</code></td><td>Ranked categories with long labels</td></tr>
+    <tr><td><strong>Stacked Bar</strong></td><td><code>stacked_bar</code></td><td>Part-of-whole comparisons</td></tr>
+    <tr><td><strong>Ranked List</strong></td><td><code>ranked_list</code></td><td>Top-N frequency lists (learning categories, feature requests)</td></tr>
+    <tr><td><strong>Single Stat</strong></td><td><code>single_stat</code></td><td>Boolean rate as a single large number (actionable feedback %)</td></tr>
+  </tbody>
+</table>
+
+<!-- ══════════════ CASE TABLE ══════════════ -->
+<h2 id="case-table">Case Table</h2>
+<p>The full paginated case table appears below the charts. Each row represents one aggregated case (one <code>dataset_id</code>) with all its flattened signal values.</p>
+
+<div class="screenshot">
+  <div class="screenshot-chrome">
+    <div class="screenshot-dots"><span></span><span></span><span></span></div>
+    <div class="screenshot-title">Case Table</div>
+  </div>
+  <div class="screenshot-body">
+    <div class="sim-ui" style="padding:0;">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid var(--gray-200);">
+        <span style="font-size:0.85rem;font-weight:600;">Cases (247 total)</span>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <div class="sim-filter-btn" style="padding:4px 10px;font-size:0.75rem;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px;"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg>
+            Columns <span style="background:var(--gray-100);border-radius:8px;padding:1px 6px;font-size:0.65rem;margin-left:4px;">7/12</span>
+          </div>
+        </div>
+      </div>
+      <table class="sim-table">
+        <thead>
+          <tr>
+            <th>Case ID</th>
+            <th>Source &#x2195;</th>
+            <th>Intervention &#x2195;</th>
+            <th>Sentiment</th>
+            <th>Failed Step</th>
+            <th>Messages</th>
+            <th>Timestamp &#x2195;</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="sim-code">CS-001-abc</span></td>
+            <td style="font-size:0.78rem;">alpha_bot</td>
+            <td><span class="sim-badge colored" style="background:#4f46e5;">correction</span></td>
+            <td><span class="sim-badge colored" style="background:#16a34a;">positive</span></td>
+            <td><span class="sim-badge colored" style="background:#dc2626;">retrieval</span></td>
+            <td style="font-weight:600;">12</td>
+            <td style="font-size:0.75rem;">Jan 28, 2026</td>
+            <td><span class="sim-eye-btn" style="font-size:0.7rem;">&#x1F441;</span></td>
+          </tr>
+          <tr>
+            <td><span class="sim-code">CS-002-def</span></td>
+            <td style="font-size:0.78rem;">alpha_bot</td>
+            <td><span class="sim-badge colored" style="background:#ca8a04;">escalation</span></td>
+            <td><span class="sim-badge colored" style="background:#dc2626;">negative</span></td>
+            <td><span class="sim-badge colored" style="background:#ca8a04;">generation</span></td>
+            <td style="font-weight:600;">8</td>
+            <td style="font-size:0.75rem;">Jan 27, 2026</td>
+            <td><span class="sim-eye-btn" style="font-size:0.7rem;">&#x1F441;</span></td>
+          </tr>
+          <tr>
+            <td><span class="sim-code">CS-003-ghi</span></td>
+            <td style="font-size:0.78rem;">beta_bot</td>
+            <td><span class="sim-badge colored" style="background:#16a34a;">edge_case</span></td>
+            <td><span class="sim-badge colored" style="background:#ca8a04;">neutral</span></td>
+            <td><span style="color:var(--gray-400);">&mdash;</span></td>
+            <td style="font-weight:600;">5</td>
+            <td style="font-size:0.75rem;">Jan 26, 2026</td>
+            <td><span class="sim-eye-btn" style="font-size:0.7rem;">&#x1F441;</span></td>
+          </tr>
+          <tr>
+            <td><span class="sim-code">CS-004-jkl</span></td>
+            <td style="font-size:0.78rem;">alpha_bot</td>
+            <td><span class="sim-badge colored" style="background:#9ca3af;">manual</span></td>
+            <td><span class="sim-badge colored" style="background:#16a34a;">positive</span></td>
+            <td><span class="sim-badge colored" style="background:#7c3aed;">reasoning</span></td>
+            <td style="font-weight:600;">15</td>
+            <td style="font-size:0.75rem;">Jan 25, 2026</td>
+            <td><span class="sim-eye-btn" style="font-size:0.7rem;">&#x1F441;</span></td>
+          </tr>
+        </tbody>
+      </table>
+      <!-- Pagination -->
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 16px;border-top:1px solid var(--gray-200);">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <span style="font-size:0.78rem;color:var(--gray-500);">1&ndash;10 of 247</span>
+          <select style="border:1px solid var(--gray-200);border-radius:4px;padding:2px 6px;font-size:0.75rem;">
+            <option>10 / page</option><option>25 / page</option><option>50 / page</option><option>100 / page</option>
+          </select>
+        </div>
+        <div style="display:flex;gap:4px;">
+          <span class="sim-filter-btn" style="padding:3px 8px;font-size:0.75rem;opacity:0.4;">&lsaquo;</span>
+          <span class="sim-filter-btn active" style="padding:3px 8px;font-size:0.75rem;">1</span>
+          <span class="sim-filter-btn" style="padding:3px 8px;font-size:0.75rem;">2</span>
+          <span class="sim-filter-btn" style="padding:3px 8px;font-size:0.75rem;">3</span>
+          <span class="sim-filter-btn" style="padding:3px 8px;font-size:0.75rem;">&hellip;</span>
+          <span class="sim-filter-btn" style="padding:3px 8px;font-size:0.75rem;">25</span>
+          <span class="sim-filter-btn" style="padding:3px 8px;font-size:0.75rem;">&rsaquo;</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="screenshot-caption">Case table with column picker, sortable headers, color-coded signal badges, pagination, and page size selector.</div>
+</div>
+
+<p><strong>Table features:</strong></p>
+<ul>
+  <li><strong>Column Picker</strong> &mdash; click the "Columns" button to show/hide columns. Defaults to 7 of the most important columns.</li>
+  <li><strong>Sortable columns</strong> &mdash; click any column header with &#x2195; to sort ascending, descending, or reset. Uses lexicographic comparison with numeric awareness.</li>
+  <li><strong>Color-coded badges</strong> &mdash; important signals (<code>failed_step</code>, <code>intervention_type</code>, <code>sentiment</code>) render as colored badges using the <code>color_maps</code> from your display config.</li>
+  <li><strong>Pagination</strong> &mdash; configurable page size (10, 25, 50, 100). Page pills with a 5-page sliding window around the current page.</li>
+  <li><strong>Eye icon</strong> &mdash; click to open the <a href="#detail-modal">Case Detail Modal</a>.</li>
+</ul>
+
+<!-- ══════════════ DETAIL MODAL ══════════════ -->
+<h2 id="detail-modal">Case Detail Modal</h2>
+<p>Click the eye icon on any case row to open a full detail view. The modal shows every signal value, metadata, the complete conversation thread, learnings, and feature requests.</p>
+
+<div class="screenshot">
+  <div class="screenshot-chrome">
+    <div class="screenshot-dots"><span></span><span></span><span></span></div>
+    <div class="screenshot-title">Case Detail Modal</div>
+  </div>
+  <div class="screenshot-body">
+    <div class="sim-modal-overlay">
+      <div class="sim-modal" style="max-width:640px;">
+        <!-- Header -->
+        <div class="sim-modal-header">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;color:var(--gray-400);"><line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/><line x1="10" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="14" y2="21"/></svg>
+            <span style="font-weight:700;font-size:0.95rem;">CS-001-abc</span>
+            <span style="background:var(--primary-light);color:var(--primary);padding:2px 8px;border-radius:12px;font-size:0.65rem;font-weight:600;">alpha_bot</span>
+          </div>
+          <span style="font-size:1.2rem;color:var(--gray-400);cursor:pointer;">&times;</span>
+        </div>
+        <div class="sim-modal-body">
+          <!-- Slack link -->
+          <div style="margin-bottom:12px;">
+            <a href="#" style="display:inline-flex;align-items:center;gap:8px;background:#4A154B;color:#fff;padding:8px 14px;border-radius:8px;font-size:0.82rem;font-weight:600;text-decoration:none;">
+              <svg viewBox="0 0 24 24" fill="currentColor" style="width:14px;height:14px;"><path d="M5.042 15.165a2.528 2.528 0 0 1-2.52 2.523A2.528 2.528 0 0 1 0 15.165a2.527 2.527 0 0 1 2.522-2.52h2.52v2.52z"/></svg>
+              View in Slack
+            </a>
+          </div>
+
+          <!-- Status badges -->
+          <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;">
+            <span class="sim-badge colored" style="background:#4f46e5;padding:4px 12px;">correction</span>
+            <span class="sim-badge colored" style="background:#16a34a;padding:4px 12px;">positive</span>
+            <span class="sim-badge colored" style="background:#2563eb;padding:4px 12px;">resolved</span>
+            <span class="sim-badge colored" style="background:#ca8a04;padding:4px 12px;">medium</span>
+          </div>
+
+          <!-- Meta row -->
+          <div style="display:flex;flex-wrap:wrap;gap:12px;font-size:0.75rem;color:var(--gray-500);margin-bottom:14px;">
+            <span>&#x1F552; Jan 28, 2026 14:23</span>
+            <span>&#x1F4AC; 12 messages</span>
+            <span>&#x1F3F7; Acme Corp</span>
+            <span>&#x1F3F7; alpha_bot</span>
+          </div>
+
+          <!-- Metric Section -->
+          <div style="border:1px solid var(--gray-200);border-radius:8px;padding:14px;margin-bottom:12px;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;color:var(--primary);"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+              <span style="font-size:0.88rem;font-weight:600;text-transform:capitalize;">Intervention Type</span>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+              <div style="padding:6px 10px;"><div style="font-size:0.6rem;color:var(--gray-500);text-transform:uppercase;">Intervention Type</div><div style="font-size:0.85rem;margin-top:2px;">correction</div></div>
+              <div style="padding:6px 10px;"><div style="font-size:0.6rem;color:var(--gray-500);text-transform:uppercase;">Has Intervention</div><div style="font-size:0.85rem;margin-top:2px;"><span style="background:#f0fdf4;color:#16a34a;padding:1px 8px;border-radius:12px;font-size:0.7rem;">Yes</span></div></div>
+            </div>
+          </div>
+
+          <!-- Suggested Action -->
+          <div style="background:var(--primary-light);border-radius:8px;padding:12px;margin-bottom:12px;">
+            <h4 style="font-size:0.85rem;font-weight:600;color:var(--primary);margin-bottom:4px;">Suggested Action</h4>
+            <p style="font-size:0.82rem;color:var(--gray-700);margin:0;">Update retrieval pipeline to include product catalog entries for edge-case SKUs.</p>
+          </div>
+
+          <!-- Learnings (collapsed) -->
+          <div style="border:1px solid var(--gray-200);border-radius:8px;padding:10px 14px;margin-bottom:8px;cursor:pointer;background:var(--gray-50);display:flex;align-items:center;justify-content:space-between;">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;color:var(--primary);"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+              <span style="font-size:0.85rem;font-weight:600;">Learnings</span>
+              <span style="background:var(--primary-light);color:var(--primary);padding:1px 8px;border-radius:12px;font-size:0.7rem;font-weight:600;">3</span>
+            </div>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;color:var(--gray-400);"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+
+          <!-- Conversation (collapsed) -->
+          <div style="border:1px solid var(--gray-200);border-radius:8px;padding:10px 14px;cursor:pointer;background:var(--gray-50);display:flex;align-items:center;justify-content:space-between;">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;color:var(--primary);"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              <span style="font-size:0.85rem;font-weight:600;">Full Conversation</span>
+              <span style="background:var(--primary-light);color:var(--primary);padding:1px 8px;border-radius:12px;font-size:0.7rem;font-weight:600;">12</span>
+            </div>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;color:var(--gray-400);"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <div style="border-top:1px solid var(--gray-200);padding:12px 20px;">
+          <div style="background:var(--gray-100);border-radius:8px;padding:10px;text-align:center;font-size:0.85rem;font-weight:500;color:var(--gray-700);cursor:pointer;">Close</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="screenshot-caption">Case detail modal showing case ID, source badge, status badges, metadata, metric signals in grouped sections, suggested action, and expandable learnings and conversation.</div>
+</div>
+
+<p><strong>Modal sections (top to bottom):</strong></p>
+<ol>
+  <li><strong>Header</strong> &mdash; Case ID with source badge and close button</li>
+  <li><strong>Slack Link</strong> &mdash; purple button linking to the original Slack thread (if <code>message_url</code> is present in <code>additional_input</code>)</li>
+  <li><strong>Status Badges</strong> &mdash; color-coded badges for intervention type, sentiment, resolution status, priority, etc. Colors come from <code>color_maps</code></li>
+  <li><strong>Metadata Row</strong> &mdash; timestamp, message count, business name, agent name</li>
+  <li><strong>Metric Sections</strong> &mdash; grouped by metric name, with simple signals in a 2-column grid and complex/structured signals rendered full-width with nested key-value displays</li>
+  <li><strong>Suggested Action</strong> &mdash; highlighted panel when actionable feedback is detected</li>
+  <li><strong>Learnings</strong> &mdash; expandable section with numbered learning items and category tags</li>
+  <li><strong>Feature Requests</strong> &mdash; expandable section with numbered feature request items</li>
+  <li><strong>Full Conversation</strong> &mdash; expandable chat view with assistant (left) and user (right) message bubbles, Slack markdown parsing</li>
+</ol>
+
+<!-- ══════════════ DATA FORMAT ══════════════ -->
+<h2 id="data-format">Data Format</h2>
+<p>Human Signals uses a <strong>long format</strong> where each row is one metric observation for one case. Cases are grouped by <code>dataset_id</code> and signals are flattened as <code>{metric_name}__{signal_key}</code>.</p>
+
+<h3>Required Columns</h3>
+<pre><code>dataset_id,metric_name,signals,source_name,timestamp</code></pre>
+
+<h3>Full CSV Schema</h3>
+<pre><code>dataset_id,metric_name,metric_score,metric_category,signals,conversation,conversation_stats,additional_input,source_name,source_component,environment,timestamp</code></pre>
+
+<table class="sim-table" style="margin:16px 0;">
+  <thead><tr><th>Column</th><th>Required</th><th>Description</th></tr></thead>
+  <tbody>
+    <tr><td><code>dataset_id</code></td><td>Yes</td><td>Unique case identifier. All metric rows with the same ID are grouped into one case.</td></tr>
+    <tr><td><code>metric_name</code></td><td>Yes</td><td>Name of the metric (e.g., <code>intervention_type</code>, <code>sentiment_category</code>)</td></tr>
+    <tr><td><code>signals</code></td><td>Yes</td><td>JSON dict of signal key-value pairs (e.g., <code>{"intervention_type": "correction", "has_intervention": true}</code>)</td></tr>
+    <tr><td><code>source_name</code></td><td>Yes</td><td>Source system name (e.g., <code>alpha_bot</code>). Used for filtering and display.</td></tr>
+    <tr><td><code>timestamp</code></td><td>No</td><td>ISO datetime. Used for time-range filtering and trend charts.</td></tr>
+    <tr><td><code>conversation</code></td><td>No</td><td>JSON with <code>{"messages": [{"role": "...", "content": "..."}]}</code></td></tr>
+    <tr><td><code>conversation_stats</code></td><td>No</td><td>JSON with turn counts (e.g., <code>{"turn_count": 12}</code>)</td></tr>
+    <tr><td><code>additional_input</code></td><td>No</td><td>JSON with extra metadata (e.g., <code>{"message_url": "...", "sender": "..."}</code>)</td></tr>
+    <tr><td><code>source_component</code></td><td>No</td><td>Component within source (used for filters)</td></tr>
+    <tr><td><code>environment</code></td><td>No</td><td>Deployment environment (used for filters)</td></tr>
+  </tbody>
+</table>
+
+<h3>How Flattening Works</h3>
+<p>The backend groups rows by <code>dataset_id</code>, then for each metric row flattens all signal keys as <code>{metric_name}__{signal_key}</code>. For example:</p>
+
+<pre><code># Input row:
+metric_name: "intervention_type"
+signals: {"intervention_type": "correction", "has_intervention": true}
+
+# Becomes flattened case fields:
+intervention_type__intervention_type: "correction"
+intervention_type__has_intervention: true</code></pre>
+
+<div class="admonition warning">
+  <div class="admonition-title">&#x26A0;&#xFE0F; Warning</div>
+  The <code>signals</code> column must contain valid JSON (or Python dict syntax). The backend tries JSON parsing first, then falls back to <code>ast.literal_eval</code>. Malformed signals will be silently skipped.
+</div>
+
+<!-- ══════════════ CONFIGURATION ══════════════ -->
+<h2 id="configuration">Configuration</h2>
+<p>The display layout is auto-generated from the metric schema but can be customized via <code>config/signals_metrics.yaml</code>. The backend generates a <code>display_config</code> that controls KPIs, charts, filters, table columns, and color maps.</p>
+
+<h3>Display Config Structure</h3>
+<pre><code>{
+  "kpi_strip": [
+    { "label": "Total Cases", "aggregate": "total_cases", "icon": "zap", "highlight": true },
+    { "label": "Intervention Rate", "metric": "intervention_type", "signal": "has_intervention",
+      "format": "percent", "icon": "alert-triangle" }
+  ],
+  "chart_sections": [
+    {
+      "title": "Outcome Distribution",
+      "layout": "grid_2",
+      "charts": [
+        { "metric": "intervention_type", "signal": "intervention_type",
+          "type": "donut", "title": "Intervention Type" }
+      ]
+    }
+  ],
+  "filters": [
+    { "type": "source", "field": "source_component", "label": "Component" },
+    { "type": "metric", "metric": "sentiment_category", "signal": "sentiment",
+      "label": "Sentiment", "options": ["positive", "neutral", "negative"] }
+  ],
+  "table_columns": [
+    { "key": "Case_ID", "label": "Case ID", "sortable": true },
+    { "key": "intervention_type__intervention_type", "label": "Intervention", "sortable": true }
+  ],
+  "color_maps": {
+    "intervention_type__intervention_type": {
+      "correction": "#4f46e5", "escalation": "#ca8a04", "edge_case": "#16a34a"
+    }
+  }
+}</code></pre>
+
+<h3>Database Configuration</h3>
+<p>To auto-import from a PostgreSQL database, create <code>config/human_signals_db.yaml</code> from the example template:</p>
+<pre><code>human_signals_db:
+  enabled: true
+  auto_load: true
+  url: "postgresql://user:pass@host:5432/db"
+  dataset_query: |
+    SELECT dataset_id, conversation, additional_input, timestamp
+    FROM hitl_cases WHERE created_at > NOW() - INTERVAL '30 days'
+  results_query: |
+    SELECT dataset_id, metric_name, signals, source_name, timestamp
+    FROM hitl_results WHERE timestamp > NOW() - INTERVAL '30 days'
+  query_timeout: 60
+  row_limit: 10000
+  visible_metrics: []  # Empty = show all</code></pre>
+
+<div class="admonition tip">
+  <div class="admonition-title">&#x1F4A1; Tip</div>
+  Use <code>visible_metrics</code> to limit which metrics appear on the dashboard. This is useful when your database contains many metric types but you only want to surface a curated subset.
+</div>
+
+<!-- ══════════════ NEXT STEPS ══════════════ -->
+<h2 id="next-steps">Next Steps</h2>
+
+<div class="next-steps">
+  <a class="next-step-card" href="#">
+    <h4>&#x1F4CA; Monitoring &rarr;</h4>
+    <p>Track automated evaluation scores, latency, and anomalies for your production AI systems.</p>
+  </a>
+  <a class="next-step-card" href="#">
+    <h4>&#x1F6E1; Production &rarr;</h4>
+    <p>See the Executive Summary scorecard that aggregates monitoring and signals data into a health overview.</p>
+  </a>
+  <a class="next-step-card" href="#">
+    <h4>&#x2699; Configuration &rarr;</h4>
+    <p>Set up database connections, display config, and auto-sync in the Configuration guide.</p>
+  </a>
+</div>
+
+<!-- ── FOOTER ── -->
+<div style="margin-top:60px;padding-top:24px;border-top:1px solid var(--gray-200);font-size:0.8rem;color:var(--gray-400);text-align:center;">
+  AXIS Documentation &middot; Built with MkDocs Material
+</div>
+
+</div><!-- .content -->
+</main>
+
+<!-- TABLE OF CONTENTS -->
+<nav class="toc">
+  <div class="toc-title">On this page</div>
+  <ul class="toc-list">
+    <li><a href="#why-human-signals">Why Use Human Signals?</a></li>
+    <li><a href="#quick-start">Quick Start</a></li>
+    <li><a href="#page-anatomy">Page Anatomy</a></li>
+    <li><a href="#kpi-strip">KPI Strip</a></li>
+    <li><a href="#filters">Filters</a></li>
+    <li><a href="#chart-section">Chart Section</a></li>
+    <li class="indent"><a href="#signal-trends">Signal Trends</a></li>
+    <li class="indent"><a href="#chart-types">Chart Types</a></li>
+    <li><a href="#case-table">Case Table</a></li>
+    <li><a href="#detail-modal">Case Detail Modal</a></li>
+    <li><a href="#data-format">Data Format</a></li>
+    <li><a href="#configuration">Configuration</a></li>
+    <li><a href="#next-steps">Next Steps</a></li>
+  </ul>
+</nav>
+
+</div><!-- .layout -->
+
+</body>
+</html>

@@ -1,0 +1,1170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agent Replay - AXIS User Guide</title>
+<style>
+  /* ── Reset & Base ── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --primary: #4f46e5;
+    --primary-light: #eef2ff;
+    --primary-dark: #3730a3;
+    --green: #16a34a;
+    --green-light: #f0fdf4;
+    --green-border: #bbf7d0;
+    --yellow: #ca8a04;
+    --yellow-light: #fefce8;
+    --yellow-border: #fef08a;
+    --red: #dc2626;
+    --red-light: #fef2f2;
+    --red-border: #fecaca;
+    --blue: #2563eb;
+    --blue-light: #eff6ff;
+    --blue-border: #bfdbfe;
+    --gray-50: #f9fafb;
+    --gray-100: #f3f4f6;
+    --gray-200: #e5e7eb;
+    --gray-300: #d1d5db;
+    --gray-400: #9ca3af;
+    --gray-500: #6b7280;
+    --gray-600: #4b5563;
+    --gray-700: #374151;
+    --gray-800: #1f2937;
+    --gray-900: #111827;
+    --sidebar-w: 260px;
+    --content-max: 860px;
+    --toc-w: 220px;
+  }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    color: var(--gray-800);
+    line-height: 1.7;
+    background: #fff;
+  }
+  a { color: var(--primary); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code {
+    font-family: 'SF Mono', 'Fira Code', 'Fira Mono', Menlo, monospace;
+    font-size: 0.875em;
+    background: var(--gray-100);
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: var(--primary-dark);
+  }
+  pre { background: var(--gray-900); color: #e5e7eb; padding: 16px 20px; border-radius: 8px; overflow-x: auto; font-size: 0.85rem; line-height: 1.6; }
+  pre code { background: none; padding: 0; color: inherit; }
+  kbd {
+    display: inline-block; padding: 2px 6px; font-size: 0.8em;
+    border: 1px solid var(--gray-300); border-radius: 4px;
+    background: var(--gray-50); box-shadow: 0 1px 0 var(--gray-300);
+    font-family: inherit;
+  }
+
+  /* ── Top Nav ── */
+  .topnav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    height: 56px; background: var(--gray-900); color: #fff;
+    display: flex; align-items: center; padding: 0 24px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.3);
+  }
+  .topnav-logo { font-weight: 700; font-size: 1.1rem; letter-spacing: -0.02em; }
+  .topnav-logo span { color: var(--primary); }
+  .topnav-links { margin-left: auto; display: flex; gap: 24px; font-size: 0.875rem; }
+  .topnav-links a { color: var(--gray-300); }
+  .topnav-links a:hover { color: #fff; text-decoration: none; }
+  .topnav-links a.active { color: #fff; font-weight: 600; }
+
+  /* ── Layout ── */
+  .layout { display: flex; margin-top: 56px; min-height: calc(100vh - 56px); }
+
+  /* ── Sidebar ── */
+  .sidebar {
+    position: fixed; top: 56px; left: 0; bottom: 0;
+    width: var(--sidebar-w); background: var(--gray-50);
+    border-right: 1px solid var(--gray-200);
+    overflow-y: auto; padding: 20px 0; font-size: 0.85rem;
+  }
+  .sidebar-section { padding: 0 16px; margin-bottom: 20px; }
+  .sidebar-section-title {
+    font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.08em; color: var(--gray-400); margin-bottom: 8px;
+    padding-left: 8px;
+  }
+  .sidebar-link {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 12px; border-radius: 6px; color: var(--gray-600);
+    transition: all 0.15s;
+  }
+  .sidebar-link:hover { background: var(--gray-200); color: var(--gray-800); text-decoration: none; }
+  .sidebar-link.active { background: var(--primary-light); color: var(--primary); font-weight: 600; }
+  .sidebar-link svg { width: 16px; height: 16px; flex-shrink: 0; }
+
+  /* ── Main Content ── */
+  .main {
+    margin-left: var(--sidebar-w); flex: 1;
+    padding: 40px 40px 80px;
+    margin-right: calc(var(--toc-w) + 48px);
+  }
+  .content { max-width: var(--content-max); width: 100%; }
+
+  /* ── TOC (right rail) ── */
+  .toc {
+    position: fixed; top: 96px; right: 24px;
+    width: var(--toc-w); font-size: 0.78rem;
+  }
+  .toc-title { font-weight: 700; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--gray-400); margin-bottom: 10px; }
+  .toc-list { list-style: none; border-left: 2px solid var(--gray-200); }
+  .toc-list li { padding-left: 14px; margin-bottom: 6px; }
+  .toc-list a { color: var(--gray-500); }
+  .toc-list a:hover { color: var(--primary); text-decoration: none; }
+  .toc-list .indent { padding-left: 28px; }
+
+  /* ── Typography ── */
+  .content h1 { font-size: 2rem; font-weight: 800; letter-spacing: -0.03em; margin-bottom: 8px; color: var(--gray-900); }
+  .content h2 { font-size: 1.45rem; font-weight: 700; margin-top: 48px; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid var(--gray-200); color: var(--gray-900); }
+  .content h3 { font-size: 1.15rem; font-weight: 600; margin-top: 32px; margin-bottom: 12px; color: var(--gray-800); }
+  .content h4 { font-size: 1rem; font-weight: 600; margin-top: 24px; margin-bottom: 8px; color: var(--gray-700); }
+  .content p { margin-bottom: 16px; color: var(--gray-700); }
+  .content > ul, .content > ol { margin-bottom: 16px; padding-left: 24px; color: var(--gray-700); }
+  .content li { margin-bottom: 6px; }
+  .subtitle { font-size: 1.1rem; color: var(--gray-500); margin-bottom: 32px; }
+
+  /* ── Breadcrumb ── */
+  .breadcrumb { font-size: 0.8rem; color: var(--gray-400); margin-bottom: 12px; }
+  .breadcrumb a { color: var(--gray-400); }
+  .breadcrumb a:hover { color: var(--primary); }
+
+  /* ── Admonitions ── */
+  .admonition {
+    border-radius: 8px; padding: 16px 20px; margin: 20px 0;
+    border-left: 4px solid; font-size: 0.9rem;
+  }
+  .admonition-title {
+    font-weight: 700; font-size: 0.8rem; text-transform: uppercase;
+    letter-spacing: 0.04em; margin-bottom: 6px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .admonition.tip { background: var(--green-light); border-color: var(--green); }
+  .admonition.tip .admonition-title { color: var(--green); }
+  .admonition.info { background: var(--blue-light); border-color: var(--blue); }
+  .admonition.info .admonition-title { color: var(--blue); }
+  .admonition.warning { background: var(--yellow-light); border-color: var(--yellow); }
+  .admonition.warning .admonition-title { color: var(--yellow); }
+  .admonition.note { background: var(--gray-50); border-color: var(--gray-400); }
+  .admonition.note .admonition-title { color: var(--gray-600); }
+
+  /* ── Screenshot Frames ── */
+  .screenshot {
+    margin: 24px 0; border-radius: 10px; overflow: hidden;
+    border: 1px solid var(--gray-200); box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+  }
+  .screenshot-chrome {
+    background: var(--gray-100); padding: 8px 14px; display: flex;
+    align-items: center; gap: 8px; border-bottom: 1px solid var(--gray-200);
+  }
+  .screenshot-dots { display: flex; gap: 6px; }
+  .screenshot-dots span { width: 10px; height: 10px; border-radius: 50%; }
+  .screenshot-dots span:nth-child(1) { background: #f87171; }
+  .screenshot-dots span:nth-child(2) { background: #fbbf24; }
+  .screenshot-dots span:nth-child(3) { background: #34d399; }
+  .screenshot-title { font-size: 0.75rem; color: var(--gray-500); margin-left: 8px; }
+  .screenshot-body { background: #fff; position: relative; }
+  .screenshot-caption {
+    text-align: center; font-size: 0.8rem; color: var(--gray-500);
+    padding: 10px; font-style: italic; background: var(--gray-50);
+    border-top: 1px solid var(--gray-200);
+  }
+
+  /* ── Simulated UI ── */
+  .sim-ui { padding: 20px; font-family: inherit; }
+  .sim-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--gray-200); }
+  .sim-header-icon { width: 24px; height: 24px; color: var(--primary); }
+  .sim-header h3 { margin: 0; font-size: 1.1rem; }
+  .sim-header p { margin: 0; font-size: 0.8rem; color: var(--gray-500); }
+
+  .sim-filters { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+  .sim-filter-btn {
+    padding: 6px 14px; border-radius: 6px; font-size: 0.8rem;
+    border: 1px solid var(--gray-200); background: #fff; color: var(--gray-600);
+    display: flex; align-items: center; gap: 6px;
+  }
+  .sim-filter-btn.active { border-color: var(--primary); background: var(--primary-light); color: var(--primary); font-weight: 600; }
+  .sim-filter-btn svg { width: 14px; height: 14px; }
+
+  .sim-kpi-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 20px; }
+  .sim-kpi {
+    border: 1px solid var(--gray-200); border-radius: 8px; padding: 14px 16px;
+    background: #fff;
+  }
+  .sim-kpi-label { font-size: 0.7rem; color: var(--gray-500); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 4px; }
+  .sim-kpi-value { font-size: 1.4rem; font-weight: 700; color: var(--gray-900); }
+
+  .sim-tabs { display: flex; border-bottom: 2px solid var(--gray-200); margin-bottom: 16px; }
+  .sim-tab {
+    padding: 8px 16px; font-size: 0.82rem; color: var(--gray-500);
+    border-bottom: 2px solid transparent; margin-bottom: -2px; cursor: pointer;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .sim-tab.active { color: var(--primary); border-color: var(--primary); font-weight: 600; }
+
+  .sim-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+  .sim-table th { background: var(--gray-50); text-align: left; padding: 8px 12px; font-weight: 600; color: var(--gray-600); border-bottom: 1px solid var(--gray-200); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; }
+  .sim-table td { padding: 8px 12px; border-bottom: 1px solid var(--gray-100); color: var(--gray-700); }
+  .sim-table tr:hover td { background: var(--gray-50); }
+  .sim-badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 0.7rem; font-weight: 600; }
+  .sim-badge.green { background: var(--green-light); color: var(--green); border: 1px solid var(--green-border); }
+  .sim-badge.yellow { background: var(--yellow-light); color: var(--yellow); border: 1px solid var(--yellow-border); }
+  .sim-badge.red { background: var(--red-light); color: var(--red); border: 1px solid var(--red-border); }
+  .sim-badge.blue { background: var(--blue-light); color: var(--blue); border: 1px solid var(--blue-border); }
+  .sim-badge.gray { background: var(--gray-100); color: var(--gray-600); border: 1px solid var(--gray-200); }
+  .sim-badge.purple { background: #f5f3ff; color: #7c3aed; border: 1px solid #ddd6fe; }
+  .sim-badge.orange { background: #fff7ed; color: #ea580c; border: 1px solid #fed7aa; }
+  .sim-badge.teal { background: #f0fdfa; color: #0d9488; border: 1px solid #99f6e4; }
+  .sim-code { font-family: 'SF Mono', monospace; font-size: 0.75rem; color: var(--primary); }
+
+  /* ── Annotation Overlay ── */
+  .annotation-overlay { position: absolute; pointer-events: none; }
+  .callout-num {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 24px; height: 24px; border-radius: 50%;
+    background: var(--primary); color: #fff; font-size: 0.7rem; font-weight: 700;
+    box-shadow: 0 2px 6px rgba(79,70,229,0.4);
+  }
+  .callout-ring {
+    position: absolute; border: 2px solid var(--primary);
+    border-radius: 8px; pointer-events: none;
+    box-shadow: 0 0 0 2px rgba(79,70,229,0.15);
+  }
+  .callout-legend { margin: 16px 0; font-size: 0.85rem; }
+  .callout-legend-item { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 8px; }
+  .callout-legend-item .callout-num { flex-shrink: 0; }
+
+  /* ── Step Boxes ── */
+  .step-grid { display: grid; grid-template-columns: 1fr; gap: 16px; margin: 20px 0; }
+  .step-box {
+    display: flex; gap: 16px; padding: 16px 20px;
+    border: 1px solid var(--gray-200); border-radius: 10px;
+    background: #fff; transition: box-shadow 0.15s;
+  }
+  .step-box:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+  .step-num {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: var(--primary); color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 0.85rem; flex-shrink: 0;
+  }
+  .step-content h4 { margin: 0 0 4px; font-size: 0.95rem; }
+  .step-content p { margin: 0; font-size: 0.88rem; color: var(--gray-600); }
+
+  /* ── Feature Cards ── */
+  .feature-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 20px 0; }
+  .feature-card {
+    border: 1px solid var(--gray-200); border-radius: 8px; padding: 16px;
+    transition: box-shadow 0.15s;
+  }
+  .feature-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+  .feature-card h4 { margin: 0 0 6px; font-size: 0.9rem; display: flex; align-items: center; gap: 8px; }
+  .feature-card p { margin: 0; font-size: 0.82rem; color: var(--gray-500); }
+  .feature-icon { font-size: 1.1rem; }
+
+  /* ── Separator ── */
+  .section-sep { display: flex; align-items: center; gap: 12px; margin: 32px 0 24px; color: var(--gray-400); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; }
+  .section-sep::before, .section-sep::after { content: ''; flex: 1; height: 1px; background: var(--gray-200); }
+
+  /* ── Next Steps ── */
+  .next-steps { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin: 24px 0; }
+  .next-step-card {
+    border: 1px solid var(--gray-200); border-radius: 8px; padding: 16px;
+    transition: all 0.15s;
+  }
+  .next-step-card:hover { border-color: var(--primary); box-shadow: 0 2px 8px rgba(79,70,229,0.1); text-decoration: none; }
+  .next-step-card h4 { margin: 0 0 4px; font-size: 0.9rem; color: var(--gray-800); }
+  .next-step-card p { margin: 0; font-size: 0.78rem; color: var(--gray-500); }
+
+  /* ── Tree simulation ── */
+  .sim-tree { font-size: 0.82rem; font-family: 'SF Mono', monospace; }
+  .sim-tree-node {
+    display: flex; align-items: center; gap: 8px; padding: 5px 8px;
+    border-radius: 4px; margin-bottom: 2px; cursor: pointer;
+  }
+  .sim-tree-node:hover { background: var(--gray-100); }
+  .sim-tree-node.selected { background: var(--primary-light); border: 1px solid rgba(79,70,229,0.3); }
+  .sim-tree-toggle { width: 16px; text-align: center; color: var(--gray-400); font-size: 0.7rem; }
+  .sim-tree-type {
+    display: inline-block; padding: 1px 6px; border-radius: 4px;
+    font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em;
+  }
+  .sim-tree-type.span { background: var(--primary-light); color: var(--primary); }
+  .sim-tree-type.gen { background: var(--green-light); color: var(--green); }
+  .sim-tree-type.tool { background: var(--yellow-light); color: var(--yellow); }
+  .sim-tree-type.event { background: var(--gray-100); color: var(--gray-500); }
+  .sim-tree-name { color: var(--gray-700); }
+  .sim-tree-meta { color: var(--gray-400); font-size: 0.72rem; margin-left: auto; }
+  .sim-tree-children { padding-left: 24px; }
+
+  /* ── Split pane simulation ── */
+  .sim-split { display: grid; grid-template-columns: 35fr 65fr; gap: 0; border: 1px solid var(--gray-200); border-radius: 8px; overflow: hidden; margin: 16px 0; }
+  .sim-pane { min-height: 120px; }
+  .sim-pane-header { padding: 8px 14px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; display: flex; align-items: center; gap: 6px; }
+  .sim-pane-header svg { width: 14px; height: 14px; }
+  .sim-pane-header.input { background: var(--blue-light); color: var(--blue); border-bottom: 1px solid var(--blue-border); }
+  .sim-pane-header.output { background: var(--green-light); color: var(--green); border-bottom: 1px solid var(--green-border); border-left: 1px solid var(--gray-200); }
+  .sim-pane-body { padding: 12px 14px; font-size: 0.8rem; color: var(--gray-600); }
+  .sim-pane-body.right { border-left: 1px solid var(--gray-200); }
+
+  /* ── Review form simulation ── */
+  .sim-review { border: 1px solid var(--gray-200); border-radius: 8px; overflow: hidden; margin: 16px 0; }
+  .sim-review-header { padding: 12px 16px; background: var(--gray-50); border-bottom: 1px solid var(--gray-200); font-weight: 600; font-size: 0.9rem; }
+  .sim-review-body { padding: 16px; }
+  .sim-review-field { margin-bottom: 14px; }
+  .sim-review-label { font-size: 0.75rem; font-weight: 600; color: var(--gray-600); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.03em; }
+  .sim-verdict-row { display: flex; gap: 8px; }
+  .sim-verdict-btn {
+    padding: 8px 20px; border-radius: 8px; font-size: 0.82rem; font-weight: 600;
+    border: 2px solid var(--gray-200); background: #fff; cursor: pointer;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .sim-verdict-btn.positive { border-color: var(--green-border); color: var(--green); }
+  .sim-verdict-btn.positive.active { background: var(--green-light); border-color: var(--green); }
+  .sim-verdict-btn.neutral { border-color: var(--gray-200); color: var(--gray-500); }
+  .sim-verdict-btn.negative { border-color: var(--red-border); color: var(--red); }
+  .sim-verdict-btn.negative.active { background: var(--red-light); border-color: var(--red); }
+  .sim-textarea {
+    width: 100%; border: 1px solid var(--gray-200); border-radius: 6px;
+    padding: 8px 10px; font-size: 0.8rem; color: var(--gray-400);
+    font-family: inherit; resize: none; background: var(--gray-50);
+  }
+  .sim-select {
+    width: 100%; border: 1px solid var(--gray-200); border-radius: 6px;
+    padding: 8px 10px; font-size: 0.8rem; color: var(--gray-500);
+    background: #fff;
+  }
+  .sim-checkbox { display: flex; align-items: center; gap: 8px; font-size: 0.82rem; color: var(--gray-600); }
+  .sim-checkbox-box { width: 16px; height: 16px; border: 2px solid var(--gray-300); border-radius: 4px; }
+  .sim-submit-btn {
+    padding: 10px 24px; border-radius: 8px; font-size: 0.85rem; font-weight: 600;
+    border: none; background: var(--primary); color: #fff; cursor: pointer;
+    margin-top: 8px;
+  }
+
+  /* ── Chat bubble simulation ── */
+  .sim-chat { display: flex; flex-direction: column; gap: 8px; }
+  .sim-chat-msg { display: flex; gap: 8px; align-items: flex-start; }
+  .sim-chat-msg.right { flex-direction: row-reverse; }
+  .sim-chat-avatar {
+    width: 28px; height: 28px; border-radius: 50%; display: flex;
+    align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 700;
+    flex-shrink: 0;
+  }
+  .sim-chat-avatar.system { background: var(--gray-200); color: var(--gray-600); }
+  .sim-chat-avatar.user { background: var(--primary-light); color: var(--primary); }
+  .sim-chat-avatar.assistant { background: var(--green-light); color: var(--green); }
+  .sim-chat-bubble {
+    max-width: 85%; padding: 8px 12px; border-radius: 10px;
+    font-size: 0.8rem; line-height: 1.5;
+  }
+  .sim-chat-bubble.system { background: var(--gray-100); color: var(--gray-600); }
+  .sim-chat-bubble.user { background: var(--primary); color: #fff; }
+  .sim-chat-bubble.assistant { background: var(--green-light); color: var(--gray-700); border: 1px solid var(--green-border); }
+
+  /* ── Responsive ── */
+  @media (max-width: 1200px) {
+    .toc { display: none; }
+    .main { margin-right: 0; }
+  }
+  @media (max-width: 900px) {
+    .sidebar { display: none; }
+    .main { margin-left: 0; }
+    .sim-kpi-row { grid-template-columns: repeat(2,1fr); }
+    .feature-grid { grid-template-columns: 1fr; }
+    .next-steps { grid-template-columns: 1fr; }
+    .sim-split { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- TOP NAV -->
+<nav class="topnav">
+  <div class="topnav-logo"><img src="../assets/axis_transparent.png" alt="AXIS"
+    style="height:20px;vertical-align:middle;margin-right:2px;"> Docs</div>
+    <div class="topnav-links">
+    <a href="../getting-started/">Getting Started</a>
+    <a href="../user-guide/" class="active">User Guide</a>
+    <a href="../configuration/">Configuration</a>
+    <a href="../architecture/">Architecture</a>
+    <a href="../api-reference/">API Reference</a>
+  </div>
+</nav>
+
+<!-- SIDEBAR -->
+<div class="layout">
+<aside class="sidebar">
+  <div class="sidebar-section">
+    <div class="sidebar-section-title">User Guide</div>
+    <a class="sidebar-link" href="../user-guide/">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      Overview
+    </a>
+    <a class="sidebar-link" href="evaluate-guide.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      Evaluate
+    </a>
+    <a class="sidebar-link" href="annotation-guide.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+      Annotation Studio
+    </a>
+    <a class="sidebar-link" href="monitoring-guide.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      Monitoring
+    </a>
+    <a class="sidebar-link" href="production-guide.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      Production
+    </a>
+    <a class="sidebar-link" href="calibration-guide.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+      CaliberHQ
+    </a>
+    <a class="sidebar-link" href="human-signals-guide.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      Human Signals
+    </a>
+    <a class="sidebar-link" href="memory-guide.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+      Memory
+    </a>
+    <a class="sidebar-link active" href="agent-replay-guide.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+      Agent Replay
+    </a>
+    <a class="sidebar-link" href="simulation-guide.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+      Simulation
+    </a>
+    <a class="sidebar-link" href="learn-guide.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+      Learn
+    </a>
+    <a class="sidebar-link" href="settings-guide.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+      Settings
+    </a>
+  </div>
+</aside>
+
+<!-- MAIN CONTENT -->
+<main class="main">
+<div class="content">
+
+<!-- Breadcrumb -->
+<div class="breadcrumb">
+  <a href="#">Docs</a> / <a href="#">User Guide</a> / <strong>Agent Replay</strong>
+</div>
+
+<h1>Agent Replay</h1>
+<p class="subtitle">Step through AI agent execution traces from Langfuse &mdash; inspect observation trees, review inputs/outputs, and submit verdicts for continuous improvement.</p>
+
+<!-- ══════════════ WHY ══════════════ -->
+<h2 id="why-agent-replay">Why Agent Replay?</h2>
+<p>Automated metrics tell you an agent succeeded or failed. Agent Replay lets you see <strong>exactly how</strong> it got there &mdash; every LLM call, tool invocation, and decision branch in a hierarchical trace. Use it to debug failures, validate reasoning, and build golden datasets for evaluation.</p>
+
+<div class="feature-grid">
+  <div class="feature-card">
+    <h4><span class="feature-icon">&#x1F50D;</span> Trace Inspection</h4>
+    <p>Browse full execution traces with nested observation trees. Expand any node to see its input, output, and metadata.</p>
+  </div>
+  <div class="feature-card">
+    <h4><span class="feature-icon">&#x1F9E9;</span> Step-by-Step Debugging</h4>
+    <p>Walk through spans, generations, tool calls, and events in order. Smart content rendering detects chat messages, JSON, and structured output.</p>
+  </div>
+  <div class="feature-card">
+    <h4><span class="feature-icon">&#x26A1;</span> Performance Metrics</h4>
+    <p>Latency, token usage, and model info at every node. Trace-level KPIs show total cost, step count, and duration at a glance.</p>
+  </div>
+  <div class="feature-card">
+    <h4><span class="feature-icon">&#x2705;</span> Human Review</h4>
+    <p>Submit verdicts (positive/neutral/negative), identify failure steps, record rationale, and push approved traces to Langfuse golden datasets.</p>
+  </div>
+</div>
+
+<!-- ══════════════ QUICK START ══════════════ -->
+<h2 id="quick-start">Quick Start</h2>
+<p>Get from zero to reviewing a trace in under a minute:</p>
+
+<div class="step-grid">
+  <div class="step-box">
+    <div class="step-num">1</div>
+    <div class="step-content">
+      <h4>Configure Langfuse</h4>
+      <p>Set <code>LANGFUSE_PUBLIC_KEY</code>, <code>LANGFUSE_SECRET_KEY</code>, and <code>AGENT_REPLAY_ENABLED=true</code> as environment variables. For multiple agents, use <code>LANGFUSE_{AGENT}_PUBLIC_KEY</code> per agent.</p>
+    </div>
+  </div>
+  <div class="step-box">
+    <div class="step-num">2</div>
+    <div class="step-content">
+      <h4>Search for a Trace</h4>
+      <p>Select an agent from the tab bar, then enter a <strong>Trace ID</strong> (UUID) or use <strong>Field Search</strong> (e.g. Case Reference) to find traces by business identifiers.</p>
+    </div>
+  </div>
+  <div class="step-box">
+    <div class="step-num">3</div>
+    <div class="step-content">
+      <h4>Explore the Observation Tree</h4>
+      <p>Click any node to inspect its input/output. Expand children to drill into nested spans and generations. Use <strong>Workflow I/O</strong> to see the trace-level request and response.</p>
+    </div>
+  </div>
+  <div class="step-box">
+    <div class="step-num">4</div>
+    <div class="step-content">
+      <h4>Submit a Review</h4>
+      <p>Open the Review panel, select a verdict, optionally identify the failure step, and add rationale. Toggle <strong>Add to Golden Dataset</strong> to push the trace to Langfuse for future evaluations.</p>
+    </div>
+  </div>
+</div>
+
+<div class="admonition tip">
+  <div class="admonition-title">&#x1F4A1; Tip</div>
+  If you already have a trace ID from Langfuse or your application logs, paste it directly into the search bar for instant lookup &mdash; no field search configuration needed.
+</div>
+
+<!-- ══════════════ PAGE ANATOMY ══════════════ -->
+<h2 id="page-anatomy">Page Anatomy</h2>
+<p>The Agent Replay page is divided into five functional zones:</p>
+
+<div class="screenshot">
+  <div class="screenshot-chrome">
+    <div class="screenshot-dots"><span></span><span></span><span></span></div>
+    <div class="screenshot-title">AXIS &mdash; Agent Replay</div>
+  </div>
+  <div class="screenshot-body">
+    <div class="sim-ui" style="min-height: 340px; position: relative;">
+      <!-- ① Agent Identity Bar -->
+      <div style="display: flex; align-items: center; gap: 12px; padding: 10px 16px; background: var(--gray-50); border: 1px solid var(--gray-200); border-radius: 8px; margin-bottom: 12px; position: relative;">
+        <div style="display: flex; gap: 4px;">
+          <span style="padding: 6px 14px; border-radius: 6px; font-size: 0.8rem; background: var(--primary); color: #fff; font-weight: 600;">Alpha Bot</span>
+          <span style="padding: 6px 14px; border-radius: 6px; font-size: 0.8rem; border: 1px solid var(--gray-200); color: var(--gray-500);">Reviewer</span>
+        </div>
+        <div style="margin-left: auto; display: flex; gap: 16px; font-size: 0.75rem; color: var(--gray-500);">
+          <span>12 nodes</span>
+          <span>3.2s</span>
+          <span>4.8K tokens</span>
+          <span class="sim-code">a1b2c3d4</span>
+        </div>
+        <div class="callout-num" style="position: absolute; top: -8px; left: -8px;">1</div>
+      </div>
+
+      <!-- ② Search -->
+      <div style="display: flex; gap: 8px; margin-bottom: 12px; position: relative;">
+        <div style="padding: 8px 12px; border: 1px solid var(--gray-200); border-radius: 6px; font-size: 0.8rem; color: var(--gray-400); width: 140px;">Trace ID</div>
+        <div style="flex: 1; padding: 8px 12px; border: 1px solid var(--gray-200); border-radius: 6px; font-size: 0.8rem; color: var(--gray-400);">Enter trace ID or search value...</div>
+        <div style="padding: 8px 16px; background: var(--primary); color: #fff; border-radius: 6px; font-size: 0.8rem; font-weight: 600;">Search</div>
+        <div class="callout-num" style="position: absolute; top: -8px; left: -8px;">2</div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 280px 1fr 260px; gap: 12px; position: relative;">
+        <!-- ③ Observation Tree -->
+        <div style="border: 1px solid var(--gray-200); border-radius: 8px; padding: 10px; position: relative; min-height: 180px;">
+          <div style="font-size: 0.7rem; font-weight: 700; color: var(--gray-400); text-transform: uppercase; margin-bottom: 8px;">Observation Tree</div>
+          <div class="sim-tree">
+            <div class="sim-tree-node selected">
+              <span class="sim-tree-toggle">&#9660;</span>
+              <span class="sim-tree-type span">SPAN</span>
+              <span class="sim-tree-name">workflow</span>
+            </div>
+            <div class="sim-tree-children">
+              <div class="sim-tree-node">
+                <span class="sim-tree-toggle">&#9660;</span>
+                <span class="sim-tree-type gen">GEN</span>
+                <span class="sim-tree-name">classify</span>
+              </div>
+              <div class="sim-tree-node">
+                <span class="sim-tree-toggle">&#9654;</span>
+                <span class="sim-tree-type tool">TOOL</span>
+                <span class="sim-tree-name">search_kb</span>
+              </div>
+              <div class="sim-tree-node">
+                <span class="sim-tree-toggle">&nbsp;</span>
+                <span class="sim-tree-type event">EVT</span>
+                <span class="sim-tree-name">complete</span>
+              </div>
+            </div>
+          </div>
+          <div class="callout-num" style="position: absolute; top: -8px; left: -8px;">3</div>
+        </div>
+
+        <!-- ④ Node Detail -->
+        <div style="border: 1px solid var(--gray-200); border-radius: 8px; overflow: hidden; position: relative; min-height: 180px;">
+          <div style="display: flex;">
+            <div style="flex: 35%; padding: 8px 10px; background: var(--blue-light); border-bottom: 1px solid var(--blue-border); font-size: 0.7rem; font-weight: 700; color: var(--blue);">INPUT</div>
+            <div style="flex: 65%; padding: 8px 10px; background: var(--green-light); border-bottom: 1px solid var(--green-border); border-left: 1px solid var(--gray-200); font-size: 0.7rem; font-weight: 700; color: var(--green);">OUTPUT</div>
+          </div>
+          <div style="display: flex; height: 130px;">
+            <div style="flex: 35%; padding: 10px; font-size: 0.75rem; color: var(--gray-500); overflow: hidden;">
+              <div style="background: var(--primary); color: #fff; padding: 4px 8px; border-radius: 6px; font-size: 0.7rem; display: inline-block; margin-bottom: 6px;">user</div>
+              <div style="font-size: 0.72rem; color: var(--gray-500);">What is the service limit for...</div>
+            </div>
+            <div style="flex: 65%; padding: 10px; border-left: 1px solid var(--gray-200); font-size: 0.75rem; color: var(--gray-500); overflow: hidden;">
+              <div style="background: var(--green-light); padding: 6px 10px; border-radius: 6px; border: 1px solid var(--green-border); font-size: 0.72rem; margin-bottom: 4px;">
+                <strong style="color: var(--green);">decision</strong>: approved
+              </div>
+              <div style="background: var(--blue-light); padding: 6px 10px; border-radius: 6px; border: 1px solid var(--blue-border); font-size: 0.72rem;">
+                <strong style="color: var(--blue);">rationale</strong>: Coverage within...
+              </div>
+            </div>
+          </div>
+          <div class="callout-num" style="position: absolute; top: -8px; left: -8px;">4</div>
+        </div>
+
+        <!-- ⑤ Review Panel -->
+        <div style="border: 1px solid var(--gray-200); border-radius: 8px; padding: 10px; position: relative; min-height: 180px;">
+          <div style="font-size: 0.7rem; font-weight: 700; color: var(--gray-400); text-transform: uppercase; margin-bottom: 8px;">Review</div>
+          <div style="display: flex; gap: 4px; margin-bottom: 10px;">
+            <span style="padding: 4px 10px; border-radius: 6px; font-size: 0.72rem; border: 2px solid var(--green); background: var(--green-light); color: var(--green); font-weight: 600;">&#x1F44D;</span>
+            <span style="padding: 4px 10px; border-radius: 6px; font-size: 0.72rem; border: 2px solid var(--gray-200); color: var(--gray-400);">&#x2796;</span>
+            <span style="padding: 4px 10px; border-radius: 6px; font-size: 0.72rem; border: 2px solid var(--gray-200); color: var(--gray-400);">&#x1F44E;</span>
+          </div>
+          <div style="font-size: 0.68rem; color: var(--gray-400); margin-bottom: 4px;">RATIONALE</div>
+          <div style="border: 1px solid var(--gray-200); border-radius: 4px; padding: 6px 8px; font-size: 0.72rem; color: var(--gray-400); height: 40px; margin-bottom: 8px;">Agent followed SOP correctly...</div>
+          <div style="font-size: 0.68rem; color: var(--gray-400); margin-bottom: 4px;">DATASET</div>
+          <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 8px;">
+            <div style="width: 14px; height: 14px; border: 2px solid var(--primary); border-radius: 3px; background: var(--primary-light);"></div>
+            <span style="font-size: 0.72rem; color: var(--gray-600);">golden-dataset-2026-02</span>
+          </div>
+          <div style="padding: 6px 12px; background: var(--primary); color: #fff; border-radius: 6px; font-size: 0.75rem; font-weight: 600; text-align: center;">Save Review</div>
+          <div class="callout-num" style="position: absolute; top: -8px; left: -8px;">5</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="screenshot-caption">Agent Replay page layout with all five zones</div>
+</div>
+
+<div class="callout-legend">
+  <div class="callout-legend-item">
+    <span class="callout-num">1</span>
+    <div><strong>Agent Identity Bar</strong> &mdash; Agent tabs with avatars. When a trace is loaded, shows KPI chips: node count, latency, token usage, and trace ID prefix.</div>
+  </div>
+  <div class="callout-legend-item">
+    <span class="callout-num">2</span>
+    <div><strong>Trace Search</strong> &mdash; Search by Trace ID (UUID paste) or Field Search (e.g., Case Reference) via the dropdown. Results appear as trace cards below.</div>
+  </div>
+  <div class="callout-legend-item">
+    <span class="callout-num">3</span>
+    <div><strong>Observation Tree</strong> &mdash; Hierarchical view of all trace observations. Color-coded by type (SPAN, GENERATION, TOOL, EVENT). Click to select, expand/collapse children.</div>
+  </div>
+  <div class="callout-legend-item">
+    <span class="callout-num">4</span>
+    <div><strong>Node Detail Panel</strong> &mdash; Split pane showing input (blue header) and output (green header) for the selected node. Smart rendering for chat messages, JSON, and structured data.</div>
+  </div>
+  <div class="callout-legend-item">
+    <span class="callout-num">5</span>
+    <div><strong>Review Panel</strong> &mdash; Verdict selector, failure step dropdown, rationale/expected output fields, and golden dataset push toggle.</div>
+  </div>
+</div>
+
+<!-- ══════════════ SEARCHING ══════════════ -->
+<h2 id="searching-traces">Searching for Traces</h2>
+<p>Agent Replay supports two search modes, selected from the dropdown next to the search bar:</p>
+
+<h3 id="trace-id-search">Trace ID Search</h3>
+<p>Paste a UUID or 32+ character hex string directly. The system auto-detects the format and fetches the trace immediately from Langfuse. This is the fastest way to investigate a specific execution.</p>
+
+<h3 id="field-search">Field Search</h3>
+<p>When a PostgreSQL search database is configured, you can search by business identifiers like <strong>Case Reference</strong>, <strong>Ticket Number</strong>, or any custom column. The dropdown shows available fields for the selected agent.</p>
+
+<table class="sim-table" style="margin: 16px 0;">
+  <thead>
+    <tr>
+      <th>Search Mode</th>
+      <th>Input</th>
+      <th>Requires</th>
+      <th>How It Works</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><span class="sim-badge blue">Trace ID</span></td>
+      <td>UUID or hex string</td>
+      <td>Langfuse credentials only</td>
+      <td>Direct API lookup &mdash; instant result</td>
+    </tr>
+    <tr>
+      <td><span class="sim-badge purple">Field Search</span></td>
+      <td>Business identifier</td>
+      <td>Search DB configured</td>
+      <td>PostgreSQL lookup &rarr; trace ID &rarr; Langfuse fetch</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="admonition info">
+  <div class="admonition-title">&#x2139;&#xFE0F; Info</div>
+  Field search requires a PostgreSQL database connection configured in <code>config/agent_replay_db.yaml</code>. Without it, only Trace ID search is available. See the <a href="#configuration">Configuration</a> section below.
+</div>
+
+<p>Search results appear as trace cards showing the agent name, step count, timestamp, tags, and a trace ID snippet. Click any card to load the full trace.</p>
+
+<!-- ══════════════ OBSERVATION TREE ══════════════ -->
+<h2 id="observation-tree">Observation Tree</h2>
+<p>The observation tree is the core navigation element. It displays the hierarchical structure of a trace &mdash; every span, LLM generation, tool call, and event as nested nodes.</p>
+
+<h3 id="node-types">Node Types</h3>
+
+<table class="sim-table" style="margin: 16px 0;">
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Badge</th>
+      <th>Description</th>
+      <th>Example</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>SPAN</td>
+      <td><span class="sim-badge blue">SPAN</span></td>
+      <td>Logical grouping or timing boundary</td>
+      <td><code>workflow</code>, <code>retrieval-chain</code></td>
+    </tr>
+    <tr>
+      <td>GENERATION</td>
+      <td><span class="sim-badge green">GEN</span></td>
+      <td>LLM call with prompt and completion</td>
+      <td><code>classify-intent</code>, <code>generate-response</code></td>
+    </tr>
+    <tr>
+      <td>TOOL</td>
+      <td><span class="sim-badge orange">TOOL</span></td>
+      <td>External tool or function call</td>
+      <td><code>search_knowledge_base</code>, <code>fetch_policy</code></td>
+    </tr>
+    <tr>
+      <td>EVENT</td>
+      <td><span class="sim-badge gray">EVT</span></td>
+      <td>Status or progress marker</td>
+      <td><code>task_complete</code>, <code>error_caught</code></td>
+    </tr>
+  </tbody>
+</table>
+
+<h3 id="tree-navigation">Tree Navigation</h3>
+<p>Each node shows its type badge, name, and inline metadata (latency, token count). Click a node to select it and view its details in the Node Detail Panel. Click the expand/collapse toggle to show or hide children.</p>
+
+<p>Use the toolbar buttons <strong>Expand All</strong> and <strong>Collapse All</strong> to quickly open or close the entire tree. The special <strong>Workflow I/O</strong> node at the top of the tree shows the trace-level input and output.</p>
+
+<div class="screenshot">
+  <div class="screenshot-chrome">
+    <div class="screenshot-dots"><span></span><span></span><span></span></div>
+    <div class="screenshot-title">Observation Tree &mdash; Expanded</div>
+  </div>
+  <div class="screenshot-body">
+    <div class="sim-ui" style="padding: 14px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+        <span style="font-size: 0.75rem; font-weight: 700; color: var(--gray-400); text-transform: uppercase;">Observation Tree</span>
+        <div style="display: flex; gap: 6px;">
+          <span style="font-size: 0.7rem; padding: 3px 8px; border: 1px solid var(--gray-200); border-radius: 4px; color: var(--gray-500);">Expand All</span>
+          <span style="font-size: 0.7rem; padding: 3px 8px; border: 1px solid var(--gray-200); border-radius: 4px; color: var(--gray-500);">Collapse All</span>
+        </div>
+      </div>
+      <div class="sim-tree">
+        <div class="sim-tree-node" style="background: var(--blue-light); border: 1px solid var(--blue-border); border-radius: 4px;">
+          <span class="sim-tree-toggle" style="color: var(--blue);">&#x25C6;</span>
+          <span style="font-size: 0.75rem; font-weight: 600; color: var(--blue);">Workflow I/O</span>
+        </div>
+        <div class="sim-tree-node selected">
+          <span class="sim-tree-toggle">&#9660;</span>
+          <span class="sim-tree-type span">SPAN</span>
+          <span class="sim-tree-name">support-workflow</span>
+          <span class="sim-tree-meta">3.2s</span>
+        </div>
+        <div class="sim-tree-children">
+          <div class="sim-tree-node">
+            <span class="sim-tree-toggle">&#9660;</span>
+            <span class="sim-tree-type gen">GEN</span>
+            <span class="sim-tree-name">classify-intent</span>
+            <span class="sim-tree-meta">890ms &middot; 1.2K</span>
+          </div>
+          <div class="sim-tree-children">
+            <div class="sim-tree-node">
+              <span class="sim-tree-toggle">&nbsp;</span>
+              <span class="sim-tree-type event">EVT</span>
+              <span class="sim-tree-name">classification_result</span>
+            </div>
+          </div>
+          <div class="sim-tree-node">
+            <span class="sim-tree-toggle">&#9654;</span>
+            <span class="sim-tree-type tool">TOOL</span>
+            <span class="sim-tree-name">search_knowledge_base</span>
+            <span class="sim-tree-meta">420ms</span>
+          </div>
+          <div class="sim-tree-node">
+            <span class="sim-tree-toggle">&#9660;</span>
+            <span class="sim-tree-type gen">GEN</span>
+            <span class="sim-tree-name">generate-decision</span>
+            <span class="sim-tree-meta">1.8s &middot; 2.4K</span>
+          </div>
+          <div class="sim-tree-children">
+            <div class="sim-tree-node">
+              <span class="sim-tree-toggle">&nbsp;</span>
+              <span class="sim-tree-type tool">TOOL</span>
+              <span class="sim-tree-name">format_response</span>
+              <span class="sim-tree-meta">12ms</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="screenshot-caption">Observation tree with nested spans, generations, tools, and events</div>
+</div>
+
+<!-- ══════════════ NODE DETAIL ══════════════ -->
+<h2 id="node-detail">Node Detail Panel</h2>
+<p>When you select a node in the observation tree, the Node Detail Panel shows its full content in a split-pane layout:</p>
+
+<ul>
+  <li><strong>Input pane</strong> (blue header, 35% width) &mdash; Shows the prompt or input data. For GENERATION nodes, the <em>PromptViewer</em> auto-detects chat message arrays and renders them as styled bubbles with role labels (system, user, assistant, tool).</li>
+  <li><strong>Output pane</strong> (green header, 65% width) &mdash; Shows the completion or result. The <em>OutputViewer</em> detects structured objects and renders them as color-coded section cards with copy buttons.</li>
+</ul>
+
+<div class="sim-split">
+  <div>
+    <div class="sim-pane-header input">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      Input
+    </div>
+    <div class="sim-pane-body">
+      <div class="sim-chat">
+        <div class="sim-chat-msg">
+          <div class="sim-chat-avatar system">SYS</div>
+          <div class="sim-chat-bubble system">You are a customer support assistant. Follow the SOP for all decisions...</div>
+        </div>
+        <div class="sim-chat-msg right">
+          <div class="sim-chat-avatar user">U</div>
+          <div class="sim-chat-bubble user">What is the service limit for account ACC-2024-0891?</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div>
+    <div class="sim-pane-header output">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      Output
+    </div>
+    <div class="sim-pane-body right">
+      <div style="background: var(--green-light); border: 1px solid var(--green-border); border-radius: 6px; padding: 8px 12px; margin-bottom: 8px; font-size: 0.8rem;">
+        <strong style="color: var(--green);">decision</strong><br>
+        <span style="color: var(--gray-700);">approved &mdash; within standard limits</span>
+      </div>
+      <div style="background: var(--blue-light); border: 1px solid var(--blue-border); border-radius: 6px; padding: 8px 12px; margin-bottom: 8px; font-size: 0.8rem;">
+        <strong style="color: var(--blue);">rationale</strong><br>
+        <span style="color: var(--gray-700);">Coverage of $500K is within the standard commercial property limit for this risk class.</span>
+      </div>
+      <div style="background: #f5f3ff; border: 1px solid #ddd6fe; border-radius: 6px; padding: 8px 12px; font-size: 0.8rem;">
+        <strong style="color: #7c3aed;">citations</strong><br>
+        <span style="color: var(--gray-700);">1. SOP-4.2.1 &mdash; Standard limits table<br>2. KB-0891 &mdash; Risk classification guide</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<h3 id="metadata-drawer">Metadata Drawer</h3>
+<p>Below the split pane, a collapsible drawer reveals additional details:</p>
+<ul>
+  <li><strong>Node info grid</strong> &mdash; Type, model name, latency, token counts, start/end timestamps</li>
+  <li><strong>Metadata table</strong> &mdash; Key-value pairs from the observation metadata (sensitive keys like <code>api_key</code> or <code>secret</code> are automatically redacted)</li>
+</ul>
+
+<div class="admonition note">
+  <div class="admonition-title">&#x1F4DD; Note</div>
+  Large content is truncated at 50,000 characters by default. Click <strong>"Show full"</strong> to fetch the complete content on demand (soft-capped at 500K characters).
+</div>
+
+<!-- ══════════════ REVIEW ══════════════ -->
+<h2 id="review-verdicts">Review &amp; Verdicts</h2>
+<p>The Review Panel lets you record structured feedback for any trace. Reviews are persisted as Langfuse scores and can optionally create golden dataset items.</p>
+
+<div class="sim-review">
+  <div class="sim-review-header">Review Trace</div>
+  <div class="sim-review-body">
+    <div class="sim-review-field">
+      <div class="sim-review-label">Verdict</div>
+      <div class="sim-verdict-row">
+        <div class="sim-verdict-btn positive active">&#x1F44D; Positive</div>
+        <div class="sim-verdict-btn neutral">&#x2796; Neutral</div>
+        <div class="sim-verdict-btn negative">&#x1F44E; Negative</div>
+      </div>
+    </div>
+    <div class="sim-review-field">
+      <div class="sim-review-label">Failure Step</div>
+      <div class="sim-select">Select observation node...</div>
+    </div>
+    <div class="sim-review-field">
+      <div class="sim-review-label">Tooling Needs</div>
+      <textarea class="sim-textarea" rows="2">What tooling would help the agent?</textarea>
+    </div>
+    <div class="sim-review-field">
+      <div class="sim-review-label">Rationale</div>
+      <textarea class="sim-textarea" rows="2">Why did we approve/decline?</textarea>
+    </div>
+    <div class="sim-review-field">
+      <div class="sim-review-label">Expected Output</div>
+      <textarea class="sim-textarea" rows="2">Ground truth for evaluation...</textarea>
+    </div>
+    <div class="sim-review-field">
+      <div class="sim-checkbox">
+        <div class="sim-checkbox-box" style="background: var(--primary-light); border-color: var(--primary);"></div>
+        Add to Golden Dataset
+      </div>
+      <div style="margin-top: 6px; padding: 6px 10px; border: 1px solid var(--gray-200); border-radius: 6px; font-size: 0.8rem; color: var(--gray-600);">golden-dataset-2026-02</div>
+    </div>
+    <div class="sim-submit-btn" style="width: 100%; text-align: center;">Save Review</div>
+  </div>
+</div>
+
+<h3>Review Fields</h3>
+<table class="sim-table" style="margin: 16px 0;">
+  <thead>
+    <tr>
+      <th>Field</th>
+      <th>Required</th>
+      <th>Langfuse Score Name</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Verdict</td>
+      <td><span class="sim-badge green">Yes</span></td>
+      <td><code>review_verdict</code></td>
+      <td>Positive (+1), Neutral (0), or Negative (-1)</td>
+    </tr>
+    <tr>
+      <td>Failure Step</td>
+      <td><span class="sim-badge gray">No</span></td>
+      <td><code>review_failure_step</code></td>
+      <td>Observation node where the agent went wrong</td>
+    </tr>
+    <tr>
+      <td>Tooling Needs</td>
+      <td><span class="sim-badge gray">No</span></td>
+      <td><code>review_tooling_needs</code></td>
+      <td>What tools/capabilities the agent lacked</td>
+    </tr>
+    <tr>
+      <td>Rationale</td>
+      <td><span class="sim-badge gray">No</span></td>
+      <td><code>review_rationale</code></td>
+      <td>Explanation of the verdict decision</td>
+    </tr>
+    <tr>
+      <td>Expected Output</td>
+      <td><span class="sim-badge gray">No</span></td>
+      <td><code>review_expected_output</code></td>
+      <td>Ground truth the agent should have produced</td>
+    </tr>
+    <tr>
+      <td>Golden Dataset</td>
+      <td><span class="sim-badge gray">No</span></td>
+      <td>&mdash;</td>
+      <td>Push trace as a Langfuse dataset item for evaluation</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="admonition tip">
+  <div class="admonition-title">&#x1F4A1; Tip</div>
+  When you enable <strong>Add to Golden Dataset</strong>, the default dataset name is <code>{agent}-golden-{YYYY-MM}</code>. You can type a custom name or select from existing datasets in the dropdown.
+</div>
+
+<!-- ══════════════ CONFIGURATION ══════════════ -->
+<h2 id="configuration">Configuration</h2>
+<p>Agent Replay requires Langfuse credentials and an optional search database. All configuration follows the standard AXIS pattern: YAML &rarr; environment variables &rarr; hardcoded defaults.</p>
+
+<h3 id="config-langfuse">Langfuse Credentials</h3>
+<p>Set credentials globally or per agent:</p>
+
+<pre><code># Global (all agents share one Langfuse project)
+LANGFUSE_PUBLIC_KEY=pk-lf-...
+LANGFUSE_SECRET_KEY=sk-lf-...
+LANGFUSE_HOST=https://cloud.langfuse.com   # optional
+
+# Per-agent (each agent has its own project)
+LANGFUSE_ALPHA_BOT_PUBLIC_KEY=pk-lf-...
+LANGFUSE_ALPHA_BOT_SECRET_KEY=sk-lf-...
+LANGFUSE_REVIEWER_PUBLIC_KEY=pk-lf-...
+LANGFUSE_REVIEWER_SECRET_KEY=sk-lf-...</code></pre>
+
+<p>Enable the feature with:</p>
+<pre><code>AGENT_REPLAY_ENABLED=true</code></pre>
+
+<div class="admonition warning">
+  <div class="admonition-title">&#x26A0;&#xFE0F; Warning</div>
+  Langfuse API keys are sensitive. Never commit them to version control. Use environment variables or a secrets manager in production.
+</div>
+
+<h3 id="config-search-db">Search Database (Optional)</h3>
+<p>To enable field search, create <code>config/agent_replay_db.yaml</code> from the example template:</p>
+
+<pre><code># config/agent_replay_db.yaml
+enabled: true
+host: localhost
+port: 5432
+database: agent_traces
+username: axis_reader
+password: ${REPLAY_DB_PASSWORD}
+schema: public
+table: trace_index
+search_column: case_reference
+search_column_label: Case Reference
+trace_id_column: langfuse_trace_id
+
+# Per-agent overrides (optional)
+agents:
+  alpha_bot:
+    table: alpha_bot_traces
+    search_column: ticket_number
+  beta_bot:
+    table: beta_bot_traces</code></pre>
+
+<h3 id="config-tuning">Tuning Parameters</h3>
+<table class="sim-table" style="margin: 16px 0;">
+  <thead>
+    <tr>
+      <th>Parameter</th>
+      <th>Default</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>default_limit</code></td>
+      <td>20</td>
+      <td>Maximum traces returned per search</td>
+    </tr>
+    <tr>
+      <td><code>default_days_back</code></td>
+      <td>7</td>
+      <td>Default time window for trace listing</td>
+    </tr>
+    <tr>
+      <td><code>max_chars</code></td>
+      <td>50,000</td>
+      <td>Content truncation limit per node</td>
+    </tr>
+    <tr>
+      <td><code>search_metadata_key</code></td>
+      <td>caseReference</td>
+      <td>Langfuse metadata field for fallback search</td>
+    </tr>
+    <tr>
+      <td><code>query_timeout</code></td>
+      <td>10s</td>
+      <td>Search DB query timeout</td>
+    </tr>
+    <tr>
+      <td><code>pool_max_size</code></td>
+      <td>5</td>
+      <td>Connection pool maximum for search DB</td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- ══════════════ KEYBOARD SHORTCUTS ══════════════ -->
+<h2 id="keyboard-shortcuts">Keyboard Shortcuts</h2>
+
+<table class="sim-table" style="margin: 16px 0;">
+  <thead>
+    <tr>
+      <th>Key</th>
+      <th>Action</th>
+      <th>Context</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><kbd>&uarr;</kbd> / <kbd>&darr;</kbd></td>
+      <td>Navigate between visible tree nodes</td>
+      <td>Observation Tree</td>
+    </tr>
+    <tr>
+      <td><kbd>&larr;</kbd></td>
+      <td>Collapse current node (or move to parent)</td>
+      <td>Observation Tree</td>
+    </tr>
+    <tr>
+      <td><kbd>&rarr;</kbd></td>
+      <td>Expand current node (or move to first child)</td>
+      <td>Observation Tree</td>
+    </tr>
+    <tr>
+      <td><kbd>Enter</kbd></td>
+      <td>Select focused node and load its detail</td>
+      <td>Observation Tree</td>
+    </tr>
+    <tr>
+      <td><kbd>Esc</kbd></td>
+      <td>Close Review Panel</td>
+      <td>Review Panel</td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- ══════════════ NEXT STEPS ══════════════ -->
+<h2 id="next-steps">Next Steps</h2>
+
+<div class="next-steps">
+  <a class="next-step-card" href="monitoring-guide.html">
+    <h4>&#x1F4CA; Monitoring &rarr;</h4>
+    <p>Track automated evaluation scores, latency trends, and anomaly alerts for your production agents.</p>
+  </a>
+  <a class="next-step-card" href="production-guide.html">
+    <h4>&#x1F6E1; Production &rarr;</h4>
+    <p>See the executive summary scorecard that aggregates monitoring, signals, and agent health data.</p>
+  </a>
+  <a class="next-step-card" href="evaluate-guide.html">
+    <h4>&#x1F9EA; Evaluate &rarr;</h4>
+    <p>Run batch evaluations with the Axion engine and explore results through interactive tree visualizations.</p>
+  </a>
+</div>
+
+<!-- ── FOOTER ── -->
+<div style="margin-top:60px;padding-top:24px;border-top:1px solid var(--gray-200);font-size:0.8rem;color:var(--gray-400);text-align:center;">
+  AXIS Documentation &middot; Built with MkDocs Material
+</div>
+
+</div><!-- .content -->
+</main>
+
+<!-- TABLE OF CONTENTS -->
+<nav class="toc">
+  <div class="toc-title">On this page</div>
+  <ul class="toc-list">
+    <li><a href="#why-agent-replay">Why Agent Replay?</a></li>
+    <li><a href="#quick-start">Quick Start</a></li>
+    <li><a href="#page-anatomy">Page Anatomy</a></li>
+    <li><a href="#searching-traces">Searching for Traces</a></li>
+    <li class="indent"><a href="#trace-id-search">Trace ID Search</a></li>
+    <li class="indent"><a href="#field-search">Field Search</a></li>
+    <li><a href="#observation-tree">Observation Tree</a></li>
+    <li class="indent"><a href="#node-types">Node Types</a></li>
+    <li class="indent"><a href="#tree-navigation">Tree Navigation</a></li>
+    <li><a href="#node-detail">Node Detail Panel</a></li>
+    <li class="indent"><a href="#metadata-drawer">Metadata Drawer</a></li>
+    <li><a href="#review-verdicts">Review &amp; Verdicts</a></li>
+    <li><a href="#configuration">Configuration</a></li>
+    <li class="indent"><a href="#config-langfuse">Langfuse Credentials</a></li>
+    <li class="indent"><a href="#config-search-db">Search Database</a></li>
+    <li><a href="#keyboard-shortcuts">Keyboard Shortcuts</a></li>
+    <li><a href="#next-steps">Next Steps</a></li>
+  </ul>
+</nav>
+
+</div><!-- .layout -->
+
+</body>
+</html>

@@ -1,0 +1,82 @@
+# =====================================================
+# Human Signals V2 — Display Configuration
+# =====================================================
+#
+# These override auto-discovered defaults with domain-specific
+# labels, colors, icons, and chart layout preferences.
+# Remove this file to use fully auto-generated config.
+#
+# Copy this file to signals_metrics.yaml and customize:
+#   cp signals_metrics.yaml.example signals_metrics.yaml
+
+signals_metrics:
+  # KPI strip — shown at the top of the Signals dashboard
+  kpi_strip:
+    # Example: highlight a key boolean signal as a KPI
+    # - metric: intervention_type
+    #   signal: is_compliant
+    #   label: "Compliance Rate"
+    #   format: percent
+    #   icon: shield-check
+    #   highlight: true
+
+    # Example: numeric signal with aggregation (displayed as duration)
+    # - metric: operational_metrics
+    #   signal: time_to_quote
+    #   label: "Time To Quote"
+    #   aggregation: median        # mean | median | sum | min | max | count | p95
+    #   format: duration           # duration | number | compact | percent
+    #   icon: clock
+
+    # Example: numeric signal with compact formatting
+    # - metric: operational_metrics
+    #   signal: total_tokens
+    #   label: "Tokens Used"
+    #   aggregation: sum
+    #   format: compact            # 1,162 → "1.2K"
+    #   icon: hash
+
+    # Aggregate metrics (computed from case data)
+    - aggregate: avg_message_count
+      label: "Avg Messages"
+      icon: message-square
+    - aggregate: total_cases
+      label: "Total Cases"
+      icon: database
+
+  # Chart sections — define dashboard chart layout
+  chart_sections:
+    # Each section has a title, layout (full | grid_2 | grid_3), and charts
+    # - title: "Outcome Distribution"
+    #   layout: full
+    #   charts:
+    #     - metric: resolution_status
+    #       signal: final_status
+    #       type: stacked_bar
+    #       title: "Resolution Status"
+    #
+    # - title: "Category Analysis"
+    #   layout: grid_2
+    #   charts:
+    #     - metric: category_type
+    #       signal: category
+    #       type: donut
+    #       title: "Category Breakdown"
+    #     - metric: failure_mode
+    #       signal: failure_step
+    #       type: horizontal_bar
+    #       title: "Top Failure Modes"
+    []
+
+  # Color maps — map signal values to hex colors
+  # Format: {metric_name}__{signal_key}: { value: color }
+  color_maps: {}
+
+  # Source filters — fields shown in the filter bar
+  source_filters:
+    - field: source_name
+      label: "Source"
+    - field: source_component
+      label: "Component"
+    - field: environment
+      label: "Environment"

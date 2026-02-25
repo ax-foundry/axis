@@ -1,0 +1,1531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CaliberHQ - AXIS User Guide</title>
+<style>
+  /* ── Reset & Base ── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --primary: #4f46e5;
+    --primary-light: #eef2ff;
+    --primary-dark: #3730a3;
+    --green: #16a34a;
+    --green-light: #f0fdf4;
+    --green-border: #bbf7d0;
+    --yellow: #ca8a04;
+    --yellow-light: #fefce8;
+    --yellow-border: #fef08a;
+    --red: #dc2626;
+    --red-light: #fef2f2;
+    --red-border: #fecaca;
+    --blue: #2563eb;
+    --blue-light: #eff6ff;
+    --blue-border: #bfdbfe;
+    --gray-50: #f9fafb;
+    --gray-100: #f3f4f6;
+    --gray-200: #e5e7eb;
+    --gray-300: #d1d5db;
+    --gray-400: #9ca3af;
+    --gray-500: #6b7280;
+    --gray-600: #4b5563;
+    --gray-700: #374151;
+    --gray-800: #1f2937;
+    --gray-900: #111827;
+    --sidebar-w: 260px;
+    --content-max: 860px;
+    --toc-w: 220px;
+  }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    color: var(--gray-800);
+    line-height: 1.7;
+    background: #fff;
+  }
+  a { color: var(--primary); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code {
+    font-family: 'SF Mono', 'Fira Code', 'Fira Mono', Menlo, monospace;
+    font-size: 0.875em;
+    background: var(--gray-100);
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: var(--primary-dark);
+  }
+  pre { background: var(--gray-900); color: #e5e7eb; padding: 16px 20px; border-radius: 8px; overflow-x: auto; font-size: 0.85rem; line-height: 1.6; }
+  pre code { background: none; padding: 0; color: inherit; }
+  kbd {
+    display: inline-block; padding: 2px 6px; font-size: 0.8em;
+    border: 1px solid var(--gray-300); border-radius: 4px;
+    background: var(--gray-50); box-shadow: 0 1px 0 var(--gray-300);
+    font-family: inherit;
+  }
+
+  /* ── Top Nav ── */
+  .topnav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    height: 56px; background: var(--gray-900); color: #fff;
+    display: flex; align-items: center; padding: 0 24px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.3);
+  }
+  .topnav-logo { font-weight: 700; font-size: 1.1rem; letter-spacing: -0.02em; }
+  .topnav-logo span { color: var(--primary); }
+  .topnav-links { margin-left: auto; display: flex; gap: 24px; font-size: 0.875rem; }
+  .topnav-links a { color: var(--gray-300); }
+  .topnav-links a:hover { color: #fff; text-decoration: none; }
+  .topnav-links a.active { color: #fff; font-weight: 600; }
+
+  /* ── Layout ── */
+  .layout { display: flex; margin-top: 56px; min-height: calc(100vh - 56px); }
+
+  /* ── Sidebar ── */
+  .sidebar {
+    position: fixed; top: 56px; left: 0; bottom: 0;
+    width: var(--sidebar-w); background: var(--gray-50);
+    border-right: 1px solid var(--gray-200);
+    overflow-y: auto; padding: 20px 0; font-size: 0.85rem;
+  }
+  .sidebar-section { padding: 0 16px; margin-bottom: 20px; }
+  .sidebar-section-title {
+    font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.08em; color: var(--gray-400); margin-bottom: 8px;
+    padding-left: 8px;
+  }
+  .sidebar-link {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 12px; border-radius: 6px; color: var(--gray-600);
+    transition: all 0.15s;
+  }
+  .sidebar-link:hover { background: var(--gray-200); color: var(--gray-800); text-decoration: none; }
+  .sidebar-link.active { background: var(--primary-light); color: var(--primary); font-weight: 600; }
+  .sidebar-link svg { width: 16px; height: 16px; flex-shrink: 0; }
+
+  /* ── Main Content ── */
+  .main {
+    margin-left: var(--sidebar-w); flex: 1;
+    padding: 40px 40px 80px;
+    margin-right: calc(var(--toc-w) + 48px);
+  }
+  .content { max-width: var(--content-max); width: 100%; }
+
+  /* ── TOC (right rail) ── */
+  .toc {
+    position: fixed; top: 96px; right: 24px;
+    width: var(--toc-w); font-size: 0.78rem;
+  }
+  .toc-title { font-weight: 700; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--gray-400); margin-bottom: 10px; }
+  .toc-list { list-style: none; border-left: 2px solid var(--gray-200); }
+  .toc-list li { padding-left: 14px; margin-bottom: 6px; }
+  .toc-list a { color: var(--gray-500); }
+  .toc-list a:hover { color: var(--primary); text-decoration: none; }
+  .toc-list .indent { padding-left: 28px; }
+
+  /* ── Typography ── */
+  .content h1 { font-size: 2rem; font-weight: 800; letter-spacing: -0.03em; margin-bottom: 8px; color: var(--gray-900); }
+  .content h2 { font-size: 1.45rem; font-weight: 700; margin-top: 48px; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid var(--gray-200); color: var(--gray-900); }
+  .content h3 { font-size: 1.15rem; font-weight: 600; margin-top: 32px; margin-bottom: 12px; color: var(--gray-800); }
+  .content h4 { font-size: 1rem; font-weight: 600; margin-top: 24px; margin-bottom: 8px; color: var(--gray-700); }
+  .content p { margin-bottom: 16px; color: var(--gray-700); }
+  .content > ul, .content > ol { margin-bottom: 16px; padding-left: 24px; color: var(--gray-700); }
+  .content li { margin-bottom: 6px; }
+  .subtitle { font-size: 1.1rem; color: var(--gray-500); margin-bottom: 32px; }
+
+  /* ── Breadcrumb ── */
+  .breadcrumb { font-size: 0.8rem; color: var(--gray-400); margin-bottom: 12px; }
+  .breadcrumb a { color: var(--gray-400); }
+  .breadcrumb a:hover { color: var(--primary); }
+
+  /* ── Admonitions ── */
+  .admonition {
+    border-radius: 8px; padding: 16px 20px; margin: 20px 0;
+    border-left: 4px solid; font-size: 0.9rem;
+  }
+  .admonition-title {
+    font-weight: 700; font-size: 0.8rem; text-transform: uppercase;
+    letter-spacing: 0.04em; margin-bottom: 6px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .admonition.tip { background: var(--green-light); border-color: var(--green); }
+  .admonition.tip .admonition-title { color: var(--green); }
+  .admonition.info { background: var(--blue-light); border-color: var(--blue); }
+  .admonition.info .admonition-title { color: var(--blue); }
+  .admonition.warning { background: var(--yellow-light); border-color: var(--yellow); }
+  .admonition.warning .admonition-title { color: var(--yellow); }
+  .admonition.note { background: var(--gray-50); border-color: var(--gray-400); }
+  .admonition.note .admonition-title { color: var(--gray-600); }
+
+  /* ── Screenshot Frames ── */
+  .screenshot {
+    margin: 24px 0; border-radius: 10px; overflow: hidden;
+    border: 1px solid var(--gray-200); box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+  }
+  .screenshot-chrome {
+    background: var(--gray-100); padding: 8px 14px; display: flex;
+    align-items: center; gap: 8px; border-bottom: 1px solid var(--gray-200);
+  }
+  .screenshot-dots { display: flex; gap: 6px; }
+  .screenshot-dots span { width: 10px; height: 10px; border-radius: 50%; }
+  .screenshot-dots span:nth-child(1) { background: #f87171; }
+  .screenshot-dots span:nth-child(2) { background: #fbbf24; }
+  .screenshot-dots span:nth-child(3) { background: #34d399; }
+  .screenshot-title { font-size: 0.75rem; color: var(--gray-500); margin-left: 8px; }
+  .screenshot-body { background: #fff; position: relative; }
+  .screenshot-caption {
+    text-align: center; font-size: 0.8rem; color: var(--gray-500);
+    padding: 10px; font-style: italic; background: var(--gray-50);
+    border-top: 1px solid var(--gray-200);
+  }
+
+  /* ── Simulated UI ── */
+  .sim-ui { padding: 20px; font-family: inherit; }
+  .sim-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--gray-200); }
+  .sim-header-icon { width: 24px; height: 24px; color: var(--primary); }
+  .sim-header h3 { margin: 0; font-size: 1.1rem; }
+  .sim-header p { margin: 0; font-size: 0.8rem; color: var(--gray-500); }
+
+  .sim-filters { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+  .sim-filter-btn {
+    padding: 6px 14px; border-radius: 6px; font-size: 0.8rem;
+    border: 1px solid var(--gray-200); background: #fff; color: var(--gray-600);
+    display: flex; align-items: center; gap: 6px;
+  }
+  .sim-filter-btn.active { border-color: var(--primary); background: var(--primary-light); color: var(--primary); font-weight: 600; }
+  .sim-filter-btn svg { width: 14px; height: 14px; }
+
+  .sim-kpi-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 20px; }
+  .sim-kpi {
+    border: 1px solid var(--gray-200); border-radius: 8px; padding: 14px 16px;
+    background: #fff;
+  }
+  .sim-kpi-label { font-size: 0.7rem; color: var(--gray-500); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 4px; }
+  .sim-kpi-value { font-size: 1.4rem; font-weight: 700; color: var(--gray-900); }
+  .sim-kpi-trend { font-size: 0.75rem; margin-top: 2px; }
+  .sim-kpi-trend.up { color: var(--green); }
+  .sim-kpi-trend.down { color: var(--red); }
+
+  .sim-tabs { display: flex; border-bottom: 2px solid var(--gray-200); margin-bottom: 16px; }
+  .sim-tab {
+    padding: 8px 16px; font-size: 0.82rem; color: var(--gray-500);
+    border-bottom: 2px solid transparent; margin-bottom: -2px; cursor: pointer;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .sim-tab.active { color: var(--primary); border-color: var(--primary); font-weight: 600; }
+  .sim-tab .badge {
+    background: var(--red); color: #fff; font-size: 0.65rem;
+    padding: 1px 6px; border-radius: 10px; font-weight: 700;
+  }
+
+  .sim-chart-placeholder {
+    height: 200px; background: var(--gray-50); border: 1px solid var(--gray-200);
+    border-radius: 8px; display: flex; align-items: center; justify-content: center;
+    position: relative; overflow: hidden;
+  }
+  .sim-chart-placeholder.tall { height: 280px; }
+
+  /* Chart: Score Trend simulation */
+  .sim-trend-chart { position: relative; width: 100%; height: 100%; }
+  .sim-trend-chart svg { width: 100%; height: 100%; }
+
+  .sim-chart-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 14px; border-bottom: 1px solid var(--gray-200);
+  }
+  .sim-chart-header h4 { font-size: 0.85rem; margin: 0; color: var(--gray-700); }
+  .sim-chart-card { border: 1px solid var(--gray-200); border-radius: 8px; overflow: hidden; margin-bottom: 16px; }
+  .sim-chart-content { padding: 16px; }
+
+  .sim-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+  /* Table simulation */
+  .sim-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+  .sim-table th { background: var(--gray-50); text-align: left; padding: 8px 12px; font-weight: 600; color: var(--gray-600); border-bottom: 1px solid var(--gray-200); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; }
+  .sim-table td { padding: 8px 12px; border-bottom: 1px solid var(--gray-100); color: var(--gray-700); }
+  .sim-table tr:hover td { background: var(--gray-50); }
+  .sim-badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 0.7rem; font-weight: 600; }
+  .sim-badge.green { background: var(--green-light); color: var(--green); border: 1px solid var(--green-border); }
+  .sim-badge.yellow { background: var(--yellow-light); color: var(--yellow); border: 1px solid var(--yellow-border); }
+  .sim-badge.red { background: var(--red-light); color: var(--red); border: 1px solid var(--red-border); }
+  .sim-badge.blue { background: var(--blue-light); color: var(--blue); border: 1px solid var(--blue-border); }
+  .sim-badge.gray { background: var(--gray-100); color: var(--gray-600); border: 1px solid var(--gray-200); }
+  .sim-code { font-family: 'SF Mono', monospace; font-size: 0.75rem; color: var(--primary); }
+  .sim-eye-btn { width: 28px; height: 28px; border: 1px solid var(--gray-200); border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; color: var(--gray-400); cursor: pointer; background: #fff; }
+  .sim-eye-btn:hover { border-color: var(--primary); color: var(--primary); }
+
+  /* ── Annotation Overlay ── */
+  .annotation-overlay { position: absolute; pointer-events: none; }
+  .callout-num {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 24px; height: 24px; border-radius: 50%;
+    background: var(--primary); color: #fff; font-size: 0.7rem; font-weight: 700;
+    box-shadow: 0 2px 6px rgba(79,70,229,0.4);
+  }
+  .callout-ring {
+    position: absolute; border: 2px solid var(--primary);
+    border-radius: 8px; pointer-events: none;
+    box-shadow: 0 0 0 2px rgba(79,70,229,0.15);
+  }
+  .callout-legend { margin: 16px 0; font-size: 0.85rem; }
+  .callout-legend-item { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 8px; }
+  .callout-legend-item .callout-num { flex-shrink: 0; }
+
+  /* ── Step Boxes ── */
+  .step-grid { display: grid; grid-template-columns: 1fr; gap: 16px; margin: 20px 0; }
+  .step-box {
+    display: flex; gap: 16px; padding: 16px 20px;
+    border: 1px solid var(--gray-200); border-radius: 10px;
+    background: #fff; transition: box-shadow 0.15s;
+  }
+  .step-box:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+  .step-num {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: var(--primary); color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 0.85rem; flex-shrink: 0;
+  }
+  .step-content h4 { margin: 0 0 4px; font-size: 0.95rem; }
+  .step-content p { margin: 0; font-size: 0.88rem; color: var(--gray-600); }
+
+  /* ── Feature Cards ── */
+  .feature-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 20px 0; }
+  .feature-card {
+    border: 1px solid var(--gray-200); border-radius: 8px; padding: 16px;
+    transition: box-shadow 0.15s;
+  }
+  .feature-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+  .feature-card h4 { margin: 0 0 6px; font-size: 0.9rem; display: flex; align-items: center; gap: 8px; }
+  .feature-card p { margin: 0; font-size: 0.82rem; color: var(--gray-500); }
+  .feature-icon { font-size: 1.1rem; }
+
+  /* ── Alert Card Sim ── */
+  .sim-alert-card {
+    border: 1px solid var(--gray-200); border-radius: 8px; padding: 14px 18px;
+    border-left: 4px solid; margin-bottom: 10px;
+  }
+  .sim-alert-card.error { border-left-color: var(--red); }
+  .sim-alert-card.warning { border-left-color: var(--yellow); }
+  .sim-alert-title { font-weight: 600; font-size: 0.88rem; display: flex; align-items: center; gap: 8px; }
+  .sim-alert-meta { display: flex; gap: 12px; margin-top: 6px; font-size: 0.78rem; color: var(--gray-500); }
+  .sim-alert-values { display: flex; gap: 8px; margin-top: 8px; }
+  .sim-alert-val { background: var(--gray-50); border-radius: 6px; padding: 6px 10px; font-size: 0.75rem; }
+  .sim-alert-val .label { color: var(--gray-500); display: block; }
+  .sim-alert-val .val { font-weight: 700; font-family: monospace; }
+
+  /* ── Separator ── */
+  .section-sep { display: flex; align-items: center; gap: 12px; margin: 32px 0 24px; color: var(--gray-400); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; }
+  .section-sep::before, .section-sep::after { content: ''; flex: 1; height: 1px; background: var(--gray-200); }
+
+  /* ── Next Steps ── */
+  .next-steps { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin: 24px 0; }
+  .next-step-card {
+    border: 1px solid var(--gray-200); border-radius: 8px; padding: 16px;
+    transition: all 0.15s;
+  }
+  .next-step-card:hover { border-color: var(--primary); box-shadow: 0 2px 8px rgba(79,70,229,0.1); text-decoration: none; }
+  .next-step-card h4 { margin: 0 0 4px; font-size: 0.9rem; color: var(--gray-800); }
+  .next-step-card p { margin: 0; font-size: 0.78rem; color: var(--gray-500); }
+
+  /* ── Modal Sim ── */
+  .sim-modal-overlay {
+    background: rgba(0,0,0,0.04); border-radius: 8px; padding: 20px;
+    border: 1px solid var(--gray-200);
+  }
+  .sim-modal {
+    background: #fff; border-radius: 12px; max-width: 600px; margin: 0 auto;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.12); overflow: hidden;
+  }
+  .sim-modal-header { padding: 16px 20px; border-bottom: 1px solid var(--gray-200); display: flex; justify-content: space-between; align-items: center; }
+  .sim-modal-body { padding: 20px; }
+  .sim-modal-section { margin-bottom: 16px; }
+  .sim-modal-label { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--gray-500); margin-bottom: 4px; }
+  .sim-modal-box { background: var(--gray-50); border-radius: 6px; padding: 10px 14px; font-size: 0.82rem; color: var(--gray-700); }
+  .sim-modal-box.blue { background: var(--blue-light); border: 1px solid var(--blue-border); }
+  .sim-score-display { display: flex; align-items: center; gap: 16px; }
+  .sim-score-circle { width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; font-weight: 800; color: #fff; }
+  .sim-score-circle.green { background: var(--green); }
+  .sim-score-circle.red { background: var(--red); }
+  .sim-score-circle.yellow { background: var(--yellow); }
+  .sim-score-bar { flex: 1; height: 8px; border-radius: 4px; background: var(--gray-200); overflow: hidden; }
+  .sim-score-bar-fill { height: 100%; border-radius: 4px; }
+
+  /* ── Video placeholder ── */
+  .video-placeholder {
+    margin: 24px 0; border-radius: 10px; overflow: hidden;
+    border: 1px solid var(--gray-200); background: var(--gray-900);
+    height: 80px; display: flex; align-items: center; justify-content: center; color: #fff;
+    font-size: 0.85rem; gap: 8px;
+  }
+  .video-placeholder svg { width: 24px; height: 24px; }
+
+  /* ── Responsive ── */
+  @media (max-width: 1200px) {
+    .toc { display: none; }
+    .main { margin-right: 0; }
+  }
+  @media (max-width: 900px) {
+    .sidebar { display: none; }
+    .main { margin-left: 0; }
+    .sim-kpi-row { grid-template-columns: repeat(2,1fr); }
+    .sim-2col { grid-template-columns: 1fr; }
+    .feature-grid { grid-template-columns: 1fr; }
+    .next-steps { grid-template-columns: 1fr; }
+  }
+
+  /* ── Calibration-specific styles ── */
+  .sim-step-nav {
+    display: flex; border-bottom: 2px solid var(--gray-200); margin-bottom: 16px;
+  }
+  .sim-step-item {
+    display: flex; align-items: center; gap: 6px;
+    padding: 8px 16px; font-size: 0.82rem; color: var(--gray-500);
+    border-bottom: 2px solid transparent; margin-bottom: -2px;
+  }
+  .sim-step-item.active { color: var(--primary); border-color: var(--primary); font-weight: 600; }
+  .sim-step-item.completed { color: var(--green); }
+  .sim-step-circle {
+    width: 18px; height: 18px; border-radius: 50%;
+    border: 1.5px solid var(--gray-300); display: flex; align-items: center;
+    justify-content: center; font-size: 0.65rem; font-weight: 700;
+  }
+  .sim-step-item.active .sim-step-circle {
+    border-color: var(--primary); background: rgba(79,70,229,0.05); color: var(--primary);
+  }
+  .sim-step-item.completed .sim-step-circle {
+    border-color: var(--green); background: var(--green); color: #fff;
+  }
+
+  .sim-annotation-card {
+    border: 1px solid var(--gray-200); border-radius: 10px; overflow: hidden;
+    background: #fff;
+  }
+  .sim-annotation-accent { height: 3px; background: linear-gradient(90deg, #8B9F4F, #A4B86C, #D4AF37); opacity: 0.7; }
+  .sim-annotation-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 16px; border-bottom: 1px solid var(--gray-100);
+    font-size: 0.82rem;
+  }
+  .sim-annotation-body { padding: 16px; }
+
+  .sim-score-btn {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 16px; border-radius: 8px; border: 1.5px solid var(--gray-200);
+    font-size: 0.82rem; background: #fff; flex: 1;
+  }
+  .sim-score-btn.accept { border-color: var(--green); background: rgba(22,163,74,0.05); }
+  .sim-score-btn.reject { border-color: var(--red); background: rgba(220,38,38,0.05); }
+  .sim-score-btn .icon {
+    width: 28px; height: 28px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.85rem; color: #fff;
+  }
+  .sim-score-btn.accept .icon { background: var(--green); }
+  .sim-score-btn.reject .icon { background: var(--red); }
+
+  .sim-progress-sidebar {
+    border: 1px solid var(--gray-200); border-radius: 8px; padding: 14px;
+    background: #fff; font-size: 0.78rem;
+  }
+  .sim-progress-bar {
+    height: 6px; border-radius: 3px; background: var(--gray-200); overflow: hidden;
+    margin: 8px 0;
+  }
+  .sim-progress-bar-fill { height: 100%; border-radius: 3px; background: var(--primary); }
+
+  .sim-confusion-matrix { border-collapse: collapse; }
+  .sim-confusion-matrix th { padding: 6px 10px; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; color: var(--gray-500); letter-spacing: 0.04em; }
+  .sim-confusion-matrix td { width: 64px; height: 40px; text-align: center; font-weight: 700; font-size: 0.95rem; border: 1px solid var(--gray-200); }
+  .sim-confusion-matrix td.tp { background: var(--green-light); color: var(--green); }
+  .sim-confusion-matrix td.tn { background: var(--green-light); color: var(--green); }
+  .sim-confusion-matrix td.fp { background: var(--red-light); color: var(--red); }
+  .sim-confusion-matrix td.fn { background: var(--yellow-light); color: var(--yellow); }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════ TOP NAV ══════════════════ -->
+<nav class="topnav">
+  <div class="topnav-logo"><img src="../assets/axis_transparent.png" alt="AXIS"
+    style="height:20px;vertical-align:middle;margin-right:2px;"> Docs</div>
+    <div class="topnav-links">
+    <a href="../getting-started/">Getting Started</a>
+    <a href="../user-guide/" class="active">User Guide</a>
+    <a href="../configuration/">Configuration</a>
+    <a href="../architecture/">Architecture</a>
+    <a href="../api-reference/">API Reference</a>
+  </div>
+</nav>
+
+<!-- ══════════════════ SIDEBAR ══════════════════ -->
+<div class="layout">
+<aside class="sidebar">
+  <div class="sidebar-section">
+    <div class="sidebar-section-title">User Guide</div>
+    <a class="sidebar-link" href="../user-guide/">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      Overview
+    </a>
+    <a class="sidebar-link" href="evaluate-guide.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      Evaluate
+    </a>
+    <a class="sidebar-link" href="annotation-guide.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+      Annotation Studio
+    </a>
+    <a class="sidebar-link" href="monitoring-guide.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      Monitoring
+    </a>
+    <a class="sidebar-link" href="production-guide.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      Production
+    </a>
+    <a class="sidebar-link active" href="calibration-guide.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+      CaliberHQ
+    </a>
+    <a class="sidebar-link" href="human-signals-guide.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      Human Signals
+    </a>
+    <a class="sidebar-link" href="memory-guide.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+      Memory
+    </a>
+    <a class="sidebar-link" href="agent-replay-guide.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+      Agent Replay
+    </a>
+    <a class="sidebar-link" href="simulation-guide.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+      Simulation
+    </a>
+    <a class="sidebar-link" href="learn-guide.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+      Learn
+    </a>
+    <a class="sidebar-link" href="settings-guide.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+      Settings
+    </a>
+  </div>
+</aside>
+
+<!-- ══════════════════ MAIN CONTENT ══════════════════ -->
+<main class="main">
+<div class="content">
+
+<!-- Breadcrumb -->
+<div class="breadcrumb">
+  <a href="#">Docs</a> / <a href="#">User Guide</a> / <strong>Calibration</strong>
+</div>
+
+<h1>CaliberHQ</h1>
+<p class="subtitle">Align LLM judges with human judgment through calibration, pattern discovery, and iterative prompt optimization.</p>
+
+<!-- ── Why ── -->
+<h2 id="why-calibration">Why Use Calibration?</h2>
+<p>LLM-as-judge evaluation is only as reliable as the alignment between machine and human judgment. CaliberHQ gives you a structured workflow to <strong>measure</strong> that alignment, <strong>discover</strong> where your judge fails, and <strong>optimize</strong> its evaluation prompts &mdash; all without writing code.</p>
+
+<div class="feature-grid">
+  <div class="feature-card">
+    <h4><span class="feature-icon">&#x1F3AF;</span> Alignment Measurement</h4>
+    <p>Cohen's Kappa, F1 score, precision, recall, and specificity &mdash; quantify exactly how well your LLM judge matches human labels.</p>
+  </div>
+  <div class="feature-card">
+    <h4><span class="feature-icon">&#x1F50D;</span> Pattern Discovery</h4>
+    <p>AI-powered clustering surfaces systematic failure patterns from your annotation notes &mdash; LLM, BERTopic, or hybrid methods.</p>
+  </div>
+  <div class="feature-card">
+    <h4><span class="feature-icon">&#x2699;&#xFE0F;</span> Prompt Optimization</h4>
+    <p>Auto-generate improved evaluation criteria based on misalignment analysis. Apply and re-evaluate in a single click.</p>
+  </div>
+  <div class="feature-card">
+    <h4><span class="feature-icon">&#x1F4CA;</span> Confusion Matrix</h4>
+    <p>Visual breakdown of true positives, false positives, true negatives, and false negatives between human and LLM decisions.</p>
+  </div>
+</div>
+
+<!-- ── Quick Start ── -->
+<h2 id="quick-start">Quick Start</h2>
+<p>Calibrate your LLM judge in three steps:</p>
+
+<div class="step-grid">
+  <div class="step-box">
+    <div class="step-num">1</div>
+    <div class="step-content">
+      <h4>Upload Ground Truth Data</h4>
+      <p>Upload a CSV with <code>id</code>, <code>query</code>, and <code>actual_output</code> columns. If your data already contains <code>score</code> or <code>human_score</code> columns, CaliberHQ will auto-detect them and offer to import the existing labels.</p>
+    </div>
+  </div>
+  <div class="step-box">
+    <div class="step-num">2</div>
+    <div class="step-content">
+      <h4>Review &amp; Label</h4>
+      <p>Walk through each record and label it <strong>Accept</strong> or <strong>Reject</strong> using the annotation card. Add notes to explain your reasoning &mdash; these power pattern discovery in step 3. Use keyboard shortcuts (<kbd>A</kbd> accept, <kbd>R</kbd> reject, arrow keys to navigate) for rapid labeling.</p>
+    </div>
+  </div>
+  <div class="step-box">
+    <div class="step-num">3</div>
+    <div class="step-content">
+      <h4>Build Eval</h4>
+      <p>Configure your LLM judge (model, prompt, few-shot examples), run the evaluation, and compare the judge's decisions against your human labels. View alignment metrics, confusion matrix, comparison table, and AI-powered misalignment insights.</p>
+    </div>
+  </div>
+</div>
+
+<div class="admonition tip">
+  <div class="admonition-title">&#x1F4A1; Tip</div>
+  If you already have labeled data from a previous annotation session, upload a CSV with a <code>score</code> column (0/1 values). CaliberHQ detects pre-labeled data automatically and lets you skip straight to the Build Eval step.
+</div>
+
+<!-- ── Page Anatomy ── -->
+<h2 id="page-anatomy">Page Anatomy</h2>
+<p>CaliberHQ uses a three-step wizard. Here is the full page layout with each major section labeled:</p>
+
+<!-- Annotated Screenshot Simulation: Full Page -->
+<div class="screenshot">
+  <div class="screenshot-chrome">
+    <div class="screenshot-dots"><span></span><span></span><span></span></div>
+    <div class="screenshot-title">localhost:3500/caliber-hq</div>
+  </div>
+  <div class="screenshot-body">
+    <div class="sim-ui" style="position:relative;">
+      <!-- Header -->
+      <div class="sim-header" style="position:relative;">
+        <svg class="sim-header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6"/><path d="M9 9h6v6"/></svg>
+        <div>
+          <h3 style="font-size:1rem;">CaliberHQ</h3>
+          <p>Align LLM judges with human judgment through calibration and pattern discovery</p>
+        </div>
+        <div style="margin-left:auto;display:flex;gap:6px;">
+          <div class="sim-filter-btn" style="font-size:0.75rem;padding:4px 10px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px;"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            Configure
+          </div>
+          <div class="sim-filter-btn" style="font-size:0.75rem;padding:4px 10px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Export
+          </div>
+          <div class="sim-filter-btn" style="font-size:0.75rem;padding:4px 10px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px;"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+            Start Over
+          </div>
+        </div>
+        <!-- Callout 1 -->
+        <div style="position:absolute;top:-4px;right:-4px;"><span class="callout-num">1</span></div>
+      </div>
+
+      <!-- Step Navigation -->
+      <div class="sim-step-nav" style="position:relative;">
+        <div class="sim-step-item completed">
+          <span class="sim-step-circle">&#x2713;</span>
+          Upload
+        </div>
+        <div class="sim-step-item completed">
+          <span class="sim-step-circle">&#x2713;</span>
+          Review &amp; Label
+        </div>
+        <div class="sim-step-item active">
+          <span class="sim-step-circle">3</span>
+          Build Eval
+        </div>
+        <!-- Callout 2 -->
+        <div style="position:absolute;top:-8px;left:140px;"><span class="callout-num">2</span></div>
+      </div>
+
+      <!-- Two-column: Patterns + Config -->
+      <div class="sim-2col" style="position:relative;margin-bottom:16px;">
+        <!-- Left: Pattern Insights -->
+        <div class="sim-chart-card" style="margin-bottom:0;">
+          <div class="sim-chart-header">
+            <h4>Pattern Insights</h4>
+            <span style="font-size:0.72rem;color:var(--gray-500);">3 patterns &middot; 12 notes</span>
+          </div>
+          <div class="sim-chart-content" style="padding:12px;">
+            <div style="display:flex;gap:4px;margin-bottom:10px;">
+              <span class="sim-filter-btn active" style="padding:3px 10px;font-size:0.7rem;border-radius:20px;">LLM</span>
+              <span class="sim-filter-btn" style="padding:3px 10px;font-size:0.7rem;border-radius:20px;">BERTopic</span>
+              <span class="sim-filter-btn" style="padding:3px 10px;font-size:0.7rem;border-radius:20px;">Hybrid</span>
+            </div>
+            <div style="border:1px solid var(--gray-200);border-radius:8px;padding:10px;margin-bottom:8px;">
+              <div style="font-size:0.8rem;font-weight:700;color:var(--gray-800);">Incomplete Information <span class="sim-badge gray">5</span></div>
+              <p style="font-size:0.72rem;color:var(--gray-500);margin:4px 0 6px;">&ldquo;Response only covers one option but question asks for all...&rdquo;</p>
+              <span style="font-size:0.7rem;color:var(--primary);font-weight:600;cursor:pointer;">&#x2728; Use as criteria &rarr;</span>
+            </div>
+            <div style="border:1px solid var(--gray-200);border-radius:8px;padding:10px;margin-bottom:8px;">
+              <div style="font-size:0.8rem;font-weight:700;color:var(--gray-800);">Hallucinated Facts <span class="sim-badge gray">4</span></div>
+              <p style="font-size:0.72rem;color:var(--gray-500);margin:4px 0 0;">&ldquo;Mentions a feature that doesn't exist in the product...&rdquo;</p>
+            </div>
+            <div style="border:1px solid var(--gray-200);border-radius:8px;padding:10px;">
+              <div style="font-size:0.8rem;font-weight:700;color:var(--gray-800);">Tone Mismatch <span class="sim-badge gray">3</span></div>
+              <p style="font-size:0.72rem;color:var(--gray-500);margin:4px 0 0;">&ldquo;Response is too casual for a professional support query...&rdquo;</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: LLM Judge Config -->
+        <div class="sim-chart-card" style="margin-bottom:0;">
+          <div class="sim-chart-header">
+            <h4>LLM Judge Configuration</h4>
+          </div>
+          <div style="border-bottom:1px solid var(--gray-200);">
+            <div style="display:flex;">
+              <span style="padding:8px 14px;font-size:0.78rem;color:var(--gray-500);">Model</span>
+              <span style="padding:8px 14px;font-size:0.78rem;color:var(--primary);font-weight:600;border-bottom:2px solid var(--primary);margin-bottom:-1px;">Prompt</span>
+              <span style="padding:8px 14px;font-size:0.78rem;color:var(--gray-500);">Examples</span>
+            </div>
+          </div>
+          <div class="sim-chart-content" style="padding:12px;">
+            <div style="margin-bottom:8px;">
+              <div style="font-size:0.7rem;font-weight:600;color:var(--gray-500);margin-bottom:4px;">SYSTEM PROMPT</div>
+              <div style="background:var(--gray-900);color:#e5e7eb;border-radius:6px;padding:8px 10px;font-family:monospace;font-size:0.7rem;line-height:1.5;max-height:80px;overflow:hidden;">You are an expert evaluator...<br>{evaluation_criteria}<br>Score: [0 or 1]<br>Reasoning: [explanation]</div>
+            </div>
+            <div>
+              <div style="font-size:0.7rem;font-weight:600;color:var(--gray-500);margin-bottom:4px;">EVALUATION CRITERIA</div>
+              <div style="background:var(--gray-50);border:1px solid var(--gray-200);border-radius:6px;padding:8px 10px;font-size:0.72rem;color:var(--gray-600);max-height:60px;overflow:hidden;">Evaluate whether the response:<br>1. Directly addresses the user's query<br>2. Provides accurate and factual information...</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Callout 3 -->
+        <div style="position:absolute;top:-8px;left:50%;transform:translateX(-50%);"><span class="callout-num">3</span></div>
+      </div>
+
+      <!-- Run Evaluation bar -->
+      <div style="border:1px solid var(--gray-200);border-radius:8px;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;position:relative;">
+        <div style="display:flex;gap:8px;align-items:center;">
+          <span style="font-size:0.82rem;font-weight:700;color:var(--gray-700);">Run Evaluation</span>
+          <span class="sim-badge gray">Model: gpt-4o</span>
+          <span class="sim-badge gray">Records: 25</span>
+        </div>
+        <div style="background:var(--primary);color:#fff;padding:6px 16px;border-radius:6px;font-size:0.8rem;font-weight:600;display:flex;align-items:center;gap:6px;">
+          &#x25B6; Run Evaluation
+        </div>
+        <!-- Callout 4 -->
+        <div style="position:absolute;top:-8px;right:40px;"><span class="callout-num">4</span></div>
+      </div>
+
+      <!-- Results Section (stub) -->
+      <div class="sim-chart-card" style="position:relative;">
+        <div class="sim-chart-header">
+          <h4>Evaluation Results</h4>
+          <span style="font-size:0.72rem;color:var(--gray-500);display:flex;align-items:center;gap:4px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Export
+          </span>
+        </div>
+        <div style="display:flex;border-bottom:1px solid var(--gray-200);">
+          <span style="padding:8px 14px;font-size:0.78rem;color:var(--primary);font-weight:600;border-bottom:2px solid var(--primary);margin-bottom:-1px;">Comparison</span>
+          <span style="padding:8px 14px;font-size:0.78rem;color:var(--gray-500);">Metrics</span>
+          <span style="padding:8px 14px;font-size:0.78rem;color:var(--gray-500);">Insights</span>
+        </div>
+        <div class="sim-chart-content" style="padding:12px;font-size:0.78rem;color:var(--gray-500);text-align:center;">
+          Results appear here after running evaluation...
+        </div>
+        <!-- Callout 5 -->
+        <div style="position:absolute;top:-8px;left:80px;"><span class="callout-num">5</span></div>
+      </div>
+
+    </div>
+  </div>
+  <div class="screenshot-caption">CaliberHQ &mdash; Build Eval step showing pattern insights, judge configuration, run evaluation bar, and results panel.</div>
+</div>
+
+<!-- Callout Legend -->
+<div class="callout-legend">
+  <div class="callout-legend-item">
+    <span class="callout-num">1</span>
+    <div><strong>Page Header &amp; Actions</strong> &mdash; Title, subtitle, and context-sensitive action buttons (Configure, Export, Start Over) that appear once data is loaded.</div>
+  </div>
+  <div class="callout-legend-item">
+    <span class="callout-num">2</span>
+    <div><strong>Step Navigation</strong> &mdash; Three-step wizard: Upload, Review &amp; Label, Build Eval. Completed steps show a green checkmark. You can click back to any completed step.</div>
+  </div>
+  <div class="callout-legend-item">
+    <span class="callout-num">3</span>
+    <div><strong>Pattern Insights &amp; Judge Config</strong> &mdash; Two-column layout. Left panel shows AI-discovered error patterns from your annotation notes. Right panel configures the LLM judge (model, system prompt, evaluation criteria, few-shot examples).</div>
+  </div>
+  <div class="callout-legend-item">
+    <span class="callout-num">4</span>
+    <div><strong>Run Evaluation</strong> &mdash; Trigger the LLM judge on all annotated records. Shows current model and record count. Displays a progress bar while running.</div>
+  </div>
+  <div class="callout-legend-item">
+    <span class="callout-num">5</span>
+    <div><strong>Evaluation Results</strong> &mdash; Three tabs: Comparison (side-by-side human vs. LLM decisions), Metrics (alignment stats + confusion matrix), and Insights (misalignment analysis + prompt optimization).</div>
+  </div>
+</div>
+
+
+<!-- ══════════════ STEP 1: UPLOAD ══════════════ -->
+<h2 id="upload">Step 1: Upload Ground Truth</h2>
+<p>The Upload step accepts CSV files with query-response pairs that you will annotate to create ground truth for calibrating your LLM judge.</p>
+
+<div class="screenshot">
+  <div class="screenshot-chrome">
+    <div class="screenshot-dots"><span></span><span></span><span></span></div>
+    <div class="screenshot-title">localhost:3500/caliber-hq &mdash; Upload Step</div>
+  </div>
+  <div class="screenshot-body">
+    <div class="sim-ui">
+      <!-- Step Nav: Upload active -->
+      <div class="sim-step-nav">
+        <div class="sim-step-item active">
+          <span class="sim-step-circle">1</span>
+          Upload
+        </div>
+        <div class="sim-step-item">
+          <span class="sim-step-circle">2</span>
+          Review &amp; Label
+        </div>
+        <div class="sim-step-item">
+          <span class="sim-step-circle">3</span>
+          Build Eval
+        </div>
+      </div>
+
+      <h4 style="margin:0 0 4px;font-size:0.95rem;">Upload Ground Truth Data</h4>
+      <p style="font-size:0.82rem;color:var(--gray-500);margin-bottom:14px;">Upload data with query-response pairs that you'll annotate to calibrate your LLM judge.</p>
+
+      <!-- Requirements box -->
+      <div style="border:1px solid rgba(79,70,229,0.2);background:rgba(139,159,79,0.05);border-radius:8px;padding:12px 16px;margin-bottom:14px;">
+        <div style="display:flex;gap:10px;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;height:18px;color:var(--primary);flex-shrink:0;margin-top:2px;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+          <div style="font-size:0.82rem;">
+            <p style="font-weight:600;margin-bottom:6px;">Required CSV columns:</p>
+            <ul style="padding-left:16px;margin:0;color:var(--gray-600);">
+              <li><code>id</code> - Unique identifier for each record</li>
+              <li><code>query</code> - The user query or input</li>
+              <li><code>actual_output</code> - The AI-generated response to evaluate</li>
+            </ul>
+            <p style="margin:6px 0 0;color:var(--gray-500);">Optional: <code>expected_output</code> for reference comparison</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Drop zone -->
+      <div style="border:2px dashed var(--gray-300);border-radius:10px;padding:30px;text-align:center;color:var(--gray-400);margin-bottom:14px;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:32px;height:32px;margin:0 auto 8px;display:block;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        <div style="font-size:0.85rem;font-weight:600;color:var(--gray-600);">Drop your CSV file here, or click to browse</div>
+        <div style="font-size:0.75rem;margin-top:4px;">Supports .csv, .json, .jsonl formats</div>
+      </div>
+
+      <!-- Pre-labeled detection -->
+      <div style="border:1px solid rgba(212,175,55,0.3);background:linear-gradient(90deg,rgba(212,175,55,0.1),rgba(212,175,55,0.05));border-radius:8px;padding:12px 16px;">
+        <div style="display:flex;gap:10px;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;height:18px;color:#D4AF37;flex-shrink:0;margin-top:2px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          <div style="font-size:0.82rem;">
+            <p style="font-weight:600;margin-bottom:4px;">Pre-labeled Data Detected</p>
+            <p style="color:var(--gray-600);margin-bottom:8px;">Found <strong style="color:#D4AF37;">18</strong> records with existing labels (12 accepted, 6 rejected) including notes.</p>
+            <div style="display:flex;gap:8px;">
+              <span style="background:#D4AF37;color:#fff;padding:5px 12px;border-radius:6px;font-size:0.78rem;font-weight:600;">&#x2713; Use Existing Labels</span>
+              <span style="border:1px solid var(--gray-200);padding:5px 12px;border-radius:6px;font-size:0.78rem;color:var(--gray-600);">Re-annotate from Scratch</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="screenshot-caption">Upload step with file drop zone and pre-labeled data auto-detection. CaliberHQ can import existing labels so you skip manual annotation.</div>
+</div>
+
+<h3 id="csv-format">CSV Format</h3>
+<p>The minimum required columns are:</p>
+<pre><code>id,query,actual_output
+rec-001,"What are the refund policies?","We offer a 30-day refund policy for all purchases..."
+rec-002,"How do I reset my password?","You can reset your password by clicking..."</code></pre>
+
+<p>Optionally include pre-existing labels:</p>
+<pre><code>id,query,actual_output,score,notes
+rec-001,"What are the refund policies?","We offer...",1,"Accurate and complete"
+rec-002,"How do I reset my password?","Click the button...",0,"Missing 2FA instructions"</code></pre>
+
+<div class="admonition info">
+  <div class="admonition-title">&#x2139;&#xFE0F; Info</div>
+  CaliberHQ auto-detects <code>score</code>, <code>label</code>, or <code>human_score</code> columns with binary 0/1 values. It also recognizes <code>notes</code>, <code>reason</code>, or <code>reasoning</code> columns for importing annotation notes.
+</div>
+
+
+<!-- ══════════════ STEP 2: REVIEW & LABEL ══════════════ -->
+<h2 id="review-label">Step 2: Review &amp; Label</h2>
+<p>The annotation interface presents each record one at a time. Your job: decide whether the AI response <strong>passes</strong> or <strong>fails</strong> your quality bar, and optionally explain why.</p>
+
+<div class="screenshot">
+  <div class="screenshot-chrome">
+    <div class="screenshot-dots"><span></span><span></span><span></span></div>
+    <div class="screenshot-title">localhost:3500/caliber-hq &mdash; Review &amp; Label</div>
+  </div>
+  <div class="screenshot-body">
+    <div class="sim-ui" style="padding:16px;">
+      <!-- Step Nav -->
+      <div class="sim-step-nav">
+        <div class="sim-step-item completed">
+          <span class="sim-step-circle">&#x2713;</span>
+          Upload
+        </div>
+        <div class="sim-step-item active">
+          <span class="sim-step-circle">2</span>
+          Review &amp; Label
+        </div>
+        <div class="sim-step-item">
+          <span class="sim-step-circle">3</span>
+          Build Eval
+        </div>
+      </div>
+
+      <!-- Two-column: Card + Sidebar -->
+      <div style="display:grid;grid-template-columns:1fr 220px;gap:14px;">
+        <!-- Left: Annotation Card -->
+        <div class="sim-annotation-card" style="position:relative;">
+          <div class="sim-annotation-accent"></div>
+          <div class="sim-annotation-header">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <div style="display:flex;gap:3px;">
+                <span style="border:1px solid var(--gray-200);border-radius:4px;width:22px;height:22px;display:inline-flex;align-items:center;justify-content:center;font-size:0.8rem;color:var(--gray-400);">&lsaquo;</span>
+                <span style="border:1px solid var(--gray-200);border-radius:4px;width:22px;height:22px;display:inline-flex;align-items:center;justify-content:center;font-size:0.8rem;color:var(--gray-400);">&rsaquo;</span>
+              </div>
+              <span style="font-size:0.82rem;font-weight:600;">Record 7 <span style="font-weight:400;color:var(--gray-500);">of 25</span></span>
+            </div>
+            <span style="background:var(--gray-50);border-radius:4px;padding:2px 6px;font-family:monospace;font-size:0.65rem;color:var(--gray-400);">rec-007</span>
+          </div>
+          <div class="sim-annotation-body">
+            <!-- Query -->
+            <div style="margin-bottom:12px;">
+              <div style="font-size:0.65rem;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:var(--gray-500);margin-bottom:4px;">User Query</div>
+              <div style="background:var(--gray-50);border:1px solid var(--gray-100);border-radius:6px;padding:10px;font-size:0.82rem;color:var(--gray-700);">What are all the integration options available for enterprise customers, including setup requirements?</div>
+            </div>
+            <!-- AI Response -->
+            <div style="margin-bottom:14px;">
+              <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+                <span style="font-size:0.65rem;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:var(--gray-500);">AI Response</span>
+                <span style="background:rgba(79,70,229,0.1);color:var(--primary-dark);font-size:0.6rem;font-weight:600;text-transform:uppercase;padding:1px 6px;border-radius:8px;">To Evaluate</span>
+              </div>
+              <div style="background:linear-gradient(90deg,rgba(79,70,229,0.02),var(--gray-50));border:1px solid var(--gray-100);border-left:3px solid var(--primary);border-radius:6px;padding:10px;font-size:0.82rem;color:var(--gray-700);">We support Slack integration. You can set it up in the settings page under &quot;Integrations.&quot;</div>
+            </div>
+            <!-- Scoring buttons -->
+            <div style="font-size:0.65rem;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:var(--gray-500);margin-bottom:6px;">Your Assessment</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
+              <div class="sim-score-btn">
+                <span class="icon" style="background:var(--green);">&#x2713;</span>
+                <span><strong style="font-size:0.82rem;">Accept</strong><br><span style="font-size:0.68rem;color:var(--gray-500);">Meets expectations</span></span>
+                <kbd style="margin-left:auto;font-size:0.65rem;">A</kbd>
+              </div>
+              <div class="sim-score-btn reject">
+                <span class="icon" style="background:var(--red);">&#x2717;</span>
+                <span><strong style="font-size:0.82rem;">Reject</strong><br><span style="font-size:0.68rem;color:var(--gray-500);">Needs improvement</span></span>
+                <kbd style="margin-left:auto;font-size:0.65rem;">R</kbd>
+              </div>
+            </div>
+            <!-- Notes -->
+            <div style="font-size:0.65rem;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:var(--gray-500);margin-bottom:4px;">Notes <span style="font-weight:400;color:var(--gray-400);">optional &mdash; powers pattern discovery</span></div>
+            <div style="border:1px solid var(--gray-200);border-radius:6px;padding:8px 10px;font-size:0.78rem;color:var(--gray-400);font-style:italic;">What did you observe? e.g., "Missing billing tier breakdown..."</div>
+          </div>
+          <!-- Callout A -->
+          <div style="position:absolute;top:50px;right:-10px;"><span class="callout-num">A</span></div>
+        </div>
+
+        <!-- Right: Progress Sidebar -->
+        <div class="sim-progress-sidebar" style="position:relative;">
+          <div style="font-size:0.78rem;font-weight:600;color:var(--gray-700);margin-bottom:8px;">Annotation Progress</div>
+          <div class="sim-progress-bar">
+            <div class="sim-progress-bar-fill" style="width:28%;"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:0.72rem;color:var(--gray-500);margin-bottom:12px;">
+            <span>7 of 25</span>
+            <span>28%</span>
+          </div>
+          <div style="font-size:0.72rem;font-weight:600;color:var(--gray-600);margin-bottom:6px;">Record Navigator</div>
+          <div style="display:flex;flex-wrap:wrap;gap:3px;">
+            <span style="width:18px;height:18px;border-radius:4px;background:var(--green-light);border:1px solid var(--green-border);display:inline-flex;align-items:center;justify-content:center;font-size:0.55rem;color:var(--green);font-weight:700;">&#x2713;</span>
+            <span style="width:18px;height:18px;border-radius:4px;background:var(--green-light);border:1px solid var(--green-border);display:inline-flex;align-items:center;justify-content:center;font-size:0.55rem;color:var(--green);font-weight:700;">&#x2713;</span>
+            <span style="width:18px;height:18px;border-radius:4px;background:var(--red-light);border:1px solid var(--red-border);display:inline-flex;align-items:center;justify-content:center;font-size:0.55rem;color:var(--red);font-weight:700;">&#x2717;</span>
+            <span style="width:18px;height:18px;border-radius:4px;background:var(--green-light);border:1px solid var(--green-border);display:inline-flex;align-items:center;justify-content:center;font-size:0.55rem;color:var(--green);font-weight:700;">&#x2713;</span>
+            <span style="width:18px;height:18px;border-radius:4px;background:var(--red-light);border:1px solid var(--red-border);display:inline-flex;align-items:center;justify-content:center;font-size:0.55rem;color:var(--red);font-weight:700;">&#x2717;</span>
+            <span style="width:18px;height:18px;border-radius:4px;background:var(--green-light);border:1px solid var(--green-border);display:inline-flex;align-items:center;justify-content:center;font-size:0.55rem;color:var(--green);font-weight:700;">&#x2713;</span>
+            <span style="width:18px;height:18px;border-radius:4px;background:var(--primary-light);border:2px solid var(--primary);display:inline-flex;align-items:center;justify-content:center;font-size:0.55rem;color:var(--primary);font-weight:700;">7</span>
+            <span style="width:18px;height:18px;border-radius:4px;background:var(--gray-50);border:1px solid var(--gray-200);"></span>
+            <span style="width:18px;height:18px;border-radius:4px;background:var(--gray-50);border:1px solid var(--gray-200);"></span>
+            <span style="width:18px;height:18px;border-radius:4px;background:var(--gray-50);border:1px solid var(--gray-200);"></span>
+            <span style="width:18px;height:18px;border-radius:4px;background:var(--gray-50);border:1px solid var(--gray-200);"></span>
+            <span style="width:18px;height:18px;border-radius:4px;background:var(--gray-50);border:1px solid var(--gray-200);"></span>
+          </div>
+          <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--gray-200);display:flex;justify-content:space-between;font-size:0.7rem;color:var(--gray-500);">
+            <span style="color:var(--green);">&#x2713; 4 accepted</span>
+            <span style="color:var(--red);">&#x2717; 2 rejected</span>
+          </div>
+          <!-- Callout B -->
+          <div style="position:absolute;top:-8px;right:-8px;"><span class="callout-num">B</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="screenshot-caption">Review &amp; Label step showing the annotation card with query, AI response, accept/reject buttons, and the progress sidebar with record navigator.</div>
+</div>
+
+<div class="callout-legend">
+  <div class="callout-legend-item">
+    <span class="callout-num">A</span>
+    <div><strong>Annotation Card</strong> &mdash; Shows the query and AI response. Use the green Accept / red Reject buttons to label each record. The Notes field is optional but powers pattern discovery in Step 3.</div>
+  </div>
+  <div class="callout-legend-item">
+    <span class="callout-num">B</span>
+    <div><strong>Progress Sidebar</strong> &mdash; Sticky sidebar showing overall progress, a visual record navigator (green = accepted, red = rejected, highlighted = current), and counts. Click any square to jump to that record.</div>
+  </div>
+</div>
+
+<h3 id="keyboard-shortcuts">Keyboard Shortcuts</h3>
+<p>CaliberHQ supports rapid annotation with keyboard shortcuts:</p>
+<table class="sim-table" style="margin:12px 0;">
+  <thead>
+    <tr><th>Key</th><th>Action</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><kbd>A</kbd></td><td>Accept the current record (score = 1) and auto-advance</td></tr>
+    <tr><td><kbd>R</kbd></td><td>Reject the current record (score = 0) and auto-advance</td></tr>
+    <tr><td><kbd>&larr;</kbd></td><td>Navigate to previous record</td></tr>
+    <tr><td><kbd>&rarr;</kbd></td><td>Navigate to next record</td></tr>
+    <tr><td><kbd>N</kbd></td><td>Focus the notes text field</td></tr>
+  </tbody>
+</table>
+
+<div class="admonition note">
+  <div class="admonition-title">&#x1F4DD; Note</div>
+  Keyboard shortcuts are disabled when you are typing in the notes field. Press <kbd>Escape</kbd> or click outside the field to re-enable them.
+</div>
+
+
+<!-- ══════════════ STEP 3: BUILD EVAL ══════════════ -->
+<h2 id="build-eval">Step 3: Build Eval</h2>
+<p>The Build Eval step is where calibration happens. It has three sections: Pattern Insights + Judge Configuration (side by side), Run Evaluation, and Evaluation Results.</p>
+
+<h3 id="pattern-insights">Pattern Insights</h3>
+<p>If you added notes during annotation, CaliberHQ can cluster them into recurring error patterns using AI. Three clustering methods are available:</p>
+
+<table class="sim-table" style="margin:12px 0;">
+  <thead>
+    <tr><th>Method</th><th>How It Works</th><th>Best For</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><span class="sim-badge blue">LLM</span></td>
+      <td>Uses your configured LLM to semantically cluster notes</td>
+      <td>Small datasets, interpretable categories</td>
+    </tr>
+    <tr>
+      <td><span class="sim-badge blue">BERTopic</span></td>
+      <td>Embedding-based topic modeling (runs server-side)</td>
+      <td>Large datasets, discovering hidden structure</td>
+    </tr>
+    <tr>
+      <td><span class="sim-badge blue">Hybrid</span></td>
+      <td>BERTopic clusters + LLM-generated category names</td>
+      <td>Best of both &mdash; structure + interpretability</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Each discovered pattern shows a category name, example count, and a representative note excerpt. Click <strong>"Use as criteria"</strong> on any pattern to inject it directly into your evaluation criteria prompt.</p>
+
+<div class="admonition tip">
+  <div class="admonition-title">&#x1F4A1; Tip</div>
+  Detailed annotation notes produce better patterns. Instead of "bad response," write "Response only mentions Slack but ignores email, webhook, and API integrations." The more specific, the more useful the discovered patterns.
+</div>
+
+<h3 id="judge-config">LLM Judge Configuration</h3>
+<p>The right panel contains three tabs for configuring how the LLM judge evaluates records:</p>
+
+<h4>Model Tab</h4>
+<p>Select the LLM provider and model. Supported providers include OpenAI, Anthropic, and others configured in your AXIS settings. The provider must have an API key set in <strong>Settings</strong> for the run button to activate.</p>
+
+<h4>Prompt Tab</h4>
+<p>Edit the system prompt and evaluation criteria that the LLM judge uses. The default prompt includes a template variable <code>{evaluation_criteria}</code> that gets replaced with the criteria text. The prompt instructs the judge to output a binary Score (0 or 1) plus reasoning.</p>
+
+<h4>Examples Tab</h4>
+<p>Add few-shot examples to guide the LLM judge. Each example includes a query, response, expected score, and reasoning. More examples generally improve consistency but increase token usage.</p>
+
+<h3 id="run-evaluation">Running the Evaluation</h3>
+<p>The "Run Evaluation" bar shows the current model and record count. Click to start:</p>
+<ol>
+  <li>The LLM evaluates each annotated record using your configured prompt</li>
+  <li>A progress bar shows completion percentage in real-time</li>
+  <li>Results appear in the panel below once the run completes</li>
+</ol>
+
+<div class="admonition warning">
+  <div class="admonition-title">&#x26A0;&#xFE0F; Warning</div>
+  Running the evaluation requires a valid API key for the selected provider. Check <strong>Settings &rarr; API Keys</strong> if the Run button is disabled. Each evaluation run costs API tokens proportional to the number of annotated records.
+</div>
+
+
+<!-- ══════════════ RESULTS: COMPARISON TABLE ══════════════ -->
+<h2 id="comparison">Comparison Table</h2>
+<p>The default results tab. Shows every record with both the human label and LLM label side by side, so you can see exactly where they agree and disagree.</p>
+
+<div class="screenshot">
+  <div class="screenshot-chrome">
+    <div class="screenshot-dots"><span></span><span></span><span></span></div>
+    <div class="screenshot-title">Evaluation Results &mdash; Comparison Tab</div>
+  </div>
+  <div class="screenshot-body">
+    <div class="sim-ui" style="padding:0;">
+      <!-- Filter pills -->
+      <div style="padding:12px 16px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--gray-200);">
+        <div style="display:flex;gap:4px;">
+          <span class="sim-filter-btn active" style="border-radius:20px;padding:3px 12px;font-size:0.75rem;">All (25)</span>
+          <span class="sim-filter-btn" style="border-radius:20px;padding:3px 12px;font-size:0.75rem;">Aligned (20)</span>
+          <span class="sim-filter-btn" style="border-radius:20px;padding:3px 12px;font-size:0.75rem;">Misaligned (5)</span>
+        </div>
+        <span style="font-size:0.72rem;color:var(--primary);display:flex;align-items:center;gap:4px;cursor:pointer;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Export JSON
+        </span>
+      </div>
+      <table class="sim-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Query</th>
+            <th style="text-align:center;">Human</th>
+            <th style="text-align:center;">LLM</th>
+            <th style="text-align:center;">Status</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="sim-code">rec-001...</span></td>
+            <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">What are the refund policies for...</td>
+            <td style="text-align:center;"><span class="sim-badge green">&#x2713; Accept</span></td>
+            <td style="text-align:center;"><span class="sim-badge green">&#x2713; Accept</span></td>
+            <td style="text-align:center;"><span class="sim-badge green">Aligned</span></td>
+            <td><span style="color:var(--gray-400);cursor:pointer;">&#x25BC;</span></td>
+          </tr>
+          <tr>
+            <td><span class="sim-code">rec-002...</span></td>
+            <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">How do I configure SSO for my...</td>
+            <td style="text-align:center;"><span class="sim-badge red">&#x2717; Reject</span></td>
+            <td style="text-align:center;"><span class="sim-badge green">&#x2713; Accept</span></td>
+            <td style="text-align:center;"><span class="sim-badge red">Misaligned</span></td>
+            <td><span style="color:var(--gray-400);cursor:pointer;">&#x25BC;</span></td>
+          </tr>
+          <tr>
+            <td><span class="sim-code">rec-003...</span></td>
+            <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Can you explain the billing tiers...</td>
+            <td style="text-align:center;"><span class="sim-badge red">&#x2717; Reject</span></td>
+            <td style="text-align:center;"><span class="sim-badge red">&#x2717; Reject</span></td>
+            <td style="text-align:center;"><span class="sim-badge green">Aligned</span></td>
+            <td><span style="color:var(--gray-400);cursor:pointer;">&#x25BC;</span></td>
+          </tr>
+          <tr style="background:rgba(220,38,38,0.03);">
+            <td><span class="sim-code">rec-007...</span></td>
+            <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">What are all the integration options...</td>
+            <td style="text-align:center;"><span class="sim-badge red">&#x2717; Reject</span></td>
+            <td style="text-align:center;"><span class="sim-badge green">&#x2713; Accept</span></td>
+            <td style="text-align:center;"><span class="sim-badge red">Misaligned</span></td>
+            <td><span style="color:var(--gray-400);cursor:pointer;">&#x25BC;</span></td>
+          </tr>
+          <tr>
+            <td><span class="sim-code">rec-012...</span></td>
+            <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">What is the SLA for enterprise...</td>
+            <td style="text-align:center;"><span class="sim-badge green">&#x2713; Accept</span></td>
+            <td style="text-align:center;"><span class="sim-badge green">&#x2713; Accept</span></td>
+            <td style="text-align:center;"><span class="sim-badge green">Aligned</span></td>
+            <td><span style="color:var(--gray-400);cursor:pointer;">&#x25BC;</span></td>
+          </tr>
+        </tbody>
+      </table>
+      <div style="padding:10px 16px;display:flex;justify-content:space-between;align-items:center;font-size:0.78rem;color:var(--gray-500);border-top:1px solid var(--gray-200);">
+        <span>Showing 1-10 of 25</span>
+        <div style="display:flex;gap:6px;">
+          <span class="sim-filter-btn" style="padding:3px 10px;font-size:0.75rem;">Previous</span>
+          <span class="sim-filter-btn" style="padding:3px 10px;font-size:0.75rem;">Next</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="screenshot-caption">Comparison table with filter pills (All / Aligned / Misaligned), human vs. LLM decisions, and expandable row detail showing the response and LLM reasoning.</div>
+</div>
+
+<ul>
+  <li><strong>Filter pills</strong> &mdash; quickly isolate aligned or misaligned results</li>
+  <li>Misaligned rows have a subtle red background tint</li>
+  <li>Click the <strong>chevron</strong> on any row to expand and see the full AI response and LLM reasoning side by side</li>
+  <li><strong>Export JSON</strong> exports the filtered results for external analysis</li>
+</ul>
+
+
+<!-- ══════════════ RESULTS: METRICS ══════════════ -->
+<h2 id="alignment-metrics">Alignment Metrics</h2>
+<p>The Metrics tab provides a comprehensive statistical view of how well your LLM judge aligns with human judgment.</p>
+
+<div class="screenshot">
+  <div class="screenshot-chrome">
+    <div class="screenshot-dots"><span></span><span></span><span></span></div>
+    <div class="screenshot-title">Evaluation Results &mdash; Metrics Tab</div>
+  </div>
+  <div class="screenshot-body">
+    <div class="sim-ui">
+      <!-- Primary Metrics KPI row -->
+      <div class="sim-kpi-row">
+        <div class="sim-kpi">
+          <div class="sim-kpi-label">Cohen's Kappa</div>
+          <div class="sim-kpi-value" style="color:var(--green);">0.680</div>
+          <div class="sim-kpi-trend" style="color:var(--gray-500);font-size:0.7rem;">Substantial agreement</div>
+        </div>
+        <div class="sim-kpi">
+          <div class="sim-kpi-label">F1 Score</div>
+          <div class="sim-kpi-value" style="color:var(--green);">84.0%</div>
+          <div class="sim-kpi-trend" style="color:var(--gray-500);font-size:0.7rem;">Balanced accuracy</div>
+        </div>
+        <div class="sim-kpi">
+          <div class="sim-kpi-label">Alignment</div>
+          <div class="sim-kpi-value" style="color:var(--green);">88.0%</div>
+          <div class="sim-kpi-trend" style="color:var(--gray-500);font-size:0.7rem;">Overall agreement rate</div>
+        </div>
+        <div class="sim-kpi">
+          <div class="sim-kpi-label">Samples</div>
+          <div class="sim-kpi-value">25</div>
+          <div class="sim-kpi-trend" style="color:var(--gray-500);font-size:0.7rem;">Total evaluated</div>
+        </div>
+      </div>
+
+      <!-- Kappa Interpretation -->
+      <div style="border:1px solid var(--gray-200);border-radius:8px;padding:12px 16px;display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+        <div style="width:36px;height:36px;border-radius:50%;background:var(--gray-100);display:flex;align-items:center;justify-content:center;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2" style="width:18px;height:18px;"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+        </div>
+        <div>
+          <div style="font-weight:600;font-size:0.9rem;">Substantial Agreement</div>
+          <div style="font-size:0.82rem;color:var(--gray-500);">Cohen's Kappa of 0.680 indicates substantial agreement between human and LLM judgments.</div>
+        </div>
+      </div>
+
+      <!-- Secondary Metrics -->
+      <div style="font-size:0.88rem;font-weight:600;margin-bottom:10px;">Detailed Metrics</div>
+      <div class="sim-kpi-row">
+        <div class="sim-kpi">
+          <div class="sim-kpi-label">Precision</div>
+          <div class="sim-kpi-value" style="font-size:1.2rem;color:var(--green);">86.7%</div>
+        </div>
+        <div class="sim-kpi">
+          <div class="sim-kpi-label">Recall</div>
+          <div class="sim-kpi-value" style="font-size:1.2rem;color:var(--green);">81.3%</div>
+        </div>
+        <div class="sim-kpi">
+          <div class="sim-kpi-label">Specificity</div>
+          <div class="sim-kpi-value" style="font-size:1.2rem;color:var(--green);">90.0%</div>
+        </div>
+        <div class="sim-kpi">
+          <div class="sim-kpi-label">Agreement Count</div>
+          <div class="sim-kpi-value" style="font-size:1.2rem;">22</div>
+        </div>
+      </div>
+
+      <!-- Confusion Matrix -->
+      <div style="border-top:1px solid var(--gray-200);padding-top:16px;margin-top:8px;">
+        <div style="font-size:0.88rem;font-weight:600;margin-bottom:12px;">Confusion Matrix</div>
+        <div style="display:flex;align-items:flex-start;gap:24px;">
+          <table class="sim-confusion-matrix">
+            <thead>
+              <tr>
+                <th></th>
+                <th>LLM: Accept</th>
+                <th>LLM: Reject</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th style="text-align:right;">Human: Accept</th>
+                <td class="tp">13</td>
+                <td class="fn">3</td>
+              </tr>
+              <tr>
+                <th style="text-align:right;">Human: Reject</th>
+                <td class="fp">2</td>
+                <td class="tn">7</td>
+              </tr>
+            </tbody>
+          </table>
+          <div style="font-size:0.78rem;line-height:1.8;color:var(--gray-600);">
+            <div><strong>13</strong> True Positives &mdash; Both accepted</div>
+            <div><strong>7</strong> True Negatives &mdash; Both rejected</div>
+            <div><strong>2</strong> False Positives &mdash; LLM accepted, human rejected</div>
+            <div><strong>3</strong> False Negatives &mdash; LLM rejected, human accepted</div>
+            <p style="margin-top:8px;font-size:0.72rem;color:var(--gray-500);">The LLM judge tends to be stricter than human reviewers. Consider relaxing the evaluation criteria. Overall accuracy: 80.0%.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="screenshot-caption">Metrics tab showing primary KPIs (Cohen's Kappa, F1, Alignment), detailed secondary metrics (Precision, Recall, Specificity), and the confusion matrix with interpretation.</div>
+</div>
+
+<h3 id="metric-definitions">Metric Definitions</h3>
+<table class="sim-table" style="margin:12px 0;">
+  <thead>
+    <tr><th>Metric</th><th>Formula</th><th>What It Tells You</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Cohen's Kappa</strong></td>
+      <td><code>(P_o - P_e) / (1 - P_e)</code></td>
+      <td>Agreement beyond chance. Values: &lt;0.2 slight, 0.2&ndash;0.4 fair, 0.4&ndash;0.6 moderate, 0.6&ndash;0.8 substantial, &gt;0.8 almost perfect.</td>
+    </tr>
+    <tr>
+      <td><strong>F1 Score</strong></td>
+      <td><code>2 * (P * R) / (P + R)</code></td>
+      <td>Harmonic mean of precision and recall. A balanced measure of overall accuracy.</td>
+    </tr>
+    <tr>
+      <td><strong>Precision</strong></td>
+      <td><code>TP / (TP + FP)</code></td>
+      <td>Of all LLM accepts, how many were actually good? Low precision = judge is too lenient.</td>
+    </tr>
+    <tr>
+      <td><strong>Recall</strong></td>
+      <td><code>TP / (TP + FN)</code></td>
+      <td>Of all human accepts, how many did the LLM find? Low recall = judge is too strict.</td>
+    </tr>
+    <tr>
+      <td><strong>Specificity</strong></td>
+      <td><code>TN / (TN + FP)</code></td>
+      <td>Of all human rejects, how many did the LLM correctly reject?</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3 id="confusion-matrix">Confusion Matrix</h3>
+<p>The 2x2 confusion matrix visualizes the four possible outcomes of each comparison:</p>
+<ul>
+  <li><strong style="color:var(--green);">True Positives (TP)</strong> &mdash; Both human and LLM accepted (green cells)</li>
+  <li><strong style="color:var(--green);">True Negatives (TN)</strong> &mdash; Both human and LLM rejected (green cells)</li>
+  <li><strong style="color:var(--red);">False Positives (FP)</strong> &mdash; LLM accepted but human rejected. The judge is <em>too lenient</em> here.</li>
+  <li><strong style="color:var(--yellow);">False Negatives (FN)</strong> &mdash; LLM rejected but human accepted. The judge is <em>too strict</em> here.</li>
+</ul>
+<p>The interpretation text below the matrix automatically tells you whether your judge tends to be too lenient (FP > FN) or too strict (FN > FP), guiding your next prompt iteration.</p>
+
+
+<!-- ══════════════ RESULTS: INSIGHTS ══════════════ -->
+<h2 id="insights">Insights &amp; Prompt Optimization</h2>
+<p>The Insights tab provides AI-powered analysis of misalignment patterns and automatic prompt optimization to improve judge accuracy.</p>
+
+<div class="screenshot">
+  <div class="screenshot-chrome">
+    <div class="screenshot-dots"><span></span><span></span><span></span></div>
+    <div class="screenshot-title">Evaluation Results &mdash; Insights Tab</div>
+  </div>
+  <div class="screenshot-body">
+    <div class="sim-ui">
+      <!-- Misalignment Analysis -->
+      <div style="border:1px solid var(--gray-200);border-radius:8px;padding:16px;margin-bottom:16px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" style="width:18px;height:18px;"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+            <span style="font-weight:600;font-size:0.9rem;">Misalignment Analysis</span>
+          </div>
+          <span style="background:rgba(79,70,229,0.1);color:var(--primary);padding:4px 12px;border-radius:6px;font-size:0.78rem;font-weight:600;">Analyze Patterns</span>
+        </div>
+        <!-- Summary -->
+        <div style="background:var(--gray-50);border-radius:6px;padding:10px;margin-bottom:12px;">
+          <div style="font-size:0.78rem;font-weight:600;margin-bottom:4px;">Summary</div>
+          <p style="font-size:0.82rem;color:var(--gray-600);margin:0;">The LLM judge shows a tendency toward false positives, accepting responses that humans reject. This is primarily driven by incomplete coverage checks &mdash; the judge fails to verify that all aspects of a question are addressed.</p>
+        </div>
+        <!-- Stats -->
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px;">
+          <div style="border:1px solid var(--gray-200);border-radius:8px;padding:10px;text-align:center;">
+            <div style="font-size:1.4rem;font-weight:700;">5</div>
+            <div style="font-size:0.7rem;color:var(--gray-500);">Total Misaligned</div>
+          </div>
+          <div style="border:1px solid var(--yellow-border);background:var(--yellow-light);border-radius:8px;padding:10px;text-align:center;">
+            <div style="font-size:1.4rem;font-weight:700;color:var(--yellow);">3</div>
+            <div style="font-size:0.7rem;color:var(--gray-500);">Too Lenient (FP)</div>
+          </div>
+          <div style="border:1px solid var(--red-border);background:var(--red-light);border-radius:8px;padding:10px;text-align:center;">
+            <div style="font-size:1.4rem;font-weight:700;color:var(--red);">2</div>
+            <div style="font-size:0.7rem;color:var(--gray-500);">Too Strict (FN)</div>
+          </div>
+        </div>
+        <!-- Recommendations -->
+        <div style="font-size:0.82rem;font-weight:600;margin-bottom:8px;display:flex;align-items:center;gap:6px;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#D4AF37" stroke-width="2" style="width:14px;height:14px;"><path d="M9 18h6M10 22h4M12 2v1M4.22 4.22l.71.71M1 12h1M4.22 19.78l.71-.71M12 17a5 5 0 1 0 0-10 5 5 0 0 0 0 10z"/></svg>
+          Recommendations
+        </div>
+        <div style="border-radius:8px;padding:10px;background:rgba(212,175,55,0.05);margin-bottom:6px;font-size:0.82rem;display:flex;gap:8px;">
+          <span style="width:20px;height:20px;border-radius:50%;background:rgba(212,175,55,0.2);display:flex;align-items:center;justify-content:center;font-size:0.65rem;font-weight:600;color:#D4AF37;flex-shrink:0;">1</span>
+          Add explicit criteria requiring all sub-questions to be addressed.
+        </div>
+        <div style="border-radius:8px;padding:10px;background:rgba(212,175,55,0.05);margin-bottom:6px;font-size:0.82rem;display:flex;gap:8px;">
+          <span style="width:20px;height:20px;border-radius:50%;background:rgba(212,175,55,0.2);display:flex;align-items:center;justify-content:center;font-size:0.65rem;font-weight:600;color:#D4AF37;flex-shrink:0;">2</span>
+          Include few-shot examples of partial answers that should be rejected.
+        </div>
+        <div style="border-radius:8px;padding:10px;background:rgba(212,175,55,0.05);font-size:0.82rem;display:flex;gap:8px;">
+          <span style="width:20px;height:20px;border-radius:50%;background:rgba(212,175,55,0.2);display:flex;align-items:center;justify-content:center;font-size:0.65rem;font-weight:600;color:#D4AF37;flex-shrink:0;">3</span>
+          Consider a stricter system prompt that penalizes incomplete responses.
+        </div>
+      </div>
+
+      <!-- Prompt Optimization -->
+      <div style="border:1px solid var(--gray-200);border-radius:8px;padding:16px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#D4AF37" stroke-width="2" style="width:18px;height:18px;"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+            <span style="font-weight:600;font-size:0.9rem;">Prompt Optimization</span>
+          </div>
+          <span style="background:rgba(212,175,55,0.1);color:#D4AF37;padding:4px 12px;border-radius:6px;font-size:0.78rem;font-weight:600;">Generate Optimized Prompt</span>
+        </div>
+        <!-- Expected improvement -->
+        <div style="background:var(--green-light);border-radius:8px;padding:10px;margin-bottom:12px;">
+          <div style="font-size:0.78rem;font-weight:600;color:var(--green);margin-bottom:2px;">Expected Improvement</div>
+          <p style="font-size:0.82rem;color:var(--gray-600);margin:0;">Estimated 10&ndash;15% improvement in alignment by addressing completeness verification and adding stricter sub-question coverage requirements.</p>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <span style="border:1px solid var(--gray-200);padding:6px 14px;border-radius:6px;font-size:0.82rem;color:var(--gray-600);">View Optimized Criteria</span>
+          <span style="background:var(--primary);color:#fff;padding:6px 14px;border-radius:6px;font-size:0.82rem;font-weight:600;display:flex;align-items:center;gap:6px;">Apply &amp; Re-run &rarr;</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="screenshot-caption">Insights tab showing misalignment analysis (summary, FP/FN breakdown, recommendations) and prompt optimization with one-click apply.</div>
+</div>
+
+<p><strong>The iterative calibration loop:</strong></p>
+<ol>
+  <li><strong>Analyze Patterns</strong> &mdash; get an AI summary of why misalignment occurs</li>
+  <li><strong>Review Recommendations</strong> &mdash; actionable suggestions to improve your prompt</li>
+  <li><strong>Generate Optimized Prompt</strong> &mdash; AI rewrites your evaluation criteria</li>
+  <li><strong>Apply &amp; Re-run</strong> &mdash; one-click applies the new criteria and re-evaluates</li>
+  <li>Repeat until Kappa reaches your target level</li>
+</ol>
+
+<div class="admonition tip">
+  <div class="admonition-title">&#x1F4A1; Tip</div>
+  A Cohen's Kappa above 0.6 (substantial agreement) is generally considered sufficient for production use. Above 0.8 is considered almost perfect. If your Kappa is below 0.4, focus on the false positive vs. false negative balance to decide whether to tighten or relax your criteria.
+</div>
+
+
+<!-- ══════════════ CALIBRATION WORKFLOW ══════════════ -->
+<h2 id="workflow">The Calibration Workflow</h2>
+<p>CaliberHQ is designed for iterative improvement. Here is the recommended workflow:</p>
+
+<div class="step-grid">
+  <div class="step-box">
+    <div class="step-num">1</div>
+    <div class="step-content">
+      <h4>Establish Baseline</h4>
+      <p>Upload your data, annotate a representative sample (at least 20&ndash;30 records), and run the first evaluation with default prompts. Record the baseline Kappa.</p>
+    </div>
+  </div>
+  <div class="step-box">
+    <div class="step-num">2</div>
+    <div class="step-content">
+      <h4>Discover Patterns</h4>
+      <p>Use Pattern Insights to identify systematic failure modes. Convert the most impactful patterns into evaluation criteria using the "Use as criteria" action.</p>
+    </div>
+  </div>
+  <div class="step-box">
+    <div class="step-num">3</div>
+    <div class="step-content">
+      <h4>Add Few-Shot Examples</h4>
+      <p>For tricky edge cases, add few-shot examples showing the expected judgment. Prioritize examples from the misaligned set.</p>
+    </div>
+  </div>
+  <div class="step-box">
+    <div class="step-num">4</div>
+    <div class="step-content">
+      <h4>Iterate &amp; Re-run</h4>
+      <p>Re-run the evaluation after each change. Track how Kappa, F1, and the confusion matrix evolve. Use the Insights tab for AI-driven prompt optimization when you plateau.</p>
+    </div>
+  </div>
+  <div class="step-box">
+    <div class="step-num">5</div>
+    <div class="step-content">
+      <h4>Export &amp; Deploy</h4>
+      <p>Once satisfied with alignment, export the calibrated judge configuration (system prompt + evaluation criteria + few-shot examples) for use in your production evaluation pipeline.</p>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════ CONFIGURATION ══════════════ -->
+<h2 id="configuration">Configuration Reference</h2>
+<p>CaliberHQ can be fine-tuned through the <strong>Configure</strong> modal (gear icon in the header) and the Build Eval step panels.</p>
+
+<h3>Column Configuration</h3>
+<p>Accessible from the gear icon on the annotation card. Lets you control:</p>
+<ul>
+  <li><strong>ID Column</strong> &mdash; which column uniquely identifies each record (default: <code>id</code>)</li>
+  <li><strong>Display Columns</strong> &mdash; which columns appear in the annotation card (default: <code>query</code>, <code>actual_output</code>)</li>
+  <li><strong>LLM Columns</strong> &mdash; which columns are sent to the LLM judge for evaluation</li>
+</ul>
+
+<h3>Judge Config Persistence</h3>
+<p>CaliberHQ persists the following to localStorage so you don't lose work between sessions:</p>
+<ul>
+  <li>Human annotations (score + notes per record ID)</li>
+  <li>Judge configuration (model, provider, system prompt, evaluation criteria, few-shot examples)</li>
+  <li>Column configuration and file metadata</li>
+</ul>
+
+<div class="admonition warning">
+  <div class="admonition-title">&#x26A0;&#xFE0F; Warning</div>
+  Raw data (the CSV records themselves) is <strong>not</strong> persisted to localStorage due to size constraints. If you close the tab and reopen it, you'll see your previous annotations and config but will need to re-upload the data file. Use "Start Over" to clear all persisted state.
+</div>
+
+
+<!-- ══════════════ NEXT STEPS ══════════════ -->
+<h2 id="next-steps">Next Steps</h2>
+
+<div class="next-steps">
+  <a class="next-step-card" href="#">
+    <h4>&#x1F4CA; Monitoring &rarr;</h4>
+    <p>Deploy your calibrated judge and track its performance in production with real-time monitoring dashboards.</p>
+  </a>
+  <a class="next-step-card" href="#">
+    <h4>&#x1F4E1; Human Signals &rarr;</h4>
+    <p>Collect ongoing human feedback on judge decisions to continuously refine your evaluation criteria.</p>
+  </a>
+  <a class="next-step-card" href="#">
+    <h4>&#x2699; Configuration &rarr;</h4>
+    <p>Set up API keys, database connections, and global evaluation settings in the Configuration guide.</p>
+  </a>
+</div>
+
+<!-- ══════════════ FOOTER ══════════════ -->
+<div style="margin-top:60px;padding-top:24px;border-top:1px solid var(--gray-200);font-size:0.8rem;color:var(--gray-400);text-align:center;">
+  AXIS Documentation &middot; Built with MkDocs Material
+</div>
+
+</div><!-- .content -->
+</main>
+
+<!-- ══════════════════ TABLE OF CONTENTS ══════════════════ -->
+<nav class="toc">
+  <div class="toc-title">On this page</div>
+  <ul class="toc-list">
+    <li><a href="#why-calibration">Why Use Calibration?</a></li>
+    <li><a href="#quick-start">Quick Start</a></li>
+    <li><a href="#page-anatomy">Page Anatomy</a></li>
+    <li><a href="#upload">Step 1: Upload</a></li>
+    <li class="indent"><a href="#csv-format">CSV Format</a></li>
+    <li><a href="#review-label">Step 2: Review &amp; Label</a></li>
+    <li class="indent"><a href="#keyboard-shortcuts">Keyboard Shortcuts</a></li>
+    <li><a href="#build-eval">Step 3: Build Eval</a></li>
+    <li class="indent"><a href="#pattern-insights">Pattern Insights</a></li>
+    <li class="indent"><a href="#judge-config">Judge Configuration</a></li>
+    <li class="indent"><a href="#run-evaluation">Running Evaluation</a></li>
+    <li><a href="#comparison">Comparison Table</a></li>
+    <li><a href="#alignment-metrics">Alignment Metrics</a></li>
+    <li class="indent"><a href="#metric-definitions">Metric Definitions</a></li>
+    <li class="indent"><a href="#confusion-matrix">Confusion Matrix</a></li>
+    <li><a href="#insights">Insights &amp; Optimization</a></li>
+    <li><a href="#workflow">Calibration Workflow</a></li>
+    <li><a href="#configuration">Configuration</a></li>
+    <li><a href="#next-steps">Next Steps</a></li>
+  </ul>
+</nav>
+
+</div><!-- .layout -->
+
+</body>
+</html>

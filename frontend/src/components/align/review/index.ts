@@ -1,0 +1,1 @@
+export { PatternSidebar } from './PatternSidebar';

@@ -1,0 +1,29 @@
+{
+  "name": "compare",
+  "description": "Compare evaluation results across experiments or models",
+  "version": "1.0.0",
+  "parameters": [
+    {
+      "name": "group_by",
+      "type": "string",
+      "description": "Column to group by for comparison",
+      "required": false,
+      "default": "evaluation_name"
+    },
+    {
+      "name": "metrics",
+      "type": "array",
+      "description": "Specific metrics to compare",
+      "required": false
+    },
+    {
+      "name": "comparison_type",
+      "type": "string",
+      "description": "Type of comparison: 'aggregate' or 'per_case'",
+      "required": false,
+      "default": "aggregate"
+    }
+  ],
+  "tags": ["comparison", "experiments", "analysis"],
+  "enabled": true
+}
