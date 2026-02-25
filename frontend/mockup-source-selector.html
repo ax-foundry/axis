@@ -1,0 +1,574 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Agent Selector – AXIS Mockup v2</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --primary: #8b9f4f;
+        --primary-light: #a4b86c;
+        --primary-dark: #6b7a3a;
+        --text-primary: #2c3e50;
+        --text-secondary: #34495e;
+        --text-muted: #7f8c8d;
+        --border: #e1e5ea;
+        --background: #fafbfc;
+        --surface: #ffffff;
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family: 'Inter', system-ui, sans-serif;
+        background: var(--background);
+        color: var(--text-primary);
+      }
+
+      /* ========= PAGE HEADER ========= */
+      .page-header {
+        background: var(--surface);
+        border-bottom: 1px solid var(--border);
+        padding: 16px 24px;
+      }
+      .page-header-inner {
+        max-width: 1280px;
+        margin: 0 auto;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .page-header-icon {
+        width: 36px;
+        height: 36px;
+        background: var(--primary);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .page-header-icon svg {
+        width: 18px;
+        height: 18px;
+        color: #fff;
+      }
+      .page-header h1 {
+        font-size: 18px;
+        font-weight: 700;
+      }
+      .page-header p {
+        font-size: 12px;
+        color: var(--text-muted);
+      }
+
+      /* ========= AGENT TAB BAR ========= */
+      .agent-bar {
+        background: var(--surface);
+        border-bottom: 1px solid var(--border);
+        padding: 0 24px;
+      }
+      .agent-bar-inner {
+        max-width: 1280px;
+        margin: 0 auto;
+        display: flex;
+        align-items: stretch;
+        gap: 0;
+      }
+
+      /* ── Tab item ── */
+      .agent-tab {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 20px;
+        cursor: pointer;
+        position: relative;
+        transition: color 0.15s ease;
+        border: none;
+        background: none;
+        font-family: inherit;
+      }
+      .agent-tab::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 12px;
+        right: 12px;
+        height: 2px;
+        background: transparent;
+        border-radius: 1px 1px 0 0;
+        transition: background 0.15s ease;
+      }
+      .agent-tab:hover {
+        color: var(--text-primary);
+      }
+      .agent-tab:hover::after {
+        background: var(--border);
+      }
+
+      /* Selected */
+      .agent-tab.selected .agent-tab-name {
+        color: var(--primary-dark);
+        font-weight: 600;
+      }
+      .agent-tab.selected .agent-tab-role {
+        color: var(--primary);
+      }
+      .agent-tab.selected::after {
+        background: var(--primary);
+      }
+      .agent-tab.selected:hover::after {
+        background: var(--primary);
+      }
+
+      /* Avatar */
+      .agent-tab-avatar {
+        width: 26px;
+        height: 26px;
+        border-radius: 6px;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        background: #f0f2f5;
+      }
+      .agent-tab-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+      .agent-tab.selected .agent-tab-avatar {
+        background: #e8edda;
+      }
+
+      /* "All" icon variant */
+      .agent-tab-avatar.all-icon {
+        background: none;
+      }
+      .agent-tab-avatar.all-icon svg {
+        width: 18px;
+        height: 18px;
+        color: var(--text-muted);
+      }
+      .agent-tab.selected .agent-tab-avatar.all-icon svg {
+        color: var(--primary);
+      }
+
+      /* Text */
+      .agent-tab-text {
+        display: flex;
+        flex-direction: column;
+        line-height: 1;
+      }
+      .agent-tab-name {
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--text-secondary);
+      }
+      .agent-tab-role {
+        font-size: 10px;
+        color: var(--text-muted);
+        margin-top: 2px;
+      }
+
+      /* Divider between tabs */
+      .agent-tab + .agent-tab {
+        margin-left: 2px;
+      }
+
+      /* ========= VARIANT: Compact (no role) ========= */
+      .agent-bar.compact .agent-tab {
+        padding: 10px 16px;
+        gap: 7px;
+      }
+      .agent-bar.compact .agent-tab-avatar {
+        width: 22px;
+        height: 22px;
+        border-radius: 5px;
+      }
+      .agent-bar.compact .agent-tab-avatar.all-icon svg {
+        width: 16px;
+        height: 16px;
+      }
+      .agent-bar.compact .agent-tab-name {
+        font-size: 13px;
+      }
+      .agent-bar.compact .agent-tab-role {
+        display: none;
+      }
+
+      /* ========= Demo wrapper ========= */
+      .demo-section {
+        max-width: 1280px;
+        margin: 40px auto;
+        padding: 0 24px;
+      }
+      .demo-section h2 {
+        font-size: 14px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--text-muted);
+        margin-bottom: 16px;
+      }
+      .demo-block {
+        border-radius: 12px;
+        overflow: hidden;
+        border: 1px solid var(--border);
+        background: var(--background);
+        margin-bottom: 48px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+      }
+      .content-placeholder {
+        padding: 32px 24px;
+        text-align: center;
+        color: var(--text-muted);
+        font-size: 13px;
+        background: var(--background);
+      }
+    </style>
+  </head>
+  <body>
+    <!-- ===== VARIANT A: Tabs with avatar + name + role ===== -->
+    <div class="demo-section">
+      <h2>Variant A — Underline tabs with avatar + role</h2>
+      <div class="demo-block">
+        <div class="page-header">
+          <div class="page-header-inner">
+            <div class="page-header-icon">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <rect x="3" y="3" width="7" height="7" />
+                <rect x="14" y="3" width="7" height="7" />
+                <rect x="14" y="14" width="7" height="7" />
+                <rect x="3" y="14" width="7" height="7" />
+              </svg>
+            </div>
+            <div>
+              <h1>Production Overview</h1>
+              <p>Unified view of AI quality monitoring and human-in-the-loop metrics</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="agent-bar" id="barA">
+          <div class="agent-bar-inner">
+            <button class="agent-tab selected" onclick="selectTab(this, 'barA')">
+              <div class="agent-tab-avatar all-icon">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="2" y1="12" x2="22" y2="12" />
+                  <path
+                    d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"
+                  />
+                </svg>
+              </div>
+              <div class="agent-tab-text">
+                <span class="agent-tab-name">All Agents</span>
+              </div>
+            </button>
+
+            <button class="agent-tab" onclick="selectTab(this, 'barA')">
+              <div class="agent-tab-avatar">
+                <img
+                  src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%23f0f2f5'/><text x='50' y='62' text-anchor='middle' font-size='48'>🦉</text></svg>"
+                  alt="Alpha Bot"
+                />
+              </div>
+              <div class="agent-tab-text">
+                <span class="agent-tab-name">Alpha Bot</span>
+                <span class="agent-tab-role">Analyst</span>
+              </div>
+            </button>
+
+            <button class="agent-tab" onclick="selectTab(this, 'barA')">
+              <div class="agent-tab-avatar">
+                <img
+                  src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%23f0f2f5'/><text x='50' y='62' text-anchor='middle' font-size='48'>🦋</text></svg>"
+                  alt="Quill"
+                />
+              </div>
+              <div class="agent-tab-text">
+                <span class="agent-tab-name">Quill</span>
+                <span class="agent-tab-role">Auditor</span>
+              </div>
+            </button>
+
+            <button class="agent-tab" onclick="selectTab(this, 'barA')">
+              <div class="agent-tab-avatar">
+                <img
+                  src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%23f0f2f5'/><text x='50' y='62' text-anchor='middle' font-size='48'>⚡</text></svg>"
+                  alt="Beta Bot"
+                />
+              </div>
+              <div class="agent-tab-text">
+                <span class="agent-tab-name">Beta Bot</span>
+                <span class="agent-tab-role">Messenger</span>
+              </div>
+            </button>
+
+            <button class="agent-tab" onclick="selectTab(this, 'barA')">
+              <div class="agent-tab-avatar">
+                <img
+                  src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%23f0f2f5'/><text x='50' y='62' text-anchor='middle' font-size='48'>☀️</text></svg>"
+                  alt="Alpha Bot"
+                />
+              </div>
+              <div class="agent-tab-text">
+                <span class="agent-tab-name">Alpha Bot</span>
+                <span class="agent-tab-role">Analyst</span>
+              </div>
+            </button>
+          </div>
+        </div>
+
+        <div class="content-placeholder">↓ Page content ↓</div>
+      </div>
+    </div>
+
+    <!-- ===== VARIANT A: Alpha Bot selected ===== -->
+    <div class="demo-section">
+      <h2>Variant A — "Alpha Bot" selected</h2>
+      <div class="demo-block">
+        <div class="page-header">
+          <div class="page-header-inner">
+            <div class="page-header-icon">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+              </svg>
+            </div>
+            <div>
+              <h1>Human Signals</h1>
+              <p>Human-in-the-loop insights and operational metrics</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="agent-bar" id="barB">
+          <div class="agent-bar-inner">
+            <button class="agent-tab" onclick="selectTab(this, 'barB')">
+              <div class="agent-tab-avatar all-icon">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="2" y1="12" x2="22" y2="12" />
+                  <path
+                    d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"
+                  />
+                </svg>
+              </div>
+              <div class="agent-tab-text">
+                <span class="agent-tab-name">All Agents</span>
+              </div>
+            </button>
+
+            <button class="agent-tab selected" onclick="selectTab(this, 'barB')">
+              <div class="agent-tab-avatar">
+                <img
+                  src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%23f0f2f5'/><text x='50' y='62' text-anchor='middle' font-size='48'>🦉</text></svg>"
+                  alt="Alpha Bot"
+                />
+              </div>
+              <div class="agent-tab-text">
+                <span class="agent-tab-name">Alpha Bot</span>
+                <span class="agent-tab-role">Analyst</span>
+              </div>
+            </button>
+
+            <button class="agent-tab" onclick="selectTab(this, 'barB')">
+              <div class="agent-tab-avatar">
+                <img
+                  src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%23f0f2f5'/><text x='50' y='62' text-anchor='middle' font-size='48'>🦋</text></svg>"
+                  alt="Quill"
+                />
+              </div>
+              <div class="agent-tab-text">
+                <span class="agent-tab-name">Quill</span>
+                <span class="agent-tab-role">Auditor</span>
+              </div>
+            </button>
+
+            <button class="agent-tab" onclick="selectTab(this, 'barB')">
+              <div class="agent-tab-avatar">
+                <img
+                  src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%23f0f2f5'/><text x='50' y='62' text-anchor='middle' font-size='48'>⚡</text></svg>"
+                  alt="Beta Bot"
+                />
+              </div>
+              <div class="agent-tab-text">
+                <span class="agent-tab-name">Beta Bot</span>
+                <span class="agent-tab-role">Messenger</span>
+              </div>
+            </button>
+
+            <button class="agent-tab" onclick="selectTab(this, 'barB')">
+              <div class="agent-tab-avatar">
+                <img
+                  src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%23f0f2f5'/><text x='50' y='62' text-anchor='middle' font-size='48'>☀️</text></svg>"
+                  alt="Alpha Bot"
+                />
+              </div>
+              <div class="agent-tab-text">
+                <span class="agent-tab-name">Alpha Bot</span>
+                <span class="agent-tab-role">Analyst</span>
+              </div>
+            </button>
+          </div>
+        </div>
+
+        <div class="content-placeholder">
+          ↓ Showing data for <strong>Alpha Bot</strong> (Analyst) ↓
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== VARIANT B: Compact ===== -->
+    <div class="demo-section">
+      <h2>Variant B — Compact (avatar + name, no role)</h2>
+      <div class="demo-block">
+        <div class="page-header">
+          <div class="page-header-inner">
+            <div class="page-header-icon">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+              </svg>
+            </div>
+            <div>
+              <h1>Monitor</h1>
+              <p>Real-time performance monitoring and alerts</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="agent-bar compact" id="barC">
+          <div class="agent-bar-inner">
+            <button class="agent-tab selected" onclick="selectTab(this, 'barC')">
+              <div class="agent-tab-avatar all-icon">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="2" y1="12" x2="22" y2="12" />
+                  <path
+                    d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"
+                  />
+                </svg>
+              </div>
+              <div class="agent-tab-text">
+                <span class="agent-tab-name">All</span>
+              </div>
+            </button>
+
+            <button class="agent-tab" onclick="selectTab(this, 'barC')">
+              <div class="agent-tab-avatar">
+                <img
+                  src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%23f0f2f5'/><text x='50' y='62' text-anchor='middle' font-size='48'>🦉</text></svg>"
+                  alt="Alpha Bot"
+                />
+              </div>
+              <div class="agent-tab-text">
+                <span class="agent-tab-name">Alpha Bot</span>
+              </div>
+            </button>
+
+            <button class="agent-tab" onclick="selectTab(this, 'barC')">
+              <div class="agent-tab-avatar">
+                <img
+                  src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%23f0f2f5'/><text x='50' y='62' text-anchor='middle' font-size='48'>🦋</text></svg>"
+                  alt="Quill"
+                />
+              </div>
+              <div class="agent-tab-text">
+                <span class="agent-tab-name">Quill</span>
+              </div>
+            </button>
+
+            <button class="agent-tab" onclick="selectTab(this, 'barC')">
+              <div class="agent-tab-avatar">
+                <img
+                  src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%23f0f2f5'/><text x='50' y='62' text-anchor='middle' font-size='48'>⚡</text></svg>"
+                  alt="Beta Bot"
+                />
+              </div>
+              <div class="agent-tab-text">
+                <span class="agent-tab-name">Beta Bot</span>
+              </div>
+            </button>
+
+            <button class="agent-tab" onclick="selectTab(this, 'barC')">
+              <div class="agent-tab-avatar">
+                <img
+                  src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%23f0f2f5'/><text x='50' y='62' text-anchor='middle' font-size='48'>☀️</text></svg>"
+                  alt="Alpha Bot"
+                />
+              </div>
+              <div class="agent-tab-text">
+                <span class="agent-tab-name">Alpha Bot</span>
+              </div>
+            </button>
+          </div>
+        </div>
+
+        <div class="content-placeholder">↓ Page content ↓</div>
+      </div>
+    </div>
+
+    <script>
+      function selectTab(el, barId) {
+        document
+          .getElementById(barId)
+          .querySelectorAll('.agent-tab')
+          .forEach((t) => t.classList.remove('selected'));
+        el.classList.add('selected');
+      }
+    </script>
+  </body>
+</html>

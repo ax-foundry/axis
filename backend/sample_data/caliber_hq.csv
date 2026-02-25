@@ -1,0 +1,6 @@
+dataset_id,query,actual_output,expected_output,evaluation_name
+align_001,"What is the capital of France?","The capital of France is Paris. It's the largest city in France and home to famous landmarks like the Eiffel Tower and the Louvre Museum.","Paris","align_sample"
+align_002,"How do I make coffee?","To make coffee: 1) Add ground coffee to filter, 2) Pour hot water over grounds, 3) Let it brew for 3-4 minutes, 4) Pour and enjoy. Adjust coffee-to-water ratio to taste.","Brew ground coffee with hot water","align_sample"
+align_003,"What is 15 + 27?","The answer is 42.","42","align_sample"
+align_004,"Explain what gravity is","Umm, gravity is like... when things fall down? I think Newton discovered it when an apple hit him. It's a force or something that pulls stuff together maybe?","Force that attracts objects with mass toward each other","align_sample"
+align_005,"Who wrote the Harry Potter series?","The Harry Potter series was written by J.K. Rowling, a British author. The first book, Harry Potter and the Philosopher's Stone, was published in 1997.","J.K. Rowling","align_sample"

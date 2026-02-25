@@ -1,0 +1,29 @@
+# Agent Replay Plugin Configuration
+# Non-secret defaults only. Langfuse credentials go in environment variables.
+#
+# ── Global fallback (single Langfuse project) ──
+#   LANGFUSE_PUBLIC_KEY=pk-lf-...
+#   LANGFUSE_SECRET_KEY=sk-lf-...
+#   LANGFUSE_HOST=https://cloud.langfuse.com  (optional)
+#   AGENT_REPLAY_ENABLED=true
+#
+# ── Per-agent credentials (one Langfuse project per agent) ──
+# Convention: LANGFUSE_<AGENT_NAME>_PUBLIC_KEY / SECRET_KEY / HOST
+# The agent name is extracted and lowercased to match agents.yaml entries.
+#
+#   LANGFUSE_AGENT1_PUBLIC_KEY=pk-lf-...
+#   LANGFUSE_AGENT1_SECRET_KEY=sk-lf-...
+#   LANGFUSE_AGENT1_HOST=https://cloud.langfuse.com  (optional)
+#
+#   LANGFUSE_AGENT2_PUBLIC_KEY=pk-lf-...
+#   LANGFUSE_AGENT2_SECRET_KEY=sk-lf-...
+#
+# Auto-discovery: the backend scans env vars for LANGFUSE_*_PUBLIC_KEY
+# (excluding the global LANGFUSE_PUBLIC_KEY) and registers each agent.
+# Only agents with both PUBLIC_KEY and SECRET_KEY are registered.
+
+agent_replay:
+  default_limit: 20              # Max recent traces to show (1-100)
+  default_days_back: 7           # How far back to look for traces (1-90)
+  max_chars: 50000               # Default truncation limit for step content (1-200000)
+  search_metadata_key: caseReference  # Langfuse metadata key used for smart search

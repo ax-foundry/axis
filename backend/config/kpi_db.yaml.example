@@ -1,0 +1,172 @@
+# Agent KPI Database Auto-Load Configuration
+# Copy this file to kpi_db.yaml and customize for your environment.
+#
+# This configuration enables automatic loading of agent KPI data from a
+# PostgreSQL database into the DuckDB analytics store.
+#
+# Environment variables can also be used (YAML takes precedence):
+#   KPI_DB_URL, KPI_DB_AUTO_LOAD, KPI_DB_QUERY, etc.
+
+kpi_db:
+  # Master switch - set to true to enable database connection
+  enabled: true
+
+  # Auto-load on startup - when true, executes the query on app load
+  # Set to false to configure but require manual trigger
+  auto_load: true
+
+  # Database connection
+  # Option 1: Full connection URL (recommended for production)
+  url: "postgresql://axis_reader:${DB_PASSWORD}@db.example.com:5432/agents"
+
+  # Option 2: Individual connection parameters (alternative to url)
+  # host: "db.example.com"
+  # port: 5432
+  # database: "agents"
+  # username: "axis_reader"
+  # password: "your_password_here"
+  # ssl_mode: "require"  # Options: disable, prefer, require
+
+  # SQL query to execute for loading KPI data
+  # Returns numeric_value rows from the agent_kpi_logs table.
+  # The query filters to the last 90 days and only numeric KPIs.
+  query: |
+    SELECT id, created_at, source_name, source_type, kpi_name, kpi_category,
+           dataset_id, numeric_value, source_component, source_step,
+           environment, segment, tags, metadata
+    FROM agent_kpi_logs
+    WHERE created_at > NOW() - INTERVAL '90 days'
+      AND numeric_value IS NOT NULL
+    ORDER BY created_at DESC, id DESC
+
+  # Query timeout in seconds (max 120)
+  query_timeout: 60
+
+  # Maximum rows to load (max 50000)
+  row_limit: 50000
+
+  # Optional: list of kpi_name values to show on dashboard.
+  # Omit or leave empty to show all KPIs.
+  visible_kpis: []
+  #  - auto_resolve_rate
+  #  - time_to_response
+  #  - escalation_rate
+
+  # Optional: per-agent overrides for visible KPIs.
+  # When a source_name filter is active, these take precedence over visible_kpis.
+  # visible_kpis_per_source:
+  #   alpha_bot:
+  #     - auto_resolve_rate
+  #     - escalation_rate
+  #     - actionable_output_rate
+  #   beta_bot:
+  #     - time_to_response
+  #     - correction_rate
+
+  # --- Display Configuration ---
+
+  # Which value to show as the main number on each KPI card.
+  # Options: latest (most recent raw value), avg_7d, avg_30d
+  card_display_value: latest
+
+  # Which trend lines to show on the expanded chart.
+  # Options: daily, avg_7d, avg_30d
+  trend_lines:
+    - daily
+    - avg_7d
+    - avg_30d
+
+  # --- KPI Category & Metadata Configuration ---
+  #
+  # Categories group KPIs into panels on the dashboard.
+  # Each key is a category slug matching the kpi_category column in your data.
+  # If omitted, categories are auto-discovered from data with generated names.
+  #
+  # categories:
+  #   operational_efficiency:
+  #     display_name: Operational Efficiency
+  #     icon: Zap                 # Lucide icon name
+  #   commercial_impact:
+  #     display_name: Commercial Impact
+  #     icon: TrendingUp
+  #   risk_accuracy:
+  #     display_name: Risk Accuracy
+  #     icon: Shield
+
+  # Per-KPI overrides (optional).
+  # Each key is a kpi_name; supports display_name, unit, polarity,
+  # card_display_value, and trend_lines.
+  #
+  # Without overrides, display names are auto-generated from kpi_name
+  # (e.g. "auto_resolve_rate" -> "Auto Resolve Rate"), unit defaults to
+  # "score", and polarity defaults to "higher_better".
+  #
+  # kpi_overrides:
+  #   auto_resolve_rate:
+  #     display_name: Auto-Resolve Rate
+  #     unit: percent             # percent | seconds | count | score
+  #     polarity: higher_better   # higher_better | lower_better
+  #     card_display_value: avg_7d
+  #   time_to_response:
+  #     display_name: Time to Response
+  #     unit: seconds
+  #     polarity: lower_better
+  #     card_display_value: avg_30d
+  #     trend_lines:
+  #       - daily
+  #       - avg_7d
+  #   organic_cases_received:
+  #     unit: count
+  #     display_name: Organic Cases Received
+  #     polarity: higher_better
+
+  # Per-agent (source_name) display overrides.
+  # Supports card_display_value, trend_lines, and nested kpi_overrides.
+  # Resolution order: source+kpi > source > global kpi > global default.
+  # display_per_source:
+  #   alpha_bot:
+  #     card_display_value: avg_7d
+  #     trend_lines:
+  #       - daily
+  #       - avg_7d
+  #     kpi_overrides:
+  #       auto_resolve_rate:
+  #         card_display_value: avg_30d
+  #   beta_bot:
+  #     card_display_value: latest
+  #     trend_lines:
+  #       - daily
+  #       - avg_7d
+  #       - avg_30d
+
+  # --- Composition Charts ---
+  # Optional stacked bar charts built from existing KPI current values.
+  # Each chart shows a % breakdown using values already loaded from KPI data.
+  # Values are expected in 0–1 range and displayed as percentages.
+  # Multiple charts can be defined.
+  #
+  # composition_charts:
+  #   - title: "Decision Breakdown"
+  #     kpis:
+  #       - kpi_name: stp_rate
+  #         label: "Approved"
+  #         color: "#4ADE80"
+  #       - kpi_name: referral_rate
+  #         label: "Referred"
+  #         color: "#FBBF24"
+  #       - kpi_name: modification_rate
+  #         label: "Approved w/ Mods"
+  #         color: "#60A5FA"
+  #     show_remainder: true        # Compute 1 - sum(kpis) as extra segment
+  #     remainder_label: "Declined"
+  #     remainder_color: "#F87171"
+
+  # --- Periodic Incremental Sync ---
+  # refresh_interval_minutes: how often to sync (0 = disabled, >0 = every N minutes)
+  # incremental_column: column used as a watermark (must be monotonically increasing)
+  #
+  # Note: KPI sync does a full rebuild each time (staging + atomic swap).
+  # The incremental_column is reserved for future incremental support.
+  #
+  # refresh_interval_minutes: 15
+  # incremental_column: "created_at"

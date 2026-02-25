@@ -1,0 +1,216 @@
+dataset_id,query,actual_output,expected_output,evaluation_name,judgment,critique,user_tags
+ann_001,"What is photosynthesis?","## Photosynthesis
+
+Photosynthesis is the process by which **plants**, algae, and some bacteria convert light energy into chemical energy.
+
+### Key Steps:
+1. **Light Absorption** - Chlorophyll captures sunlight
+2. **Water Splitting** - H₂O is split into hydrogen and oxygen
+3. **Carbon Fixation** - CO₂ is converted to glucose
+
+### Formula:
+`6CO₂ + 6H₂O + light → C₆H₁₂O₆ + 6O₂`
+
+> This process is essential for life on Earth as it produces oxygen and forms the base of most food chains.","A clear explanation of photosynthesis covering the basic process and chemical equation.",Baseline Model,accept,"Excellent comprehensive answer with proper formatting","[""Excellent""]"
+ann_002,"Explain the difference between SQL and NoSQL databases","### SQL vs NoSQL Databases
+
+| Feature | SQL | NoSQL |
+|---------|-----|-------|
+| Structure | Relational tables | Document/Key-value/Graph |
+| Schema | Fixed schema | Flexible schema |
+| Scaling | Vertical | Horizontal |
+
+**When to use SQL:**
+- Complex queries needed
+- ACID compliance required
+- Structured data
+
+**When to use NoSQL:**
+- Large scale applications
+- Flexible data models
+- High throughput needs","Comparison of SQL and NoSQL with use cases.",Baseline Model,accept,"Good comparison with practical examples",
+ann_003,"Write a Python function to check if a number is prime","Here's a Python function to check for prime numbers:
+
+```python
+def is_prime(n):
+    if n < 2:
+        return False
+    for i in range(2, int(n**0.5) + 1):
+        if n % i == 0:
+            return False
+    return True
+```
+
+### Usage:
+```python
+print(is_prime(17))  # True
+print(is_prime(4))   # False
+```
+
+**Time Complexity:** O(√n)","A working prime number checker function with explanation.",Baseline Model,,,
+ann_004,"What are the benefits of exercise?","# Benefits of Regular Exercise
+
+## Physical Benefits
+- **Cardiovascular health** - Strengthens heart and improves circulation
+- **Weight management** - Burns calories and builds muscle
+- **Bone density** - Reduces risk of osteoporosis
+
+## Mental Benefits
+- Reduces stress and anxiety
+- Improves sleep quality
+- Boosts mood through endorphin release
+
+## Long-term Benefits
+1. Increased lifespan
+2. Reduced disease risk
+3. Better cognitive function
+
+> *""Exercise is the single best thing you can do for your brain""* - Dr. John Ratey","Comprehensive list of physical and mental health benefits.",Baseline Model,,,
+ann_005,"How does machine learning work?","## Machine Learning Overview
+
+Machine learning is a subset of AI where systems **learn from data** without explicit programming.
+
+### Types of ML:
+1. **Supervised Learning**
+   - Uses labeled data
+   - Examples: classification, regression
+
+2. **Unsupervised Learning**
+   - Finds patterns in unlabeled data
+   - Examples: clustering, dimensionality reduction
+
+3. **Reinforcement Learning**
+   - Learns through trial and error
+   - Examples: game playing, robotics
+
+### Basic Workflow:
+```
+Data → Preprocessing → Model Training → Evaluation → Deployment
+```
+
+The model improves by minimizing a *loss function* through optimization algorithms like gradient descent.","Explanation of ML types and basic concepts.",Baseline Model,4,"Good explanation but could include more practical examples","[""Incomplete""]"
+ann_006,"What is the capital of France?","The capital of France is **Paris**.
+
+Paris is located in northern France on the River Seine. It's known for:
+- The Eiffel Tower
+- The Louvre Museum
+- Notre-Dame Cathedral
+
+Population: ~2.2 million (city proper)","Paris, with brief context about the city.",Baseline Model,,,
+ann_007,"Explain REST API best practices","# REST API Best Practices
+
+## URL Design
+- Use **nouns**, not verbs: `/users` not `/getUsers`
+- Use plural names: `/products` not `/product`
+- Use hyphens for readability: `/user-profiles`
+
+## HTTP Methods
+| Method | Purpose |
+|--------|---------|
+| GET | Retrieve resources |
+| POST | Create new resource |
+| PUT | Update entire resource |
+| PATCH | Partial update |
+| DELETE | Remove resource |
+
+## Response Codes
+- `200` - Success
+- `201` - Created
+- `400` - Bad Request
+- `401` - Unauthorized
+- `404` - Not Found
+- `500` - Server Error
+
+## Example:
+```json
+{
+  ""status"": ""success"",
+  ""data"": {
+    ""id"": 1,
+    ""name"": ""Example""
+  }
+}
+```","Comprehensive REST API guidelines with examples.",Baseline Model,reject,"Missing important topics like authentication and rate limiting","[""Incomplete"", ""Factual Error""]"
+ann_008,"What causes seasons on Earth?","## What Causes Seasons?
+
+Seasons are caused by Earth's **axial tilt** of approximately 23.5°, *not* by distance from the Sun.
+
+### How it works:
+1. Earth orbits the Sun while tilted on its axis
+2. Different hemispheres receive varying amounts of direct sunlight
+3. More direct sunlight = warmer temperatures (summer)
+4. Less direct sunlight = cooler temperatures (winter)
+
+### Key Point:
+> When it's summer in the Northern Hemisphere, it's winter in the Southern Hemisphere, and vice versa.
+
+**Common Misconception:** Many people think seasons are caused by Earth being closer to the Sun, but Earth is actually *closest* to the Sun during Northern Hemisphere winter!","Explanation of axial tilt causing seasons, addressing common misconception.",Baseline Model,,,
+ann_009,"How do I center a div in CSS?","# Centering a Div in CSS
+
+There are several methods to center a div:
+
+## 1. Flexbox (Recommended)
+```css
+.parent {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+```
+
+## 2. Grid
+```css
+.parent {
+  display: grid;
+  place-items: center;
+}
+```
+
+## 3. Absolute Positioning
+```css
+.child {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+```
+
+## 4. Margin Auto (horizontal only)
+```css
+.child {
+  margin: 0 auto;
+  width: 50%;
+}
+```
+
+**Best Practice:** Use Flexbox or Grid for most cases - they're modern, flexible, and well-supported.","Multiple CSS centering techniques with code examples.",Baseline Model,,,
+ann_010,"What is blockchain?","## Blockchain Technology
+
+A blockchain is a **decentralized, distributed ledger** that records transactions across many computers.
+
+### Core Concepts:
+
+**Blocks** contain:
+- Transaction data
+- Timestamp
+- Hash of previous block
+- Own hash
+
+**Key Properties:**
+1. *Immutability* - Once recorded, data cannot be altered
+2. *Transparency* - All participants can view the ledger
+3. *Decentralization* - No single point of control
+
+### How it works:
+```
+Transaction → Verification → Block Creation → Chain Addition
+```
+
+### Applications:
+- Cryptocurrencies (Bitcoin, Ethereum)
+- Supply chain tracking
+- Smart contracts
+- Voting systems
+
+> Blockchain provides trust in trustless environments through cryptographic proof rather than central authority.","Comprehensive blockchain explanation with applications.",Baseline Model,,,

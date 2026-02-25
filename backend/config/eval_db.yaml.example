@@ -1,0 +1,198 @@
+# Evaluation Database Auto-Load Configuration
+# Copy this file to eval_db.yaml and customize for your environment.
+#
+# This configuration enables automatic loading of evaluation data from a
+# PostgreSQL database on app startup, bypassing the manual upload flow.
+#
+# Environment variables can also be used (YAML takes precedence):
+#   EVAL_DB_URL, EVAL_DB_AUTO_LOAD, EVAL_DB_QUERY, etc.
+
+eval_db:
+  # Master switch - set to true to enable database connection
+  enabled: true
+
+  # Auto-load on startup - when true, executes the query on app load
+  # Set to false to configure but require manual trigger
+  auto_load: true
+
+  # Enable/disable the Evaluation Runner tab in the UI
+  # Set to false to hide the batch evaluation runner (e.g. in read-only deployments)
+  # eval_runner_enabled: true
+
+  # Database connection
+  # Option 1: Full connection URL (recommended for production)
+  url: "postgresql://axis_reader:${DB_PASSWORD}@db.example.com:5432/evaluations"
+
+  # Option 2: Individual connection parameters (alternative to url)
+  # host: "db.example.com"
+  # port: 5432
+  # database: "evaluations"
+  # username: "axis_reader"
+  # password: "your_password_here"
+  # ssl_mode: "require"  # Options: disable, prefer, require
+
+  # Custom column mappings (optional)
+  # Use this to map your database column names to AXIS schema names.
+  # These take precedence over automatic normalization.
+  # Format: source_column: target_column
+  columns:
+    my_id_field: dataset_id
+    user_prompt: query
+    llm_response: actual_output
+    gold_answer: expected_output
+    run_name: evaluation_name
+    eval_metric: metric_name
+    eval_score: metric_score
+
+  # SQL query to execute for loading evaluation data
+  # The query should return columns that map to AXIS evaluation schema.
+  #
+  # Column mapping (automatic if no custom 'columns' mapping defined):
+  #   id, record_id, eval_id  -> dataset_id
+  #   input, prompt, question -> query
+  #   output, response, completion, answer -> actual_output
+  #   expected, ground_truth, reference -> expected_output
+  #   experiment, run_name, experiment_name -> evaluation_name
+  #   metric -> metric_name
+  #   score, metric_value, value -> metric_score
+  #
+  # Or use AS aliases in your query to map columns explicitly:
+  query: |
+    SELECT
+      e.id AS dataset_id,
+      e.experiment_name AS evaluation_name,
+      e.input AS query,
+      e.output AS actual_output,
+      e.expected AS expected_output,
+      m.metric_name,
+      m.score AS metric_score,
+      e.metadata AS data_metadata
+    FROM evaluations e
+    LEFT JOIN metrics m ON e.id = m.eval_id
+    WHERE e.created_at > NOW() - INTERVAL '7 days'
+    ORDER BY e.created_at DESC
+
+  # Query timeout in seconds (max 120)
+  # Increase for complex queries or large datasets
+  query_timeout: 60
+
+  # Maximum rows to load (max 50000)
+  # The query result will be truncated to this limit
+  row_limit: 10000
+
+  # --- SQL Query Mode (Interactive Wizard) ---
+  # SECURITY: For the interactive SQL query feature, use a read-only database role.
+  # This is the strongest protection against accidental or malicious mutations.
+  #
+  #   CREATE ROLE axis_reader WITH LOGIN PASSWORD 'secure_password';
+  #   GRANT CONNECT ON DATABASE evaluations TO axis_reader;
+  #   GRANT USAGE ON SCHEMA public TO axis_reader;
+  #   GRANT SELECT ON ALL TABLES IN SCHEMA public TO axis_reader;
+  #   ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO axis_reader;
+  #
+  # The backend also enforces read-only sessions and statement timeouts,
+  # but DB-level permissions are the primary security boundary.
+
+  # --- Table Restrictions (Interactive Wizard) ---
+  # Restrict the table picker to these tables (optional, empty = show all).
+  # Format: "schema.table" or "table" (defaults to public schema).
+  # Must match exactly how tables appear in pg_catalog.
+  # tables:
+  #   - public.evaluation_results
+  #   - public.metric_scores
+
+  # --- Filter Parameters (Interactive Wizard) ---
+  # Filter dropdowns shown in the wizard when selecting data.
+  # Distinct values are fetched dynamically (capped at 100).
+  # filters:
+  #   - column: eval_mode
+  #     label: Evaluation Mode
+  #   - column: evaluation_name
+  #     label: Experiment Name
+  #   - column: run_id
+  #     label: Run ID
+
+  # --- Periodic Incremental Sync ---
+  # Pull new rows on a timer instead of doing a full rebuild each time.
+  #
+  # refresh_interval_minutes: how often to sync (0 = disabled, >0 = every N minutes)
+  # incremental_column: column in query output used as a watermark — must be
+  #   monotonically increasing (e.g. timestamp, auto-increment id).
+  #   When null, periodic refresh falls back to a full rebuild.
+  #
+  # On the first run (or after a watermark reset) a full rebuild is always performed.
+  # Subsequent runs append only rows where incremental_column > last watermark.
+  #
+  # refresh_interval_minutes: 15
+  # incremental_column: "timestamp"
+
+
+# =============================================================================
+# Example Configurations
+# =============================================================================
+
+# Minimal configuration (using environment variables for credentials):
+# eval_db:
+#   enabled: true
+#   auto_load: true
+#   url: "postgresql://user:pass@localhost:5432/mydb"
+#   query: "SELECT * FROM evaluation_results LIMIT 1000"
+
+# Production configuration with complex query:
+# eval_db:
+#   enabled: true
+#   auto_load: true
+#   url: "postgresql://axis_reader:${DB_PASSWORD}@prod-db.internal:5432/evals"
+#   query: |
+#     WITH recent_evals AS (
+#       SELECT
+#         id,
+#         experiment_name,
+#         input_text,
+#         output_text,
+#         created_at
+#       FROM evaluation_runs
+#       WHERE created_at > NOW() - INTERVAL '30 days'
+#         AND status = 'completed'
+#     )
+#     SELECT
+#       re.id AS dataset_id,
+#       re.experiment_name AS evaluation_name,
+#       re.input_text AS query,
+#       re.output_text AS actual_output,
+#       m.name AS metric_name,
+#       m.value AS metric_score
+#     FROM recent_evals re
+#     JOIN metric_scores m ON re.id = m.eval_id
+#     ORDER BY re.created_at DESC
+#   query_timeout: 90
+#   row_limit: 25000
+
+# Staging/development configuration:
+# eval_db:
+#   enabled: true
+#   auto_load: false  # Manual trigger only
+#   host: "localhost"
+#   port: 5432
+#   database: "evals_dev"
+#   username: "developer"
+#   password: "dev_password"
+#   ssl_mode: "disable"
+#   query: "SELECT * FROM test_evaluations"
+#   query_timeout: 30
+#   row_limit: 1000
+
+# Configuration with custom column mappings:
+# eval_db:
+#   enabled: true
+#   auto_load: true
+#   url: "postgresql://user:pass@localhost:5432/mydb"
+#   columns:
+#     record_identifier: dataset_id
+#     user_input: query
+#     model_output: actual_output
+#     reference_answer: expected_output
+#     experiment_id: evaluation_name
+#     metric_type: metric_name
+#     metric_val: metric_score
+#   query: "SELECT * FROM my_evaluations"

@@ -1,0 +1,64 @@
+# Agent Replay Lookup Database Configuration
+# Copy this file to agent_replay_db.yaml and customize for your environment.
+#
+# This optional database enables searching traces by business fields
+# (e.g. case reference, ticket number) instead of only by Langfuse trace ID.
+#
+# Environment variables can also be used (YAML takes precedence):
+#   AGENT_REPLAY_DB_URL, AGENT_REPLAY_DB_HOST, etc.
+
+agent_replay_db:
+  # Master switch
+  enabled: true
+
+  # Database connection
+  # Option 1: Full connection URL (recommended for production)
+  url: "postgresql://axis_reader:changeme@db.example.com:5432/agent_traces"
+
+  # Option 2: Individual connection parameters (alternative to url)
+  # host: "db.example.com"
+  # port: 5432
+  # database: "agent_traces"
+  # username: "axis_reader"
+  # password: "changeme"
+  # ssl_mode: "require"  # Options: disable, prefer, require
+
+  # Default schema and table (used when agent has no override)
+  schema: public                         # Database schema (default: public)
+  table: trace_lookup                    # Table containing the trace mapping
+
+  # Searchable columns — each entry maps a DB column name to a display label.
+  # All configured columns appear in the frontend search dropdown.
+  # Omit or leave empty for trace-ID-only search.
+  search_columns:
+    case_reference: Case Reference
+    # business_name: Business Name       # Add more columns as needed
+
+  # Legacy single-column format (auto-converted to search_columns):
+  # search_column: case_reference
+  # search_column_label: Case Reference
+
+  trace_id_column: langfuse_trace_id     # Column containing the Langfuse trace ID
+  # agent_name_column: agent_name        # Column with agent name (omit or null to disable)
+  #   NOTE: agent_name values are auto-canonicalized (lowercased, hyphens -> underscores)
+  #   to match the env var discovery format.
+
+  # Per-agent overrides (only override what differs from defaults above)
+  # agents:
+  #   alpha_bot:
+  #     table: alpha_bot_cases
+  #     search_columns:
+  #       case_reference: Case Reference
+  #     trace_id_column: langfuse_trace_id
+  #   beta_bot:
+  #     table: beta_bot_cases
+  #     search_columns:
+  #       ticket_number: Ticket Number
+  #       business_name: Business Name
+  #     trace_id_column: langfuse_trace_id
+
+  # Timeouts and pool
+  query_timeout: 10                      # seconds (max 30)
+  connect_timeout: 10                    # seconds (max 30)
+  pool_min_size: 0                       # min idle connections
+  pool_max_size: 5                       # max connections (max 20)

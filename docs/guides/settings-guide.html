@@ -1,0 +1,1002 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Settings - AXIS User Guide</title>
+<style>
+  /* ── Reset & Base ── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --primary: #4f46e5;
+    --primary-light: #eef2ff;
+    --primary-dark: #3730a3;
+    --green: #16a34a;
+    --green-light: #f0fdf4;
+    --green-border: #bbf7d0;
+    --yellow: #ca8a04;
+    --yellow-light: #fefce8;
+    --yellow-border: #fef08a;
+    --red: #dc2626;
+    --red-light: #fef2f2;
+    --red-border: #fecaca;
+    --blue: #2563eb;
+    --blue-light: #eff6ff;
+    --blue-border: #bfdbfe;
+    --gray-50: #f9fafb;
+    --gray-100: #f3f4f6;
+    --gray-200: #e5e7eb;
+    --gray-300: #d1d5db;
+    --gray-400: #9ca3af;
+    --gray-500: #6b7280;
+    --gray-600: #4b5563;
+    --gray-700: #374151;
+    --gray-800: #1f2937;
+    --gray-900: #111827;
+    --sidebar-w: 260px;
+    --content-max: 860px;
+    --toc-w: 220px;
+  }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    color: var(--gray-800);
+    line-height: 1.7;
+    background: #fff;
+  }
+  a { color: var(--primary); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code {
+    font-family: 'SF Mono', 'Fira Code', 'Fira Mono', Menlo, monospace;
+    font-size: 0.875em;
+    background: var(--gray-100);
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: var(--primary-dark);
+  }
+  pre { background: var(--gray-900); color: #e5e7eb; padding: 16px 20px; border-radius: 8px; overflow-x: auto; font-size: 0.85rem; line-height: 1.6; }
+  pre code { background: none; padding: 0; color: inherit; }
+  kbd {
+    display: inline-block; padding: 2px 6px; font-size: 0.8em;
+    border: 1px solid var(--gray-300); border-radius: 4px;
+    background: var(--gray-50); box-shadow: 0 1px 0 var(--gray-300);
+    font-family: inherit;
+  }
+
+  /* ── Top Nav ── */
+  .topnav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    height: 56px; background: var(--gray-900); color: #fff;
+    display: flex; align-items: center; padding: 0 24px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.3);
+  }
+  .topnav-logo { font-weight: 700; font-size: 1.1rem; letter-spacing: -0.02em; }
+  .topnav-logo span { color: var(--primary); }
+  .topnav-links { margin-left: auto; display: flex; gap: 24px; font-size: 0.875rem; }
+  .topnav-links a { color: var(--gray-300); }
+  .topnav-links a:hover { color: #fff; text-decoration: none; }
+  .topnav-links a.active { color: #fff; font-weight: 600; }
+
+  /* ── Layout ── */
+  .layout { display: flex; margin-top: 56px; min-height: calc(100vh - 56px); }
+
+  /* ── Sidebar ── */
+  .sidebar {
+    position: fixed; top: 56px; left: 0; bottom: 0;
+    width: var(--sidebar-w); background: var(--gray-50);
+    border-right: 1px solid var(--gray-200);
+    overflow-y: auto; padding: 20px 0; font-size: 0.85rem;
+  }
+  .sidebar-section { padding: 0 16px; margin-bottom: 20px; }
+  .sidebar-section-title {
+    font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.08em; color: var(--gray-400); margin-bottom: 8px;
+    padding-left: 8px;
+  }
+  .sidebar-link {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 12px; border-radius: 6px; color: var(--gray-600);
+    transition: all 0.15s;
+  }
+  .sidebar-link:hover { background: var(--gray-200); color: var(--gray-800); text-decoration: none; }
+  .sidebar-link.active { background: var(--primary-light); color: var(--primary); font-weight: 600; }
+  .sidebar-link svg { width: 16px; height: 16px; flex-shrink: 0; }
+
+  /* ── Main Content ── */
+  .main {
+    margin-left: var(--sidebar-w); flex: 1;
+    padding: 40px 40px 80px;
+    margin-right: calc(var(--toc-w) + 48px);
+  }
+  .content { max-width: var(--content-max); width: 100%; }
+
+  /* ── TOC (right rail) ── */
+  .toc {
+    position: fixed; top: 96px; right: 24px;
+    width: var(--toc-w); font-size: 0.78rem;
+  }
+  .toc-title { font-weight: 700; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--gray-400); margin-bottom: 10px; }
+  .toc-list { list-style: none; border-left: 2px solid var(--gray-200); }
+  .toc-list li { padding-left: 14px; margin-bottom: 6px; }
+  .toc-list a { color: var(--gray-500); }
+  .toc-list a:hover { color: var(--primary); text-decoration: none; }
+  .toc-list .indent { padding-left: 28px; }
+
+  /* ── Typography ── */
+  .content h1 { font-size: 2rem; font-weight: 800; letter-spacing: -0.03em; margin-bottom: 8px; color: var(--gray-900); }
+  .content h2 { font-size: 1.45rem; font-weight: 700; margin-top: 48px; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid var(--gray-200); color: var(--gray-900); }
+  .content h3 { font-size: 1.15rem; font-weight: 600; margin-top: 32px; margin-bottom: 12px; color: var(--gray-800); }
+  .content h4 { font-size: 1rem; font-weight: 600; margin-top: 24px; margin-bottom: 8px; color: var(--gray-700); }
+  .content p { margin-bottom: 16px; color: var(--gray-700); }
+  .content > ul, .content > ol { margin-bottom: 16px; padding-left: 24px; color: var(--gray-700); }
+  .content li { margin-bottom: 6px; }
+  .subtitle { font-size: 1.1rem; color: var(--gray-500); margin-bottom: 32px; }
+
+  /* ── Breadcrumb ── */
+  .breadcrumb { font-size: 0.8rem; color: var(--gray-400); margin-bottom: 12px; }
+  .breadcrumb a { color: var(--gray-400); }
+  .breadcrumb a:hover { color: var(--primary); }
+
+  /* ── Admonitions ── */
+  .admonition {
+    border-radius: 8px; padding: 16px 20px; margin: 20px 0;
+    border-left: 4px solid; font-size: 0.9rem;
+  }
+  .admonition-title {
+    font-weight: 700; font-size: 0.8rem; text-transform: uppercase;
+    letter-spacing: 0.04em; margin-bottom: 6px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .admonition.tip { background: var(--green-light); border-color: var(--green); }
+  .admonition.tip .admonition-title { color: var(--green); }
+  .admonition.info { background: var(--blue-light); border-color: var(--blue); }
+  .admonition.info .admonition-title { color: var(--blue); }
+  .admonition.warning { background: var(--yellow-light); border-color: var(--yellow); }
+  .admonition.warning .admonition-title { color: var(--yellow); }
+  .admonition.note { background: var(--gray-50); border-color: var(--gray-400); }
+  .admonition.note .admonition-title { color: var(--gray-600); }
+
+  /* ── Screenshot Frames ── */
+  .screenshot {
+    margin: 24px 0; border-radius: 10px; overflow: hidden;
+    border: 1px solid var(--gray-200); box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+  }
+  .screenshot-chrome {
+    background: var(--gray-100); padding: 8px 14px; display: flex;
+    align-items: center; gap: 8px; border-bottom: 1px solid var(--gray-200);
+  }
+  .screenshot-dots { display: flex; gap: 6px; }
+  .screenshot-dots span { width: 10px; height: 10px; border-radius: 50%; }
+  .screenshot-dots span:nth-child(1) { background: #f87171; }
+  .screenshot-dots span:nth-child(2) { background: #fbbf24; }
+  .screenshot-dots span:nth-child(3) { background: #34d399; }
+  .screenshot-title { font-size: 0.75rem; color: var(--gray-500); margin-left: 8px; }
+  .screenshot-body { background: #fff; position: relative; }
+  .screenshot-caption {
+    text-align: center; font-size: 0.8rem; color: var(--gray-500);
+    padding: 10px; font-style: italic; background: var(--gray-50);
+    border-top: 1px solid var(--gray-200);
+  }
+
+  /* ── Simulated UI ── */
+  .sim-ui { padding: 20px; font-family: inherit; }
+  .sim-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--gray-200); }
+  .sim-header-icon { width: 24px; height: 24px; color: var(--primary); }
+  .sim-header h3 { margin: 0; font-size: 1.1rem; }
+  .sim-header p { margin: 0; font-size: 0.8rem; color: var(--gray-500); }
+
+  .sim-filters { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+  .sim-filter-btn {
+    padding: 6px 14px; border-radius: 6px; font-size: 0.8rem;
+    border: 1px solid var(--gray-200); background: #fff; color: var(--gray-600);
+    display: flex; align-items: center; gap: 6px;
+  }
+  .sim-filter-btn.active { border-color: var(--primary); background: var(--primary-light); color: var(--primary); font-weight: 600; }
+  .sim-filter-btn svg { width: 14px; height: 14px; }
+
+  .sim-kpi-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 20px; }
+  .sim-kpi {
+    border: 1px solid var(--gray-200); border-radius: 8px; padding: 14px 16px;
+    background: #fff;
+  }
+  .sim-kpi-label { font-size: 0.7rem; color: var(--gray-500); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 4px; }
+  .sim-kpi-value { font-size: 1.4rem; font-weight: 700; color: var(--gray-900); }
+  .sim-kpi-trend { font-size: 0.75rem; margin-top: 2px; }
+  .sim-kpi-trend.up { color: var(--green); }
+  .sim-kpi-trend.down { color: var(--red); }
+
+  .sim-tabs { display: flex; border-bottom: 2px solid var(--gray-200); margin-bottom: 16px; }
+  .sim-tab {
+    padding: 8px 16px; font-size: 0.82rem; color: var(--gray-500);
+    border-bottom: 2px solid transparent; margin-bottom: -2px; cursor: pointer;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .sim-tab.active { color: var(--primary); border-color: var(--primary); font-weight: 600; }
+  .sim-tab .badge {
+    background: var(--red); color: #fff; font-size: 0.65rem;
+    padding: 1px 6px; border-radius: 10px; font-weight: 700;
+  }
+
+  .sim-chart-placeholder {
+    height: 200px; background: var(--gray-50); border: 1px solid var(--gray-200);
+    border-radius: 8px; display: flex; align-items: center; justify-content: center;
+    position: relative; overflow: hidden;
+  }
+  .sim-chart-placeholder.tall { height: 280px; }
+
+  .sim-chart-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 14px; border-bottom: 1px solid var(--gray-200);
+  }
+  .sim-chart-header h4 { font-size: 0.85rem; margin: 0; color: var(--gray-700); }
+  .sim-chart-card { border: 1px solid var(--gray-200); border-radius: 8px; overflow: hidden; margin-bottom: 16px; }
+  .sim-chart-content { padding: 16px; }
+
+  .sim-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .sim-3col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+
+  /* Table simulation */
+  .sim-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+  .sim-table th { background: var(--gray-50); text-align: left; padding: 8px 12px; font-weight: 600; color: var(--gray-600); border-bottom: 1px solid var(--gray-200); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; }
+  .sim-table td { padding: 8px 12px; border-bottom: 1px solid var(--gray-100); color: var(--gray-700); }
+  .sim-table tr:hover td { background: var(--gray-50); }
+  .sim-badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 0.7rem; font-weight: 600; }
+  .sim-badge.green { background: var(--green-light); color: var(--green); border: 1px solid var(--green-border); }
+  .sim-badge.yellow { background: var(--yellow-light); color: var(--yellow); border: 1px solid var(--yellow-border); }
+  .sim-badge.red { background: var(--red-light); color: var(--red); border: 1px solid var(--red-border); }
+  .sim-badge.blue { background: var(--blue-light); color: var(--blue); border: 1px solid var(--blue-border); }
+  .sim-badge.gray { background: var(--gray-100); color: var(--gray-600); border: 1px solid var(--gray-200); }
+  .sim-badge.purple { background: #faf5ff; color: #7c3aed; border: 1px solid #ddd6fe; }
+  .sim-code { font-family: 'SF Mono', monospace; font-size: 0.75rem; color: var(--primary); }
+
+  /* ── Annotation Overlay ── */
+  .annotation-overlay { position: absolute; pointer-events: none; }
+  .callout-num {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 24px; height: 24px; border-radius: 50%;
+    background: var(--primary); color: #fff; font-size: 0.7rem; font-weight: 700;
+    box-shadow: 0 2px 6px rgba(79,70,229,0.4);
+  }
+  .callout-ring {
+    position: absolute; border: 2px solid var(--primary);
+    border-radius: 8px; pointer-events: none;
+    box-shadow: 0 0 0 2px rgba(79,70,229,0.15);
+  }
+  .callout-legend { margin: 16px 0; font-size: 0.85rem; }
+  .callout-legend-item { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 8px; }
+  .callout-legend-item .callout-num { flex-shrink: 0; }
+
+  /* ── Step Boxes ── */
+  .step-grid { display: grid; grid-template-columns: 1fr; gap: 16px; margin: 20px 0; }
+  .step-box {
+    display: flex; gap: 16px; padding: 16px 20px;
+    border: 1px solid var(--gray-200); border-radius: 10px;
+    background: #fff; transition: box-shadow 0.15s;
+  }
+  .step-box:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+  .step-num {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: var(--primary); color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 0.85rem; flex-shrink: 0;
+  }
+  .step-content h4 { margin: 0 0 4px; font-size: 0.95rem; }
+  .step-content p { margin: 0; font-size: 0.88rem; color: var(--gray-600); }
+
+  /* ── Feature Cards ── */
+  .feature-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 20px 0; }
+  .feature-card {
+    border: 1px solid var(--gray-200); border-radius: 8px; padding: 16px;
+    transition: box-shadow 0.15s;
+  }
+  .feature-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+  .feature-card h4 { margin: 0 0 6px; font-size: 0.9rem; display: flex; align-items: center; gap: 8px; }
+  .feature-card p { margin: 0; font-size: 0.82rem; color: var(--gray-500); }
+  .feature-icon { font-size: 1.1rem; }
+
+  /* ── Separator ── */
+  .section-sep { display: flex; align-items: center; gap: 12px; margin: 32px 0 24px; color: var(--gray-400); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; }
+  .section-sep::before, .section-sep::after { content: ''; flex: 1; height: 1px; background: var(--gray-200); }
+
+  /* ── Next Steps ── */
+  .next-steps { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin: 24px 0; }
+  .next-step-card {
+    border: 1px solid var(--gray-200); border-radius: 8px; padding: 16px;
+    transition: all 0.15s;
+  }
+  .next-step-card:hover { border-color: var(--primary); box-shadow: 0 2px 8px rgba(79,70,229,0.1); text-decoration: none; }
+  .next-step-card h4 { margin: 0 0 4px; font-size: 0.9rem; color: var(--gray-800); }
+  .next-step-card p { margin: 0; font-size: 0.78rem; color: var(--gray-500); }
+
+  /* ── Responsive ── */
+  @media (max-width: 1200px) {
+    .toc { display: none; }
+    .main { margin-right: 0; }
+  }
+  @media (max-width: 900px) {
+    .sidebar { display: none; }
+    .main { margin-left: 0; }
+    .sim-kpi-row { grid-template-columns: repeat(2,1fr); }
+    .sim-2col { grid-template-columns: 1fr; }
+    .sim-3col { grid-template-columns: 1fr; }
+    .feature-grid { grid-template-columns: 1fr; }
+    .next-steps { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- TOP NAV -->
+<nav class="topnav">
+  <div class="topnav-logo"><img src="../assets/axis_transparent.png" alt="AXIS"
+    style="height:20px;vertical-align:middle;margin-right:2px;"> Docs</div>
+    <div class="topnav-links">
+    <a href="../getting-started/">Getting Started</a>
+    <a href="../user-guide/" class="active">User Guide</a>
+    <a href="../configuration/">Configuration</a>
+    <a href="../architecture/">Architecture</a>
+    <a href="../api-reference/">API Reference</a>
+  </div>
+</nav>
+
+<!-- SIDEBAR -->
+<div class="layout">
+<aside class="sidebar">
+  <div class="sidebar-section">
+    <div class="sidebar-section-title">User Guide</div>
+    <a class="sidebar-link" href="../user-guide/">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      Overview
+    </a>
+    <a class="sidebar-link" href="evaluate-guide.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      Evaluate
+    </a>
+    <a class="sidebar-link" href="annotation-guide.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+      Annotation Studio
+    </a>
+    <a class="sidebar-link" href="monitoring-guide.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      Monitoring
+    </a>
+    <a class="sidebar-link" href="production-guide.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      Production
+    </a>
+    <a class="sidebar-link" href="calibration-guide.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+      CaliberHQ
+    </a>
+    <a class="sidebar-link" href="human-signals-guide.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      Human Signals
+    </a>
+    <a class="sidebar-link" href="memory-guide.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+      Memory
+    </a>
+    <a class="sidebar-link" href="agent-replay-guide.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+      Agent Replay
+    </a>
+    <a class="sidebar-link" href="simulation-guide.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+      Simulation
+    </a>
+    <a class="sidebar-link" href="learn-guide.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+      Learn
+    </a>
+    <a class="sidebar-link active" href="settings-guide.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+      Settings
+    </a>
+  </div>
+</aside>
+
+<!-- MAIN CONTENT -->
+<main class="main">
+<div class="content">
+
+<!-- Breadcrumb -->
+<div class="breadcrumb">
+  <a href="#">Docs</a> / <a href="#">User Guide</a> / <strong>Settings</strong>
+</div>
+
+<h1>Settings</h1>
+<p class="subtitle">System configuration, database connections, theme customization, and agent registry &mdash; all managed from a single page.</p>
+
+<!-- ── Why Settings ── -->
+<h2 id="why-settings">Why Use Settings?</h2>
+<p>The Settings page is your control center for connecting AXIS to your infrastructure. Instead of editing YAML files manually for every change, the Settings page gives you a live view of the current configuration and lets you verify connections at a glance.</p>
+
+<div class="feature-grid">
+  <div class="feature-card">
+    <h4><span class="feature-icon">&#x1F50C;</span> Backend Connection</h4>
+    <p>Verify the API server is reachable, check the version, and see the configured endpoint URL.</p>
+  </div>
+  <div class="feature-card">
+    <h4><span class="feature-icon">&#x1F3A8;</span> Theme &amp; Branding</h4>
+    <p>View the active color palette and branding loaded from backend config. White-label ready.</p>
+  </div>
+  <div class="feature-card">
+    <h4><span class="feature-icon">&#x1F5C4;</span> Data Management</h4>
+    <p>Export your settings or clear local storage to reset cached evaluation data and UI state.</p>
+  </div>
+  <div class="feature-card">
+    <h4><span class="feature-icon">&#x2699;</span> Config File Reference</h4>
+    <p>Understand the YAML config files that power database connections, agents, and themes.</p>
+  </div>
+</div>
+
+<!-- ── Quick Start ── -->
+<h2 id="quick-start">Quick Start</h2>
+<p>Here is the recommended workflow when setting up AXIS for the first time:</p>
+
+<div class="step-grid">
+  <div class="step-box">
+    <div class="step-num">1</div>
+    <div class="step-content">
+      <h4>Run <code>make setup</code></h4>
+      <p>Copies all <code>.yaml.example</code> templates to active config files in <code>backend/config/</code>. This gives you a working baseline.</p>
+    </div>
+  </div>
+  <div class="step-box">
+    <div class="step-num">2</div>
+    <div class="step-content">
+      <h4>Edit YAML config files</h4>
+      <p>Fill in database credentials, theme colors, and agent definitions in the YAML files. Environment variables can override any value.</p>
+    </div>
+  </div>
+  <div class="step-box">
+    <div class="step-num">3</div>
+    <div class="step-content">
+      <h4>Start the backend &amp; frontend</h4>
+      <p>Launch with <code>uvicorn app.main:app --port 8500</code> and <code>npm run dev</code>. The backend reads config on startup.</p>
+    </div>
+  </div>
+  <div class="step-box">
+    <div class="step-num">4</div>
+    <div class="step-content">
+      <h4>Open the Settings page</h4>
+      <p>Navigate to <code>/settings</code> to confirm the backend is connected, the theme loaded, and everything looks right.</p>
+    </div>
+  </div>
+</div>
+
+<div class="admonition tip">
+  <div class="admonition-title">&#x1F4A1; Tip</div>
+  Config files in <code>backend/config/</code> are gitignored. Only <code>.example</code> templates are tracked, so your credentials never end up in version control.
+</div>
+
+<!-- ── Backend Connection ── -->
+<h2 id="backend-connection">Backend Connection</h2>
+<p>The first card on the Settings page shows the API endpoint URL and a live connection status indicator. AXIS checks the backend <code>/health</code> endpoint on page load.</p>
+
+<!-- Annotated Screenshot: Backend Connection -->
+<div class="screenshot">
+  <div class="screenshot-chrome">
+    <div class="screenshot-dots"><span></span><span></span><span></span></div>
+    <div class="screenshot-title">localhost:3500/settings</div>
+  </div>
+  <div class="screenshot-body">
+    <div class="sim-ui" style="position:relative;">
+      <!-- Page Header -->
+      <div class="sim-header" style="position:relative;">
+        <svg class="sim-header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+        <div>
+          <h3 style="font-size:1rem;">Settings</h3>
+          <p>System configuration and status</p>
+        </div>
+        <div style="position:absolute;top:-4px;right:-4px;"><span class="callout-num">1</span></div>
+      </div>
+
+      <!-- Backend Connection Card -->
+      <div style="border:1px solid var(--gray-200);border-radius:12px;padding:20px;margin-bottom:16px;position:relative;">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+          <div style="width:40px;height:40px;border-radius:10px;background:var(--primary-light);display:flex;align-items:center;justify-content:center;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" style="width:20px;height:20px;"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
+          </div>
+          <div>
+            <div style="font-weight:600;font-size:0.95rem;">Backend Connection</div>
+            <div style="font-size:0.8rem;color:var(--gray-500);">API server status and endpoint</div>
+          </div>
+        </div>
+        <div style="background:var(--gray-50);border-radius:8px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <div style="font-size:0.7rem;font-weight:600;color:var(--gray-500);text-transform:uppercase;">API Endpoint</div>
+            <div style="font-family:'SF Mono',monospace;font-size:0.85rem;color:var(--gray-800);">http://localhost:8500</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <div style="width:8px;height:8px;border-radius:50%;background:var(--green);"></div>
+            <span style="font-size:0.82rem;color:var(--green);font-weight:600;">Connected</span>
+            <span style="font-size:0.72rem;color:var(--gray-400);">v1.2.0</span>
+            <div style="padding:2px 8px;border:1px solid var(--gray-200);border-radius:4px;font-size:0.72rem;color:var(--gray-500);margin-left:4px;">Retry</div>
+          </div>
+        </div>
+        <div style="margin-top:8px;font-size:0.75rem;color:var(--gray-500);">Set via <code style="font-size:0.72rem;">NEXT_PUBLIC_API_URL</code> environment variable. Defaults to <code style="font-size:0.72rem;">http://localhost:8500</code>.</div>
+        <div style="position:absolute;top:-8px;right:-4px;"><span class="callout-num">2</span></div>
+      </div>
+
+      <!-- Theme Card -->
+      <div style="border:1px solid var(--gray-200);border-radius:12px;padding:20px;margin-bottom:16px;position:relative;">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+          <div style="width:40px;height:40px;border-radius:10px;background:#fef3c7;display:flex;align-items:center;justify-content:center;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2" style="width:20px;height:20px;"><path d="M12 2a5 5 0 0 1 5 5c0 2-1 3-2 4l-1 1v3H10v-3L9 11c-1-1-2-2-2-4a5 5 0 0 1 5-5z"/><line x1="10" y1="17" x2="14" y2="17"/><line x1="10" y1="20" x2="14" y2="20"/></svg>
+          </div>
+          <div>
+            <div style="font-weight:600;font-size:0.95rem;">Theme</div>
+            <div style="font-size:0.8rem;color:var(--gray-500);">Active color palette from backend configuration</div>
+          </div>
+        </div>
+        <div style="background:var(--gray-50);border-radius:8px;padding:12px 16px;margin-bottom:12px;">
+          <div style="font-size:0.7rem;font-weight:600;color:var(--gray-500);text-transform:uppercase;">Active Palette</div>
+          <div style="font-size:0.88rem;font-weight:600;color:var(--gray-800);">Professional Blue</div>
+        </div>
+        <div style="margin-bottom:8px;">
+          <div style="font-size:0.7rem;font-weight:600;color:var(--gray-500);text-transform:uppercase;margin-bottom:6px;">Colors</div>
+          <div style="display:flex;gap:10px;">
+            <div style="text-align:center;"><div style="width:32px;height:32px;border-radius:8px;background:#3D5A80;border:1px solid var(--gray-200);"></div><div style="font-size:0.6rem;color:var(--gray-500);margin-top:2px;">Primary</div></div>
+            <div style="text-align:center;"><div style="width:32px;height:32px;border-radius:8px;background:#5C7AA3;border:1px solid var(--gray-200);"></div><div style="font-size:0.6rem;color:var(--gray-500);margin-top:2px;">Light</div></div>
+            <div style="text-align:center;"><div style="width:32px;height:32px;border-radius:8px;background:#2B3C73;border:1px solid var(--gray-200);"></div><div style="font-size:0.6rem;color:var(--gray-500);margin-top:2px;">Dark</div></div>
+            <div style="text-align:center;"><div style="width:32px;height:32px;border-radius:8px;background:#8BA4C4;border:1px solid var(--gray-200);"></div><div style="font-size:0.6rem;color:var(--gray-500);margin-top:2px;">Soft</div></div>
+            <div style="text-align:center;"><div style="width:32px;height:32px;border-radius:8px;background:#D4AF37;border:1px solid var(--gray-200);"></div><div style="font-size:0.6rem;color:var(--gray-500);margin-top:2px;">Gold</div></div>
+            <div style="text-align:center;"><div style="width:32px;height:32px;border-radius:8px;background:#B8C5D3;border:1px solid var(--gray-200);"></div><div style="font-size:0.6rem;color:var(--gray-500);margin-top:2px;">Silver</div></div>
+          </div>
+        </div>
+        <div style="position:absolute;top:-8px;right:-4px;"><span class="callout-num">3</span></div>
+      </div>
+
+      <!-- Data Management Card -->
+      <div style="border:1px solid var(--gray-200);border-radius:12px;padding:20px;position:relative;">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+          <div style="width:40px;height:40px;border-radius:10px;background:var(--red-light);display:flex;align-items:center;justify-content:center;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2" style="width:20px;height:20px;"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+          </div>
+          <div>
+            <div style="font-weight:600;font-size:0.95rem;">Data Management</div>
+            <div style="font-size:0.8rem;color:var(--gray-500);">Local storage and cached data</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <div style="padding:8px 16px;border:1px solid var(--gray-200);border-radius:8px;font-size:0.82rem;font-weight:500;color:var(--gray-700);">Export Settings</div>
+          <div style="padding:8px 16px;border:1px solid var(--red-border);border-radius:8px;font-size:0.82rem;font-weight:500;color:var(--red);">Clear Local Storage</div>
+        </div>
+        <div style="margin-top:8px;font-size:0.75rem;color:var(--gray-500);">Clearing local storage removes all cached evaluation data, filter preferences, and UI state.</div>
+        <div style="position:absolute;top:-8px;right:-4px;"><span class="callout-num">4</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="screenshot-caption">The Settings page showing Backend Connection status, Theme palette preview, and Data Management actions.</div>
+</div>
+
+<!-- Callout Legend -->
+<div class="callout-legend">
+  <div class="callout-legend-item">
+    <span class="callout-num">1</span>
+    <div><strong>Page Header</strong> &mdash; Gear icon with title and subtitle. Consistent with the AXIS page header pattern across all pages.</div>
+  </div>
+  <div class="callout-legend-item">
+    <span class="callout-num">2</span>
+    <div><strong>Backend Connection</strong> &mdash; Shows the API endpoint URL, a live status indicator (green = connected, red = unreachable), the backend version, and a Retry button.</div>
+  </div>
+  <div class="callout-legend-item">
+    <span class="callout-num">3</span>
+    <div><strong>Theme Card</strong> &mdash; Displays the active palette name and color swatches (Primary, Light, Dark, Soft, Gold, Silver). Read-only &mdash; configured via backend YAML or env vars.</div>
+  </div>
+  <div class="callout-legend-item">
+    <span class="callout-num">4</span>
+    <div><strong>Data Management</strong> &mdash; <strong>Export Settings</strong> downloads a JSON snapshot. <strong>Clear Local Storage</strong> removes all cached data, filter preferences, and UI state &mdash; with a confirmation dialog.</div>
+  </div>
+</div>
+
+<!-- ── Database Configuration ── -->
+<h2 id="database-config">Database Configuration</h2>
+<p>AXIS supports four independent database connections, each configured through a dedicated YAML file. All databases are optional &mdash; the platform works offline with CSV uploads alone.</p>
+
+<table class="sim-table" style="margin:16px 0;">
+  <thead>
+    <tr><th>Database</th><th>Config File</th><th>Purpose</th><th>Default Port</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><strong>Eval DB</strong></td><td><code>eval_db.yaml</code></td><td>Evaluation datasets and results</td><td>5432</td></tr>
+    <tr><td><strong>Monitoring DB</strong></td><td><code>monitoring_db.yaml</code></td><td>Production observability metrics</td><td>5432</td></tr>
+    <tr><td><strong>Human Signals DB</strong></td><td><code>human_signals_db.yaml</code></td><td>Human-in-the-loop feedback data</td><td>5432</td></tr>
+    <tr><td><strong>KPI DB</strong></td><td><code>kpi_db.yaml</code></td><td>Agent business KPI time-series</td><td>5432</td></tr>
+  </tbody>
+</table>
+
+<h3 id="connection-fields">Connection Fields</h3>
+<p>Each database config shares the same base connection fields:</p>
+
+<table class="sim-table" style="margin:16px 0;">
+  <thead>
+    <tr><th>Field</th><th>Type</th><th>Default</th><th>Description</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><code>url</code></td><td>string</td><td><em>none</em></td><td>Full PostgreSQL connection URL (overrides individual fields)</td></tr>
+    <tr><td><code>host</code></td><td>string</td><td><em>none</em></td><td>Database hostname or IP address</td></tr>
+    <tr><td><code>port</code></td><td>int</td><td>5432</td><td>Database port</td></tr>
+    <tr><td><code>database</code></td><td>string</td><td><em>none</em></td><td>Database name</td></tr>
+    <tr><td><code>username</code></td><td>string</td><td><em>none</em></td><td>Authentication username</td></tr>
+    <tr><td><code>password</code></td><td>string</td><td><em>none</em></td><td>Authentication password</td></tr>
+    <tr><td><code>ssl_mode</code></td><td>string</td><td>prefer</td><td>SSL mode: <code>disable</code>, <code>prefer</code>, <code>require</code></td></tr>
+    <tr><td><code>auto_load</code></td><td>bool</td><td>false</td><td>Auto-load data from this database on startup</td></tr>
+  </tbody>
+</table>
+
+<div class="admonition info">
+  <div class="admonition-title">&#x2139;&#xFE0F; Info</div>
+  If a <code>url</code> is provided, it takes precedence over the individual <code>host</code>/<code>port</code>/<code>database</code> fields. Format: <code>postgresql://user:pass@host:5432/dbname</code>.
+</div>
+
+<h3 id="example-yaml">Example YAML</h3>
+<p>Here is a minimal <code>eval_db.yaml</code> configuration:</p>
+
+<pre><code>eval_db:
+  enabled: true
+  auto_load: false
+  host: db.example.com
+  port: 5432
+  database: evaluations
+  username: axis_reader
+  password: s3cret
+  ssl_mode: require
+  dataset_query: "SELECT * FROM evaluation_dataset"
+  results_query: "SELECT * FROM evaluation_results"
+  query_timeout: 60
+  row_limit: 10000</code></pre>
+
+<!-- ── Sync Engine ── -->
+<h2 id="sync-engine">Sync Engine (DuckDB)</h2>
+<p>AXIS uses an embedded DuckDB store as a local analytics cache. The sync engine pulls data from configured PostgreSQL databases and stores it locally for fast querying.</p>
+
+<table class="sim-table" style="margin:16px 0;">
+  <thead>
+    <tr><th>Setting</th><th>Default</th><th>Description</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><code>enabled</code></td><td><code>true</code></td><td>Enable/disable the DuckDB store</td></tr>
+    <tr><td><code>sync_mode</code></td><td><code>startup</code></td><td><code>startup</code> = sync on boot; <code>manual</code> = sync only via API call</td></tr>
+    <tr><td><code>path</code></td><td><code>data/local_store.duckdb</code></td><td>File path for the DuckDB database</td></tr>
+    <tr><td><code>sync_chunk_size</code></td><td>10,000</td><td>Rows per batch during sync</td></tr>
+    <tr><td><code>max_sync_rows</code></td><td>2,000,000</td><td>Safety limit &mdash; warns and stops if exceeded</td></tr>
+    <tr><td><code>query_concurrency</code></td><td>8</td><td>Max concurrent DuckDB read queries</td></tr>
+  </tbody>
+</table>
+
+<p>To trigger a manual sync, call the API endpoint:</p>
+<pre><code>POST /api/store/sync</code></pre>
+
+<div class="admonition warning">
+  <div class="admonition-title">&#x26A0;&#xFE0F; Warning</div>
+  The <code>max_sync_rows</code> safety limit prevents runaway syncs. If your dataset exceeds 2M rows, increase this value in <code>duckdb.yaml</code> and ensure you have sufficient disk space.
+</div>
+
+<!-- ── Thresholds ── -->
+<h2 id="thresholds">Thresholds</h2>
+<p>AXIS uses numeric thresholds to determine pass/fail status and color-code metrics across dashboards. These are defined in the backend <code>config.py</code> and the monitoring YAML config.</p>
+
+<h3 id="global-thresholds">Global Thresholds</h3>
+<table class="sim-table" style="margin:16px 0;">
+  <thead>
+    <tr><th>Threshold</th><th>Default</th><th>Color</th><th>Meaning</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>GREEN</strong></td>
+      <td>&ge; 0.7</td>
+      <td><span class="sim-badge green">Green</span></td>
+      <td>Good &mdash; metric is performing well</td>
+    </tr>
+    <tr>
+      <td><strong>PASSING</strong></td>
+      <td>&ge; 0.5</td>
+      <td><span class="sim-badge yellow">Yellow</span></td>
+      <td>Acceptable &mdash; metric passes but needs attention</td>
+    </tr>
+    <tr>
+      <td><strong>RED</strong></td>
+      <td>&lt; 0.3</td>
+      <td><span class="sim-badge red">Red</span></td>
+      <td>Failing &mdash; metric requires immediate action</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3 id="monitoring-thresholds">Monitoring Thresholds</h3>
+<p>The monitoring database config supports per-source threshold overrides:</p>
+
+<pre><code>monitoring_db:
+  thresholds:
+    default:
+      good: 0.7
+      pass: 0.5
+    per_source:
+      alpha_bot:
+        good: 0.8
+        pass: 0.6
+      beta_bot:
+        good: 0.75
+        pass: 0.55</code></pre>
+
+<p>Per-source thresholds let you set stricter standards for critical agents while keeping defaults for the rest.</p>
+
+<!-- ── Feature Flags ── -->
+<h2 id="feature-flags">Feature Flags</h2>
+<p>Feature flags control which capabilities are available in the frontend. They are served by the <code>/api/config/features</code> endpoint and configured in the backend YAML files.</p>
+
+<table class="sim-table" style="margin:16px 0;">
+  <thead>
+    <tr><th>Flag</th><th>Config Location</th><th>Default</th><th>Effect</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>eval_runner_enabled</code></td>
+      <td><code>eval_db.yaml</code></td>
+      <td><span class="sim-badge green">true</span></td>
+      <td>Shows the Runner step in the evaluation pipeline UI</td>
+    </tr>
+    <tr>
+      <td><code>auto_load</code> (eval)</td>
+      <td><code>eval_db.yaml</code></td>
+      <td><span class="sim-badge red">false</span></td>
+      <td>Auto-loads evaluation data from database on startup</td>
+    </tr>
+    <tr>
+      <td><code>auto_load</code> (monitoring)</td>
+      <td><code>monitoring_db.yaml</code></td>
+      <td><span class="sim-badge red">false</span></td>
+      <td>Auto-loads monitoring data from database on startup</td>
+    </tr>
+    <tr>
+      <td><code>auto_load</code> (kpi)</td>
+      <td><code>kpi_db.yaml</code></td>
+      <td><span class="sim-badge red">false</span></td>
+      <td>Auto-loads KPI data from database on startup</td>
+    </tr>
+    <tr>
+      <td><code>sync_mode</code></td>
+      <td><code>duckdb.yaml</code></td>
+      <td><span class="sim-badge blue">startup</span></td>
+      <td>Controls DuckDB sync: <code>startup</code> or <code>manual</code></td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="admonition tip">
+  <div class="admonition-title">&#x1F4A1; Tip</div>
+  Set <code>auto_load: true</code> for databases you always want connected. Keep it <code>false</code> during development to avoid slow startup times when the database is unavailable.
+</div>
+
+<!-- ── Theme & Branding ── -->
+<h2 id="theme-branding">Theme &amp; Branding</h2>
+<p>AXIS is white-label ready. All branding strings and colors are configured through <code>theme.yaml</code> or environment variables &mdash; never hardcoded in the frontend.</p>
+
+<h3 id="palettes">Color Palettes</h3>
+<p>Two built-in palettes are available, and you can define custom palettes in the YAML:</p>
+
+<div class="sim-2col" style="margin:16px 0;">
+  <div style="border:1px solid var(--gray-200);border-radius:8px;padding:16px;">
+    <div style="font-weight:600;font-size:0.9rem;margin-bottom:8px;">Sage Green (default)</div>
+    <div style="display:flex;gap:6px;margin-bottom:8px;">
+      <div style="width:28px;height:28px;border-radius:6px;background:#8B9F4F;"></div>
+      <div style="width:28px;height:28px;border-radius:6px;background:#A4B86C;"></div>
+      <div style="width:28px;height:28px;border-radius:6px;background:#6B7A3A;"></div>
+      <div style="width:28px;height:28px;border-radius:6px;background:#D4AF37;"></div>
+      <div style="width:28px;height:28px;border-radius:6px;background:#B8C5D3;"></div>
+    </div>
+    <div style="font-size:0.78rem;color:var(--gray-500);">Key: <code>sage_green</code></div>
+  </div>
+  <div style="border:1px solid var(--gray-200);border-radius:8px;padding:16px;">
+    <div style="font-weight:600;font-size:0.9rem;margin-bottom:8px;">Professional Blue</div>
+    <div style="display:flex;gap:6px;margin-bottom:8px;">
+      <div style="width:28px;height:28px;border-radius:6px;background:#3D5A80;"></div>
+      <div style="width:28px;height:28px;border-radius:6px;background:#5C7AA3;"></div>
+      <div style="width:28px;height:28px;border-radius:6px;background:#2B3C73;"></div>
+      <div style="width:28px;height:28px;border-radius:6px;background:#D4AF37;"></div>
+      <div style="width:28px;height:28px;border-radius:6px;background:#B8C5D3;"></div>
+    </div>
+    <div style="font-size:0.78rem;color:var(--gray-500);">Key: <code>professional_blue</code></div>
+  </div>
+</div>
+
+<h3 id="branding-fields">Branding Fields</h3>
+<p>These text fields appear throughout the application &mdash; in the sidebar, hero section, reports, and page headers:</p>
+
+<table class="sim-table" style="margin:16px 0;">
+  <thead>
+    <tr><th>Field</th><th>Default Value</th><th>Used In</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><code>app_name</code></td><td>AXIS</td><td>Sidebar logo, page titles, exports</td></tr>
+    <tr><td><code>tagline</code></td><td>AI Evaluation Platform</td><td>Sidebar subtitle, hero section</td></tr>
+    <tr><td><code>subtitle</code></td><td>The AI Evaluation Studio</td><td>Hero section secondary text</td></tr>
+    <tr><td><code>description</code></td><td>Agent X-ray Interface &amp; Statistics</td><td>Meta descriptions, about sections</td></tr>
+    <tr><td><code>report_footer</code></td><td>Report generated by AXIS AI Evaluation Platform</td><td>PDF/export report footers</td></tr>
+  </tbody>
+</table>
+
+<pre><code># theme.yaml
+theme:
+  active: professional_blue
+  branding:
+    app_name: "MyCompany AI"
+    tagline: "Internal Evaluation Platform"
+    subtitle: "Quality Assurance Suite"
+    description: "AI evaluation and monitoring for MyCompany"
+    report_footer: "Generated by MyCompany AI Platform"</code></pre>
+
+<div class="admonition info">
+  <div class="admonition-title">&#x2139;&#xFE0F; Info</div>
+  The frontend reads branding from <code>/api/config/theme</code> via the <code>useBranding()</code> hook. Environment variables (e.g., <code>AXIS_THEME_PRIMARY=#3D5A80</code>) can override any YAML value at runtime.
+</div>
+
+<!-- ── Agent Configuration ── -->
+<h2 id="agent-config">Agent Configuration</h2>
+<p>The agent registry tells AXIS about the AI agents in your system. Agents appear in the SourceSelector dropdown and production dashboards. Configured in <code>agents.yaml</code>.</p>
+
+<table class="sim-table" style="margin:16px 0;">
+  <thead>
+    <tr><th>Field</th><th>Required</th><th>Type</th><th>Description</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><code>name</code></td><td><span class="sim-badge green">Yes</span></td><td>string</td><td>Internal identifier (must match <code>source_name</code> in data)</td></tr>
+    <tr><td><code>label</code></td><td>No</td><td>string</td><td>Display name in the UI (defaults to <code>name</code>)</td></tr>
+    <tr><td><code>role</code></td><td>No</td><td>string</td><td>Agent role description (e.g., "Customer Support")</td></tr>
+    <tr><td><code>avatar</code></td><td>No</td><td>string</td><td>Path to avatar image in <code>/public/agents/</code></td></tr>
+    <tr><td><code>description</code></td><td>No</td><td>string</td><td>Short description shown in tooltips</td></tr>
+    <tr><td><code>biography</code></td><td>No</td><td>string</td><td>Longer narrative shown in detail views</td></tr>
+    <tr><td><code>active</code></td><td>No</td><td>bool</td><td>Whether the agent appears in selectors (default: true)</td></tr>
+  </tbody>
+</table>
+
+<pre><code># agents.yaml
+agents:
+  - name: alpha_bot
+    label: Alpha Bot
+    role: Customer Support
+    avatar: /agents/alpha_bot.png
+    description: Handles inbound customer requests
+    active: true
+  - name: beta_bot
+    label: Beta Bot
+    role: Order Processing
+    avatar: /agents/beta_bot.png
+    description: Manages order workflows end to end
+    active: true</code></pre>
+
+<div class="admonition warning">
+  <div class="admonition-title">&#x26A0;&#xFE0F; Warning</div>
+  The <code>name</code> field must exactly match the <code>source_name</code> values in your monitoring and KPI data. If they don't match, the agent won't appear in filtered views.
+</div>
+
+<!-- ── Config Files Reference ── -->
+<h2 id="config-files">Config Files Reference</h2>
+<p>All configuration files live in <code>backend/config/</code>. Only <code>.example</code> templates are version-controlled. Run <code>make setup</code> to create your local copies.</p>
+
+<table class="sim-table" style="margin:16px 0;">
+  <thead>
+    <tr><th>File</th><th>Root Key</th><th>Purpose</th><th>Load Order</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>theme.yaml</code></td>
+      <td><code>theme:</code></td>
+      <td>Color palettes, branding text, hero image settings</td>
+      <td>YAML &rarr; env vars &rarr; defaults</td>
+    </tr>
+    <tr>
+      <td><code>agents.yaml</code></td>
+      <td><code>agents:</code></td>
+      <td>Agent registry (name, label, role, avatar)</td>
+      <td>YAML &rarr; empty list</td>
+    </tr>
+    <tr>
+      <td><code>eval_db.yaml</code></td>
+      <td><code>eval_db:</code></td>
+      <td>Evaluation database connection and queries</td>
+      <td>YAML &rarr; env vars &rarr; defaults</td>
+    </tr>
+    <tr>
+      <td><code>monitoring_db.yaml</code></td>
+      <td><code>monitoring_db:</code></td>
+      <td>Monitoring database, thresholds, anomaly detection</td>
+      <td>YAML &rarr; env vars &rarr; defaults</td>
+    </tr>
+    <tr>
+      <td><code>human_signals_db.yaml</code></td>
+      <td><code>human_signals_db:</code></td>
+      <td>Human signals database connection</td>
+      <td>YAML &rarr; env vars &rarr; defaults</td>
+    </tr>
+    <tr>
+      <td><code>kpi_db.yaml</code></td>
+      <td><code>kpi_db:</code></td>
+      <td>Agent KPI database, display config, per-source overrides</td>
+      <td>YAML &rarr; env vars &rarr; defaults</td>
+    </tr>
+    <tr>
+      <td><code>duckdb.yaml</code></td>
+      <td><code>duckdb:</code></td>
+      <td>Local analytics cache: sync mode, limits, concurrency</td>
+      <td>YAML &rarr; defaults</td>
+    </tr>
+    <tr>
+      <td><code>signals_metrics.yaml</code></td>
+      <td><code>signals_metrics:</code></td>
+      <td>Human Signals display overrides (KPIs, charts, colors)</td>
+      <td>YAML &rarr; defaults</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3 id="load-order">Configuration Load Order</h3>
+<p>For most config files, AXIS follows this precedence (highest wins):</p>
+<ol>
+  <li><strong>YAML config file</strong> &mdash; if present in <code>backend/config/</code></li>
+  <li><strong>Environment variables</strong> &mdash; override specific YAML values</li>
+  <li><strong>Hardcoded defaults</strong> &mdash; in <code>config.py</code> dataclasses</li>
+</ol>
+
+<div class="admonition tip">
+  <div class="admonition-title">&#x1F4A1; Tip</div>
+  Use YAML files for development and environment variables for production deployments (Docker, Kubernetes). This way, secrets never touch disk in production.
+</div>
+
+<!-- ── Next Steps ── -->
+<h2 id="next-steps">Next Steps</h2>
+
+<div class="next-steps">
+  <a class="next-step-card" href="#">
+    <h4>&#x1F4CA; Monitoring &rarr;</h4>
+    <p>Connect a monitoring database and start tracking production metrics in real-time.</p>
+  </a>
+  <a class="next-step-card" href="#">
+    <h4>&#x1F3E0; Production &rarr;</h4>
+    <p>View agent KPIs and the executive summary once your databases are connected.</p>
+  </a>
+  <a class="next-step-card" href="#">
+    <h4>&#x1F4C2; Evaluate &rarr;</h4>
+    <p>Upload a CSV to start evaluating without any database configuration at all.</p>
+  </a>
+</div>
+
+<!-- Footer -->
+<div style="margin-top:60px;padding-top:24px;border-top:1px solid var(--gray-200);font-size:0.8rem;color:var(--gray-400);text-align:center;">
+  AXIS Documentation &middot; Built with MkDocs Material
+</div>
+
+</div><!-- .content -->
+</main>
+
+<!-- TABLE OF CONTENTS -->
+<nav class="toc">
+  <div class="toc-title">On this page</div>
+  <ul class="toc-list">
+    <li><a href="#why-settings">Why Use Settings?</a></li>
+    <li><a href="#quick-start">Quick Start</a></li>
+    <li><a href="#backend-connection">Backend Connection</a></li>
+    <li><a href="#database-config">Database Configuration</a></li>
+    <li class="indent"><a href="#connection-fields">Connection Fields</a></li>
+    <li class="indent"><a href="#example-yaml">Example YAML</a></li>
+    <li><a href="#sync-engine">Sync Engine (DuckDB)</a></li>
+    <li><a href="#thresholds">Thresholds</a></li>
+    <li class="indent"><a href="#global-thresholds">Global Thresholds</a></li>
+    <li class="indent"><a href="#monitoring-thresholds">Monitoring Thresholds</a></li>
+    <li><a href="#feature-flags">Feature Flags</a></li>
+    <li><a href="#theme-branding">Theme &amp; Branding</a></li>
+    <li class="indent"><a href="#palettes">Color Palettes</a></li>
+    <li class="indent"><a href="#branding-fields">Branding Fields</a></li>
+    <li><a href="#agent-config">Agent Configuration</a></li>
+    <li><a href="#config-files">Config Files Reference</a></li>
+    <li class="indent"><a href="#load-order">Load Order</a></li>
+    <li><a href="#next-steps">Next Steps</a></li>
+  </ul>
+</nav>
+
+</div><!-- .layout -->
+
+</body>
+</html>

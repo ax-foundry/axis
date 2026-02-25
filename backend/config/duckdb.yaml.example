@@ -1,0 +1,28 @@
+# DuckDB Embedded Analytics Store Configuration
+# Copy to duckdb.yaml and customize as needed.
+
+duckdb:
+  # Enable/disable DuckDB analytics store
+  enabled: true
+
+  # Path to the DuckDB database file (relative to backend directory)
+  path: "data/local_store.duckdb"
+
+  # Single global switch for startup sync behavior (recommended):
+  # - "startup": run startup sync based on per-dataset auto_load/auto_connect
+  # - "manual": never auto-sync on startup; sync only via /api/store/sync endpoints
+  sync_mode: "startup"
+
+  # Legacy key (deprecated): kept for backward compatibility.
+  # If sync_mode is omitted, true -> "startup", false -> "manual"
+  auto_sync_on_startup: true
+
+  # Number of rows per chunk during Postgres → DuckDB streaming
+  sync_chunk_size: 10000
+
+  # Safety cap: stop sync if this many rows are read (logs warning)
+  # Primary volume control should be via YAML query WHERE clauses
+  max_sync_rows: 2000000
+
+  # Max concurrent DuckDB read queries (thread pool limit)
+  query_concurrency: 8

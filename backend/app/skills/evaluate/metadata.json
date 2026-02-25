@@ -1,0 +1,28 @@
+{
+  "name": "evaluate",
+  "description": "Run LLM-based evaluation on evaluation data to assess quality",
+  "version": "1.0.0",
+  "parameters": [
+    {
+      "name": "metric_focus",
+      "type": "string",
+      "description": "Specific metric to focus on (optional)",
+      "required": false
+    },
+    {
+      "name": "sample_size",
+      "type": "integer",
+      "description": "Number of samples to evaluate",
+      "required": false,
+      "default": 100
+    },
+    {
+      "name": "criteria",
+      "type": "string",
+      "description": "Custom evaluation criteria",
+      "required": false
+    }
+  ],
+  "tags": ["evaluation", "metrics", "quality"],
+  "enabled": true
+}

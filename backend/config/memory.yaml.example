@@ -1,0 +1,86 @@
+# Memory / Rule Extractions Configuration
+# Copy this file to memory.yaml and customize for your environment.
+#
+# Controls field mappings, filters, display labels, action colors, and
+# conflict detection for the Memory dashboard.
+
+memory:
+  # --- Field Role Mappings ---
+  # Maps functional roles to CSV column names.
+  # Defaults match current column names if omitted.
+  # field_roles:
+  #   id: id
+  #   name: rule_name
+  #   action: action
+  #   category: risk_category
+  #   group_by: risk_factor
+  #   product: product_type
+  #   quality: decision_quality
+  #   threshold_type: threshold_type
+  #   threshold_value: threshold
+  #   description: outcome_description
+  #   mitigants: mitigants
+  #   status: ingestion_status
+  #   batch: batch_id
+  #   agent: agent_name
+  #   created_at: created_at
+  #   confidence: confidence
+  #   compound_trigger: compound_trigger
+  #   source: source
+  #   source_type: source_type
+  #   historical_exceptions: historical_exceptions
+  #   data_fields: data_fields
+  #   ingestion_error: ingestion_error
+  #   ingested_at: ingested_at
+
+  # Roles that MUST exist in uploaded data. Upload fails if missing.
+  # required_roles: [id, name, action, batch, status]
+
+  # Display labels for roles (auto-titlecased from role name if omitted)
+  # labels:
+  #   action: Action
+  #   category: Risk Category
+  #   group_by: Risk Factor
+  #   product: Product Type
+  #   quality: Decision Quality
+  #   threshold_type: Threshold
+  #   status: Status
+  #   name: Rule Name
+  #   description: Outcome
+
+  # Roles containing list/array data (parsed from CSV strings)
+  # list_fields: [mitigants, data_fields]
+
+  # Which roles appear as filter dropdowns (order = UI order)
+  # filter_roles: [action, product, category, threshold_type, status]
+
+  # --- Computed View Config ---
+  # hard_stops:
+  #   action_value: decline
+  #   require_empty_mitigants: true
+
+  # quality_values:
+  #   aligned: aligned
+  #   divergent: divergent
+  #   partial: partial
+
+  # soft_threshold_value: soft
+
+  # Action name -> hex color for charts and badges.
+  # Omit to auto-assign colors from a built-in palette.
+  # action_colors:
+  #   decline: "#E74C3C"
+  #   refer: "#F39C12"
+  #   approve_with_conditions: "#3498DB"
+  #   flag_for_review: "#9B59B6"
+  #   verify: "#1ABC9C"
+  #   exclude: "#E67E22"
+
+  # Pairs of actions considered contradictory.
+  # Used by the conflict detection endpoint (/api/memory/conflicts).
+  # Each entry is a two-element list. Omit for no conflict detection.
+  # contradictory_pairs:
+  #   - [decline, approve_with_conditions]
+  #   - [decline, verify]
+  #   - [exclude, refer]
+  #   - [exclude, approve_with_conditions]

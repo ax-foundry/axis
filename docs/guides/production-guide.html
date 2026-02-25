@@ -1,0 +1,1392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Production Overview - AXIS User Guide</title>
+<style>
+  /* ── Reset & Base ── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --primary: #4f46e5;
+    --primary-light: #eef2ff;
+    --primary-dark: #3730a3;
+    --green: #16a34a;
+    --green-light: #f0fdf4;
+    --green-border: #bbf7d0;
+    --yellow: #ca8a04;
+    --yellow-light: #fefce8;
+    --yellow-border: #fef08a;
+    --red: #dc2626;
+    --red-light: #fef2f2;
+    --red-border: #fecaca;
+    --blue: #2563eb;
+    --blue-light: #eff6ff;
+    --blue-border: #bfdbfe;
+    --gray-50: #f9fafb;
+    --gray-100: #f3f4f6;
+    --gray-200: #e5e7eb;
+    --gray-300: #d1d5db;
+    --gray-400: #9ca3af;
+    --gray-500: #6b7280;
+    --gray-600: #4b5563;
+    --gray-700: #374151;
+    --gray-800: #1f2937;
+    --gray-900: #111827;
+    --sidebar-w: 260px;
+    --content-max: 860px;
+    --toc-w: 220px;
+  }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    color: var(--gray-800);
+    line-height: 1.7;
+    background: #fff;
+  }
+  a { color: var(--primary); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code {
+    font-family: 'SF Mono', 'Fira Code', 'Fira Mono', Menlo, monospace;
+    font-size: 0.875em;
+    background: var(--gray-100);
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: var(--primary-dark);
+  }
+  pre { background: var(--gray-900); color: #e5e7eb; padding: 16px 20px; border-radius: 8px; overflow-x: auto; font-size: 0.85rem; line-height: 1.6; }
+  pre code { background: none; padding: 0; color: inherit; }
+  kbd {
+    display: inline-block; padding: 2px 6px; font-size: 0.8em;
+    border: 1px solid var(--gray-300); border-radius: 4px;
+    background: var(--gray-50); box-shadow: 0 1px 0 var(--gray-300);
+    font-family: inherit;
+  }
+
+  /* ── Top Nav ── */
+  .topnav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    height: 56px; background: var(--gray-900); color: #fff;
+    display: flex; align-items: center; padding: 0 24px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.3);
+  }
+  .topnav-logo { font-weight: 700; font-size: 1.1rem; letter-spacing: -0.02em; }
+  .topnav-logo span { color: var(--primary); }
+  .topnav-links { margin-left: auto; display: flex; gap: 24px; font-size: 0.875rem; }
+  .topnav-links a { color: var(--gray-300); }
+  .topnav-links a:hover { color: #fff; text-decoration: none; }
+  .topnav-links a.active { color: #fff; font-weight: 600; }
+
+  /* ── Layout ── */
+  .layout { display: flex; margin-top: 56px; min-height: calc(100vh - 56px); }
+
+  /* ── Sidebar ── */
+  .sidebar {
+    position: fixed; top: 56px; left: 0; bottom: 0;
+    width: var(--sidebar-w); background: var(--gray-50);
+    border-right: 1px solid var(--gray-200);
+    overflow-y: auto; padding: 20px 0; font-size: 0.85rem;
+  }
+  .sidebar-section { padding: 0 16px; margin-bottom: 20px; }
+  .sidebar-section-title {
+    font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.08em; color: var(--gray-400); margin-bottom: 8px;
+    padding-left: 8px;
+  }
+  .sidebar-link {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 12px; border-radius: 6px; color: var(--gray-600);
+    transition: all 0.15s;
+  }
+  .sidebar-link:hover { background: var(--gray-200); color: var(--gray-800); text-decoration: none; }
+  .sidebar-link.active { background: var(--primary-light); color: var(--primary); font-weight: 600; }
+  .sidebar-link svg { width: 16px; height: 16px; flex-shrink: 0; }
+
+  /* ── Main Content ── */
+  .main {
+    margin-left: var(--sidebar-w); flex: 1;
+    padding: 40px 40px 80px;
+    margin-right: calc(var(--toc-w) + 48px);
+  }
+  .content { max-width: var(--content-max); width: 100%; }
+
+  /* ── TOC (right rail) ── */
+  .toc {
+    position: fixed; top: 96px; right: 24px;
+    width: var(--toc-w); font-size: 0.78rem;
+  }
+  .toc-title { font-weight: 700; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--gray-400); margin-bottom: 10px; }
+  .toc-list { list-style: none; border-left: 2px solid var(--gray-200); }
+  .toc-list li { padding-left: 14px; margin-bottom: 6px; }
+  .toc-list a { color: var(--gray-500); }
+  .toc-list a:hover { color: var(--primary); text-decoration: none; }
+  .toc-list .indent { padding-left: 28px; }
+
+  /* ── Typography ── */
+  .content h1 { font-size: 2rem; font-weight: 800; letter-spacing: -0.03em; margin-bottom: 8px; color: var(--gray-900); }
+  .content h2 { font-size: 1.45rem; font-weight: 700; margin-top: 48px; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid var(--gray-200); color: var(--gray-900); }
+  .content h3 { font-size: 1.15rem; font-weight: 600; margin-top: 32px; margin-bottom: 12px; color: var(--gray-800); }
+  .content h4 { font-size: 1rem; font-weight: 600; margin-top: 24px; margin-bottom: 8px; color: var(--gray-700); }
+  .content p { margin-bottom: 16px; color: var(--gray-700); }
+  .content > ul, .content > ol { margin-bottom: 16px; padding-left: 24px; color: var(--gray-700); }
+  .content li { margin-bottom: 6px; }
+  .subtitle { font-size: 1.1rem; color: var(--gray-500); margin-bottom: 32px; }
+
+  /* ── Breadcrumb ── */
+  .breadcrumb { font-size: 0.8rem; color: var(--gray-400); margin-bottom: 12px; }
+  .breadcrumb a { color: var(--gray-400); }
+  .breadcrumb a:hover { color: var(--primary); }
+
+  /* ── Admonitions ── */
+  .admonition {
+    border-radius: 8px; padding: 16px 20px; margin: 20px 0;
+    border-left: 4px solid; font-size: 0.9rem;
+  }
+  .admonition-title {
+    font-weight: 700; font-size: 0.8rem; text-transform: uppercase;
+    letter-spacing: 0.04em; margin-bottom: 6px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .admonition.tip { background: var(--green-light); border-color: var(--green); }
+  .admonition.tip .admonition-title { color: var(--green); }
+  .admonition.info { background: var(--blue-light); border-color: var(--blue); }
+  .admonition.info .admonition-title { color: var(--blue); }
+  .admonition.warning { background: var(--yellow-light); border-color: var(--yellow); }
+  .admonition.warning .admonition-title { color: var(--yellow); }
+  .admonition.note { background: var(--gray-50); border-color: var(--gray-400); }
+  .admonition.note .admonition-title { color: var(--gray-600); }
+
+  /* ── Screenshot Frames ── */
+  .screenshot {
+    margin: 24px 0; border-radius: 10px; overflow: hidden;
+    border: 1px solid var(--gray-200); box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+  }
+  .screenshot-chrome {
+    background: var(--gray-100); padding: 8px 14px; display: flex;
+    align-items: center; gap: 8px; border-bottom: 1px solid var(--gray-200);
+  }
+  .screenshot-dots { display: flex; gap: 6px; }
+  .screenshot-dots span { width: 10px; height: 10px; border-radius: 50%; }
+  .screenshot-dots span:nth-child(1) { background: #f87171; }
+  .screenshot-dots span:nth-child(2) { background: #fbbf24; }
+  .screenshot-dots span:nth-child(3) { background: #34d399; }
+  .screenshot-title { font-size: 0.75rem; color: var(--gray-500); margin-left: 8px; }
+  .screenshot-body { background: #fff; position: relative; }
+  .screenshot-caption {
+    text-align: center; font-size: 0.8rem; color: var(--gray-500);
+    padding: 10px; font-style: italic; background: var(--gray-50);
+    border-top: 1px solid var(--gray-200);
+  }
+
+  /* ── Simulated UI ── */
+  .sim-ui { padding: 20px; font-family: inherit; }
+  .sim-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--gray-200); }
+  .sim-header-icon { width: 24px; height: 24px; color: var(--primary); }
+  .sim-header h3 { margin: 0; font-size: 1.1rem; }
+  .sim-header p { margin: 0; font-size: 0.8rem; color: var(--gray-500); }
+
+  .sim-filters { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+  .sim-filter-btn {
+    padding: 6px 14px; border-radius: 6px; font-size: 0.8rem;
+    border: 1px solid var(--gray-200); background: #fff; color: var(--gray-600);
+    display: flex; align-items: center; gap: 6px;
+  }
+  .sim-filter-btn.active { border-color: var(--primary); background: var(--primary-light); color: var(--primary); font-weight: 600; }
+  .sim-filter-btn svg { width: 14px; height: 14px; }
+
+  .sim-kpi-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 20px; }
+  .sim-kpi {
+    border: 1px solid var(--gray-200); border-radius: 8px; padding: 14px 16px;
+    background: #fff;
+  }
+  .sim-kpi-label { font-size: 0.7rem; color: var(--gray-500); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 4px; }
+  .sim-kpi-value { font-size: 1.4rem; font-weight: 700; color: var(--gray-900); }
+  .sim-kpi-trend { font-size: 0.75rem; margin-top: 2px; }
+  .sim-kpi-trend.up { color: var(--green); }
+  .sim-kpi-trend.down { color: var(--red); }
+
+  .sim-tabs { display: flex; border-bottom: 2px solid var(--gray-200); margin-bottom: 16px; }
+  .sim-tab {
+    padding: 8px 16px; font-size: 0.82rem; color: var(--gray-500);
+    border-bottom: 2px solid transparent; margin-bottom: -2px; cursor: pointer;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .sim-tab.active { color: var(--primary); border-color: var(--primary); font-weight: 600; }
+  .sim-tab .badge {
+    background: var(--red); color: #fff; font-size: 0.65rem;
+    padding: 1px 6px; border-radius: 10px; font-weight: 700;
+  }
+
+  .sim-chart-placeholder {
+    height: 200px; background: var(--gray-50); border: 1px solid var(--gray-200);
+    border-radius: 8px; display: flex; align-items: center; justify-content: center;
+    position: relative; overflow: hidden;
+  }
+  .sim-chart-placeholder.tall { height: 280px; }
+
+  /* Chart: Score Trend simulation */
+  .sim-trend-chart { position: relative; width: 100%; height: 100%; }
+  .sim-trend-chart svg { width: 100%; height: 100%; }
+
+  .sim-chart-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 14px; border-bottom: 1px solid var(--gray-200);
+  }
+  .sim-chart-header h4 { font-size: 0.85rem; margin: 0; color: var(--gray-700); }
+  .sim-chart-card { border: 1px solid var(--gray-200); border-radius: 8px; overflow: hidden; margin-bottom: 16px; }
+  .sim-chart-content { padding: 16px; }
+
+  .sim-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+  /* Table simulation */
+  .sim-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+  .sim-table th { background: var(--gray-50); text-align: left; padding: 8px 12px; font-weight: 600; color: var(--gray-600); border-bottom: 1px solid var(--gray-200); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; }
+  .sim-table td { padding: 8px 12px; border-bottom: 1px solid var(--gray-100); color: var(--gray-700); }
+  .sim-table tr:hover td { background: var(--gray-50); }
+  .sim-badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 0.7rem; font-weight: 600; }
+  .sim-badge.green { background: var(--green-light); color: var(--green); border: 1px solid var(--green-border); }
+  .sim-badge.yellow { background: var(--yellow-light); color: var(--yellow); border: 1px solid var(--yellow-border); }
+  .sim-badge.red { background: var(--red-light); color: var(--red); border: 1px solid var(--red-border); }
+  .sim-badge.blue { background: var(--blue-light); color: var(--blue); border: 1px solid var(--blue-border); }
+  .sim-badge.gray { background: var(--gray-100); color: var(--gray-600); border: 1px solid var(--gray-200); }
+  .sim-code { font-family: 'SF Mono', monospace; font-size: 0.75rem; color: var(--primary); }
+  .sim-eye-btn { width: 28px; height: 28px; border: 1px solid var(--gray-200); border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; color: var(--gray-400); cursor: pointer; background: #fff; }
+  .sim-eye-btn:hover { border-color: var(--primary); color: var(--primary); }
+
+  /* ── Annotation Overlay ── */
+  .annotation-overlay { position: absolute; pointer-events: none; }
+  .callout-num {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 24px; height: 24px; border-radius: 50%;
+    background: var(--primary); color: #fff; font-size: 0.7rem; font-weight: 700;
+    box-shadow: 0 2px 6px rgba(79,70,229,0.4);
+  }
+  .callout-ring {
+    position: absolute; border: 2px solid var(--primary);
+    border-radius: 8px; pointer-events: none;
+    box-shadow: 0 0 0 2px rgba(79,70,229,0.15);
+  }
+  .callout-legend { margin: 16px 0; font-size: 0.85rem; }
+  .callout-legend-item { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 8px; }
+  .callout-legend-item .callout-num { flex-shrink: 0; }
+
+  /* ── Step Boxes ── */
+  .step-grid { display: grid; grid-template-columns: 1fr; gap: 16px; margin: 20px 0; }
+  .step-box {
+    display: flex; gap: 16px; padding: 16px 20px;
+    border: 1px solid var(--gray-200); border-radius: 10px;
+    background: #fff; transition: box-shadow 0.15s;
+  }
+  .step-box:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+  .step-num {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: var(--primary); color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 0.85rem; flex-shrink: 0;
+  }
+  .step-content h4 { margin: 0 0 4px; font-size: 0.95rem; }
+  .step-content p { margin: 0; font-size: 0.88rem; color: var(--gray-600); }
+
+  /* ── Feature Cards ── */
+  .feature-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 20px 0; }
+  .feature-card {
+    border: 1px solid var(--gray-200); border-radius: 8px; padding: 16px;
+    transition: box-shadow 0.15s;
+  }
+  .feature-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+  .feature-card h4 { margin: 0 0 6px; font-size: 0.9rem; display: flex; align-items: center; gap: 8px; }
+  .feature-card p { margin: 0; font-size: 0.82rem; color: var(--gray-500); }
+  .feature-icon { font-size: 1.1rem; }
+
+  /* ── Alert Card Sim ── */
+  .sim-alert-card {
+    border: 1px solid var(--gray-200); border-radius: 8px; padding: 14px 18px;
+    border-left: 4px solid; margin-bottom: 10px;
+  }
+  .sim-alert-card.error { border-left-color: var(--red); }
+  .sim-alert-card.warning { border-left-color: var(--yellow); }
+  .sim-alert-title { font-weight: 600; font-size: 0.88rem; display: flex; align-items: center; gap: 8px; }
+  .sim-alert-meta { display: flex; gap: 12px; margin-top: 6px; font-size: 0.78rem; color: var(--gray-500); }
+  .sim-alert-values { display: flex; gap: 8px; margin-top: 8px; }
+  .sim-alert-val { background: var(--gray-50); border-radius: 6px; padding: 6px 10px; font-size: 0.75rem; }
+  .sim-alert-val .label { color: var(--gray-500); display: block; }
+  .sim-alert-val .val { font-weight: 700; font-family: monospace; }
+
+  /* ── Separator ── */
+  .section-sep { display: flex; align-items: center; gap: 12px; margin: 32px 0 24px; color: var(--gray-400); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; }
+  .section-sep::before, .section-sep::after { content: ''; flex: 1; height: 1px; background: var(--gray-200); }
+
+  /* ── Next Steps ── */
+  .next-steps { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin: 24px 0; }
+  .next-step-card {
+    border: 1px solid var(--gray-200); border-radius: 8px; padding: 16px;
+    transition: all 0.15s;
+  }
+  .next-step-card:hover { border-color: var(--primary); box-shadow: 0 2px 8px rgba(79,70,229,0.1); text-decoration: none; }
+  .next-step-card h4 { margin: 0 0 4px; font-size: 0.9rem; color: var(--gray-800); }
+  .next-step-card p { margin: 0; font-size: 0.78rem; color: var(--gray-500); }
+
+  /* ── Modal Sim ── */
+  .sim-modal-overlay {
+    background: rgba(0,0,0,0.04); border-radius: 8px; padding: 20px;
+    border: 1px solid var(--gray-200);
+  }
+  .sim-modal {
+    background: #fff; border-radius: 12px; max-width: 600px; margin: 0 auto;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.12); overflow: hidden;
+  }
+  .sim-modal-header { padding: 16px 20px; border-bottom: 1px solid var(--gray-200); display: flex; justify-content: space-between; align-items: center; }
+  .sim-modal-body { padding: 20px; }
+  .sim-modal-section { margin-bottom: 16px; }
+  .sim-modal-label { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--gray-500); margin-bottom: 4px; }
+  .sim-modal-box { background: var(--gray-50); border-radius: 6px; padding: 10px 14px; font-size: 0.82rem; color: var(--gray-700); }
+  .sim-modal-box.blue { background: var(--blue-light); border: 1px solid var(--blue-border); }
+  .sim-score-display { display: flex; align-items: center; gap: 16px; }
+  .sim-score-circle { width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; font-weight: 800; color: #fff; }
+  .sim-score-circle.green { background: var(--green); }
+  .sim-score-circle.red { background: var(--red); }
+  .sim-score-circle.yellow { background: var(--yellow); }
+  .sim-score-bar { flex: 1; height: 8px; border-radius: 4px; background: var(--gray-200); overflow: hidden; }
+  .sim-score-bar-fill { height: 100%; border-radius: 4px; }
+
+  /* ── Video placeholder ── */
+  .video-placeholder {
+    margin: 24px 0; border-radius: 10px; overflow: hidden;
+    border: 1px solid var(--gray-200); background: var(--gray-900);
+    height: 80px; display: flex; align-items: center; justify-content: center; color: #fff;
+    font-size: 0.85rem; gap: 8px;
+  }
+  .video-placeholder svg { width: 24px; height: 24px; }
+
+  /* ── Collapsible Section Sim ── */
+  .sim-collapsible-header {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 16px; border-radius: 8px;
+    background: var(--gray-50); border: 1px solid var(--gray-200);
+    margin-bottom: 12px; cursor: pointer;
+  }
+  .sim-collapsible-header .icon-wrap {
+    width: 32px; height: 32px; border-radius: 8px;
+    background: rgba(79,70,229,0.1);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .sim-collapsible-header .icon-wrap svg { width: 18px; height: 18px; color: var(--primary); }
+  .sim-collapsible-header h4 { margin: 0; font-size: 1rem; font-weight: 700; color: var(--gray-900); }
+
+  /* ── Agent Tab Sim ── */
+  .sim-agent-tabs { display: flex; border-bottom: 1px solid var(--gray-200); padding: 0 16px; }
+  .sim-agent-tab {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 20px; font-size: 0.82rem; color: var(--gray-500);
+    position: relative;
+  }
+  .sim-agent-tab.active { color: var(--primary-dark); font-weight: 600; }
+  .sim-agent-tab.active::after {
+    content: ''; position: absolute; bottom: 0; left: 12px; right: 12px;
+    height: 2px; background: var(--primary); border-radius: 1px 1px 0 0;
+  }
+  .sim-agent-avatar {
+    width: 26px; height: 26px; border-radius: 6px; display: flex;
+    align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 700;
+  }
+  .sim-agent-avatar.active { background: #D4E0B8; color: #6B7A3A; }
+  .sim-agent-avatar.inactive { background: var(--gray-100); color: var(--gray-400); }
+  .sim-agent-role { font-size: 0.6rem; color: var(--gray-400); }
+  .sim-agent-tab.active .sim-agent-role { color: var(--primary); }
+
+  /* ── Sparkline Sim ── */
+  .sim-sparkline { display: inline-block; vertical-align: middle; }
+
+  /* ── KPI card with sparkline sim ── */
+  .sim-kpi-card-v2 {
+    border: 1px solid var(--gray-200); border-radius: 8px; padding: 12px 14px;
+    background: #fff; cursor: pointer; transition: all 0.15s;
+  }
+  .sim-kpi-card-v2:hover { border-color: var(--primary); box-shadow: 0 2px 6px rgba(79,70,229,0.08); }
+  .sim-kpi-card-v2.selected { border-color: var(--primary); background: rgba(79,70,229,0.03); box-shadow: 0 0 0 2px var(--primary); }
+  .sim-kpi-card-v2 .value-row { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+  .sim-kpi-card-v2 .value { font-size: 1.25rem; font-weight: 700; color: var(--gray-900); }
+  .sim-kpi-card-v2 .trend-icon { font-size: 0.75rem; }
+  .sim-kpi-card-v2 .label { font-size: 0.72rem; color: var(--gray-500); margin-bottom: 2px; }
+  .sim-kpi-card-v2 .category { font-size: 0.6rem; color: var(--gray-400); display: flex; align-items: center; gap: 4px; margin-top: 4px; }
+  .sim-kpi-card-v2 .count-badge { background: var(--gray-100); border-radius: 4px; padding: 1px 4px; font-size: 0.6rem; color: var(--gray-500); }
+
+  /* ── Responsive ── */
+  @media (max-width: 1200px) {
+    .toc { display: none; }
+    .main { margin-right: 0; }
+  }
+  @media (max-width: 900px) {
+    .sidebar { display: none; }
+    .main { margin-left: 0; }
+    .sim-kpi-row { grid-template-columns: repeat(2,1fr); }
+    .sim-2col { grid-template-columns: 1fr; }
+    .feature-grid { grid-template-columns: 1fr; }
+    .next-steps { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════ TOP NAV ══════════════════ -->
+<nav class="topnav">
+  <div class="topnav-logo"><img src="../assets/axis_transparent.png" alt="AXIS"
+    style="height:20px;vertical-align:middle;margin-right:2px;"> Docs</div>
+    <div class="topnav-links">
+    <a href="../getting-started/">Getting Started</a>
+    <a href="../user-guide/" class="active">User Guide</a>
+    <a href="../configuration/">Configuration</a>
+    <a href="../architecture/">Architecture</a>
+    <a href="../api-reference/">API Reference</a>
+  </div>
+</nav>
+
+<!-- ══════════════════ SIDEBAR ══════════════════ -->
+<div class="layout">
+<aside class="sidebar">
+  <div class="sidebar-section">
+    <div class="sidebar-section-title">User Guide</div>
+    <a class="sidebar-link" href="../user-guide/">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      Overview
+    </a>
+    <a class="sidebar-link" href="evaluate-guide.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      Evaluate
+    </a>
+    <a class="sidebar-link" href="annotation-guide.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+      Annotation Studio
+    </a>
+    <a class="sidebar-link" href="monitoring-guide.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      Monitoring
+    </a>
+    <a class="sidebar-link active" href="production-guide.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      Production
+    </a>
+    <a class="sidebar-link" href="calibration-guide.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+      CaliberHQ
+    </a>
+    <a class="sidebar-link" href="human-signals-guide.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      Human Signals
+    </a>
+    <a class="sidebar-link" href="memory-guide.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+      Memory
+    </a>
+    <a class="sidebar-link" href="agent-replay-guide.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+      Agent Replay
+    </a>
+    <a class="sidebar-link" href="simulation-guide.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+      Simulation
+    </a>
+    <a class="sidebar-link" href="learn-guide.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+      Learn
+    </a>
+    <a class="sidebar-link" href="settings-guide.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+      Settings
+    </a>
+  </div>
+</aside>
+
+<!-- ══════════════════ MAIN CONTENT ══════════════════ -->
+<main class="main">
+<div class="content">
+
+<!-- Breadcrumb -->
+<div class="breadcrumb">
+  <a href="#">Docs</a> / <a href="#">User Guide</a> / <strong>Production</strong>
+</div>
+
+<h1>Production Overview</h1>
+<p class="subtitle">A unified executive dashboard &mdash; agent KPIs, AI quality monitoring, and human signals in a single view across all your deployed agents.</p>
+
+<!-- ── Why ── -->
+<h2 id="why-production">Why Use Production Overview?</h2>
+<p>The Production Overview page is the <strong>single pane of glass</strong> for your AI operations. Instead of switching between Monitoring, Human Signals, and custom KPI dashboards, this page brings everything together so leadership and on-call engineers can assess system health in seconds.</p>
+
+<div class="feature-grid">
+  <div class="feature-card">
+    <h4><span class="feature-icon">&#x1F3AF;</span> Agent KPIs</h4>
+    <p>Track custom business and operational KPIs per agent with trend sparklines, configurable units, and click-to-expand trend charts.</p>
+  </div>
+  <div class="feature-card">
+    <h4><span class="feature-icon">&#x1F6E1;</span> Quality Scorecard</h4>
+    <p>Hierarchical quality monitoring with source &rarr; component &rarr; metric drill-down, health indicators, and score deltas.</p>
+  </div>
+  <div class="feature-card">
+    <h4><span class="feature-icon">&#x1F4AC;</span> Human Signals</h4>
+    <p>See human feedback KPIs (approval rate, escalation %, compliance) alongside automated metrics for a complete picture.</p>
+  </div>
+  <div class="feature-card">
+    <h4><span class="feature-icon">&#x1F916;</span> Multi-Agent Tabs</h4>
+    <p>Switch between agents instantly using the Source Selector. Each agent shows its own KPIs, quality scores, and signals data.</p>
+  </div>
+</div>
+
+<!-- ── Quick Start ── -->
+<h2 id="quick-start">Quick Start</h2>
+<p>Get the Production Overview populated in under two minutes:</p>
+
+<div class="step-grid">
+  <div class="step-box">
+    <div class="step-num">1</div>
+    <div class="step-content">
+      <h4>Navigate to Production</h4>
+      <p>Click <strong>Production</strong> in the left sidebar, or use the route <code>/production</code>. The page loads data from all connected stores simultaneously.</p>
+    </div>
+  </div>
+  <div class="step-box">
+    <div class="step-num">2</div>
+    <div class="step-content">
+      <h4>Select an Agent</h4>
+      <p>Use the <strong>Source Selector</strong> tabs at the top to pick which agent to inspect. Each tab shows the agent avatar, name, and role. Data for all three sections filters to that agent.</p>
+    </div>
+  </div>
+  <div class="step-box">
+    <div class="step-num">3</div>
+    <div class="step-content">
+      <h4>Explore Sections</h4>
+      <p>All three sections &mdash; Agent KPIs, AI Quality Monitoring, and Human Signals &mdash; are collapsible. Click a section header to expand or collapse it. Click any KPI card in Agent KPIs to see its trend chart.</p>
+    </div>
+  </div>
+  <div class="step-box">
+    <div class="step-num">4</div>
+    <div class="step-content">
+      <h4>Drill Into Details</h4>
+      <p>Click <strong>Quality Scorecard</strong> in the AI Quality section to open the hierarchical table. Click the eye icon on any metric row to see its detail panel. Use the alert badge to jump to Monitoring.</p>
+    </div>
+  </div>
+</div>
+
+<div class="admonition tip">
+  <div class="admonition-title">&#x1F4A1; Tip</div>
+  The Production page reads from the Monitoring, Human Signals, and KPI stores. Make sure you have data loaded in at least one of these &mdash; either via CSV upload or database sync &mdash; before visiting the page.
+</div>
+
+<!-- ── Page Anatomy ── -->
+<h2 id="page-anatomy">Page Anatomy</h2>
+<p>Here is the full Production Overview page layout with every major section annotated:</p>
+
+<!-- Annotated Screenshot Simulation -->
+<div class="screenshot">
+  <div class="screenshot-chrome">
+    <div class="screenshot-dots"><span></span><span></span><span></span></div>
+    <div class="screenshot-title">localhost:3500/production</div>
+  </div>
+  <div class="screenshot-body">
+    <div class="sim-ui" style="position:relative;padding-bottom:12px;">
+      <!-- Page Header -->
+      <div class="sim-header" style="position:relative;">
+        <svg class="sim-header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        <div>
+          <h3 style="font-size:1rem;">Production Overview</h3>
+          <p>Unified view of AI quality monitoring and human signals metrics</p>
+        </div>
+        <!-- Callout 1 -->
+        <div style="position:absolute;top:-4px;left:-4px;"><span class="callout-num">1</span></div>
+      </div>
+
+      <!-- Source Selector / Agent Tabs -->
+      <div class="sim-agent-tabs" style="position:relative;margin-bottom:16px;">
+        <div class="sim-agent-tab active">
+          <div class="sim-agent-avatar active">A</div>
+          <div style="display:flex;flex-direction:column;line-height:1.2;">
+            <span style="font-size:0.82rem;font-weight:600;color:var(--primary-dark);">Alpha Bot</span>
+            <span class="sim-agent-role" style="color:var(--primary);">Customer Support</span>
+          </div>
+        </div>
+        <div class="sim-agent-tab">
+          <div class="sim-agent-avatar inactive">B</div>
+          <div style="display:flex;flex-direction:column;line-height:1.2;">
+            <span style="font-size:0.82rem;">Beta Bot</span>
+            <span class="sim-agent-role">Order Processing</span>
+          </div>
+        </div>
+        <div class="sim-agent-tab">
+          <div class="sim-agent-avatar inactive">G</div>
+          <div style="display:flex;flex-direction:column;line-height:1.2;">
+            <span style="font-size:0.82rem;">Gamma Bot</span>
+            <span class="sim-agent-role">Research Analyst</span>
+          </div>
+        </div>
+        <!-- Callout 2 -->
+        <div style="position:absolute;top:-8px;right:40px;"><span class="callout-num">2</span></div>
+      </div>
+
+      <!-- Section 1: Agent KPIs -->
+      <div class="sim-collapsible-header" style="position:relative;">
+        <span style="color:var(--gray-400);font-size:0.8rem;">&#x25BC;</span>
+        <div class="icon-wrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        </div>
+        <h4>Agent KPIs</h4>
+        <!-- Callout 3 -->
+        <div style="position:absolute;top:-8px;left:60px;"><span class="callout-num">3</span></div>
+      </div>
+
+      <!-- Date badge + KPI cards -->
+      <div style="display:flex;justify-content:flex-end;margin-bottom:8px;">
+        <span style="display:flex;align-items:center;gap:6px;background:var(--gray-100);border-radius:20px;padding:4px 12px;font-size:0.72rem;color:var(--gray-500);">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px;"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/></svg>
+          Jan 15 &ndash; Feb 14 &middot; 30 days
+        </span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:16px;position:relative;">
+        <div class="sim-kpi-card-v2 selected">
+          <div class="value-row"><span class="value">92.1%</span><span class="trend-icon" style="color:var(--green);">&#x25B2;</span></div>
+          <svg class="sim-sparkline" width="52" height="14" viewBox="0 0 52 14"><polyline points="0,10 8,8 16,9 24,6 32,5 40,4 52,2" fill="none" stroke="#16a34a" stroke-width="1.5" stroke-linecap="round"/></svg>
+          <div class="label">Resolution Rate</div>
+          <div style="display:flex;gap:4px;align-items:center;"><span class="count-badge">4,231</span></div>
+          <div class="category"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:10px;height:10px;"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg> Performance</div>
+        </div>
+        <div class="sim-kpi-card-v2">
+          <div class="value-row"><span class="value">1.2s</span><span class="trend-icon" style="color:var(--green);">&#x25BC;</span></div>
+          <svg class="sim-sparkline" width="52" height="14" viewBox="0 0 52 14"><polyline points="0,4 8,5 16,6 24,8 32,6 40,5 52,3" fill="none" stroke="#16a34a" stroke-width="1.5" stroke-linecap="round"/></svg>
+          <div class="label">Avg Latency</div>
+          <div style="display:flex;gap:4px;align-items:center;"><span class="count-badge">4,231</span></div>
+          <div class="category"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:10px;height:10px;"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg> Performance</div>
+        </div>
+        <div class="sim-kpi-card-v2">
+          <div class="value-row"><span class="value">0.87</span><span class="trend-icon" style="color:var(--green);">&#x25B2;</span></div>
+          <svg class="sim-sparkline" width="52" height="14" viewBox="0 0 52 14"><polyline points="0,12 8,10 16,8 24,7 32,5 40,4 52,3" fill="none" stroke="#16a34a" stroke-width="1.5" stroke-linecap="round"/></svg>
+          <div class="label">CSAT Score</div>
+          <div style="display:flex;gap:4px;align-items:center;"><span class="count-badge">1,892</span></div>
+          <div class="category"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:10px;height:10px;"><path d="M20.42 4.58a5.4 5.4 0 0 0-7.65 0l-.77.78-.77-.78a5.4 5.4 0 0 0-7.65 7.65l.77.77L12 20.65l7.65-7.65.77-.77a5.4 5.4 0 0 0 0-7.65z"/></svg> Quality</div>
+        </div>
+        <div class="sim-kpi-card-v2">
+          <div class="value-row"><span class="value">98.4%</span><span class="trend-icon" style="color:var(--gray-400);">&mdash;</span></div>
+          <svg class="sim-sparkline" width="52" height="14" viewBox="0 0 52 14"><polyline points="0,7 8,7 16,6 24,7 32,7 40,6 52,7" fill="none" stroke="#9ca3af" stroke-width="1.5" stroke-linecap="round"/></svg>
+          <div class="label">Safety Compliance</div>
+          <div style="display:flex;gap:4px;align-items:center;"><span class="count-badge">4,231</span></div>
+          <div class="category"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:10px;height:10px;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> Compliance</div>
+        </div>
+        <div class="sim-kpi-card-v2">
+          <div class="value-row"><span class="value">847</span><span class="trend-icon" style="color:var(--red);">&#x25B2;</span></div>
+          <svg class="sim-sparkline" width="52" height="14" viewBox="0 0 52 14"><polyline points="0,10 8,8 16,9 24,7 32,6 40,5 52,3" fill="none" stroke="#dc2626" stroke-width="1.5" stroke-linecap="round"/></svg>
+          <div class="label">Escalations</div>
+          <div style="display:flex;gap:4px;align-items:center;"><span class="count-badge">847</span></div>
+          <div class="category"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:10px;height:10px;"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg> Performance</div>
+        </div>
+        <!-- Callout 4 over the KPI row -->
+        <div style="position:absolute;top:-10px;left:50%;transform:translateX(-50%);"><span class="callout-num">4</span></div>
+      </div>
+
+      <!-- Section 2: AI Quality Monitoring -->
+      <div class="sim-collapsible-header" style="position:relative;">
+        <span style="color:var(--gray-400);font-size:0.8rem;">&#x25BC;</span>
+        <div class="icon-wrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        </div>
+        <h4>AI Quality Monitoring</h4>
+        <div style="margin-left:auto;">
+          <span style="display:flex;align-items:center;gap:6px;border:1px solid var(--red-border);background:var(--red-light);border-radius:8px;padding:4px 12px;font-size:0.8rem;color:var(--red);font-weight:600;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+            3 Alerts
+          </span>
+        </div>
+        <!-- Callout 5 -->
+        <div style="position:absolute;top:-8px;left:60px;"><span class="callout-num">5</span></div>
+      </div>
+
+      <!-- Executive KPIs row -->
+      <div class="sim-kpi-row" style="grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px;position:relative;">
+        <div class="sim-kpi" style="padding:10px 12px;">
+          <div class="sim-kpi-label" style="font-size:0.65rem;">Total Metrics</div>
+          <div class="sim-kpi-value" style="font-size:1.15rem;">12</div>
+        </div>
+        <div class="sim-kpi" style="padding:10px 12px;">
+          <div class="sim-kpi-label" style="font-size:0.65rem;">Overall Avg Score</div>
+          <div class="sim-kpi-value" style="font-size:1.15rem;color:var(--green);">0.847</div>
+          <svg class="sim-sparkline" width="52" height="14" viewBox="0 0 52 14" style="margin-top:4px;"><polyline points="0,10 8,8 16,7 24,6 32,5 40,4 52,3" fill="none" stroke="#16a34a" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </div>
+        <div class="sim-kpi" style="padding:10px 12px;">
+          <div class="sim-kpi-label" style="font-size:0.65rem;">Pass Rate</div>
+          <div class="sim-kpi-value" style="font-size:1.15rem;color:var(--green);">89.2%</div>
+          <svg class="sim-sparkline" width="52" height="14" viewBox="0 0 52 14" style="margin-top:4px;"><polyline points="0,9 8,8 16,7 24,6 32,6 40,5 52,4" fill="none" stroke="#16a34a" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </div>
+        <div class="sim-kpi" style="padding:10px 12px;">
+          <div class="sim-kpi-label" style="font-size:0.65rem;">Data Freshness</div>
+          <div class="sim-kpi-value" style="font-size:1.15rem;">12m ago</div>
+        </div>
+        <!-- Callout 6 -->
+        <div style="position:absolute;top:-10px;left:50%;transform:translateX(-50%);"><span class="callout-num">6</span></div>
+      </div>
+
+      <!-- Quality Scorecard toggle -->
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;font-size:0.82rem;color:var(--gray-500);cursor:pointer;position:relative;">
+        <span style="color:var(--gray-400);">&#x25BC;</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><path d="M3 3h18v18H3z"/><path d="M3 9h18"/><path d="M3 15h18"/><path d="M9 3v18"/></svg>
+        Quality Scorecard
+        <!-- Callout 7 -->
+        <div style="position:absolute;top:-12px;left:120px;"><span class="callout-num">7</span></div>
+      </div>
+
+      <!-- Hierarchy table preview -->
+      <div style="border:1px solid var(--gray-200);border-radius:8px;overflow:hidden;margin-bottom:16px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid var(--gray-200);">
+          <strong style="font-size:0.88rem;">Agent Quality Scorecard</strong>
+          <div style="display:flex;gap:6px;">
+            <span style="font-size:0.7rem;border:1px solid var(--gray-200);border-radius:6px;padding:2px 8px;color:var(--gray-500);">Expand All</span>
+            <span style="font-size:0.7rem;border:1px solid var(--gray-200);border-radius:6px;padding:2px 8px;color:var(--gray-500);">Collapse</span>
+          </div>
+        </div>
+        <table class="sim-table" style="margin:0;">
+          <thead>
+            <tr>
+              <th>Hierarchy</th>
+              <th>Category</th>
+              <th>Score</th>
+              <th>Trend</th>
+              <th>Health</th>
+              <th>Records</th>
+              <th style="text-align:center;">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="background:var(--gray-50);">
+              <td style="font-weight:600;"><span style="color:var(--gray-400);margin-right:4px;">&#x25BC;</span> <span style="color:var(--primary);margin-right:4px;">&#x25A0;</span> alpha_bot</td>
+              <td></td>
+              <td><span style="font-family:monospace;color:var(--green);">0.847</span></td>
+              <td><svg width="40" height="12" viewBox="0 0 40 12"><polyline points="0,8 8,7 16,6 24,5 32,4 40,3" fill="none" stroke="var(--green)" stroke-width="1.5" stroke-linecap="round"/></svg></td>
+              <td><span class="sim-badge green">Healthy</span></td>
+              <td style="font-family:monospace;font-size:0.75rem;color:var(--gray-500);">12,847</td>
+              <td></td>
+            </tr>
+            <tr>
+              <td style="padding-left:32px;"><span style="color:var(--gray-400);margin-right:4px;">&#x25BC;</span> <span style="color:var(--primary);margin-right:4px;">&#x25A0;</span> retrieval</td>
+              <td></td>
+              <td><span style="font-family:monospace;color:var(--green);">0.892</span></td>
+              <td><svg width="40" height="12" viewBox="0 0 40 12"><polyline points="0,9 8,7 16,6 24,5 32,4 40,2" fill="none" stroke="var(--green)" stroke-width="1.5" stroke-linecap="round"/></svg></td>
+              <td><span class="sim-badge green">Healthy</span></td>
+              <td style="font-family:monospace;font-size:0.75rem;color:var(--gray-500);">6,421</td>
+              <td></td>
+            </tr>
+            <tr>
+              <td style="padding-left:56px;"><span style="width:18px;display:inline-block;"></span> <span style="color:var(--gray-400);margin-right:4px;">&#x25CF;</span> Faithfulness</td>
+              <td><span class="sim-badge green" style="font-size:0.6rem;padding:1px 6px;">SCORE</span></td>
+              <td><span style="font-family:monospace;color:var(--green);">0.912 <span style="font-size:0.6rem;color:var(--green);">+0.015</span></span></td>
+              <td><svg width="40" height="12" viewBox="0 0 40 12"><polyline points="0,8 8,6 16,5 24,4 32,3 40,2" fill="none" stroke="var(--green)" stroke-width="1.5" stroke-linecap="round"/></svg></td>
+              <td><span class="sim-badge green">Healthy</span></td>
+              <td style="font-family:monospace;font-size:0.75rem;color:var(--gray-500);">3,210</td>
+              <td style="text-align:center;"><span class="sim-eye-btn" style="font-size:0.65rem;">&#x1F441;</span></td>
+            </tr>
+            <tr>
+              <td style="padding-left:56px;"><span style="width:18px;display:inline-block;"></span> <span style="color:var(--gray-400);margin-right:4px;">&#x25CF;</span> Completeness</td>
+              <td><span class="sim-badge green" style="font-size:0.6rem;padding:1px 6px;">SCORE</span></td>
+              <td><span style="font-family:monospace;color:var(--yellow);">0.641 <span style="font-size:0.6rem;color:var(--red);">-0.032</span></span></td>
+              <td><svg width="40" height="12" viewBox="0 0 40 12"><polyline points="0,4 8,5 16,6 24,7 32,8 40,9" fill="none" stroke="var(--red)" stroke-width="1.5" stroke-linecap="round"/></svg></td>
+              <td><span class="sim-badge yellow">Warning</span></td>
+              <td style="font-family:monospace;font-size:0.75rem;color:var(--gray-500);">3,211</td>
+              <td style="text-align:center;"><span class="sim-eye-btn" style="font-size:0.65rem;">&#x1F441;</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Section 3: Human Signals -->
+      <div class="sim-collapsible-header" style="position:relative;">
+        <span style="color:var(--gray-400);font-size:0.8rem;">&#x25BC;</span>
+        <div class="icon-wrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        </div>
+        <h4>Human Signals</h4>
+        <!-- Callout 8 -->
+        <div style="position:absolute;top:-8px;left:60px;"><span class="callout-num">8</span></div>
+      </div>
+
+      <!-- Human Signals KPI cards -->
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;position:relative;">
+        <div class="sim-kpi-card-v2">
+          <div class="value-row"><span class="value">87.3%</span><span class="trend-icon" style="color:var(--green);">&#x25B2;</span></div>
+          <svg class="sim-sparkline" width="52" height="14" viewBox="0 0 52 14"><polyline points="0,10 8,8 16,7 24,6 32,5 40,4 52,3" fill="none" stroke="#16a34a" stroke-width="1.5" stroke-linecap="round"/></svg>
+          <div class="label">Approval Rate</div>
+          <div style="display:flex;gap:4px;align-items:center;"><span class="count-badge">2,156</span></div>
+          <div class="category"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:10px;height:10px;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> Human Signals</div>
+        </div>
+        <div class="sim-kpi-card-v2">
+          <div class="value-row"><span class="value">4.2%</span><span class="trend-icon" style="color:var(--green);">&#x25BC;</span></div>
+          <svg class="sim-sparkline" width="52" height="14" viewBox="0 0 52 14"><polyline points="0,4 8,5 16,6 24,8 32,9 40,10 52,11" fill="none" stroke="#16a34a" stroke-width="1.5" stroke-linecap="round"/></svg>
+          <div class="label">Escalation Rate</div>
+          <div style="display:flex;gap:4px;align-items:center;"><span class="count-badge">2,156</span></div>
+          <div class="category"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:10px;height:10px;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> Human Signals</div>
+        </div>
+        <div class="sim-kpi-card-v2">
+          <div class="value-row"><span class="value">96.1%</span><span class="trend-icon" style="color:var(--gray-400);">&mdash;</span></div>
+          <svg class="sim-sparkline" width="52" height="14" viewBox="0 0 52 14"><polyline points="0,7 8,7 16,6 24,7 32,7 40,6 52,7" fill="none" stroke="#9ca3af" stroke-width="1.5" stroke-linecap="round"/></svg>
+          <div class="label">Compliance</div>
+          <div style="display:flex;gap:4px;align-items:center;"><span class="count-badge">2,156</span></div>
+          <div class="category"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:10px;height:10px;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> Human Signals</div>
+        </div>
+        <div class="sim-kpi-card-v2">
+          <div class="value-row"><span class="value">12.8s</span><span class="trend-icon" style="color:var(--red);">&#x25B2;</span></div>
+          <svg class="sim-sparkline" width="52" height="14" viewBox="0 0 52 14"><polyline points="0,10 8,8 16,7 24,6 32,5 40,4 52,2" fill="none" stroke="#dc2626" stroke-width="1.5" stroke-linecap="round"/></svg>
+          <div class="label">Avg Handle Time</div>
+          <div style="display:flex;gap:4px;align-items:center;"><span class="count-badge">2,156</span></div>
+          <div class="category"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:10px;height:10px;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> Human Signals</div>
+        </div>
+        <div class="sim-kpi-card-v2">
+          <div class="value-row"><span class="value">3.1%</span><span class="trend-icon" style="color:var(--green);">&#x25BC;</span></div>
+          <svg class="sim-sparkline" width="52" height="14" viewBox="0 0 52 14"><polyline points="0,3 8,5 16,7 24,8 32,9 40,10 52,12" fill="none" stroke="#16a34a" stroke-width="1.5" stroke-linecap="round"/></svg>
+          <div class="label">Override Rate</div>
+          <div style="display:flex;gap:4px;align-items:center;"><span class="count-badge">2,156</span></div>
+          <div class="category"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:10px;height:10px;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> Human Signals</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="screenshot-caption">The full Production Overview &mdash; page header, agent tabs, collapsible Agent KPIs, AI Quality Monitoring with scorecard, and Human Signals KPI strip.</div>
+</div>
+
+<!-- Callout Legend -->
+<div class="callout-legend">
+  <div class="callout-legend-item">
+    <span class="callout-num">1</span>
+    <div><strong>Page Header</strong> &mdash; LayoutDashboard icon, title "Production Overview", and subtitle. Consistent across all AXIS pages.</div>
+  </div>
+  <div class="callout-legend-item">
+    <span class="callout-num">2</span>
+    <div><strong>Source Selector</strong> &mdash; Agent tabs showing avatar, name, and role. Clicking a tab filters all three sections to that agent's data. Auto-selects the first agent on load.</div>
+  </div>
+  <div class="callout-legend-item">
+    <span class="callout-num">3</span>
+    <div><strong>Agent KPIs Section</strong> &mdash; Collapsible section header with icon. Contains a date range badge and a grid of clickable KPI cards with sparklines.</div>
+  </div>
+  <div class="callout-legend-item">
+    <span class="callout-num">4</span>
+    <div><strong>KPI Card Grid</strong> &mdash; Up to 5 cards per row showing value, trend arrow, sparkline, label, record count badge, and category indicator. Click any card to expand its trend chart.</div>
+  </div>
+  <div class="callout-legend-item">
+    <span class="callout-num">5</span>
+    <div><strong>AI Quality Monitoring Section</strong> &mdash; Contains the Executive Summary scorecard. The header shows an alerts badge linking to <code>/monitoring</code>.</div>
+  </div>
+  <div class="callout-legend-item">
+    <span class="callout-num">6</span>
+    <div><strong>Executive KPIs</strong> &mdash; Four summary cards: Total Metrics, Overall Avg Score, Pass Rate, and Data Freshness, each with trend sparklines where applicable.</div>
+  </div>
+  <div class="callout-legend-item">
+    <span class="callout-num">7</span>
+    <div><strong>Quality Scorecard Toggle</strong> &mdash; Click to expand the hierarchical table showing source &rarr; component &rarr; metric with scores, trends, health badges, and detail buttons.</div>
+  </div>
+  <div class="callout-legend-item">
+    <span class="callout-num">8</span>
+    <div><strong>Human Signals Section</strong> &mdash; Collapsible section showing top KPIs from your human signals data. Cards link to the <code>/human-signals</code> page on click.</div>
+  </div>
+</div>
+
+
+<!-- ══════════════ SOURCE SELECTOR ══════════════ -->
+<h2 id="source-selector">Source Selector</h2>
+<p>The Source Selector appears below the page header as a row of agent tabs. It is shared across the Production page and determines which agent's data is displayed in every section.</p>
+
+<div class="screenshot">
+  <div class="screenshot-chrome">
+    <div class="screenshot-dots"><span></span><span></span><span></span></div>
+    <div class="screenshot-title">Source Selector &mdash; Agent Tabs</div>
+  </div>
+  <div class="screenshot-body">
+    <div style="padding:0;">
+      <div class="sim-agent-tabs" style="margin-bottom:0;padding:0 20px;">
+        <div class="sim-agent-tab active">
+          <div class="sim-agent-avatar active">A</div>
+          <div style="display:flex;flex-direction:column;line-height:1.2;">
+            <span style="font-size:0.82rem;font-weight:600;color:var(--primary-dark);">Alpha Bot</span>
+            <span class="sim-agent-role" style="color:var(--primary);">Customer Support</span>
+          </div>
+        </div>
+        <div class="sim-agent-tab">
+          <div class="sim-agent-avatar inactive">B</div>
+          <div style="display:flex;flex-direction:column;line-height:1.2;">
+            <span style="font-size:0.82rem;">Beta Bot</span>
+            <span class="sim-agent-role">Order Processing</span>
+          </div>
+        </div>
+        <div class="sim-agent-tab">
+          <div class="sim-agent-avatar inactive">G</div>
+          <div style="display:flex;flex-direction:column;line-height:1.2;">
+            <span style="font-size:0.82rem;">Gamma Bot</span>
+            <span class="sim-agent-role">Research Analyst</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="screenshot-caption">Agent tabs with avatar, label, and role. The active tab has a purple underline and highlighted avatar background.</div>
+</div>
+
+<p><strong>How it works:</strong></p>
+<ul>
+  <li>Sources are collected from <strong>three stores</strong>: Monitoring (<code>source_name</code>), Human Signals (<code>source_name</code>), and KPI (<code>source_name</code>)</li>
+  <li>If an agent is configured in <code>config/agents.yaml</code>, its <strong>avatar</strong>, <strong>label</strong>, and <strong>role</strong> are displayed. Otherwise, the raw source name is shown with a default bot icon</li>
+  <li>Selecting a tab sets the source filter in the Monitoring, Human Signals, and Memory stores simultaneously</li>
+  <li>On first load, the first available agent is <strong>auto-selected</strong></li>
+</ul>
+
+<div class="admonition info">
+  <div class="admonition-title">&#x2139;&#xFE0F; Info</div>
+  The <code>scope</code> prop controls which stores contribute source names. On the Production page, the scope is <code>['monitoring', 'human_signals', 'kpi']</code>, so all three data sources are combined into a single unified agent list.
+</div>
+
+
+<!-- ══════════════ AGENT KPIs ══════════════ -->
+<h2 id="agent-kpis">Agent KPIs</h2>
+<p>The first collapsible section shows <strong>custom business and operational KPIs</strong> loaded from your KPI database. These are distinct from the monitoring quality metrics &mdash; they represent the high-level performance indicators your team cares about (resolution rate, latency, CSAT, etc.).</p>
+
+<h3 id="kpi-date-range">Date Range Badge</h3>
+<p>A pill badge in the top-right corner shows the date range covered by the KPI data:</p>
+<div style="display:flex;justify-content:flex-end;margin:16px 0;">
+  <span style="display:inline-flex;align-items:center;gap:6px;background:var(--gray-100);border-radius:20px;padding:6px 14px;font-size:0.8rem;color:var(--gray-500);">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/></svg>
+    Jan 15, 2026 &ndash; Feb 14, 2026 &middot; 30 days
+  </span>
+</div>
+
+<h3 id="kpi-cards">KPI Card Grid</h3>
+<p>Cards are arranged in a responsive grid (up to 5 columns). Each card displays:</p>
+
+<table class="sim-table" style="margin:16px 0;">
+  <thead>
+    <tr><th>Element</th><th>Description</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><strong>Value</strong></td><td>Formatted based on unit: <code>percent</code> (92.1%), <code>seconds</code> (1.2s), <code>score</code> (0.87), <code>count</code> (847)</td></tr>
+    <tr><td><strong>Trend Arrow</strong></td><td>&#x25B2; up or &#x25BC; down, color-coded by <code>polarity</code> &mdash; green if the trend direction is good for that metric, red if bad</td></tr>
+    <tr><td><strong>Sparkline</strong></td><td>Inline SVG showing the recent daily values, color matched to the trend direction</td></tr>
+    <tr><td><strong>Label</strong></td><td>The KPI display name (e.g., "Resolution Rate")</td></tr>
+    <tr><td><strong>Count Badge</strong></td><td>Number of records the KPI is computed from</td></tr>
+    <tr><td><strong>Category</strong></td><td>Icon + category name (e.g., "Performance", "Quality", "Compliance")</td></tr>
+  </tbody>
+</table>
+
+<h3 id="kpi-trend-chart">KPI Trend Chart</h3>
+<p>Click any KPI card to <strong>expand a trend chart</strong> below the grid. The chart animates in (slide down + fade) and shows the daily time series for that metric. Click the same card again to collapse it.</p>
+
+<div class="screenshot">
+  <div class="screenshot-chrome">
+    <div class="screenshot-dots"><span></span><span></span><span></span></div>
+    <div class="screenshot-title">Agent KPIs &mdash; Expanded Trend Chart</div>
+  </div>
+  <div class="screenshot-body">
+    <div class="sim-ui" style="padding:12px 16px;">
+      <!-- Selected card highlighted -->
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:12px;">
+        <div class="sim-kpi-card-v2 selected">
+          <div class="value-row"><span class="value">92.1%</span><span class="trend-icon" style="color:var(--green);">&#x25B2;</span></div>
+          <svg class="sim-sparkline" width="52" height="14" viewBox="0 0 52 14"><polyline points="0,10 8,8 16,9 24,6 32,5 40,4 52,2" fill="none" stroke="#16a34a" stroke-width="1.5" stroke-linecap="round"/></svg>
+          <div class="label">Resolution Rate</div>
+        </div>
+        <div class="sim-kpi-card-v2" style="opacity:0.6;">
+          <div class="value-row"><span class="value">1.2s</span></div>
+          <div class="label">Avg Latency</div>
+        </div>
+        <div class="sim-kpi-card-v2" style="opacity:0.6;">
+          <div class="value-row"><span class="value">0.87</span></div>
+          <div class="label">CSAT Score</div>
+        </div>
+        <div class="sim-kpi-card-v2" style="opacity:0.6;">
+          <div class="value-row"><span class="value">98.4%</span></div>
+          <div class="label">Safety Compliance</div>
+        </div>
+        <div class="sim-kpi-card-v2" style="opacity:0.6;">
+          <div class="value-row"><span class="value">847</span></div>
+          <div class="label">Escalations</div>
+        </div>
+      </div>
+
+      <!-- Expanded trend chart -->
+      <div class="sim-chart-card">
+        <div class="sim-chart-header">
+          <h4>Resolution Rate</h4>
+          <span style="font-size:0.75rem;color:var(--gray-400);cursor:pointer;">&#x2715; Close</span>
+        </div>
+        <div class="sim-chart-content">
+          <div class="sim-chart-placeholder" style="height:180px;">
+            <svg viewBox="0 0 600 160" style="width:100%;height:100%;">
+              <!-- Grid -->
+              <line x1="40" y1="10" x2="40" y2="140" stroke="#e5e7eb" stroke-width="1"/>
+              <line x1="40" y1="140" x2="580" y2="140" stroke="#e5e7eb" stroke-width="1"/>
+              <line x1="40" y1="40" x2="580" y2="40" stroke="#e5e7eb" stroke-width="0.5" stroke-dasharray="4"/>
+              <line x1="40" y1="75" x2="580" y2="75" stroke="#e5e7eb" stroke-width="0.5" stroke-dasharray="4"/>
+              <line x1="40" y1="110" x2="580" y2="110" stroke="#e5e7eb" stroke-width="0.5" stroke-dasharray="4"/>
+              <!-- Y labels -->
+              <text x="35" y="14" font-size="8" fill="#9ca3af" text-anchor="end">100%</text>
+              <text x="35" y="44" font-size="8" fill="#9ca3af" text-anchor="end">95%</text>
+              <text x="35" y="79" font-size="8" fill="#9ca3af" text-anchor="end">90%</text>
+              <text x="35" y="114" font-size="8" fill="#9ca3af" text-anchor="end">85%</text>
+              <text x="35" y="144" font-size="8" fill="#9ca3af" text-anchor="end">80%</text>
+              <!-- Area fill -->
+              <path d="M60,95 L105,90 150,92 195,85 240,80 285,78 330,72 375,70 420,65 465,58 510,55 555,48 555,140 60,140 Z" fill="#4f46e5" opacity="0.08"/>
+              <!-- Line -->
+              <polyline points="60,95 105,90 150,92 195,85 240,80 285,78 330,72 375,70 420,65 465,58 510,55 555,48" fill="none" stroke="#4f46e5" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+              <!-- Dots -->
+              <circle cx="60" cy="95" r="3" fill="#4f46e5"/>
+              <circle cx="555" cy="48" r="3" fill="#4f46e5"/>
+              <!-- X labels -->
+              <text x="60" y="155" font-size="7" fill="#9ca3af" text-anchor="middle">Jan 15</text>
+              <text x="240" y="155" font-size="7" fill="#9ca3af" text-anchor="middle">Jan 25</text>
+              <text x="420" y="155" font-size="7" fill="#9ca3af" text-anchor="middle">Feb 5</text>
+              <text x="555" y="155" font-size="7" fill="#9ca3af" text-anchor="middle">Feb 14</text>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="screenshot-caption">Clicking "Resolution Rate" expands a trend chart below the KPI grid. The selected card gets a purple ring highlight. Click the X to close.</div>
+</div>
+
+<div class="admonition note">
+  <div class="admonition-title">&#x1F4DD; Note</div>
+  Agent KPIs are loaded from a dedicated KPI store, separate from the monitoring data. They are configured per-agent in the backend and can represent any business metric. If no KPI data is available for the selected agent, this section will be empty.
+</div>
+
+
+<!-- ══════════════ EXECUTIVE SUMMARY ══════════════ -->
+<h2 id="executive-summary">AI Quality Monitoring</h2>
+<p>The second collapsible section surfaces the <strong>Executive Summary</strong> from the Monitoring module, giving you an at-a-glance quality scorecard without leaving the Production page.</p>
+
+<h3 id="alert-badge">Alerts Badge</h3>
+<p>The section header includes an alert count badge on the right side:</p>
+<ul>
+  <li>When alerts exist: <span style="display:inline-flex;align-items:center;gap:4px;border:1px solid var(--red-border);background:var(--red-light);border-radius:6px;padding:3px 10px;font-size:0.78rem;color:var(--red);font-weight:600;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px;"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg> 3 Alerts</span> &mdash; red background, clicking navigates to <code>/monitoring</code></li>
+  <li>When no alerts: neutral gray badge with "0 Alerts"</li>
+</ul>
+
+<h3 id="executive-kpis">Executive KPI Cards</h3>
+<p>Four compact KPI cards appear at the top of this section:</p>
+
+<table class="sim-table" style="margin:16px 0;">
+  <thead>
+    <tr><th>Card</th><th>Value</th><th>Color Logic</th><th>Sparkline</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Total Metrics</strong></td>
+      <td>Count of unique <code>metric_name</code> values</td>
+      <td>Always neutral</td>
+      <td>None</td>
+    </tr>
+    <tr>
+      <td><strong>Overall Avg Score</strong></td>
+      <td>Mean of all <code>metric_score</code> values</td>
+      <td><span class="sim-badge green">&ge; 0.7</span> <span class="sim-badge yellow">0.5&ndash;0.7</span> <span class="sim-badge red">&lt; 0.5</span></td>
+      <td>Daily average sparkline</td>
+    </tr>
+    <tr>
+      <td><strong>Pass Rate</strong></td>
+      <td>% of scores &ge; 0.5</td>
+      <td><span class="sim-badge green">&ge; 70%</span> <span class="sim-badge yellow">50&ndash;70%</span> <span class="sim-badge red">&lt; 50%</span></td>
+      <td>Daily pass rate sparkline</td>
+    </tr>
+    <tr>
+      <td><strong>Data Freshness</strong></td>
+      <td>Time since newest record</td>
+      <td>Always neutral</td>
+      <td>None</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Each card also shows a trend arrow (&#x25B2; or &#x25BC;) derived by comparing the first and last sparkline values. A <strong>1% threshold</strong> determines whether the trend is "up", "down", or "flat".</p>
+
+<h3 id="quality-scorecard">Quality Scorecard</h3>
+<p>Below the KPI cards, click the <strong>Quality Scorecard</strong> toggle to reveal the hierarchical monitoring table. This is the same <code>ExecutiveHierarchyTable</code> used on the Monitoring page, embedded here for quick access.</p>
+
+<div class="screenshot">
+  <div class="screenshot-chrome">
+    <div class="screenshot-dots"><span></span><span></span><span></span></div>
+    <div class="screenshot-title">Quality Scorecard &mdash; Expanded Hierarchy</div>
+  </div>
+  <div class="screenshot-body">
+    <div class="sim-ui" style="padding:12px 16px;">
+      <div style="border:1px solid var(--gray-200);border-radius:8px;overflow:hidden;">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid var(--gray-200);">
+          <strong style="font-size:0.88rem;">Agent Quality Scorecard</strong>
+          <div style="display:flex;gap:6px;">
+            <span style="font-size:0.7rem;border:1px solid var(--gray-200);border-radius:6px;padding:2px 8px;color:var(--gray-500);cursor:pointer;">Expand All</span>
+            <span style="font-size:0.7rem;border:1px solid var(--gray-200);border-radius:6px;padding:2px 8px;color:var(--gray-500);cursor:pointer;">Collapse</span>
+          </div>
+        </div>
+        <table class="sim-table" style="margin:0;">
+          <thead>
+            <tr>
+              <th>Hierarchy</th>
+              <th>Category</th>
+              <th>Score</th>
+              <th>Trend</th>
+              <th>Health</th>
+              <th>Records</th>
+              <th style="text-align:center;">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Source: alpha_bot -->
+            <tr style="background:var(--gray-50);">
+              <td style="font-weight:600;"><span style="color:var(--gray-400);margin-right:4px;">&#x25BC;</span> <span style="color:var(--primary);margin-right:4px;">&#x25A0;</span> alpha_bot</td>
+              <td></td>
+              <td><span style="font-family:monospace;color:var(--green);">0.847</span></td>
+              <td><svg width="40" height="12" viewBox="0 0 40 12"><polyline points="0,8 8,7 16,6 24,5 32,4 40,3" fill="none" stroke="var(--green)" stroke-width="1.5" stroke-linecap="round"/></svg></td>
+              <td><span class="sim-badge green">Healthy</span></td>
+              <td style="font-family:monospace;font-size:0.75rem;color:var(--gray-500);">12,847</td>
+              <td></td>
+            </tr>
+            <!-- Component: retrieval -->
+            <tr>
+              <td style="padding-left:32px;"><span style="color:var(--gray-400);margin-right:4px;">&#x25BC;</span> <span style="color:var(--primary);margin-right:4px;">&#x25A0;</span> retrieval</td>
+              <td></td>
+              <td><span style="font-family:monospace;color:var(--green);">0.892</span></td>
+              <td><svg width="40" height="12" viewBox="0 0 40 12"><polyline points="0,9 8,7 16,5 24,4 32,3 40,2" fill="none" stroke="var(--green)" stroke-width="1.5" stroke-linecap="round"/></svg></td>
+              <td><span class="sim-badge green">Healthy</span></td>
+              <td style="font-family:monospace;font-size:0.75rem;color:var(--gray-500);">6,421</td>
+              <td></td>
+            </tr>
+            <!-- Metric: Faithfulness -->
+            <tr>
+              <td style="padding-left:56px;"><span style="width:18px;display:inline-block;"></span> <span style="color:var(--gray-400);margin-right:4px;">&#x25CF;</span> Faithfulness</td>
+              <td><span class="sim-badge green" style="font-size:0.6rem;padding:1px 6px;">SCORE</span></td>
+              <td><span style="font-family:monospace;color:var(--green);">0.912 <span style="font-size:0.6rem;color:var(--green);">+0.015</span></span></td>
+              <td><svg width="40" height="12" viewBox="0 0 40 12"><polyline points="0,8 8,6 16,5 24,4 32,3 40,2" fill="none" stroke="var(--green)" stroke-width="1.5" stroke-linecap="round"/></svg></td>
+              <td><span class="sim-badge green">Healthy</span></td>
+              <td style="font-family:monospace;font-size:0.75rem;color:var(--gray-500);">3,210</td>
+              <td style="text-align:center;"><span class="sim-eye-btn" style="font-size:0.65rem;">&#x1F441;</span></td>
+            </tr>
+            <!-- Metric: Relevance -->
+            <tr>
+              <td style="padding-left:56px;"><span style="width:18px;display:inline-block;"></span> <span style="color:var(--gray-400);margin-right:4px;">&#x25CF;</span> Relevance</td>
+              <td><span class="sim-badge green" style="font-size:0.6rem;padding:1px 6px;">SCORE</span></td>
+              <td><span style="font-family:monospace;color:var(--green);">0.881 <span style="font-size:0.6rem;color:var(--green);">+0.008</span></span></td>
+              <td><svg width="40" height="12" viewBox="0 0 40 12"><polyline points="0,7 8,6 16,5 24,5 32,4 40,3" fill="none" stroke="var(--green)" stroke-width="1.5" stroke-linecap="round"/></svg></td>
+              <td><span class="sim-badge green">Healthy</span></td>
+              <td style="font-family:monospace;font-size:0.75rem;color:var(--gray-500);">3,211</td>
+              <td style="text-align:center;"><span class="sim-eye-btn" style="font-size:0.65rem;">&#x1F441;</span></td>
+            </tr>
+            <!-- Metric: Completeness (warning) -->
+            <tr>
+              <td style="padding-left:56px;"><span style="width:18px;display:inline-block;"></span> <span style="color:var(--gray-400);margin-right:4px;">&#x25CF;</span> Completeness</td>
+              <td><span class="sim-badge green" style="font-size:0.6rem;padding:1px 6px;">SCORE</span></td>
+              <td><span style="font-family:monospace;color:var(--yellow);">0.641 <span style="font-size:0.6rem;color:var(--red);">-0.032</span></span></td>
+              <td><svg width="40" height="12" viewBox="0 0 40 12"><polyline points="0,4 8,5 16,6 24,7 32,8 40,9" fill="none" stroke="var(--red)" stroke-width="1.5" stroke-linecap="round"/></svg></td>
+              <td><span class="sim-badge yellow">Warning</span></td>
+              <td style="font-family:monospace;font-size:0.75rem;color:var(--gray-500);">3,211</td>
+              <td style="text-align:center;"><span class="sim-eye-btn" style="font-size:0.65rem;">&#x1F441;</span></td>
+            </tr>
+            <!-- Component: retriever -->
+            <tr>
+              <td style="padding-left:32px;"><span style="color:var(--gray-400);margin-right:4px;">&#x25B6;</span> <span style="color:var(--primary);margin-right:4px;">&#x25A0;</span> retriever</td>
+              <td></td>
+              <td><span style="font-family:monospace;color:var(--green);">0.793</span></td>
+              <td><svg width="40" height="12" viewBox="0 0 40 12"><polyline points="0,6 8,6 16,5 24,6 32,5 40,5" fill="none" stroke="#9ca3af" stroke-width="1.5" stroke-linecap="round"/></svg></td>
+              <td><span class="sim-badge green">Healthy</span></td>
+              <td style="font-family:monospace;font-size:0.75rem;color:var(--gray-500);">6,426</td>
+              <td></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="screenshot-caption">The Quality Scorecard expanded to show the full 3-level hierarchy: source &rarr; component &rarr; metric with scores, deltas, sparkline trends, health badges, and view-detail actions.</div>
+</div>
+
+<p><strong>Table columns:</strong></p>
+<ul>
+  <li><strong>Hierarchy</strong> &mdash; Indented tree: sources at top, components indented 1 level, metrics indented 2 levels. Expand/collapse nodes with the chevron. Sortable by name.</li>
+  <li><strong>Category</strong> &mdash; Only shown for leaf metrics: <span class="sim-badge green" style="font-size:0.65rem;">SCORE</span>, <span class="sim-badge" style="background:#fefce8;color:#ca8a04;border:1px solid #fef08a;font-size:0.65rem;">CLASSIFICATION</span>, or <span class="sim-badge gray" style="font-size:0.65rem;">ANALYSIS</span></li>
+  <li><strong>Score</strong> &mdash; Average <code>metric_score</code>, color-coded (green &ge; 0.7, yellow 0.5&ndash;0.7, red &lt; 0.5). Leaf nodes show a delta indicator comparing recent 25% vs older 75% of records.</li>
+  <li><strong>Trend</strong> &mdash; Mini sparkline chart of daily-aggregated scores</li>
+  <li><strong>Health</strong> &mdash; Status badge derived from the average score: <span class="sim-badge green">Healthy</span>, <span class="sim-badge yellow">Warning</span>, or <span class="sim-badge red">Critical</span></li>
+  <li><strong>Records</strong> &mdash; Record count (monospace)</li>
+  <li><strong>Actions</strong> &mdash; Eye icon on metric rows opens the <strong>Metric Detail Panel</strong></li>
+</ul>
+
+<div class="admonition tip">
+  <div class="admonition-title">&#x1F4A1; Tip</div>
+  Use <strong>Expand All</strong> / <strong>Collapse</strong> buttons in the header to quickly open or close all hierarchy levels. The table header columns are sortable &mdash; click Hierarchy, Score, Health, or Records to sort.
+</div>
+
+<h3 id="empty-monitoring">Empty State</h3>
+<p>When no monitoring data is loaded for the selected agent, a placeholder appears with a call-to-action linking to <code>/monitoring</code>:</p>
+
+<div class="screenshot">
+  <div class="screenshot-chrome">
+    <div class="screenshot-dots"><span></span><span></span><span></span></div>
+    <div class="screenshot-title">No Monitoring Data</div>
+  </div>
+  <div class="screenshot-body">
+    <div class="sim-ui" style="text-align:center;padding:32px;">
+      <div style="width:48px;height:48px;border-radius:50%;background:var(--gray-100);display:inline-flex;align-items:center;justify-content:center;margin-bottom:12px;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="var(--gray-400)" stroke-width="2" style="width:24px;height:24px;"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      </div>
+      <div style="font-size:0.88rem;font-weight:500;color:var(--gray-800);margin-bottom:4px;">No Monitoring Data</div>
+      <div style="font-size:0.78rem;color:var(--gray-500);margin-bottom:16px;">Upload monitoring data or connect to a database to see AI quality metrics.</div>
+      <div style="display:inline-block;background:var(--primary);color:#fff;border-radius:8px;padding:8px 20px;font-size:0.85rem;font-weight:500;">Go to Monitor</div>
+    </div>
+  </div>
+  <div class="screenshot-caption">Empty state with dashed border, icon, message, and action button linking to the Monitoring page.</div>
+</div>
+
+
+<!-- ══════════════ BUSINESS KPIs ══════════════ -->
+<h2 id="business-kpis">Human Signals</h2>
+<p>The third collapsible section shows <strong>KPIs derived from human signals data</strong> &mdash; feedback, overrides, escalations, and similar human-in-the-loop metrics. These cards are computed from the Human Signals store using the <code>display_config.kpi_strip</code> configuration.</p>
+
+<div class="screenshot">
+  <div class="screenshot-chrome">
+    <div class="screenshot-dots"><span></span><span></span><span></span></div>
+    <div class="screenshot-title">Human Signals KPI Cards</div>
+  </div>
+  <div class="screenshot-body">
+    <div class="sim-ui" style="padding:12px 16px;">
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;">
+        <div class="sim-kpi-card-v2">
+          <div class="value-row"><span class="value">87.3%</span><span class="trend-icon" style="color:var(--green);">&#x25B2;</span></div>
+          <svg class="sim-sparkline" width="52" height="14" viewBox="0 0 52 14"><polyline points="0,10 8,8 16,7 24,6 32,5 40,4 52,3" fill="none" stroke="#16a34a" stroke-width="1.5" stroke-linecap="round"/></svg>
+          <div class="label">Approval Rate</div>
+          <div style="display:flex;gap:4px;align-items:center;"><span class="count-badge">2,156</span></div>
+          <div class="category"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:10px;height:10px;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> Human Signals</div>
+        </div>
+        <div class="sim-kpi-card-v2">
+          <div class="value-row"><span class="value">4.2%</span><span class="trend-icon" style="color:var(--green);">&#x25BC;</span></div>
+          <svg class="sim-sparkline" width="52" height="14" viewBox="0 0 52 14"><polyline points="0,4 8,5 16,6 24,8 32,9 40,10 52,11" fill="none" stroke="#16a34a" stroke-width="1.5" stroke-linecap="round"/></svg>
+          <div class="label">Escalation Rate</div>
+          <div style="display:flex;gap:4px;align-items:center;"><span class="count-badge">2,156</span></div>
+          <div class="category"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:10px;height:10px;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> Human Signals</div>
+        </div>
+        <div class="sim-kpi-card-v2">
+          <div class="value-row"><span class="value">96.1%</span><span class="trend-icon" style="color:var(--gray-400);">&mdash;</span></div>
+          <svg class="sim-sparkline" width="52" height="14" viewBox="0 0 52 14"><polyline points="0,7 8,7 16,6 24,7 32,7 40,6 52,7" fill="none" stroke="#9ca3af" stroke-width="1.5" stroke-linecap="round"/></svg>
+          <div class="label">Compliance</div>
+          <div style="display:flex;gap:4px;align-items:center;"><span class="count-badge">2,156</span></div>
+          <div class="category"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:10px;height:10px;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> Human Signals</div>
+        </div>
+        <div class="sim-kpi-card-v2">
+          <div class="value-row"><span class="value">12.8s</span><span class="trend-icon" style="color:var(--red);">&#x25B2;</span></div>
+          <svg class="sim-sparkline" width="52" height="14" viewBox="0 0 52 14"><polyline points="0,10 8,8 16,7 24,6 32,5 40,4 52,2" fill="none" stroke="#dc2626" stroke-width="1.5" stroke-linecap="round"/></svg>
+          <div class="label">Avg Handle Time</div>
+          <div style="display:flex;gap:4px;align-items:center;"><span class="count-badge">2,156</span></div>
+          <div class="category"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:10px;height:10px;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> Human Signals</div>
+        </div>
+        <div class="sim-kpi-card-v2">
+          <div class="value-row"><span class="value">3.1%</span><span class="trend-icon" style="color:var(--green);">&#x25BC;</span></div>
+          <svg class="sim-sparkline" width="52" height="14" viewBox="0 0 52 14"><polyline points="0,3 8,5 16,7 24,8 32,9 40,10 52,12" fill="none" stroke="#16a34a" stroke-width="1.5" stroke-linecap="round"/></svg>
+          <div class="label">Override Rate</div>
+          <div style="display:flex;gap:4px;align-items:center;"><span class="count-badge">2,156</span></div>
+          <div class="category"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:10px;height:10px;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> Human Signals</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="screenshot-caption">Human Signals KPI strip &mdash; up to 5 cards showing key human-in-the-loop metrics. Each card is clickable and links to the Human Signals page.</div>
+</div>
+
+<p><strong>Card behavior:</strong></p>
+<ul>
+  <li>Shows up to <strong>5 KPIs</strong> from the signals display configuration</li>
+  <li>Each card displays: value, trend arrow (polarity-aware), sparkline, label, total case count badge, and a "Human Signals" category tag</li>
+  <li>Clicking any card <strong>navigates to <code>/human-signals</code></strong> for deeper drill-down</li>
+  <li>Trend direction considers polarity: for "Escalation Rate", a downward trend is <span style="color:var(--green);font-weight:600;">green</span> (good); for "Approval Rate", upward is <span style="color:var(--green);font-weight:600;">green</span></li>
+</ul>
+
+<div class="admonition warning">
+  <div class="admonition-title">&#x26A0;&#xFE0F; Warning</div>
+  If no human signals data is loaded for the selected agent, an empty state placeholder appears with a link to <code>/human-signals</code>. Upload signals data or configure a database connection for this section to populate.
+</div>
+
+
+<!-- ══════════════ COLLAPSIBLE SECTIONS ══════════════ -->
+<h2 id="collapsible-sections">Collapsible Sections</h2>
+<p>All three main content areas &mdash; Agent KPIs, AI Quality Monitoring, and Human Signals &mdash; are wrapped in collapsible section containers. These share the <code>CollapsibleSection</code> component pattern:</p>
+
+<ul>
+  <li><strong>Header bar</strong> &mdash; gray background, icon badge, bold title, optional right-side content (e.g., alerts badge)</li>
+  <li><strong>Default state</strong> &mdash; all sections are open (<code>defaultOpen: true</code>)</li>
+  <li><strong>Toggle</strong> &mdash; click the header to collapse/expand. The chevron rotates between &#x25BC; (open) and &#x25B6; (closed)</li>
+  <li><strong>Content</strong> &mdash; hidden entirely when collapsed (CSS <code>display: none</code>), so only headers remain for a compact overview</li>
+</ul>
+
+<div class="admonition tip">
+  <div class="admonition-title">&#x1F4A1; Tip</div>
+  Collapse sections you don't need to focus on the data that matters. For example, if you only care about quality scores, collapse Agent KPIs and Human Signals to see just the Executive Summary.
+</div>
+
+
+<!-- ══════════════ FILTERING ══════════════ -->
+<h2 id="filtering">Filtering</h2>
+<p>The Production page applies a single, page-wide filter: the <strong>selected source (agent)</strong>. Unlike the Monitoring page, there are no additional environment, component, or time range filters here &mdash; the goal is a high-level summary.</p>
+
+<h3>How Source Filtering Works</h3>
+<table class="sim-table" style="margin:12px 0;">
+  <thead><tr><th>Section</th><th>Filter Applied</th><th>Store Field</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Agent KPIs</strong></td><td>KPI data filtered by source</td><td><code>kpiStore.selectedSource</code></td></tr>
+    <tr><td><strong>AI Quality Monitoring</strong></td><td>Monitoring records filtered by <code>source_name</code></td><td><code>monitoringStore.selectedSourceName</code></td></tr>
+    <tr><td><strong>Human Signals</strong></td><td>Signal cases filtered by <code>source_name</code></td><td><code>humanSignalsStore.selectedSourceName</code></td></tr>
+    <tr><td><strong>Alert Count</strong></td><td>Alerts filtered by <code>source_name</code></td><td><code>monitoringStore.alerts</code></td></tr>
+  </tbody>
+</table>
+
+<p>Selecting a different agent tab instantly recomputes all KPIs, executive summary metrics, hierarchy trees, and signal aggregates for that agent.</p>
+
+
+<!-- ══════════════ NEXT STEPS ══════════════ -->
+<h2 id="next-steps">Next Steps</h2>
+
+<div class="next-steps">
+  <a class="next-step-card" href="#">
+    <h4>&#x1F4CA; Monitoring &rarr;</h4>
+    <p>Dive deep into score trends, latency, classifications, alerts, and evaluation traces for a single agent.</p>
+  </a>
+  <a class="next-step-card" href="#">
+    <h4>&#x1F4AC; Human Signals &rarr;</h4>
+    <p>Explore the full signals dashboard with charts, case tables, filters, and detailed case modals.</p>
+  </a>
+  <a class="next-step-card" href="#">
+    <h4>&#x2699; Configuration &rarr;</h4>
+    <p>Set up database connections, agent configs, KPI definitions, and signals display options.</p>
+  </a>
+</div>
+
+<!-- ══════════════ FOOTER ══════════════ -->
+<div style="margin-top:60px;padding-top:24px;border-top:1px solid var(--gray-200);font-size:0.8rem;color:var(--gray-400);text-align:center;">
+  AXIS Documentation &middot; Built with MkDocs Material
+</div>
+
+</div><!-- .content -->
+</main>
+
+<!-- ══════════════════ TABLE OF CONTENTS ══════════════════ -->
+<nav class="toc">
+  <div class="toc-title">On this page</div>
+  <ul class="toc-list">
+    <li><a href="#why-production">Why Use Production Overview?</a></li>
+    <li><a href="#quick-start">Quick Start</a></li>
+    <li><a href="#page-anatomy">Page Anatomy</a></li>
+    <li><a href="#source-selector">Source Selector</a></li>
+    <li><a href="#agent-kpis">Agent KPIs</a></li>
+    <li class="indent"><a href="#kpi-date-range">Date Range Badge</a></li>
+    <li class="indent"><a href="#kpi-cards">KPI Card Grid</a></li>
+    <li class="indent"><a href="#kpi-trend-chart">KPI Trend Chart</a></li>
+    <li><a href="#executive-summary">AI Quality Monitoring</a></li>
+    <li class="indent"><a href="#alert-badge">Alerts Badge</a></li>
+    <li class="indent"><a href="#executive-kpis">Executive KPI Cards</a></li>
+    <li class="indent"><a href="#quality-scorecard">Quality Scorecard</a></li>
+    <li class="indent"><a href="#empty-monitoring">Empty State</a></li>
+    <li><a href="#business-kpis">Human Signals</a></li>
+    <li><a href="#collapsible-sections">Collapsible Sections</a></li>
+    <li><a href="#filtering">Filtering</a></li>
+    <li><a href="#next-steps">Next Steps</a></li>
+  </ul>
+</nav>
+
+</div><!-- .layout -->
+
+</body>
+</html>

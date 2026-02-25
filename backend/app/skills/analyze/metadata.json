@@ -1,0 +1,29 @@
+{
+  "name": "analyze",
+  "description": "Perform statistical analysis on evaluation data including distributions, correlations, and patterns",
+  "version": "1.0.0",
+  "parameters": [
+    {
+      "name": "analysis_type",
+      "type": "string",
+      "description": "Type of analysis: 'distribution', 'correlation', 'pattern', 'all'",
+      "required": false,
+      "default": "all"
+    },
+    {
+      "name": "metrics",
+      "type": "array",
+      "description": "Specific metrics to analyze",
+      "required": false
+    },
+    {
+      "name": "include_outliers",
+      "type": "boolean",
+      "description": "Whether to identify outliers",
+      "required": false,
+      "default": true
+    }
+  ],
+  "tags": ["analysis", "statistics", "patterns"],
+  "enabled": true
+}

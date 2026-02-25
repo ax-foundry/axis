@@ -1,0 +1,181 @@
+site_name: AXIS Documentation
+site_description: Agent X-Ray Interface & Statistics — AI Evaluation Platform
+site_url: https://ax-foundry.github.io/axis/
+repo_url: https://github.com/ax-foundry/axis
+repo_name: ax-foundry/axis
+
+not_in_nav: |
+  404.md
+
+theme:
+  name: material
+  logo: assets/axis_transparent.png
+  favicon: assets/ax-icon.png
+  custom_dir: docs/overrides
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  font:
+    text: Inter
+    code: JetBrains Mono
+  icon:
+    repo: fontawesome/brands/github
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - navigation.indexes
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.code.annotate
+    - content.tabs.link
+    - toc.follow
+
+extra_css:
+  - stylesheets/extra.css
+
+plugins:
+  - search
+  - mkdocstrings:
+      default_handler: python
+      handlers:
+        python:
+          paths: [backend]
+          options:
+            docstring_style: google
+            show_source: true
+            show_root_heading: true
+            show_root_full_path: false
+            show_category_heading: true
+            members_order: source
+            merge_init_into_class: true
+            show_if_no_docstring: false
+  - social:
+      enabled: false
+      cards_layout_options:
+        background_color: "#1E3A5F"
+        color: "#FFFFFF"
+  - redirects:
+      redirect_maps: {}
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+      title: On this page
+      toc_depth: 3
+  - def_list
+  - footnotes
+
+copyright: Copyright &copy; 2026 AX Foundry. All rights reserved.
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/ax-foundry/axis
+
+nav:
+  - Home: index.md
+  - Getting Started:
+      - getting-started/index.md
+      - Installation: getting-started/installation.md
+      - First Run: getting-started/first-run.md
+  - User Guide:
+      - user-guide/index.md
+      - Evaluate: user-guide/evaluate.md
+      - Production: user-guide/production.md
+      - Monitoring: user-guide/monitoring.md
+      - Annotation Studio: user-guide/annotation.md
+      - CaliberHQ: user-guide/calibration.md
+      - Simulation: user-guide/simulation.md
+      - Memory: user-guide/memory.md
+      - Human Signals: user-guide/human-signals.md
+      - Agent Replay: user-guide/agent-replay.md
+      - Learn: user-guide/learn.md
+      - Settings: user-guide/settings.md
+  - Configuration:
+      - configuration/index.md
+      - Environment Variables: configuration/environment-variables.md
+      - YAML Configs: configuration/yaml-configs.md
+      - DuckDB: configuration/duckdb.md
+      - Data Sources: configuration/data-sources.md
+      - Theming: configuration/theming.md
+      - Customization: configuration/customization.md
+      - Multi-Agent Teams: configuration/multi-agent.md
+  - Deployment:
+      - deployment/index.md
+      - Docker: deployment/docker.md
+      - Production: deployment/production.md
+      - DuckDB Sync Runbook: deployment/duckdb-sync-runbook.md
+      - Security: deployment/security.md
+  - Architecture:
+      - architecture/index.md
+      - Backend: architecture/backend.md
+      - Plugin System: architecture/plugin-system.md
+      - DuckDB Analytics Store: architecture/duckdb-store.md
+      - Frontend: architecture/frontend.md
+      - Data Formats: architecture/data-formats.md
+      - State Management: architecture/state-management.md
+  - API Reference:
+      - api-reference/index.md
+      - REST API: api-reference/rest-api.md
+      - Backend:
+          - api-reference/backend/config.md
+          - api-reference/backend/data-processor.md
+          - api-reference/backend/database-service.md
+          - api-reference/backend/eval-runner-service.md
+          - api-reference/backend/human-signals-service.md
+          - api-reference/backend/memory-service.md
+          - api-reference/backend/graph-service.md
+          - api-reference/backend/schemas.md
+      - Frontend:
+          - api-reference/frontend/api-client.md
+          - api-reference/frontend/hooks.md
+          - api-reference/frontend/stores.md
+          - api-reference/frontend/types.md
+  - Development:
+      - development/index.md
+      - Setup: development/setup.md
+      - Repository Model: development/repository-model.md
+      - Code Conventions: development/code-conventions.md
+      - Adding Features: development/adding-features.md
+      - Testing: development/testing.md
+      - Design System: development/design-system.md
+  - Contributing: contributing.md

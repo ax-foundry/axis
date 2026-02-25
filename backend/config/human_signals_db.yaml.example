@@ -1,0 +1,146 @@
+# Human Signals Database Auto-Load Configuration
+# Copy this file to human_signals_db.yaml and customize for your environment.
+#
+# This configuration enables automatic loading of human signals data
+# from a PostgreSQL database on app startup, bypassing the manual upload flow.
+#
+# Environment variables can also be used (YAML takes precedence):
+#   HUMAN_SIGNALS_DB_URL, HUMAN_SIGNALS_DB_HOST, HUMAN_SIGNALS_DB_TABLE, etc.
+
+human_signals_db:
+  # Master switch - set to true to enable database connection
+  enabled: true
+
+  # Auto-load on startup - when true, executes the query on app load
+  # Set to false to configure but require manual trigger
+  auto_load: true
+
+  # Database connection
+  # Option 1: Full connection URL (recommended for production)
+  url: "postgresql://axis_reader:${DB_PASSWORD}@db.example.com:5432/signals"
+
+  # Option 2: Individual connection parameters (alternative to url)
+  # host: "db.example.com"
+  # port: 5432
+  # database: "signals"
+  # username: "axis_reader"
+  # password: "your_password_here"
+  # ssl_mode: "require"  # Options: disable, prefer, require
+
+  # Custom column mappings (optional)
+  # Use this to map your database column names to AXIS schema names.
+  # These take precedence over automatic normalization.
+  # Format: source_column: target_column
+  columns:
+    id: Case_ID
+    thread: Thread_ID
+    company: Business
+    intervened: Has_Intervention
+    intervention: Intervention_Type
+    friction: Friction_Point
+    mood: Sentiment
+    notes: Human_Summary
+    result: Final_Outcome
+    msg_count: Message_Count
+    agent: Agent_Name
+    created_at: Timestamp
+
+  # SQL queries to execute for loading human signals data.
+  # Uses a split-query model: dataset_query + results_query, joined on dataset_id.
+  #
+  # Or use AS aliases in your query to map columns explicitly:
+  dataset_query: |
+    SELECT
+      c.id AS dataset_id,
+      c.thread_id AS Thread_ID,
+      c.business_name AS Business,
+      c.agent_name AS Agent_Name,
+      c.created_at AS Timestamp,
+      c.conversation AS conversation,
+      c.additional_input AS additional_input
+    FROM hitl_cases c
+    WHERE c.created_at > NOW() - INTERVAL '30 days'
+    ORDER BY c.created_at DESC
+
+  results_query: |
+    SELECT
+      r.dataset_id,
+      r.metric_name,
+      r.metric_score,
+      r.metric_category,
+      r.signals,
+      r.source_name,
+      r.source_component,
+      r.environment,
+      r.timestamp
+    FROM hitl_results r
+    WHERE r.timestamp > NOW() - INTERVAL '30 days'
+
+  # Query timeout in seconds (max 120)
+  # Increase for complex queries or large datasets
+  query_timeout: 60
+
+  # Maximum rows to load (max 50000)
+  # The query result will be truncated to this limit
+  row_limit: 10000
+
+  # Optional: list of metric_name values to show on dashboard.
+  # Omit or leave empty to show all metrics.
+  visible_metrics: []
+  #  - intervention_type
+  #  - resolution_status
+  #  - sentiment_category
+
+  # Optional: list of signal names to show in the KPI strip.
+  # Uses the signal key (e.g. "is_escalated", "has_intervention").
+  # Aggregate KPIs ("avg_message_count", "total_cases") can also be included.
+  # Omit or leave empty to show all discovered boolean signals.
+  visible_kpis: []
+  #  - is_escalated
+  #  - has_actionable_feedback
+  #  - has_intervention
+  #  - is_overridden
+  #  - total_cases
+
+  # --- Periodic Incremental Sync ---
+  # Pull new rows on a timer instead of doing a full rebuild each time.
+  #
+  # refresh_interval_minutes: how often to sync (0 = disabled, >0 = every N minutes)
+  # incremental_column: column in query output used as a watermark — must be
+  #   monotonically increasing (e.g. timestamp, auto-increment id).
+  #   When null, periodic refresh falls back to a full rebuild.
+  #
+  # On the first run (or after a watermark reset) a full rebuild is always performed.
+  # Subsequent runs append only rows where incremental_column > last watermark.
+  #
+  # refresh_interval_minutes: 15
+  # incremental_column: "Timestamp"
+
+
+# =============================================================================
+# Example Configurations
+# =============================================================================
+
+# Minimal configuration (table-based, legacy mode):
+# human_signals_db:
+#   enabled: true
+#   auto_connect: true  # Legacy: uses table name instead of query
+#   url: "postgresql://user:pass@localhost:5432/mydb"
+#   schema: "public"
+#   table: "human_signals"
+
+# Production configuration with custom query:
+# human_signals_db:
+#   enabled: true
+#   auto_load: true
+#   url: "postgresql://axis_reader:${DB_PASSWORD}@prod-db.internal:5432/ops"
+#   dataset_query: |
+#     SELECT dataset_id, conversation, additional_input, timestamp
+#     FROM signals_dataset
+#     WHERE timestamp > NOW() - INTERVAL '90 days'
+#   results_query: |
+#     SELECT dataset_id, metric_name, metric_score, signals, source_name
+#     FROM signals_results
+#     WHERE timestamp > NOW() - INTERVAL '90 days'
+#   query_timeout: 90
+#   row_limit: 25000

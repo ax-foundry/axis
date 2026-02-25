@@ -1,0 +1,287 @@
+# Monitoring Database Auto-Load Configuration
+# Copy this file to monitoring_db.yaml and customize for your environment.
+#
+# This configuration enables automatic loading of monitoring/observability data
+# from a PostgreSQL database on app startup, bypassing the manual upload flow.
+#
+# Environment variables can also be used (YAML takes precedence):
+#   MONITORING_DB_URL, MONITORING_DB_HOST, MONITORING_DB_TABLE, etc.
+
+monitoring_db:
+  # Master switch - set to true to enable database connection
+  enabled: true
+
+  # Auto-load on startup - when true, executes the query on app load
+  # Set to false to configure but require manual trigger
+  auto_load: true
+
+  # Database connection
+  # Option 1: Full connection URL (recommended for production)
+  url: "postgresql://axis_reader:${DB_PASSWORD}@db.example.com:5432/monitoring"
+
+  # Option 2: Individual connection parameters (alternative to url)
+  # host: "db.example.com"
+  # port: 5432
+  # database: "monitoring"
+  # username: "axis_reader"
+  # password: "your_password_here"
+  # ssl_mode: "require"  # Options: disable, prefer, require
+
+  # Custom column mappings (optional)
+  # Use this to map your database column names to AXIS monitoring schema names.
+  # These take precedence over automatic normalization.
+  # Format: source_column: target_column
+  columns:
+    record_id: dataset_id
+    created_at: timestamp
+    user_input: query
+    model_response: actual_output
+    metric: metric_name
+    score: metric_score
+    env: environment
+    app_name: source_name
+    component: source_component
+
+  # SQL query to execute for loading monitoring data
+  # The query should return columns that map to AXIS monitoring schema.
+  #
+  # Column mapping (automatic if no custom 'columns' mapping defined):
+  #   id, record_id             -> dataset_id
+  #   time, created_at          -> timestamp
+  #   input, prompt             -> query
+  #   output, response          -> actual_output
+  #   model, agent              -> model_name
+  #   env, stage                -> environment
+  #   metric                    -> metric_name
+  #   score, metric_value       -> metric_score
+  #
+  # Or use AS aliases in your query to map columns explicitly:
+  query: |
+    SELECT
+      e.id AS dataset_id,
+      e.created_at AS timestamp,
+      e.input AS query,
+      e.output AS actual_output,
+      m.metric_name,
+      m.score AS metric_score,
+      m.metric_type,
+      m.metric_category,
+      e.environment,
+      e.source_name,
+      e.source_component,
+      e.trace_id,
+      e.latency
+    FROM evaluation_logs e
+    LEFT JOIN metrics m ON e.id = m.log_id
+    WHERE e.created_at > NOW() - INTERVAL '7 days'
+    ORDER BY e.created_at DESC
+
+  # Query timeout in seconds (max 120)
+  # Increase for complex queries or large datasets
+  query_timeout: 60
+
+  # Maximum rows to load (max 50000)
+  # The query result will be truncated to this limit
+  row_limit: 10000
+
+  # Optional: list of metric_name values to show on dashboard.
+  # Omit or leave empty to show all metrics.
+  visible_metrics: []
+  #  - Faithfulness
+  #  - Relevance
+  #  - Correctness
+
+  # --- Periodic Incremental Sync ---
+  # Pull new rows on a timer instead of doing a full rebuild each time.
+  #
+  # refresh_interval_minutes: how often to sync (0 = disabled, >0 = every N minutes)
+  # incremental_column: column in query output used as a watermark — must be
+  #   monotonically increasing (e.g. timestamp, auto-increment id).
+  #   When null, periodic refresh falls back to a full rebuild.
+  #
+  # On the first run (or after a watermark reset) a full rebuild is always performed.
+  # Subsequent runs append only rows where incremental_column > last watermark.
+  #
+  # refresh_interval_minutes: 15
+  # incremental_column: "timestamp"
+
+  # --- Score Thresholds ---
+  # Reference lines on the Score Trend chart and health-status logic.
+  # "good" = green dashed line, "pass" = yellow dashed line.
+  # per_source overrides let different agents have different quality bars.
+  thresholds:
+    default:
+      good: 0.7
+      pass: 0.5
+    # per_source:
+    #   alpha_bot:
+    #     good: 0.8
+    #     pass: 0.6
+    #   other_agent:
+    #     good: 0.75
+    #     pass: 0.55
+
+  # --- Anomaly Detection ---
+  # Statistical anomaly detection computed client-side from trend data.
+  # Anomaly alerts appear alongside threshold alerts in the Alerts tab.
+  anomaly_detection:
+    enabled: true
+    min_data_points: 5      # Skip detection if fewer time buckets
+
+    z_score:
+      enabled: true
+      threshold: 2.0         # Flag when |z| > this
+      severity: "warning"
+      lookback_window: 20    # Historical buckets for mean/stddev (0 = all)
+      metrics: []            # Empty = all metrics
+
+    moving_average:
+      enabled: true
+      window_size: 5         # Buckets for MA calculation
+      deviation_threshold: 0.15  # Absolute deviation from MA
+      severity: "warning"
+      metrics: []
+
+    rate_of_change:
+      enabled: true
+      threshold: 0.3         # Absolute change between consecutive buckets
+      severity: "error"
+      metrics: []
+
+
+# =============================================================================
+# Example Configurations
+# =============================================================================
+
+# Recommended production pattern: one-time backfill + scheduled daily refresh
+#
+# 1) Keep auto_load false in production to avoid heavy startup syncs.
+# 2) Run an initial one-time backfill via POST /api/store/sync/monitoring.
+# 3) Switch query to a rolling window and run scheduled sync daily.
+#
+# Note: query_timeout is capped at 120 seconds by backend config loading.
+#
+# One-time backfill mode (manual trigger only):
+# monitoring_db:
+#   enabled: true
+#   auto_load: false
+#   url: "postgresql://axis_reader:${DB_PASSWORD}@prod-db.internal:5432/observability"
+#   query: |
+#     SELECT
+#       trace_id AS dataset_id,
+#       timestamp,
+#       prompt AS query,
+#       completion AS actual_output,
+#       metric_name,
+#       metric_value AS metric_score,
+#       metric_category,
+#       deployment_env AS environment,
+#       service_name AS source_name,
+#       component_name AS source_component,
+#       response_time_ms AS latency
+#     FROM llm_traces
+#     ORDER BY timestamp DESC
+#   query_timeout: 120
+#   row_limit: 50000
+#
+# Daily refresh mode (rolling window):
+# monitoring_db:
+#   enabled: true
+#   auto_load: false
+#   url: "postgresql://axis_reader:${DB_PASSWORD}@prod-db.internal:5432/observability"
+#   query: |
+#     SELECT
+#       trace_id AS dataset_id,
+#       timestamp,
+#       prompt AS query,
+#       completion AS actual_output,
+#       metric_name,
+#       metric_value AS metric_score,
+#       metric_category,
+#       deployment_env AS environment,
+#       service_name AS source_name,
+#       component_name AS source_component,
+#       response_time_ms AS latency
+#     FROM llm_traces
+#     WHERE timestamp >= NOW() - INTERVAL '30 days'
+#     ORDER BY timestamp DESC
+#   query_timeout: 120
+#   row_limit: 50000
+#
+# Minimal configuration (table-based, legacy mode):
+# monitoring_db:
+#   enabled: true
+#   auto_connect: true  # Legacy: uses table name instead of query
+#   url: "postgresql://user:pass@localhost:5432/mydb"
+#   schema: "public"
+#   table: "monitoring_data"
+
+# Production configuration with custom query:
+# monitoring_db:
+#   enabled: true
+#   auto_load: true
+#   url: "postgresql://axis_reader:${DB_PASSWORD}@prod-db.internal:5432/observability"
+#   query: |
+#     SELECT
+#       trace_id AS dataset_id,
+#       timestamp,
+#       prompt AS query,
+#       completion AS actual_output,
+#       metric_name,
+#       metric_value AS metric_score,
+#       metric_category,
+#       deployment_env AS environment,
+#       service_name AS source_name,
+#       component_name AS source_component,
+#       response_time_ms AS latency
+#     FROM llm_traces
+#     WHERE timestamp > NOW() - INTERVAL '24 hours'
+#     ORDER BY timestamp DESC
+#   query_timeout: 90
+#   row_limit: 25000
+
+# Configuration with custom column mappings (no AS aliases needed):
+# monitoring_db:
+#   enabled: true
+#   auto_load: true
+#   url: "postgresql://user:pass@localhost:5432/mydb"
+#   columns:
+#     trace_uuid: dataset_id
+#     created_time: timestamp
+#     user_prompt: query
+#     llm_response: actual_output
+#     eval_metric: metric_name
+#     eval_score: metric_score
+#     deploy_env: environment
+#     app_name: source_name
+#     module: source_component
+#   query: "SELECT * FROM llm_evaluations"
+#   query_timeout: 30
+#   row_limit: 5000
+
+# Langfuse integration example:
+# monitoring_db:
+#   enabled: true
+#   auto_load: true
+#   url: "postgresql://langfuse_reader:${LANGFUSE_DB_PASSWORD}@langfuse-db:5432/langfuse"
+#   columns:
+#     id: dataset_id
+#     created_at: timestamp
+#     input: query
+#     output: actual_output
+#   query: |
+#     SELECT
+#       o.id,
+#       o.created_at,
+#       o.input,
+#       o.output,
+#       s.name AS metric_name,
+#       s.value AS metric_score,
+#       t.name AS trace_id,
+#       o.completion_start_time - o.start_time AS latency
+#     FROM observations o
+#     JOIN traces t ON o.trace_id = t.id
+#     LEFT JOIN scores s ON o.id = s.observation_id
+#     WHERE o.created_at > NOW() - INTERVAL '7 days'
+#   query_timeout: 60
+#   row_limit: 10000
