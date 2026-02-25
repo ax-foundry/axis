@@ -1,0 +1,117 @@
+.ipynb_checkpoints
+.DS_Store
+__pycache__
+
+build
+doc/build
+data/
+dist
+*.egg-info
+.eggs
+.pypirc
+!skts.c
+!np_datetime.c
+!np_datetime_strings.c
+*.c
+*.cpp
+*.a
+*.com
+*.class
+*.dll
+*.exe
+*.pxi
+*.o
+*.py[ocd]
+*.so
+.build_cache_dir
+MANIFEST
+
+.#*
+*\#*\#
+[#]*#
+*~
+*$
+*.bak
+*flymake*
+*.iml
+*.kdev4
+*.log
+*.swp
+*.pdb
+*.zip
+*.pem
+.project
+.pydevproject
+.settings
+.idea
+.vagrant
+.noseids
+.ipynb_checkpoints
+.tags
+.cache/
+.vscode/
+.env
+
+backend/.env
+
+doc/source/generated
+doc/source/user_guide/styled.xlsx
+doc/source/reference/api
+doc/source/_static/*.html
+doc/source/vbench
+doc/source/vbench.rst
+doc/source/index.rst
+doc/build/html/index.html
+
+artifacts/
+
+.tox
+.ropeproject
+*.whl
+**/wheelhouse/*
+pip-wheel-metadata
+.coverage
+coverage.xml
+coverage_html_report
+.mypy_cache
+*.pytest_cache
+.hypothesis/
+
+# test results
+/reports
+
+
+# SCM version info
+_version.py
+.aider*
+
+# Ruff
+.ruff_cache/
+
+# Pre-commit
+.pre-commit-cache/
+
+# Mockups
+mockups/
+
+# MkDocs build output
+site/
+
+# Custom directory (site-specific configs, branding, agents)
+custom/*
+!custom/README.md
+
+# Legacy backend config YAMLs (only .example templates tracked)
+# Kept to prevent accidental commits if someone creates files here
+backend/config/*.yaml
+!backend/config/*.yaml.example
+
+# Frontend symlinks to custom/ (created by make setup)
+frontend/public/branding
+frontend/public/agents
+
+
+CLAUDE.md
+AGENTS.md
+
+venv/
