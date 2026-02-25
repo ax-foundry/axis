@@ -1,0 +1,1122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Learn - AXIS User Guide</title>
+<style>
+  /* ── Reset & Base ── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --primary: #4f46e5;
+    --primary-light: #eef2ff;
+    --primary-dark: #3730a3;
+    --green: #16a34a;
+    --green-light: #f0fdf4;
+    --green-border: #bbf7d0;
+    --yellow: #ca8a04;
+    --yellow-light: #fefce8;
+    --yellow-border: #fef08a;
+    --red: #dc2626;
+    --red-light: #fef2f2;
+    --red-border: #fecaca;
+    --blue: #2563eb;
+    --blue-light: #eff6ff;
+    --blue-border: #bfdbfe;
+    --gray-50: #f9fafb;
+    --gray-100: #f3f4f6;
+    --gray-200: #e5e7eb;
+    --gray-300: #d1d5db;
+    --gray-400: #9ca3af;
+    --gray-500: #6b7280;
+    --gray-600: #4b5563;
+    --gray-700: #374151;
+    --gray-800: #1f2937;
+    --gray-900: #111827;
+    --sidebar-w: 260px;
+    --content-max: 860px;
+    --toc-w: 220px;
+  }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    color: var(--gray-800);
+    line-height: 1.7;
+    background: #fff;
+  }
+  a { color: var(--primary); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code {
+    font-family: 'SF Mono', 'Fira Code', 'Fira Mono', Menlo, monospace;
+    font-size: 0.875em;
+    background: var(--gray-100);
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: var(--primary-dark);
+  }
+  pre { background: var(--gray-900); color: #e5e7eb; padding: 16px 20px; border-radius: 8px; overflow-x: auto; font-size: 0.85rem; line-height: 1.6; }
+  pre code { background: none; padding: 0; color: inherit; }
+  kbd {
+    display: inline-block; padding: 2px 6px; font-size: 0.8em;
+    border: 1px solid var(--gray-300); border-radius: 4px;
+    background: var(--gray-50); box-shadow: 0 1px 0 var(--gray-300);
+    font-family: inherit;
+  }
+
+  /* ── Top Nav ── */
+  .topnav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    height: 56px; background: var(--gray-900); color: #fff;
+    display: flex; align-items: center; padding: 0 24px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.3);
+  }
+  .topnav-logo { font-weight: 700; font-size: 1.1rem; letter-spacing: -0.02em; }
+  .topnav-logo span { color: var(--primary); }
+  .topnav-links { margin-left: auto; display: flex; gap: 24px; font-size: 0.875rem; }
+  .topnav-links a { color: var(--gray-300); }
+  .topnav-links a:hover { color: #fff; text-decoration: none; }
+  .topnav-links a.active { color: #fff; font-weight: 600; }
+
+  /* ── Layout ── */
+  .layout { display: flex; margin-top: 56px; min-height: calc(100vh - 56px); }
+
+  /* ── Sidebar ── */
+  .sidebar {
+    position: fixed; top: 56px; left: 0; bottom: 0;
+    width: var(--sidebar-w); background: var(--gray-50);
+    border-right: 1px solid var(--gray-200);
+    overflow-y: auto; padding: 20px 0; font-size: 0.85rem;
+  }
+  .sidebar-section { padding: 0 16px; margin-bottom: 20px; }
+  .sidebar-section-title {
+    font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.08em; color: var(--gray-400); margin-bottom: 8px;
+    padding-left: 8px;
+  }
+  .sidebar-link {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 12px; border-radius: 6px; color: var(--gray-600);
+    transition: all 0.15s;
+  }
+  .sidebar-link:hover { background: var(--gray-200); color: var(--gray-800); text-decoration: none; }
+  .sidebar-link.active { background: var(--primary-light); color: var(--primary); font-weight: 600; }
+  .sidebar-link svg { width: 16px; height: 16px; flex-shrink: 0; }
+
+  /* ── Main Content ── */
+  .main {
+    margin-left: var(--sidebar-w); flex: 1;
+    padding: 40px 40px 80px;
+    margin-right: calc(var(--toc-w) + 48px);
+  }
+  .content { max-width: var(--content-max); width: 100%; }
+
+  /* ── TOC (right rail) ── */
+  .toc {
+    position: fixed; top: 96px; right: 24px;
+    width: var(--toc-w); font-size: 0.78rem;
+  }
+  .toc-title { font-weight: 700; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--gray-400); margin-bottom: 10px; }
+  .toc-list { list-style: none; border-left: 2px solid var(--gray-200); }
+  .toc-list li { padding-left: 14px; margin-bottom: 6px; }
+  .toc-list a { color: var(--gray-500); }
+  .toc-list a:hover { color: var(--primary); text-decoration: none; }
+  .toc-list .indent { padding-left: 28px; }
+
+  /* ── Typography ── */
+  .content h1 { font-size: 2rem; font-weight: 800; letter-spacing: -0.03em; margin-bottom: 8px; color: var(--gray-900); }
+  .content h2 { font-size: 1.45rem; font-weight: 700; margin-top: 48px; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid var(--gray-200); color: var(--gray-900); }
+  .content h3 { font-size: 1.15rem; font-weight: 600; margin-top: 32px; margin-bottom: 12px; color: var(--gray-800); }
+  .content h4 { font-size: 1rem; font-weight: 600; margin-top: 24px; margin-bottom: 8px; color: var(--gray-700); }
+  .content p { margin-bottom: 16px; color: var(--gray-700); }
+  .content > ul, .content > ol { margin-bottom: 16px; padding-left: 24px; color: var(--gray-700); }
+  .content li { margin-bottom: 6px; }
+  .subtitle { font-size: 1.1rem; color: var(--gray-500); margin-bottom: 32px; }
+
+  /* ── Breadcrumb ── */
+  .breadcrumb { font-size: 0.8rem; color: var(--gray-400); margin-bottom: 12px; }
+  .breadcrumb a { color: var(--gray-400); }
+  .breadcrumb a:hover { color: var(--primary); }
+
+  /* ── Admonitions ── */
+  .admonition {
+    border-radius: 8px; padding: 16px 20px; margin: 20px 0;
+    border-left: 4px solid; font-size: 0.9rem;
+  }
+  .admonition-title {
+    font-weight: 700; font-size: 0.8rem; text-transform: uppercase;
+    letter-spacing: 0.04em; margin-bottom: 6px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .admonition.tip { background: var(--green-light); border-color: var(--green); }
+  .admonition.tip .admonition-title { color: var(--green); }
+  .admonition.info { background: var(--blue-light); border-color: var(--blue); }
+  .admonition.info .admonition-title { color: var(--blue); }
+  .admonition.warning { background: var(--yellow-light); border-color: var(--yellow); }
+  .admonition.warning .admonition-title { color: var(--yellow); }
+  .admonition.note { background: var(--gray-50); border-color: var(--gray-400); }
+  .admonition.note .admonition-title { color: var(--gray-600); }
+
+  /* ── Screenshot Frames ── */
+  .screenshot {
+    margin: 24px 0; border-radius: 10px; overflow: hidden;
+    border: 1px solid var(--gray-200); box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+  }
+  .screenshot-chrome {
+    background: var(--gray-100); padding: 8px 14px; display: flex;
+    align-items: center; gap: 8px; border-bottom: 1px solid var(--gray-200);
+  }
+  .screenshot-dots { display: flex; gap: 6px; }
+  .screenshot-dots span { width: 10px; height: 10px; border-radius: 50%; }
+  .screenshot-dots span:nth-child(1) { background: #f87171; }
+  .screenshot-dots span:nth-child(2) { background: #fbbf24; }
+  .screenshot-dots span:nth-child(3) { background: #34d399; }
+  .screenshot-title { font-size: 0.75rem; color: var(--gray-500); margin-left: 8px; }
+  .screenshot-body { background: #fff; position: relative; }
+  .screenshot-caption {
+    text-align: center; font-size: 0.8rem; color: var(--gray-500);
+    padding: 10px; font-style: italic; background: var(--gray-50);
+    border-top: 1px solid var(--gray-200);
+  }
+
+  /* ── Simulated UI ── */
+  .sim-ui { padding: 20px; font-family: inherit; }
+  .sim-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--gray-200); }
+  .sim-header-icon { width: 24px; height: 24px; color: var(--primary); }
+  .sim-header h3 { margin: 0; font-size: 1.1rem; }
+  .sim-header p { margin: 0; font-size: 0.8rem; color: var(--gray-500); }
+
+  .sim-filters { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+  .sim-filter-btn {
+    padding: 6px 14px; border-radius: 6px; font-size: 0.8rem;
+    border: 1px solid var(--gray-200); background: #fff; color: var(--gray-600);
+    display: flex; align-items: center; gap: 6px;
+  }
+  .sim-filter-btn.active { border-color: var(--primary); background: var(--primary-light); color: var(--primary); font-weight: 600; }
+  .sim-filter-btn svg { width: 14px; height: 14px; }
+
+  .sim-kpi-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 20px; }
+  .sim-kpi {
+    border: 1px solid var(--gray-200); border-radius: 8px; padding: 14px 16px;
+    background: #fff;
+  }
+  .sim-kpi-label { font-size: 0.7rem; color: var(--gray-500); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 4px; }
+  .sim-kpi-value { font-size: 1.4rem; font-weight: 700; color: var(--gray-900); }
+  .sim-kpi-trend { font-size: 0.75rem; margin-top: 2px; }
+  .sim-kpi-trend.up { color: var(--green); }
+  .sim-kpi-trend.down { color: var(--red); }
+
+  .sim-tabs { display: flex; border-bottom: 2px solid var(--gray-200); margin-bottom: 16px; }
+  .sim-tab {
+    padding: 8px 16px; font-size: 0.82rem; color: var(--gray-500);
+    border-bottom: 2px solid transparent; margin-bottom: -2px; cursor: pointer;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .sim-tab.active { color: var(--primary); border-color: var(--primary); font-weight: 600; }
+  .sim-tab .badge {
+    background: var(--red); color: #fff; font-size: 0.65rem;
+    padding: 1px 6px; border-radius: 10px; font-weight: 700;
+  }
+
+  .sim-chart-placeholder {
+    height: 200px; background: var(--gray-50); border: 1px solid var(--gray-200);
+    border-radius: 8px; display: flex; align-items: center; justify-content: center;
+    position: relative; overflow: hidden;
+  }
+  .sim-chart-placeholder.tall { height: 280px; }
+
+  .sim-chart-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 14px; border-bottom: 1px solid var(--gray-200);
+  }
+  .sim-chart-header h4 { font-size: 0.85rem; margin: 0; color: var(--gray-700); }
+  .sim-chart-card { border: 1px solid var(--gray-200); border-radius: 8px; overflow: hidden; margin-bottom: 16px; }
+  .sim-chart-content { padding: 16px; }
+
+  .sim-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .sim-3col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+
+  /* Table simulation */
+  .sim-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+  .sim-table th { background: var(--gray-50); text-align: left; padding: 8px 12px; font-weight: 600; color: var(--gray-600); border-bottom: 1px solid var(--gray-200); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; }
+  .sim-table td { padding: 8px 12px; border-bottom: 1px solid var(--gray-100); color: var(--gray-700); }
+  .sim-table tr:hover td { background: var(--gray-50); }
+  .sim-badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 0.7rem; font-weight: 600; }
+  .sim-badge.green { background: var(--green-light); color: var(--green); border: 1px solid var(--green-border); }
+  .sim-badge.yellow { background: var(--yellow-light); color: var(--yellow); border: 1px solid var(--yellow-border); }
+  .sim-badge.red { background: var(--red-light); color: var(--red); border: 1px solid var(--red-border); }
+  .sim-badge.blue { background: var(--blue-light); color: var(--blue); border: 1px solid var(--blue-border); }
+  .sim-badge.gray { background: var(--gray-100); color: var(--gray-600); border: 1px solid var(--gray-200); }
+  .sim-badge.purple { background: #faf5ff; color: #7c3aed; border: 1px solid #ddd6fe; }
+  .sim-code { font-family: 'SF Mono', monospace; font-size: 0.75rem; color: var(--primary); }
+
+  /* ── Annotation Overlay ── */
+  .annotation-overlay { position: absolute; pointer-events: none; }
+  .callout-num {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 24px; height: 24px; border-radius: 50%;
+    background: var(--primary); color: #fff; font-size: 0.7rem; font-weight: 700;
+    box-shadow: 0 2px 6px rgba(79,70,229,0.4);
+  }
+  .callout-ring {
+    position: absolute; border: 2px solid var(--primary);
+    border-radius: 8px; pointer-events: none;
+    box-shadow: 0 0 0 2px rgba(79,70,229,0.15);
+  }
+  .callout-legend { margin: 16px 0; font-size: 0.85rem; }
+  .callout-legend-item { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 8px; }
+  .callout-legend-item .callout-num { flex-shrink: 0; }
+
+  /* ── Step Boxes ── */
+  .step-grid { display: grid; grid-template-columns: 1fr; gap: 16px; margin: 20px 0; }
+  .step-box {
+    display: flex; gap: 16px; padding: 16px 20px;
+    border: 1px solid var(--gray-200); border-radius: 10px;
+    background: #fff; transition: box-shadow 0.15s;
+  }
+  .step-box:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+  .step-num {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: var(--primary); color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 0.85rem; flex-shrink: 0;
+  }
+  .step-content h4 { margin: 0 0 4px; font-size: 0.95rem; }
+  .step-content p { margin: 0; font-size: 0.88rem; color: var(--gray-600); }
+
+  /* ── Feature Cards ── */
+  .feature-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 20px 0; }
+  .feature-card {
+    border: 1px solid var(--gray-200); border-radius: 8px; padding: 16px;
+    transition: box-shadow 0.15s;
+  }
+  .feature-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+  .feature-card h4 { margin: 0 0 6px; font-size: 0.9rem; display: flex; align-items: center; gap: 8px; }
+  .feature-card p { margin: 0; font-size: 0.82rem; color: var(--gray-500); }
+  .feature-icon { font-size: 1.1rem; }
+
+  /* ── Separator ── */
+  .section-sep { display: flex; align-items: center; gap: 12px; margin: 32px 0 24px; color: var(--gray-400); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; }
+  .section-sep::before, .section-sep::after { content: ''; flex: 1; height: 1px; background: var(--gray-200); }
+
+  /* ── Next Steps ── */
+  .next-steps { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin: 24px 0; }
+  .next-step-card {
+    border: 1px solid var(--gray-200); border-radius: 8px; padding: 16px;
+    transition: all 0.15s;
+  }
+  .next-step-card:hover { border-color: var(--primary); box-shadow: 0 2px 8px rgba(79,70,229,0.1); text-decoration: none; }
+  .next-step-card h4 { margin: 0 0 4px; font-size: 0.9rem; color: var(--gray-800); }
+  .next-step-card p { margin: 0; font-size: 0.78rem; color: var(--gray-500); }
+
+  /* ── Concept Card Sim ── */
+  .sim-concept-card {
+    border: 1px solid var(--gray-200); border-radius: 10px; padding: 20px;
+    margin-bottom: 16px; display: flex; gap: 16px;
+  }
+  .sim-concept-icon {
+    width: 48px; height: 48px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; font-size: 1.3rem;
+  }
+  .sim-concept-content h4 { margin: 0 0 4px; font-size: 1rem; font-weight: 600; }
+  .sim-concept-content p { margin: 0; font-size: 0.85rem; color: var(--gray-500); }
+
+  /* ── Pros/Cons ── */
+  .sim-pros-cons { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 12px 0; }
+  .sim-pro-list, .sim-con-list { border-radius: 8px; padding: 14px 16px; font-size: 0.82rem; }
+  .sim-pro-list { background: var(--green-light); border: 1px solid var(--green-border); }
+  .sim-con-list { background: var(--red-light); border: 1px solid var(--red-border); }
+  .sim-pro-list h5 { color: var(--green); font-size: 0.75rem; text-transform: uppercase; margin-bottom: 8px; }
+  .sim-con-list h5 { color: var(--red); font-size: 0.75rem; text-transform: uppercase; margin-bottom: 8px; }
+  .sim-pro-list li, .sim-con-list li { margin-bottom: 4px; list-style: none; }
+
+  /* ── Pitfall Card ── */
+  .sim-pitfall-card {
+    border: 1px solid var(--gray-200); border-radius: 8px; padding: 14px 16px;
+    border-left: 4px solid var(--yellow); margin-bottom: 10px;
+  }
+  .sim-pitfall-card h5 { font-size: 0.88rem; margin: 0 0 6px; color: var(--gray-800); display: flex; align-items: center; gap: 6px; }
+  .sim-pitfall-card .desc { font-size: 0.82rem; color: var(--gray-600); margin-bottom: 6px; }
+  .sim-pitfall-card .solution { font-size: 0.8rem; color: var(--green); }
+
+  /* ── Responsive ── */
+  @media (max-width: 1200px) {
+    .toc { display: none; }
+    .main { margin-right: 0; }
+  }
+  @media (max-width: 900px) {
+    .sidebar { display: none; }
+    .main { margin-left: 0; }
+    .sim-kpi-row { grid-template-columns: repeat(2,1fr); }
+    .sim-2col { grid-template-columns: 1fr; }
+    .sim-3col { grid-template-columns: 1fr; }
+    .feature-grid { grid-template-columns: 1fr; }
+    .next-steps { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- TOP NAV -->
+<nav class="topnav">
+  <div class="topnav-logo"><img src="../assets/axis_transparent.png" alt="AXIS"
+    style="height:20px;vertical-align:middle;margin-right:2px;"> Docs</div>
+    <div class="topnav-links">
+    <a href="../getting-started/">Getting Started</a>
+    <a href="../user-guide/" class="active">User Guide</a>
+    <a href="../configuration/">Configuration</a>
+    <a href="../architecture/">Architecture</a>
+    <a href="../api-reference/">API Reference</a>
+  </div>
+</nav>
+
+<!-- SIDEBAR -->
+<div class="layout">
+<aside class="sidebar">
+  <div class="sidebar-section">
+    <div class="sidebar-section-title">User Guide</div>
+    <a class="sidebar-link" href="../user-guide/">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      Overview
+    </a>
+    <a class="sidebar-link" href="evaluate-guide.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      Evaluate
+    </a>
+    <a class="sidebar-link" href="annotation-guide.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+      Annotation Studio
+    </a>
+    <a class="sidebar-link" href="monitoring-guide.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      Monitoring
+    </a>
+    <a class="sidebar-link" href="production-guide.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      Production
+    </a>
+    <a class="sidebar-link" href="calibration-guide.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+      CaliberHQ
+    </a>
+    <a class="sidebar-link" href="human-signals-guide.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      Human Signals
+    </a>
+    <a class="sidebar-link" href="memory-guide.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+      Memory
+    </a>
+    <a class="sidebar-link" href="agent-replay-guide.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+      Agent Replay
+    </a>
+    <a class="sidebar-link" href="simulation-guide.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+      Simulation
+    </a>
+    <a class="sidebar-link active" href="learn-guide.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+      Learn
+    </a>
+    <a class="sidebar-link" href="settings-guide.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+      Settings
+    </a>
+  </div>
+</aside>
+
+<!-- MAIN CONTENT -->
+<main class="main">
+<div class="content">
+
+<!-- Breadcrumb -->
+<div class="breadcrumb">
+  <a href="#">Docs</a> / <a href="#">User Guide</a> / <strong>Learn</strong>
+</div>
+
+<h1>Learn</h1>
+<p class="subtitle">Interactive guides and best practices for AI evaluation &mdash; from fundamental concepts to advanced methodologies.</p>
+
+<!-- ── Why Learn ── -->
+<h2 id="why-learn">Why Use the Learn Page?</h2>
+<p>Before diving into dashboards and metrics, you need to understand <strong>what</strong> you're measuring and <strong>why</strong>. The Learn page is your onboarding companion and ongoing reference for evaluation concepts.</p>
+
+<div class="feature-grid">
+  <div class="feature-card">
+    <h4><span class="feature-icon">&#x1F4D6;</span> Foundational Concepts</h4>
+    <p>Understand AI evaluation fundamentals: accuracy, consistency, safety, and alignment.</p>
+  </div>
+  <div class="feature-card">
+    <h4><span class="feature-icon">&#x1F3AF;</span> Interactive Walkthroughs</h4>
+    <p>Step through real evaluation scenarios with animated data flow diagrams.</p>
+  </div>
+  <div class="feature-card">
+    <h4><span class="feature-icon">&#x2696;</span> Method Comparison</h4>
+    <p>Compare LLM-as-Judge, human evaluation, automated metrics, and hybrid approaches.</p>
+  </div>
+  <div class="feature-card">
+    <h4><span class="feature-icon">&#x1F6E1;</span> Best Practices</h4>
+    <p>Avoid common pitfalls and build a robust, repeatable evaluation strategy.</p>
+  </div>
+</div>
+
+<!-- ── Quick Start ── -->
+<h2 id="quick-start">Quick Start</h2>
+<p>The Learn page is divided into four tabs. Here's the recommended learning path:</p>
+
+<div class="step-grid">
+  <div class="step-box">
+    <div class="step-num">1</div>
+    <div class="step-content">
+      <h4>Start with the Overview</h4>
+      <p>Read through the foundational concepts. Understand what a dataset item looks like and how the evaluation pipeline flows from input to score.</p>
+    </div>
+  </div>
+  <div class="step-box">
+    <div class="step-num">2</div>
+    <div class="step-content">
+      <h4>Try the Interactive Walkthrough</h4>
+      <p>Select a scenario (Single Turn, Multi-Turn, RAG, etc.) and step through the evaluation flow. Watch data transform at each stage of the pipeline.</p>
+    </div>
+  </div>
+  <div class="step-box">
+    <div class="step-num">3</div>
+    <div class="step-content">
+      <h4>Study the Methods</h4>
+      <p>Compare the four evaluation approaches. Understand the tradeoffs between cost, quality, and scalability for your use case.</p>
+    </div>
+  </div>
+  <div class="step-box">
+    <div class="step-num">4</div>
+    <div class="step-content">
+      <h4>Review Best Practices</h4>
+      <p>Internalize the do's and don'ts, learn about common pitfalls like position bias and overfitting to benchmarks, and build a sustainable evaluation cadence.</p>
+    </div>
+  </div>
+</div>
+
+<div class="admonition tip">
+  <div class="admonition-title">&#x1F4A1; Tip</div>
+  New to AXIS? Start with the Overview tab, then jump straight to the <strong>Evaluate</strong> page to upload your first dataset. Come back to Methods and Best Practices as you refine your evaluation strategy.
+</div>
+
+<!-- ── Page Anatomy ── -->
+<h2 id="page-anatomy">Page Anatomy</h2>
+<p>Here's how the Learn page is organized. Four tabs provide progressively deeper content:</p>
+
+<!-- Annotated Screenshot: Tab Bar + Overview -->
+<div class="screenshot">
+  <div class="screenshot-chrome">
+    <div class="screenshot-dots"><span></span><span></span><span></span></div>
+    <div class="screenshot-title">localhost:3500/learn</div>
+  </div>
+  <div class="screenshot-body">
+    <div class="sim-ui" style="position:relative;">
+      <!-- Header -->
+      <div class="sim-header" style="position:relative;">
+        <svg class="sim-header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+        <div>
+          <h3 style="font-size:1rem;">Learn</h3>
+          <p>Interactive guides and best practices for AI evaluation</p>
+        </div>
+        <!-- Callout 1 -->
+        <div style="position:absolute;top:-4px;right:-4px;"><span class="callout-num">1</span></div>
+      </div>
+
+      <!-- Tab bar -->
+      <div style="display:flex;gap:6px;background:var(--gray-100);border-radius:8px;padding:6px;margin-bottom:20px;position:relative;">
+        <div style="display:flex;align-items:center;gap:6px;padding:8px 16px;border-radius:6px;background:var(--primary);color:#fff;font-weight:600;font-size:0.82rem;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+          Overview
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;padding:8px 16px;border-radius:6px;font-size:0.82rem;color:var(--gray-600);">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg>
+          Interactive Walkthrough
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;padding:8px 16px;border-radius:6px;font-size:0.82rem;color:var(--gray-600);">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a4 4 0 0 0-8 0v2"/></svg>
+          Methods
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;padding:8px 16px;border-radius:6px;font-size:0.82rem;color:var(--gray-600);">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          Best Practices
+        </div>
+        <!-- Callout 2 -->
+        <div style="position:absolute;top:-8px;left:50%;transform:translateX(-50%);"><span class="callout-num">2</span></div>
+      </div>
+
+      <!-- Hero card -->
+      <div style="border:1px solid #e0e7ff;border-radius:10px;padding:20px;background:linear-gradient(135deg,rgba(79,70,229,0.05),rgba(79,70,229,0.02));margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;position:relative;">
+        <div style="max-width:70%;">
+          <h4 style="margin:0 0 6px;font-size:1.1rem;font-weight:700;">Welcome to AI Evaluation</h4>
+          <p style="margin:0;font-size:0.85rem;color:var(--gray-600);">Learn how to systematically assess and improve your AI systems. This guide covers the fundamentals of evaluation, from understanding data structures to implementing best practices.</p>
+        </div>
+        <div style="width:60px;height:60px;border-radius:16px;background:linear-gradient(135deg,var(--primary),#818cf8);display:flex;align-items:center;justify-content:center;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" style="width:28px;height:28px;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        </div>
+        <!-- Callout 3 -->
+        <div style="position:absolute;top:-8px;right:-4px;"><span class="callout-num">3</span></div>
+      </div>
+
+      <!-- Quick tips row -->
+      <div class="sim-3col" style="margin-bottom:16px;position:relative;">
+        <div style="border:1px solid var(--green-border);border-radius:8px;padding:12px;background:var(--green-light);display:flex;gap:8px;">
+          <span style="color:var(--green);font-size:1.1rem;">&#x2713;</span>
+          <div>
+            <div style="font-weight:600;font-size:0.82rem;">Do</div>
+            <div style="font-size:0.78rem;color:var(--gray-600);">Use diverse test cases covering edge cases</div>
+          </div>
+        </div>
+        <div style="border:1px solid var(--red-border);border-radius:8px;padding:12px;background:var(--red-light);display:flex;gap:8px;">
+          <span style="color:var(--red);font-size:1.1rem;">&#x26A0;</span>
+          <div>
+            <div style="font-weight:600;font-size:0.82rem;">Don't</div>
+            <div style="font-size:0.78rem;color:var(--gray-600);">Rely solely on automated metrics</div>
+          </div>
+        </div>
+        <div style="border:1px solid var(--yellow-border);border-radius:8px;padding:12px;background:var(--yellow-light);display:flex;gap:8px;">
+          <span style="color:var(--yellow);font-size:1.1rem;">&#x1F4A1;</span>
+          <div>
+            <div style="font-weight:600;font-size:0.82rem;">Tip</div>
+            <div style="font-size:0.78rem;color:var(--gray-600);">Calibrate LLM judges monthly</div>
+          </div>
+        </div>
+        <!-- Callout 4 -->
+        <div style="position:absolute;top:-8px;left:50%;transform:translateX(-50%);"><span class="callout-num">4</span></div>
+      </div>
+
+      <!-- Concept cards -->
+      <div class="sim-concept-card" style="position:relative;">
+        <div class="sim-concept-icon" style="background:#e0e7ff;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" style="width:22px;height:22px;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        </div>
+        <div class="sim-concept-content">
+          <h4>What is AI Evaluation?</h4>
+          <p>Understanding the purpose and importance of systematic AI assessment</p>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;">
+            <div style="background:var(--gray-50);border-radius:6px;padding:8px 10px;">
+              <div style="font-weight:600;font-size:0.82rem;">Accuracy</div>
+              <div style="font-size:0.75rem;color:var(--gray-500);">Correct outputs?</div>
+            </div>
+            <div style="background:var(--gray-50);border-radius:6px;padding:8px 10px;">
+              <div style="font-weight:600;font-size:0.82rem;">Consistency</div>
+              <div style="font-size:0.75rem;color:var(--gray-500);">Reliable across inputs?</div>
+            </div>
+            <div style="background:var(--gray-50);border-radius:6px;padding:8px 10px;">
+              <div style="font-weight:600;font-size:0.82rem;">Safety</div>
+              <div style="font-size:0.75rem;color:var(--gray-500);">Avoids harmful outputs?</div>
+            </div>
+            <div style="background:var(--gray-50);border-radius:6px;padding:8px 10px;">
+              <div style="font-weight:600;font-size:0.82rem;">Alignment</div>
+              <div style="font-size:0.75rem;color:var(--gray-500);">Behaves as intended?</div>
+            </div>
+          </div>
+        </div>
+        <!-- Callout 5 -->
+        <div style="position:absolute;top:-8px;right:-4px;"><span class="callout-num">5</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="screenshot-caption">The Learn page showing the tab navigation bar, hero section, quick tips row, and concept cards in the Overview tab.</div>
+</div>
+
+<!-- Callout Legend -->
+<div class="callout-legend">
+  <div class="callout-legend-item">
+    <span class="callout-num">1</span>
+    <div><strong>Page Header</strong> &mdash; Shows the page title, icon, and subtitle. Consistent across all AXIS pages.</div>
+  </div>
+  <div class="callout-legend-item">
+    <span class="callout-num">2</span>
+    <div><strong>Tab Navigation</strong> &mdash; Four tabs: <strong>Overview</strong>, <strong>Interactive Walkthrough</strong>, <strong>Methods</strong>, and <strong>Best Practices</strong>. The active tab is highlighted with the primary color.</div>
+  </div>
+  <div class="callout-legend-item">
+    <span class="callout-num">3</span>
+    <div><strong>Hero Section</strong> &mdash; Gradient card introducing the current tab's topic with a decorative icon.</div>
+  </div>
+  <div class="callout-legend-item">
+    <span class="callout-num">4</span>
+    <div><strong>Quick Tips Row</strong> &mdash; Color-coded Do/Don't/Tip cards for at-a-glance best practices.</div>
+  </div>
+  <div class="callout-legend-item">
+    <span class="callout-num">5</span>
+    <div><strong>Concept Cards</strong> &mdash; Expandable content cards covering evaluation fundamentals, data structure, and the pipeline flow.</div>
+  </div>
+</div>
+
+<!-- ── OVERVIEW TAB ── -->
+<h2 id="overview-tab">Overview Tab</h2>
+<p>The default landing tab. It introduces three fundamental concepts every user needs before starting their first evaluation.</p>
+
+<h3 id="evaluation-fundamentals">What is AI Evaluation?</h3>
+<p>The first concept card explains the four dimensions of evaluation:</p>
+<ul>
+  <li><strong>Accuracy</strong> &mdash; Does the model produce correct outputs?</li>
+  <li><strong>Consistency</strong> &mdash; Are outputs reliable across similar inputs?</li>
+  <li><strong>Safety</strong> &mdash; Does the model avoid harmful outputs?</li>
+  <li><strong>Alignment</strong> &mdash; Does the model behave as intended?</li>
+</ul>
+
+<h3 id="data-structure">Dataset Item Model</h3>
+<p>The second card shows the anatomy of a single evaluation record. Understanding this structure is essential for formatting your upload data correctly.</p>
+
+<div class="screenshot">
+  <div class="screenshot-chrome">
+    <div class="screenshot-dots"><span></span><span></span><span></span></div>
+    <div class="screenshot-title">Dataset Item Model</div>
+  </div>
+  <div class="screenshot-body">
+    <div class="sim-ui">
+      <div style="border:1px solid var(--gray-200);border-radius:8px;overflow:hidden;">
+        <div style="padding:12px 16px;background:var(--gray-50);border-bottom:1px solid var(--gray-200);font-weight:600;font-size:0.9rem;">Dataset Item Structure</div>
+        <div style="padding:16px;">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <div style="background:var(--blue-light);border:1px solid var(--blue-border);border-radius:6px;padding:10px;">
+              <div style="font-size:0.7rem;font-weight:700;color:var(--blue);text-transform:uppercase;margin-bottom:4px;">Input</div>
+              <div style="font-size:0.82rem;color:var(--gray-700);">query, context, system_prompt</div>
+            </div>
+            <div style="background:var(--green-light);border:1px solid var(--green-border);border-radius:6px;padding:10px;">
+              <div style="font-size:0.7rem;font-weight:700;color:var(--green);text-transform:uppercase;margin-bottom:4px;">Output</div>
+              <div style="font-size:0.82rem;color:var(--gray-700);">actual_output, expected_output</div>
+            </div>
+            <div style="background:#faf5ff;border:1px solid #ddd6fe;border-radius:6px;padding:10px;">
+              <div style="font-size:0.7rem;font-weight:700;color:#7c3aed;text-transform:uppercase;margin-bottom:4px;">Scores</div>
+              <div style="font-size:0.82rem;color:var(--gray-700);">metric_name, metric_score (0&ndash;1)</div>
+            </div>
+            <div style="background:var(--yellow-light);border:1px solid var(--yellow-border);border-radius:6px;padding:10px;">
+              <div style="font-size:0.7rem;font-weight:700;color:var(--yellow);text-transform:uppercase;margin-bottom:4px;">Metadata</div>
+              <div style="font-size:0.82rem;color:var(--gray-700);">dataset_id, timestamp, model, env</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="screenshot-caption">The dataset item model showing the four data groups: input fields, output fields, score fields, and metadata.</div>
+</div>
+
+<h3 id="evaluation-pipeline">The Evaluation Pipeline</h3>
+<p>The third concept card visualizes the end-to-end flow:</p>
+<ol>
+  <li><strong>Prepare Test Data</strong> &mdash; Structure your queries and expected outputs into a dataset</li>
+  <li><strong>Generate Responses</strong> &mdash; Run your AI model against the test queries</li>
+  <li><strong>Evaluate Quality</strong> &mdash; Use judges (LLM, human, or automated) to score responses</li>
+  <li><strong>Analyze Results</strong> &mdash; Review metrics, identify patterns, and iterate on improvements</li>
+</ol>
+
+<div class="admonition info">
+  <div class="admonition-title">&#x2139;&#xFE0F; Info</div>
+  At the bottom of the Overview tab, a call-to-action card invites you to try the <strong>Interactive Walkthrough</strong> to see this pipeline in action with real data examples.
+</div>
+
+<!-- ── WALKTHROUGH TAB ── -->
+<h2 id="walkthrough-tab">Interactive Walkthrough Tab</h2>
+<p>A step-by-step guided experience that shows how evaluation data flows through the pipeline. Choose a scenario and watch each stage unfold.</p>
+
+<h3 id="scenario-selection">Scenario Selection</h3>
+<p>Five evaluation scenarios are available, each highlighting different aspects of the evaluation process:</p>
+
+<div class="screenshot">
+  <div class="screenshot-chrome">
+    <div class="screenshot-dots"><span></span><span></span><span></span></div>
+    <div class="screenshot-title">Walkthrough Scenario Selection</div>
+  </div>
+  <div class="screenshot-body">
+    <div class="sim-ui">
+      <h4 style="margin:0 0 8px;font-size:1rem;">Choose an Evaluation Scenario</h4>
+      <p style="font-size:0.82rem;color:var(--gray-500);margin-bottom:16px;">Select a scenario to see how data flows through the evaluation pipeline.</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;">
+        <div style="border:1px solid #c7d2fe;background:rgba(79,70,229,0.08);border-radius:10px;padding:10px 16px;">
+          <div style="font-weight:600;font-size:0.85rem;color:var(--primary);">Single Turn</div>
+          <div style="font-size:0.72rem;color:var(--gray-500);">Basic query-response evaluation</div>
+        </div>
+        <div style="border:1px solid var(--gray-200);background:#fff;border-radius:10px;padding:10px 16px;">
+          <div style="font-weight:600;font-size:0.85rem;color:var(--gray-800);">With Expected Output</div>
+          <div style="font-size:0.72rem;color:var(--gray-500);">Compare against reference</div>
+        </div>
+        <div style="border:1px solid var(--gray-200);background:#fff;border-radius:10px;padding:10px 16px;">
+          <div style="font-weight:600;font-size:0.85rem;color:var(--gray-800);">Multi-Turn</div>
+          <div style="font-size:0.72rem;color:var(--gray-500);">Conversation context</div>
+        </div>
+        <div style="border:1px solid var(--gray-200);background:#fff;border-radius:10px;padding:10px 16px;">
+          <div style="font-weight:600;font-size:0.85rem;color:var(--gray-800);">RAG Evaluation</div>
+          <div style="font-size:0.72rem;color:var(--gray-500);">Retrieval-augmented</div>
+        </div>
+        <div style="border:1px solid var(--gray-200);background:#fff;border-radius:10px;padding:10px 16px;">
+          <div style="font-weight:600;font-size:0.85rem;color:var(--gray-800);">Full Workflow</div>
+          <div style="font-size:0.72rem;color:var(--gray-500);">End-to-end evaluation</div>
+        </div>
+      </div>
+
+      <!-- Walkthrough viewer preview -->
+      <div style="border:1px solid var(--gray-200);border-radius:10px;overflow:hidden;">
+        <div style="padding:12px 16px;background:var(--gray-50);border-bottom:1px solid var(--gray-200);display:flex;justify-content:space-between;align-items:center;">
+          <div style="font-weight:600;font-size:0.88rem;">Step 1 of 4: Input Data</div>
+          <div style="display:flex;gap:4px;">
+            <div style="padding:4px 10px;border:1px solid var(--gray-200);border-radius:4px;font-size:0.75rem;color:var(--gray-400);">&#x25C0; Prev</div>
+            <div style="padding:4px 10px;border:1px solid var(--primary);border-radius:4px;font-size:0.75rem;color:var(--primary);background:var(--primary-light);font-weight:600;">Next &#x25B6;</div>
+          </div>
+        </div>
+        <div style="padding:16px;">
+          <!-- Flow diagram -->
+          <div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:16px;">
+            <div style="width:56px;height:56px;border-radius:12px;background:var(--blue-light);display:flex;align-items:center;justify-content:center;border:2px solid var(--blue);">
+              <span style="font-size:0.7rem;font-weight:700;color:var(--blue);">Input</span>
+            </div>
+            <span style="color:var(--gray-300);font-size:1.2rem;">&#x2192;</span>
+            <div style="width:56px;height:56px;border-radius:12px;background:var(--gray-100);display:flex;align-items:center;justify-content:center;">
+              <span style="font-size:0.7rem;font-weight:700;color:var(--gray-400);">AI</span>
+            </div>
+            <span style="color:var(--gray-300);font-size:1.2rem;">&#x2192;</span>
+            <div style="width:56px;height:56px;border-radius:12px;background:var(--gray-100);display:flex;align-items:center;justify-content:center;">
+              <span style="font-size:0.7rem;font-weight:700;color:var(--gray-400);">Judge</span>
+            </div>
+            <span style="color:var(--gray-300);font-size:1.2rem;">&#x2192;</span>
+            <div style="width:56px;height:56px;border-radius:12px;background:var(--gray-100);display:flex;align-items:center;justify-content:center;">
+              <span style="font-size:0.7rem;font-weight:700;color:var(--gray-400);">Score</span>
+            </div>
+          </div>
+          <!-- Example data -->
+          <div style="background:var(--gray-50);border-radius:8px;padding:12px;font-size:0.82rem;">
+            <div style="font-size:0.7rem;font-weight:700;color:var(--gray-500);text-transform:uppercase;margin-bottom:6px;">Example Input</div>
+            <div style="background:#fff;border:1px solid var(--gray-200);border-radius:6px;padding:10px;font-family:monospace;font-size:0.78rem;">
+              "What are the return policies for electronics purchased online?"
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="screenshot-caption">The Interactive Walkthrough showing scenario tabs, a step-by-step viewer with flow diagram, playback controls, and example data display.</div>
+</div>
+
+<p><strong>Key interactions:</strong></p>
+<ul>
+  <li><strong>Scenario tabs</strong> &mdash; Click any scenario card to switch the walkthrough content. The active scenario has a purple border and tinted background.</li>
+  <li><strong>Step navigation</strong> &mdash; Use the Prev/Next buttons or the step indicator to move through pipeline stages</li>
+  <li><strong>Flow diagram</strong> &mdash; The active stage is highlighted with a colored border; future stages are grayed out</li>
+  <li><strong>Example data</strong> &mdash; Each step shows real data examples relevant to that stage (input, model output, judge reasoning, final scores)</li>
+</ul>
+
+<table class="sim-table" style="margin:16px 0;">
+  <thead>
+    <tr><th>Scenario</th><th>Steps</th><th>Focus</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><strong>Single Turn</strong></td><td>4</td><td>Basic query &rarr; response &rarr; judge &rarr; score</td></tr>
+    <tr><td><strong>With Expected Output</strong></td><td>5</td><td>Adds reference comparison (expected vs actual)</td></tr>
+    <tr><td><strong>Multi-Turn</strong></td><td>5</td><td>Conversation context and message history</td></tr>
+    <tr><td><strong>RAG Evaluation</strong></td><td>6</td><td>Retrieval context, faithfulness, relevance</td></tr>
+    <tr><td><strong>Full Workflow</strong></td><td>7</td><td>Complete pipeline from data prep to analysis</td></tr>
+  </tbody>
+</table>
+
+<!-- ── METHODS TAB ── -->
+<h2 id="methods-tab">Methods Tab</h2>
+<p>A comprehensive reference for the four primary evaluation approaches. Each method is presented as an expandable card with pros, cons, and ideal use cases.</p>
+
+<h3 id="method-cards">Method Cards</h3>
+<p>Four evaluation methods are presented with expandable detail panels:</p>
+
+<div class="screenshot">
+  <div class="screenshot-chrome">
+    <div class="screenshot-dots"><span></span><span></span><span></span></div>
+    <div class="screenshot-title">Methods Tab - Evaluation Methods</div>
+  </div>
+  <div class="screenshot-body">
+    <div class="sim-ui">
+      <!-- Intro -->
+      <div style="background:linear-gradient(135deg,var(--gray-50),#fff);border:1px solid var(--gray-200);border-radius:10px;padding:16px;margin-bottom:16px;">
+        <h4 style="margin:0 0 4px;font-size:1rem;">Evaluation Methods</h4>
+        <p style="margin:0;font-size:0.85rem;color:var(--gray-500);">There are several approaches to evaluating AI systems, each with different tradeoffs.</p>
+      </div>
+
+      <!-- LLM Judge Card (expanded) -->
+      <div style="border:1px solid var(--gray-200);border-radius:10px;margin-bottom:10px;overflow:hidden;">
+        <div style="padding:14px 18px;display:flex;gap:12px;align-items:flex-start;cursor:pointer;">
+          <div style="width:40px;height:40px;border-radius:10px;background:var(--blue-light);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2" style="width:20px;height:20px;"><rect x="3" y="11" width="18" height="11" rx="2"/><circle cx="12" cy="5" r="3"/></svg>
+          </div>
+          <div style="flex:1;">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <h4 style="margin:0;font-size:0.95rem;">LLM-as-Judge</h4>
+              <span style="color:var(--gray-400);">&#x25BC;</span>
+            </div>
+            <p style="margin:4px 0 8px;font-size:0.82rem;color:var(--gray-500);">Use a large language model to evaluate responses with scores and explanations.</p>
+            <div style="display:flex;gap:6px;">
+              <span class="sim-badge yellow">Medium Complexity</span>
+              <span class="sim-badge green">High Scalability</span>
+            </div>
+          </div>
+        </div>
+        <!-- Expanded content -->
+        <div style="padding:0 18px 16px;border-top:1px solid var(--gray-200);margin-top:0;padding-top:14px;">
+          <div class="sim-pros-cons">
+            <div class="sim-pro-list">
+              <h5>Advantages</h5>
+              <li>+ Scalable to thousands of evaluations</li>
+              <li>+ Can capture nuance and context</li>
+              <li>+ Provides detailed explanations</li>
+            </div>
+            <div class="sim-con-list">
+              <h5>Limitations</h5>
+              <li>- Requires calibration against humans</li>
+              <li>- May have position/verbosity bias</li>
+              <li>- API costs can add up at scale</li>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Human Eval Card (collapsed) -->
+      <div style="border:1px solid var(--gray-200);border-radius:10px;margin-bottom:10px;padding:14px 18px;display:flex;gap:12px;align-items:flex-start;cursor:pointer;">
+        <div style="width:40px;height:40px;border-radius:10px;background:#faf5ff;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2" style="width:20px;height:20px;"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+        </div>
+        <div style="flex:1;">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <h4 style="margin:0;font-size:0.95rem;">Human Evaluation</h4>
+            <span style="color:var(--gray-400);">&#x25B6;</span>
+          </div>
+          <p style="margin:4px 0 8px;font-size:0.82rem;color:var(--gray-500);">Expert human annotators review and score AI outputs. The gold standard.</p>
+          <div style="display:flex;gap:6px;">
+            <span class="sim-badge green">Low Complexity</span>
+            <span class="sim-badge red">Low Scalability</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Automated Card (collapsed) -->
+      <div style="border:1px solid var(--gray-200);border-radius:10px;margin-bottom:10px;padding:14px 18px;display:flex;gap:12px;align-items:flex-start;cursor:pointer;">
+        <div style="width:40px;height:40px;border-radius:10px;background:var(--green-light);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2" style="width:20px;height:20px;"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+        </div>
+        <div style="flex:1;">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <h4 style="margin:0;font-size:0.95rem;">Automated Metrics</h4>
+            <span style="color:var(--gray-400);">&#x25B6;</span>
+          </div>
+          <p style="margin:4px 0 8px;font-size:0.82rem;color:var(--gray-500);">BLEU, ROUGE, exact match, or embedding similarity for programmatic evaluation.</p>
+          <div style="display:flex;gap:6px;">
+            <span class="sim-badge green">Low Complexity</span>
+            <span class="sim-badge green">High Scalability</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Hybrid Card (collapsed) -->
+      <div style="border:1px solid var(--gray-200);border-radius:10px;padding:14px 18px;display:flex;gap:12px;align-items:flex-start;cursor:pointer;">
+        <div style="width:40px;height:40px;border-radius:10px;background:var(--yellow-light);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="var(--yellow)" stroke-width="2" style="width:20px;height:20px;"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg>
+        </div>
+        <div style="flex:1;">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <h4 style="margin:0;font-size:0.95rem;">Hybrid Approach</h4>
+            <span style="color:var(--gray-400);">&#x25B6;</span>
+          </div>
+          <p style="margin:4px 0 8px;font-size:0.82rem;color:var(--gray-500);">Combine multiple evaluation methods for balanced cost, quality, and scale.</p>
+          <div style="display:flex;gap:6px;">
+            <span class="sim-badge red">High Complexity</span>
+            <span class="sim-badge green">High Scalability</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="screenshot-caption">Methods tab showing four expandable method cards with complexity/scalability badges. The LLM-as-Judge card is expanded to show pros and cons.</div>
+</div>
+
+<h3 id="comparison-table">Comparison Table</h3>
+<p>Below the method cards, a comparison matrix lets you evaluate methods side-by-side across six key attributes:</p>
+
+<table class="sim-table" style="margin:16px 0;">
+  <thead>
+    <tr><th>Attribute</th><th style="text-align:center;">LLM Judge</th><th style="text-align:center;">Human</th><th style="text-align:center;">Automated</th><th style="text-align:center;">Hybrid</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Scalable to large datasets</td><td style="text-align:center;"><span class="sim-badge green">&#x2713;</span></td><td style="text-align:center;"><span class="sim-badge red">&#x2717;</span></td><td style="text-align:center;"><span class="sim-badge green">&#x2713;</span></td><td style="text-align:center;"><span class="sim-badge yellow">~</span></td></tr>
+    <tr><td>Captures nuance</td><td style="text-align:center;"><span class="sim-badge green">&#x2713;</span></td><td style="text-align:center;"><span class="sim-badge green">&#x2713;</span></td><td style="text-align:center;"><span class="sim-badge red">&#x2717;</span></td><td style="text-align:center;"><span class="sim-badge green">&#x2713;</span></td></tr>
+    <tr><td>Consistent results</td><td style="text-align:center;"><span class="sim-badge yellow">~</span></td><td style="text-align:center;"><span class="sim-badge red">&#x2717;</span></td><td style="text-align:center;"><span class="sim-badge green">&#x2713;</span></td><td style="text-align:center;"><span class="sim-badge yellow">~</span></td></tr>
+    <tr><td>Low cost per evaluation</td><td style="text-align:center;"><span class="sim-badge yellow">~</span></td><td style="text-align:center;"><span class="sim-badge red">&#x2717;</span></td><td style="text-align:center;"><span class="sim-badge green">&#x2713;</span></td><td style="text-align:center;"><span class="sim-badge yellow">~</span></td></tr>
+    <tr><td>No reference needed</td><td style="text-align:center;"><span class="sim-badge green">&#x2713;</span></td><td style="text-align:center;"><span class="sim-badge green">&#x2713;</span></td><td style="text-align:center;"><span class="sim-badge red">&#x2717;</span></td><td style="text-align:center;"><span class="sim-badge green">&#x2713;</span></td></tr>
+    <tr><td>Explainable scores</td><td style="text-align:center;"><span class="sim-badge green">&#x2713;</span></td><td style="text-align:center;"><span class="sim-badge green">&#x2713;</span></td><td style="text-align:center;"><span class="sim-badge red">&#x2717;</span></td><td style="text-align:center;"><span class="sim-badge green">&#x2713;</span></td></tr>
+  </tbody>
+</table>
+
+<div class="admonition tip">
+  <div class="admonition-title">&#x1F4A1; Tip</div>
+  For most teams, AXIS recommends starting with <strong>LLM-as-Judge</strong> for bulk evaluation, calibrating against <strong>human evaluation</strong> monthly, and using <strong>automated metrics</strong> as CI/CD quality gates.
+</div>
+
+<!-- ── BEST PRACTICES TAB ── -->
+<h2 id="best-practices-tab">Best Practices Tab</h2>
+<p>Actionable guidance organized into do's/don'ts, collapsible deep-dive sections, and a common pitfalls gallery.</p>
+
+<h3 id="dos-donts">Do's and Don'ts Panel</h3>
+<p>A quick-reference panel at the top splits into two color-coded columns:</p>
+
+<div class="screenshot">
+  <div class="screenshot-chrome">
+    <div class="screenshot-dots"><span></span><span></span><span></span></div>
+    <div class="screenshot-title">Best Practices - Do's and Don'ts</div>
+  </div>
+  <div class="screenshot-body">
+    <div class="sim-ui">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <!-- Do's -->
+        <div style="border:1px solid var(--green-border);border-radius:10px;padding:16px;background:var(--green-light);">
+          <h4 style="margin:0 0 12px;font-size:0.85rem;color:var(--green);display:flex;align-items:center;gap:6px;">&#x2713; Do</h4>
+          <ul style="list-style:none;font-size:0.82rem;color:#166534;">
+            <li style="margin-bottom:6px;display:flex;gap:6px;"><span style="color:var(--green);">+</span> Use diverse test cases covering edge cases</li>
+            <li style="margin-bottom:6px;display:flex;gap:6px;"><span style="color:var(--green);">+</span> Document evaluation criteria clearly</li>
+            <li style="margin-bottom:6px;display:flex;gap:6px;"><span style="color:var(--green);">+</span> Calibrate LLM judges regularly</li>
+            <li style="margin-bottom:6px;display:flex;gap:6px;"><span style="color:var(--green);">+</span> Track metrics over time for trends</li>
+            <li style="margin-bottom:6px;display:flex;gap:6px;"><span style="color:var(--green);">+</span> Include positive and negative examples</li>
+            <li style="display:flex;gap:6px;"><span style="color:var(--green);">+</span> Version datasets alongside models</li>
+          </ul>
+        </div>
+        <!-- Don'ts -->
+        <div style="border:1px solid var(--red-border);border-radius:10px;padding:16px;background:var(--red-light);">
+          <h4 style="margin:0 0 12px;font-size:0.85rem;color:var(--red);display:flex;align-items:center;gap:6px;">&#x2717; Don't</h4>
+          <ul style="list-style:none;font-size:0.82rem;color:#991b1b;">
+            <li style="margin-bottom:6px;display:flex;gap:6px;"><span style="color:var(--red);">-</span> Rely solely on automated metrics</li>
+            <li style="margin-bottom:6px;display:flex;gap:6px;"><span style="color:var(--red);">-</span> Use same data for training and eval</li>
+            <li style="margin-bottom:6px;display:flex;gap:6px;"><span style="color:var(--red);">-</span> Ignore edge cases for common ones</li>
+            <li style="margin-bottom:6px;display:flex;gap:6px;"><span style="color:var(--red);">-</span> Assume LLM judges are always correct</li>
+            <li style="margin-bottom:6px;display:flex;gap:6px;"><span style="color:var(--red);">-</span> Evaluate only at release time</li>
+            <li style="display:flex;gap:6px;"><span style="color:var(--red);">-</span> Discard results without analysis</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="screenshot-caption">The Do's and Don'ts quick-reference panel with color-coded columns for easy scanning.</div>
+</div>
+
+<h3 id="detailed-practices">Detailed Best Practices</h3>
+<p>Below the quick reference, five collapsible sections provide in-depth guidance:</p>
+
+<table class="sim-table" style="margin:16px 0;">
+  <thead>
+    <tr><th>Section</th><th>Icon</th><th>Content</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><strong>Define Clear Criteria</strong></td><td style="text-align:center;">&#x1F3AF;</td><td>Good vs. vague criteria examples, measurability tips</td></tr>
+    <tr><td><strong>Use Representative Data</strong></td><td style="text-align:center;">&#x1F4E6;</td><td>Data coverage checklist (8 items), sampling strategies</td></tr>
+    <tr><td><strong>Calibrate Judges Regularly</strong></td><td style="text-align:center;">&#x2696;</td><td>5-step calibration process, agreement metrics (Cohen's Kappa)</td></tr>
+    <tr><td><strong>Iterate Continuously</strong></td><td style="text-align:center;">&#x1F504;</td><td>Weekly/monthly/quarterly cadence recommendations</td></tr>
+    <tr><td><strong>Document Everything</strong></td><td style="text-align:center;">&#x1F4DD;</td><td>Five documentation categories with checklists</td></tr>
+  </tbody>
+</table>
+
+<h3 id="common-pitfalls">Common Pitfalls</h3>
+<p>A gallery of four pitfall cards, each showing the mistake, its consequence, and the recommended solution:</p>
+
+<div class="screenshot">
+  <div class="screenshot-chrome">
+    <div class="screenshot-dots"><span></span><span></span><span></span></div>
+    <div class="screenshot-title">Common Pitfalls Gallery</div>
+  </div>
+  <div class="screenshot-body">
+    <div class="sim-ui">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+        <span style="color:var(--red);font-size:1rem;">&#x26A0;</span>
+        <h4 style="margin:0;font-size:1rem;">Common Pitfalls</h4>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div class="sim-pitfall-card">
+          <h5>&#x26A0; Overfitting to Benchmarks</h5>
+          <div class="desc"><strong>Mistake:</strong> Optimizing your model specifically for evaluation benchmarks</div>
+          <div class="solution">&#x2713; Use held-out test sets and periodically refresh evaluation data</div>
+        </div>
+        <div class="sim-pitfall-card">
+          <h5>&#x26A0; Position Bias</h5>
+          <div class="desc"><strong>Mistake:</strong> Not accounting for LLMs preferring responses in certain positions</div>
+          <div class="solution">&#x2713; Randomize response order and average across orderings</div>
+        </div>
+        <div class="sim-pitfall-card">
+          <h5>&#x26A0; Verbosity Bias</h5>
+          <div class="desc"><strong>Mistake:</strong> Not controlling for response length in evaluations</div>
+          <div class="solution">&#x2713; Normalize for length or instruct judges to ignore length</div>
+        </div>
+        <div class="sim-pitfall-card">
+          <h5>&#x26A0; Self-Preference Bias</h5>
+          <div class="desc"><strong>Mistake:</strong> Using the same model family for generation and evaluation</div>
+          <div class="solution">&#x2713; Use judges from different model families</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="screenshot-caption">Common pitfall cards showing mistake, consequence, and solution. Each card has a yellow left-accent border for visual distinction.</div>
+</div>
+
+<div class="admonition warning">
+  <div class="admonition-title">&#x26A0;&#xFE0F; Warning</div>
+  Position bias and verbosity bias are the two most common issues when using LLM-as-Judge. Always randomize response order and control for length before trusting comparison results.
+</div>
+
+<!-- ── CTA Section ── -->
+<h2 id="cta-section">Call to Action</h2>
+<p>At the bottom of every tab, a gradient call-to-action card encourages the user to take the next step. On the Overview tab, it links to the Interactive Walkthrough. On the Best Practices tab, it summarizes key takeaways with a shield icon.</p>
+
+<div class="admonition info">
+  <div class="admonition-title">&#x2139;&#xFE0F; Info</div>
+  The CTA card at the very bottom of the page (below all tabs) links to the <strong>Evaluate</strong> page with a "Get Started" button, encouraging hands-on learning immediately after reading.
+</div>
+
+<!-- ── Next Steps ── -->
+<h2 id="next-steps">Next Steps</h2>
+
+<div class="next-steps">
+  <a class="next-step-card" href="#">
+    <h4>&#x1F4CA; Evaluate &rarr;</h4>
+    <p>Upload your first dataset and explore evaluation results with AXIS visualizations.</p>
+  </a>
+  <a class="next-step-card" href="#">
+    <h4>&#x1F50D; Calibration &rarr;</h4>
+    <p>Calibrate your LLM judge against human annotations using the Calibration Studio.</p>
+  </a>
+  <a class="next-step-card" href="#">
+    <h4>&#x1F4C8; Monitoring &rarr;</h4>
+    <p>Set up production monitoring to track evaluation metrics in real-time.</p>
+  </a>
+</div>
+
+<!-- Footer -->
+<div style="margin-top:60px;padding-top:24px;border-top:1px solid var(--gray-200);font-size:0.8rem;color:var(--gray-400);text-align:center;">
+  AXIS Documentation &middot; Built with MkDocs Material
+</div>
+
+</div><!-- .content -->
+</main>
+
+<!-- TABLE OF CONTENTS -->
+<nav class="toc">
+  <div class="toc-title">On this page</div>
+  <ul class="toc-list">
+    <li><a href="#why-learn">Why Use the Learn Page?</a></li>
+    <li><a href="#quick-start">Quick Start</a></li>
+    <li><a href="#page-anatomy">Page Anatomy</a></li>
+    <li><a href="#overview-tab">Overview Tab</a></li>
+    <li class="indent"><a href="#evaluation-fundamentals">Evaluation Fundamentals</a></li>
+    <li class="indent"><a href="#data-structure">Dataset Item Model</a></li>
+    <li class="indent"><a href="#evaluation-pipeline">Evaluation Pipeline</a></li>
+    <li><a href="#walkthrough-tab">Interactive Walkthrough</a></li>
+    <li class="indent"><a href="#scenario-selection">Scenario Selection</a></li>
+    <li><a href="#methods-tab">Methods Tab</a></li>
+    <li class="indent"><a href="#method-cards">Method Cards</a></li>
+    <li class="indent"><a href="#comparison-table">Comparison Table</a></li>
+    <li><a href="#best-practices-tab">Best Practices Tab</a></li>
+    <li class="indent"><a href="#dos-donts">Do's and Don'ts</a></li>
+    <li class="indent"><a href="#detailed-practices">Detailed Practices</a></li>
+    <li class="indent"><a href="#common-pitfalls">Common Pitfalls</a></li>
+    <li><a href="#cta-section">Call to Action</a></li>
+    <li><a href="#next-steps">Next Steps</a></li>
+  </ul>
+</nav>
+
+</div><!-- .layout -->
+
+</body>
+</html>

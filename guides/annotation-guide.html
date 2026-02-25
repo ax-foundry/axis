@@ -1,0 +1,1337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Annotation Studio - AXIS User Guide</title>
+<style>
+  /* ── Reset & Base ── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --primary: #4f46e5;
+    --primary-light: #eef2ff;
+    --primary-dark: #3730a3;
+    --green: #16a34a;
+    --green-light: #f0fdf4;
+    --green-border: #bbf7d0;
+    --yellow: #ca8a04;
+    --yellow-light: #fefce8;
+    --yellow-border: #fef08a;
+    --red: #dc2626;
+    --red-light: #fef2f2;
+    --red-border: #fecaca;
+    --blue: #2563eb;
+    --blue-light: #eff6ff;
+    --blue-border: #bfdbfe;
+    --gray-50: #f9fafb;
+    --gray-100: #f3f4f6;
+    --gray-200: #e5e7eb;
+    --gray-300: #d1d5db;
+    --gray-400: #9ca3af;
+    --gray-500: #6b7280;
+    --gray-600: #4b5563;
+    --gray-700: #374151;
+    --gray-800: #1f2937;
+    --gray-900: #111827;
+    --sidebar-w: 260px;
+    --content-max: 860px;
+    --toc-w: 220px;
+  }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    color: var(--gray-800);
+    line-height: 1.7;
+    background: #fff;
+  }
+  a { color: var(--primary); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code {
+    font-family: 'SF Mono', 'Fira Code', 'Fira Mono', Menlo, monospace;
+    font-size: 0.875em;
+    background: var(--gray-100);
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: var(--primary-dark);
+  }
+  pre { background: var(--gray-900); color: #e5e7eb; padding: 16px 20px; border-radius: 8px; overflow-x: auto; font-size: 0.85rem; line-height: 1.6; }
+  pre code { background: none; padding: 0; color: inherit; }
+  kbd {
+    display: inline-block; padding: 2px 6px; font-size: 0.8em;
+    border: 1px solid var(--gray-300); border-radius: 4px;
+    background: var(--gray-50); box-shadow: 0 1px 0 var(--gray-300);
+    font-family: inherit;
+  }
+
+  /* ── Top Nav ── */
+  .topnav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    height: 56px; background: var(--gray-900); color: #fff;
+    display: flex; align-items: center; padding: 0 24px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.3);
+  }
+  .topnav-logo { font-weight: 700; font-size: 1.1rem; letter-spacing: -0.02em; }
+  .topnav-logo span { color: var(--primary); }
+  .topnav-links { margin-left: auto; display: flex; gap: 24px; font-size: 0.875rem; }
+  .topnav-links a { color: var(--gray-300); }
+  .topnav-links a:hover { color: #fff; text-decoration: none; }
+  .topnav-links a.active { color: #fff; font-weight: 600; }
+
+  /* ── Layout ── */
+  .layout { display: flex; margin-top: 56px; min-height: calc(100vh - 56px); }
+
+  /* ── Sidebar ── */
+  .sidebar {
+    position: fixed; top: 56px; left: 0; bottom: 0;
+    width: var(--sidebar-w); background: var(--gray-50);
+    border-right: 1px solid var(--gray-200);
+    overflow-y: auto; padding: 20px 0; font-size: 0.85rem;
+  }
+  .sidebar-section { padding: 0 16px; margin-bottom: 20px; }
+  .sidebar-section-title {
+    font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.08em; color: var(--gray-400); margin-bottom: 8px;
+    padding-left: 8px;
+  }
+  .sidebar-link {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 12px; border-radius: 6px; color: var(--gray-600);
+    transition: all 0.15s;
+  }
+  .sidebar-link:hover { background: var(--gray-200); color: var(--gray-800); text-decoration: none; }
+  .sidebar-link.active { background: var(--primary-light); color: var(--primary); font-weight: 600; }
+  .sidebar-link svg { width: 16px; height: 16px; flex-shrink: 0; }
+
+  /* ── Main Content ── */
+  .main {
+    margin-left: var(--sidebar-w); flex: 1;
+    padding: 40px 40px 80px;
+    margin-right: calc(var(--toc-w) + 48px);
+  }
+  .content { max-width: var(--content-max); width: 100%; }
+
+  /* ── TOC (right rail) ── */
+  .toc {
+    position: fixed; top: 96px; right: 24px;
+    width: var(--toc-w); font-size: 0.78rem;
+  }
+  .toc-title { font-weight: 700; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--gray-400); margin-bottom: 10px; }
+  .toc-list { list-style: none; border-left: 2px solid var(--gray-200); }
+  .toc-list li { padding-left: 14px; margin-bottom: 6px; }
+  .toc-list a { color: var(--gray-500); }
+  .toc-list a:hover { color: var(--primary); text-decoration: none; }
+  .toc-list .indent { padding-left: 28px; }
+
+  /* ── Typography ── */
+  .content h1 { font-size: 2rem; font-weight: 800; letter-spacing: -0.03em; margin-bottom: 8px; color: var(--gray-900); }
+  .content h2 { font-size: 1.45rem; font-weight: 700; margin-top: 48px; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid var(--gray-200); color: var(--gray-900); }
+  .content h3 { font-size: 1.15rem; font-weight: 600; margin-top: 32px; margin-bottom: 12px; color: var(--gray-800); }
+  .content h4 { font-size: 1rem; font-weight: 600; margin-top: 24px; margin-bottom: 8px; color: var(--gray-700); }
+  .content p { margin-bottom: 16px; color: var(--gray-700); }
+  .content > ul, .content > ol { margin-bottom: 16px; padding-left: 24px; color: var(--gray-700); }
+  .content li { margin-bottom: 6px; }
+  .subtitle { font-size: 1.1rem; color: var(--gray-500); margin-bottom: 32px; }
+
+  /* ── Breadcrumb ── */
+  .breadcrumb { font-size: 0.8rem; color: var(--gray-400); margin-bottom: 12px; }
+  .breadcrumb a { color: var(--gray-400); }
+  .breadcrumb a:hover { color: var(--primary); }
+
+  /* ── Admonitions ── */
+  .admonition {
+    border-radius: 8px; padding: 16px 20px; margin: 20px 0;
+    border-left: 4px solid; font-size: 0.9rem;
+  }
+  .admonition-title {
+    font-weight: 700; font-size: 0.8rem; text-transform: uppercase;
+    letter-spacing: 0.04em; margin-bottom: 6px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .admonition.tip { background: var(--green-light); border-color: var(--green); }
+  .admonition.tip .admonition-title { color: var(--green); }
+  .admonition.info { background: var(--blue-light); border-color: var(--blue); }
+  .admonition.info .admonition-title { color: var(--blue); }
+  .admonition.warning { background: var(--yellow-light); border-color: var(--yellow); }
+  .admonition.warning .admonition-title { color: var(--yellow); }
+  .admonition.note { background: var(--gray-50); border-color: var(--gray-400); }
+  .admonition.note .admonition-title { color: var(--gray-600); }
+
+  /* ── Screenshot Frames ── */
+  .screenshot {
+    margin: 24px 0; border-radius: 10px; overflow: hidden;
+    border: 1px solid var(--gray-200); box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+  }
+  .screenshot-chrome {
+    background: var(--gray-100); padding: 8px 14px; display: flex;
+    align-items: center; gap: 8px; border-bottom: 1px solid var(--gray-200);
+  }
+  .screenshot-dots { display: flex; gap: 6px; }
+  .screenshot-dots span { width: 10px; height: 10px; border-radius: 50%; }
+  .screenshot-dots span:nth-child(1) { background: #f87171; }
+  .screenshot-dots span:nth-child(2) { background: #fbbf24; }
+  .screenshot-dots span:nth-child(3) { background: #34d399; }
+  .screenshot-title { font-size: 0.75rem; color: var(--gray-500); margin-left: 8px; }
+  .screenshot-body { background: #fff; position: relative; }
+  .screenshot-caption {
+    text-align: center; font-size: 0.8rem; color: var(--gray-500);
+    padding: 10px; font-style: italic; background: var(--gray-50);
+    border-top: 1px solid var(--gray-200);
+  }
+
+  /* ── Simulated UI ── */
+  .sim-ui { padding: 20px; font-family: inherit; }
+  .sim-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--gray-200); }
+  .sim-header-icon { width: 24px; height: 24px; color: var(--primary); }
+  .sim-header h3 { margin: 0; font-size: 1.1rem; }
+  .sim-header p { margin: 0; font-size: 0.8rem; color: var(--gray-500); }
+
+  .sim-filters { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+  .sim-filter-btn {
+    padding: 6px 14px; border-radius: 6px; font-size: 0.8rem;
+    border: 1px solid var(--gray-200); background: #fff; color: var(--gray-600);
+    display: flex; align-items: center; gap: 6px;
+  }
+  .sim-filter-btn.active { border-color: var(--primary); background: var(--primary-light); color: var(--primary); font-weight: 600; }
+  .sim-filter-btn svg { width: 14px; height: 14px; }
+
+  .sim-kpi-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 20px; }
+  .sim-kpi {
+    border: 1px solid var(--gray-200); border-radius: 8px; padding: 14px 16px;
+    background: #fff;
+  }
+  .sim-kpi-label { font-size: 0.7rem; color: var(--gray-500); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 4px; }
+  .sim-kpi-value { font-size: 1.4rem; font-weight: 700; color: var(--gray-900); }
+  .sim-kpi-trend { font-size: 0.75rem; margin-top: 2px; }
+  .sim-kpi-trend.up { color: var(--green); }
+  .sim-kpi-trend.down { color: var(--red); }
+
+  .sim-tabs { display: flex; border-bottom: 2px solid var(--gray-200); margin-bottom: 16px; }
+  .sim-tab {
+    padding: 8px 16px; font-size: 0.82rem; color: var(--gray-500);
+    border-bottom: 2px solid transparent; margin-bottom: -2px; cursor: pointer;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .sim-tab.active { color: var(--primary); border-color: var(--primary); font-weight: 600; }
+  .sim-tab .badge {
+    background: var(--red); color: #fff; font-size: 0.65rem;
+    padding: 1px 6px; border-radius: 10px; font-weight: 700;
+  }
+
+  .sim-chart-placeholder {
+    height: 200px; background: var(--gray-50); border: 1px solid var(--gray-200);
+    border-radius: 8px; display: flex; align-items: center; justify-content: center;
+    position: relative; overflow: hidden;
+  }
+  .sim-chart-placeholder.tall { height: 280px; }
+
+  /* Chart: Score Trend simulation */
+  .sim-trend-chart { position: relative; width: 100%; height: 100%; }
+  .sim-trend-chart svg { width: 100%; height: 100%; }
+
+  .sim-chart-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 14px; border-bottom: 1px solid var(--gray-200);
+  }
+  .sim-chart-header h4 { font-size: 0.85rem; margin: 0; color: var(--gray-700); }
+  .sim-chart-card { border: 1px solid var(--gray-200); border-radius: 8px; overflow: hidden; margin-bottom: 16px; }
+  .sim-chart-content { padding: 16px; }
+
+  .sim-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+  /* Table simulation */
+  .sim-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+  .sim-table th { background: var(--gray-50); text-align: left; padding: 8px 12px; font-weight: 600; color: var(--gray-600); border-bottom: 1px solid var(--gray-200); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; }
+  .sim-table td { padding: 8px 12px; border-bottom: 1px solid var(--gray-100); color: var(--gray-700); }
+  .sim-table tr:hover td { background: var(--gray-50); }
+  .sim-badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 0.7rem; font-weight: 600; }
+  .sim-badge.green { background: var(--green-light); color: var(--green); border: 1px solid var(--green-border); }
+  .sim-badge.yellow { background: var(--yellow-light); color: var(--yellow); border: 1px solid var(--yellow-border); }
+  .sim-badge.red { background: var(--red-light); color: var(--red); border: 1px solid var(--red-border); }
+  .sim-badge.blue { background: var(--blue-light); color: var(--blue); border: 1px solid var(--blue-border); }
+  .sim-badge.gray { background: var(--gray-100); color: var(--gray-600); border: 1px solid var(--gray-200); }
+  .sim-code { font-family: 'SF Mono', monospace; font-size: 0.75rem; color: var(--primary); }
+  .sim-eye-btn { width: 28px; height: 28px; border: 1px solid var(--gray-200); border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; color: var(--gray-400); cursor: pointer; background: #fff; }
+  .sim-eye-btn:hover { border-color: var(--primary); color: var(--primary); }
+
+  /* ── Annotation Overlay ── */
+  .annotation-overlay { position: absolute; pointer-events: none; }
+  .callout-num {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 24px; height: 24px; border-radius: 50%;
+    background: var(--primary); color: #fff; font-size: 0.7rem; font-weight: 700;
+    box-shadow: 0 2px 6px rgba(79,70,229,0.4);
+  }
+  .callout-ring {
+    position: absolute; border: 2px solid var(--primary);
+    border-radius: 8px; pointer-events: none;
+    box-shadow: 0 0 0 2px rgba(79,70,229,0.15);
+  }
+  .callout-legend { margin: 16px 0; font-size: 0.85rem; }
+  .callout-legend-item { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 8px; }
+  .callout-legend-item .callout-num { flex-shrink: 0; }
+
+  /* ── Step Boxes ── */
+  .step-grid { display: grid; grid-template-columns: 1fr; gap: 16px; margin: 20px 0; }
+  .step-box {
+    display: flex; gap: 16px; padding: 16px 20px;
+    border: 1px solid var(--gray-200); border-radius: 10px;
+    background: #fff; transition: box-shadow 0.15s;
+  }
+  .step-box:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+  .step-num {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: var(--primary); color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 0.85rem; flex-shrink: 0;
+  }
+  .step-content h4 { margin: 0 0 4px; font-size: 0.95rem; }
+  .step-content p { margin: 0; font-size: 0.88rem; color: var(--gray-600); }
+
+  /* ── Feature Cards ── */
+  .feature-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 20px 0; }
+  .feature-card {
+    border: 1px solid var(--gray-200); border-radius: 8px; padding: 16px;
+    transition: box-shadow 0.15s;
+  }
+  .feature-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+  .feature-card h4 { margin: 0 0 6px; font-size: 0.9rem; display: flex; align-items: center; gap: 8px; }
+  .feature-card p { margin: 0; font-size: 0.82rem; color: var(--gray-500); }
+  .feature-icon { font-size: 1.1rem; }
+
+  /* ── Alert Card Sim ── */
+  .sim-alert-card {
+    border: 1px solid var(--gray-200); border-radius: 8px; padding: 14px 18px;
+    border-left: 4px solid; margin-bottom: 10px;
+  }
+  .sim-alert-card.error { border-left-color: var(--red); }
+  .sim-alert-card.warning { border-left-color: var(--yellow); }
+  .sim-alert-title { font-weight: 600; font-size: 0.88rem; display: flex; align-items: center; gap: 8px; }
+  .sim-alert-meta { display: flex; gap: 12px; margin-top: 6px; font-size: 0.78rem; color: var(--gray-500); }
+  .sim-alert-values { display: flex; gap: 8px; margin-top: 8px; }
+  .sim-alert-val { background: var(--gray-50); border-radius: 6px; padding: 6px 10px; font-size: 0.75rem; }
+  .sim-alert-val .label { color: var(--gray-500); display: block; }
+  .sim-alert-val .val { font-weight: 700; font-family: monospace; }
+
+  /* ── Separator ── */
+  .section-sep { display: flex; align-items: center; gap: 12px; margin: 32px 0 24px; color: var(--gray-400); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; }
+  .section-sep::before, .section-sep::after { content: ''; flex: 1; height: 1px; background: var(--gray-200); }
+
+  /* ── Next Steps ── */
+  .next-steps { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin: 24px 0; }
+  .next-step-card {
+    border: 1px solid var(--gray-200); border-radius: 8px; padding: 16px;
+    transition: all 0.15s;
+  }
+  .next-step-card:hover { border-color: var(--primary); box-shadow: 0 2px 8px rgba(79,70,229,0.1); text-decoration: none; }
+  .next-step-card h4 { margin: 0 0 4px; font-size: 0.9rem; color: var(--gray-800); }
+  .next-step-card p { margin: 0; font-size: 0.78rem; color: var(--gray-500); }
+
+  /* ── Modal Sim ── */
+  .sim-modal-overlay {
+    background: rgba(0,0,0,0.04); border-radius: 8px; padding: 20px;
+    border: 1px solid var(--gray-200);
+  }
+  .sim-modal {
+    background: #fff; border-radius: 12px; max-width: 600px; margin: 0 auto;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.12); overflow: hidden;
+  }
+  .sim-modal-header { padding: 16px 20px; border-bottom: 1px solid var(--gray-200); display: flex; justify-content: space-between; align-items: center; }
+  .sim-modal-body { padding: 20px; }
+  .sim-modal-section { margin-bottom: 16px; }
+  .sim-modal-label { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--gray-500); margin-bottom: 4px; }
+  .sim-modal-box { background: var(--gray-50); border-radius: 6px; padding: 10px 14px; font-size: 0.82rem; color: var(--gray-700); }
+  .sim-modal-box.blue { background: var(--blue-light); border: 1px solid var(--blue-border); }
+  .sim-score-display { display: flex; align-items: center; gap: 16px; }
+  .sim-score-circle { width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; font-weight: 800; color: #fff; }
+  .sim-score-circle.green { background: var(--green); }
+  .sim-score-circle.red { background: var(--red); }
+  .sim-score-circle.yellow { background: var(--yellow); }
+  .sim-score-bar { flex: 1; height: 8px; border-radius: 4px; background: var(--gray-200); overflow: hidden; }
+  .sim-score-bar-fill { height: 100%; border-radius: 4px; }
+
+  /* ── Video placeholder ── */
+  .video-placeholder {
+    margin: 24px 0; border-radius: 10px; overflow: hidden;
+    border: 1px solid var(--gray-200); background: var(--gray-900);
+    height: 80px; display: flex; align-items: center; justify-content: center; color: #fff;
+    font-size: 0.85rem; gap: 8px;
+  }
+  .video-placeholder svg { width: 24px; height: 24px; }
+
+  /* ── Annotation-specific: accent gradient bar ── */
+  .sim-accent-bar {
+    height: 3px;
+    background: linear-gradient(90deg, #8B9F4F, #A4B86C, #D4AF37);
+    opacity: 0.7;
+  }
+
+  /* ── Annotation: binary score buttons ── */
+  .sim-score-btn {
+    display: flex; align-items: center; gap: 10px;
+    border: 1.5px solid var(--gray-200); border-radius: 8px;
+    padding: 10px 14px; background: #fff; cursor: pointer;
+    transition: all 0.15s; flex: 1;
+  }
+  .sim-score-btn:hover { border-color: var(--gray-300); }
+  .sim-score-btn.accept-active { border-color: var(--green); background: #f0fdf4; box-shadow: 0 0 0 3px rgba(39,174,96,0.1); }
+  .sim-score-btn.reject-active { border-color: var(--red); background: #fef2f2; box-shadow: 0 0 0 3px rgba(231,76,60,0.1); }
+  .sim-score-icon {
+    width: 28px; height: 28px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.85rem; font-weight: 700;
+  }
+  .sim-score-icon.accept { background: rgba(39,174,96,0.1); color: var(--green); }
+  .sim-score-icon.accept-fill { background: var(--green); color: #fff; }
+  .sim-score-icon.reject { background: rgba(231,76,60,0.1); color: var(--red); }
+  .sim-score-btn-text { font-size: 0.8rem; font-weight: 600; }
+  .sim-score-btn-sub { font-size: 0.65rem; color: var(--gray-500); }
+
+  /* ── Annotation: scale buttons ── */
+  .sim-scale-btn {
+    width: 38px; height: 38px; border: 1.5px solid var(--gray-200);
+    border-radius: 8px; display: flex; align-items: center; justify-content: center;
+    font-size: 0.9rem; font-weight: 600; color: var(--gray-600);
+    background: #fff; cursor: pointer; transition: all 0.15s;
+  }
+  .sim-scale-btn:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-light); }
+  .sim-scale-btn.active { border-color: var(--primary); background: var(--primary); color: #fff; box-shadow: 0 0 0 3px rgba(79,70,229,0.15), 0 2px 8px rgba(79,70,229,0.25); transform: translateY(-1px); }
+
+  /* ── Annotation: tag pills ── */
+  .sim-tag {
+    display: inline-block; padding: 3px 10px; border-radius: 12px;
+    font-size: 0.7rem; font-weight: 500;
+    border: 1px solid var(--gray-200); color: var(--gray-600); background: #fff;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .sim-tag:hover { border-color: var(--gray-400); }
+  .sim-tag.positive { border-color: var(--green); background: var(--green-light); color: var(--green); font-weight: 600; }
+  .sim-tag.negative { border-color: var(--red); background: var(--red-light); color: var(--red); font-weight: 600; }
+
+  /* ── Annotation: progress sidebar sim ── */
+  .sim-progress-card {
+    border: 1px solid var(--gray-200); border-radius: 10px; overflow: hidden;
+    background: #fff; margin-bottom: 12px;
+  }
+  .sim-progress-bar-track { height: 3px; background: var(--gray-100); border-radius: 2px; overflow: visible; position: relative; }
+  .sim-progress-bar-fill { height: 100%; border-radius: 2px; background: linear-gradient(90deg, var(--primary), #A4B86C); transition: width 0.5s; }
+  .sim-progress-dot {
+    position: absolute; top: 50%; width: 5px; height: 5px;
+    border-radius: 50%; background: var(--primary);
+    transform: translateY(-50%); margin-left: -2.5px;
+    box-shadow: 0 0 6px rgba(139,159,79,0.4);
+  }
+
+  .sim-record-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 5px 14px; font-size: 0.7rem;
+    border-bottom: 1px solid var(--gray-50); cursor: pointer;
+  }
+  .sim-record-item:hover { background: rgba(79,70,229,0.02); }
+  .sim-record-item.current { border-left: 3px solid var(--primary); background: rgba(79,70,229,0.04); }
+  .sim-record-dot {
+    width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
+  }
+  .sim-record-dot.done { background: var(--green); }
+  .sim-record-dot.pending { background: var(--gray-200); }
+  .sim-record-dot.flagged { background: #f97316; }
+
+  /* ── Responsive ── */
+  @media (max-width: 1200px) {
+    .toc { display: none; }
+    .main { margin-right: 0; }
+  }
+  @media (max-width: 900px) {
+    .sidebar { display: none; }
+    .main { margin-left: 0; }
+    .sim-kpi-row { grid-template-columns: repeat(2,1fr); }
+    .sim-2col { grid-template-columns: 1fr; }
+    .feature-grid { grid-template-columns: 1fr; }
+    .next-steps { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════ TOP NAV ══════════════════ -->
+<nav class="topnav">
+  <div class="topnav-logo"><img src="../assets/axis_transparent.png" alt="AXIS"
+    style="height:20px;vertical-align:middle;margin-right:2px;"> Docs</div>
+    <div class="topnav-links">
+    <a href="../getting-started/">Getting Started</a>
+    <a href="../user-guide/" class="active">User Guide</a>
+    <a href="../configuration/">Configuration</a>
+    <a href="../architecture/">Architecture</a>
+    <a href="../api-reference/">API Reference</a>
+  </div>
+</nav>
+
+<!-- ══════════════════ SIDEBAR ══════════════════ -->
+<div class="layout">
+<aside class="sidebar">
+  <div class="sidebar-section">
+    <div class="sidebar-section-title">User Guide</div>
+    <a class="sidebar-link" href="../user-guide/">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      Overview
+    </a>
+    <a class="sidebar-link" href="evaluate-guide.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      Evaluate
+    </a>
+    <a class="sidebar-link active" href="annotation-guide.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+      Annotation Studio
+    </a>
+    <a class="sidebar-link" href="monitoring-guide.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      Monitoring
+    </a>
+    <a class="sidebar-link" href="production-guide.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      Production
+    </a>
+    <a class="sidebar-link" href="calibration-guide.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+      CaliberHQ
+    </a>
+    <a class="sidebar-link" href="human-signals-guide.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      Human Signals
+    </a>
+    <a class="sidebar-link" href="memory-guide.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+      Memory
+    </a>
+    <a class="sidebar-link" href="agent-replay-guide.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+      Agent Replay
+    </a>
+    <a class="sidebar-link" href="simulation-guide.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+      Simulation
+    </a>
+    <a class="sidebar-link" href="learn-guide.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+      Learn
+    </a>
+    <a class="sidebar-link" href="settings-guide.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+      Settings
+    </a>
+  </div>
+</aside>
+
+<!-- ══════════════════ MAIN CONTENT ══════════════════ -->
+<main class="main">
+<div class="content">
+
+<!-- Breadcrumb -->
+<div class="breadcrumb">
+  <a href="#">Docs</a> / <a href="#">User Guide</a> / <strong>Annotation Studio</strong>
+</div>
+
+<h1>Annotation Studio</h1>
+<p class="subtitle">Human-in-the-loop annotation for quality assurance &mdash; score, tag, and critique LLM outputs with keyboard-driven workflows and CSV export.</p>
+
+<!-- ── Why ── -->
+<h2 id="why-annotation">Why Use Annotation Studio?</h2>
+<p>Automated metrics are powerful, but they are not the whole story. The Annotation Studio gives your team a structured interface to <strong>manually review and label</strong> evaluation data &mdash; building ground truth datasets, validating automated scores, and catching failure modes that metrics alone miss.</p>
+
+<div class="feature-grid">
+  <div class="feature-card">
+    <h4><span class="feature-icon">&#x270F;</span> Structured Scoring</h4>
+    <p>Binary accept/reject, 1&ndash;5 scale, or custom range scoring modes with keyboard shortcuts for rapid annotation.</p>
+  </div>
+  <div class="feature-card">
+    <h4><span class="feature-icon">&#x1F3F7;</span> Flexible Tagging</h4>
+    <p>Apply preset or custom tags to categorize outputs &mdash; hallucination, off-topic, excellent, needs-context, and more.</p>
+  </div>
+  <div class="feature-card">
+    <h4><span class="feature-icon">&#x2328;</span> Keyboard-First</h4>
+    <p>Navigate, score, flag, and undo entirely from the keyboard. Annotators stay in flow without reaching for the mouse.</p>
+  </div>
+  <div class="feature-card">
+    <h4><span class="feature-icon">&#x1F4E4;</span> CSV Export</h4>
+    <p>Export annotated data with <code>judgment</code>, <code>critique</code>, <code>user_tags</code>, and <code>annotation_flagged</code> columns appended to your original data.</p>
+  </div>
+</div>
+
+<!-- ── Quick Start ── -->
+<h2 id="quick-start">Quick Start</h2>
+<p>Start annotating in under a minute:</p>
+
+<div class="step-grid">
+  <div class="step-box">
+    <div class="step-num">1</div>
+    <div class="step-content">
+      <h4>Navigate to Annotation Studio</h4>
+      <p>Click <strong>Annotation Studio</strong> in the left sidebar, or go directly to <code>/annotation-studio</code>.</p>
+    </div>
+  </div>
+  <div class="step-box">
+    <div class="step-num">2</div>
+    <div class="step-content">
+      <h4>Upload Evaluation Data</h4>
+      <p>Drag a CSV file into the upload zone. The studio auto-detects data format and extracts any existing annotations (columns named <code>judgment</code>, <code>critique</code>, <code>user_tags</code>).</p>
+    </div>
+  </div>
+  <div class="step-box">
+    <div class="step-num">3</div>
+    <div class="step-content">
+      <h4>Configure (Optional)</h4>
+      <p>Click <strong>Configure</strong> to choose which columns to display, set the score mode (binary, 1&ndash;5, or custom range), and manage tags.</p>
+    </div>
+  </div>
+  <div class="step-box">
+    <div class="step-num">4</div>
+    <div class="step-content">
+      <h4>Annotate &amp; Export</h4>
+      <p>Review each record, assign scores and tags, then click <strong>Export</strong> to download the annotated CSV with all your judgments.</p>
+    </div>
+  </div>
+</div>
+
+<div class="admonition tip">
+  <div class="admonition-title">&#x1F4A1; Tip</div>
+  If your CSV already contains annotation columns (<code>judgment</code>, <code>critique</code>, <code>user_tags</code>), they are imported automatically so you can resume an interrupted annotation session.
+</div>
+
+<!-- ── Page Anatomy ── -->
+<h2 id="page-anatomy">Page Anatomy</h2>
+<p>Here is how the Annotation Studio is organized once data is loaded, with every major section labeled:</p>
+
+<!-- Annotated Screenshot Simulation -->
+<div class="screenshot">
+  <div class="screenshot-chrome">
+    <div class="screenshot-dots"><span></span><span></span><span></span></div>
+    <div class="screenshot-title">localhost:3500/annotation-studio</div>
+  </div>
+  <div class="screenshot-body">
+    <div class="sim-ui" style="position:relative;padding:0;">
+      <!-- Page Header -->
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--gray-200);position:relative;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" style="width:20px;height:20px;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          <div>
+            <div style="font-weight:700;font-size:0.95rem;">Annotation Studio</div>
+            <div style="font-size:0.72rem;color:var(--gray-500);">Human-in-the-loop annotation for quality assurance</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <div class="sim-filter-btn" style="font-size:0.72rem;padding:5px 10px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px;"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06c.5.5 1.2.7 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9c.26.6.84 1 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            Configure
+          </div>
+          <div class="sim-filter-btn" style="font-size:0.72rem;padding:5px 10px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Export
+          </div>
+        </div>
+        <!-- Callout 1 -->
+        <div style="position:absolute;top:4px;right:180px;"><span class="callout-num">1</span></div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 220px;gap:16px;padding:16px 20px;">
+        <!-- Left: Annotation Card -->
+        <div style="border:1px solid var(--gray-200);border-radius:10px;overflow:hidden;position:relative;">
+          <!-- Accent bar -->
+          <div class="sim-accent-bar"></div>
+
+          <!-- Navigation header -->
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid var(--gray-100);position:relative;">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <div style="display:flex;gap:2px;">
+                <div style="width:24px;height:24px;border:1px solid var(--gray-200);border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:0.85rem;color:var(--gray-400);">&#8249;</div>
+                <div style="width:24px;height:24px;border:1px solid var(--gray-200);border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:0.85rem;color:var(--gray-400);">&#8250;</div>
+              </div>
+              <span style="font-size:0.78rem;font-weight:600;">Record 3 <span style="font-weight:400;color:var(--gray-500);">of 247</span></span>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;">
+              <span style="background:var(--gray-50);padding:2px 8px;border-radius:4px;font-family:monospace;font-size:0.65rem;color:var(--gray-500);">01KFX-a3b4-c5d6</span>
+              <div style="width:24px;height:24px;border:1px solid var(--gray-200);border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:0.7rem;color:var(--gray-400);" title="Flag">&#x1F3F3;</div>
+              <div style="width:24px;height:24px;border:1px solid var(--gray-200);border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:0.7rem;color:var(--gray-400);" title="Undo">&#x21B6;</div>
+            </div>
+            <!-- Callout 2 -->
+            <div style="position:absolute;top:-8px;left:60px;"><span class="callout-num">2</span></div>
+          </div>
+
+          <!-- Content: Query -->
+          <div style="padding:16px;">
+            <div style="margin-bottom:16px;position:relative;">
+              <div style="font-size:0.62rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--gray-500);margin-bottom:6px;">User Query</div>
+              <div style="background:var(--gray-50);border:1px solid var(--gray-100);border-radius:8px;padding:10px 12px;font-size:0.78rem;color:var(--gray-700);line-height:1.6;">
+                What are the key differences between retrieval-augmented generation and fine-tuning for domain adaptation? Which approach is more cost-effective for a small team?
+              </div>
+              <!-- Callout 3 -->
+              <div style="position:absolute;top:-8px;right:-8px;"><span class="callout-num">3</span></div>
+            </div>
+
+            <!-- Content: AI Response -->
+            <div style="margin-bottom:16px;position:relative;">
+              <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+                <span style="font-size:0.62rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--gray-500);">AI Response</span>
+                <span style="font-size:0.6rem;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;padding:2px 8px;border-radius:10px;background:rgba(79,70,229,0.08);color:var(--primary-dark);">To Evaluate</span>
+              </div>
+              <div style="border:1px solid var(--gray-100);border-left:3px solid var(--primary);border-radius:8px;padding:10px 12px;font-size:0.78rem;color:var(--gray-700);line-height:1.6;background:linear-gradient(90deg, rgba(79,70,229,0.015), var(--gray-50));">
+                RAG and fine-tuning serve different purposes. RAG retrieves external documents at inference time, keeping the base model unchanged. Fine-tuning updates model weights on domain data. For small teams, RAG is typically more cost-effective since it doesn't require GPU training infrastructure...
+              </div>
+              <!-- Callout 4 -->
+              <div style="position:absolute;top:-8px;right:-8px;"><span class="callout-num">4</span></div>
+            </div>
+
+            <!-- Divider -->
+            <div style="height:1px;background:linear-gradient(90deg, transparent, var(--gray-200), transparent);margin:8px 0 16px;"></div>
+
+            <!-- Score: Binary -->
+            <div style="margin-bottom:14px;position:relative;">
+              <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;">
+                <span style="font-size:0.62rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--gray-500);">Verdict</span>
+                <span style="font-size:0.6rem;color:var(--gray-400);">Rate this response</span>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                <div class="sim-score-btn accept-active">
+                  <div class="sim-score-icon accept-fill">&#10003;</div>
+                  <div>
+                    <div class="sim-score-btn-text">Accept</div>
+                    <div class="sim-score-btn-sub">Meets expectations</div>
+                  </div>
+                  <kbd style="margin-left:auto;font-size:0.65rem;border:1px solid rgba(39,174,96,0.2);background:rgba(39,174,96,0.08);color:var(--green);border-radius:3px;padding:1px 5px;font-family:monospace;">A</kbd>
+                </div>
+                <div class="sim-score-btn">
+                  <div class="sim-score-icon reject">&#10007;</div>
+                  <div>
+                    <div class="sim-score-btn-text">Reject</div>
+                    <div class="sim-score-btn-sub">Needs improvement</div>
+                  </div>
+                  <kbd style="margin-left:auto;font-size:0.65rem;border:1px solid var(--gray-200);background:var(--gray-50);color:var(--gray-500);border-radius:3px;padding:1px 5px;font-family:monospace;">R</kbd>
+                </div>
+              </div>
+              <!-- Callout 5 -->
+              <div style="position:absolute;top:-8px;right:-8px;"><span class="callout-num">5</span></div>
+            </div>
+
+            <!-- Tags -->
+            <div style="margin-bottom:14px;position:relative;">
+              <div style="font-size:0.62rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--gray-500);margin-bottom:6px;">Tags</div>
+              <div style="display:flex;gap:5px;flex-wrap:wrap;">
+                <span class="sim-tag positive">Correct</span>
+                <span class="sim-tag">Incomplete</span>
+                <span class="sim-tag">Hallucination</span>
+                <span class="sim-tag negative">Off-topic</span>
+                <span class="sim-tag">Excellent</span>
+                <span class="sim-tag">Needs Context</span>
+              </div>
+              <!-- Callout 6 -->
+              <div style="position:absolute;top:-8px;right:-8px;"><span class="callout-num">6</span></div>
+            </div>
+
+            <!-- Critique -->
+            <div style="position:relative;">
+              <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:4px;">
+                <span style="font-size:0.62rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--gray-500);">Critique / Notes</span>
+                <span style="font-size:0.6rem;color:var(--gray-400);">optional</span>
+              </div>
+              <div style="border:1px solid var(--gray-200);border-radius:8px;padding:8px 10px;font-size:0.75rem;color:var(--gray-400);min-height:48px;background:#fff;">
+                Good coverage of the core concepts. Could expand on cost comparison specifics...
+              </div>
+              <!-- Callout 7 -->
+              <div style="position:absolute;top:-8px;right:-8px;"><span class="callout-num">7</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Progress Sidebar -->
+        <div style="position:relative;">
+          <!-- Progress Card -->
+          <div class="sim-progress-card">
+            <div style="padding:14px 14px 10px;">
+              <div style="font-size:1.6rem;font-weight:700;color:var(--primary);line-height:1;">42%</div>
+              <div style="font-size:0.65rem;color:var(--gray-500);margin-top:2px;">104 of 247 records</div>
+            </div>
+            <div style="padding:0 14px;">
+              <div class="sim-progress-bar-track">
+                <div class="sim-progress-bar-fill" style="width:42%;"></div>
+                <div class="sim-progress-dot" style="left:42%;"></div>
+              </div>
+            </div>
+            <div style="height:10px;"></div>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--gray-100);">
+              <div style="text-align:center;padding:8px 0;">
+                <div style="font-size:0.9rem;font-weight:700;color:var(--green);">104</div>
+                <div style="font-size:0.55rem;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--gray-500);">Done</div>
+              </div>
+              <div style="text-align:center;padding:8px 0;border-left:1px solid var(--gray-100);">
+                <div style="font-size:0.9rem;font-weight:700;color:var(--gray-500);">138</div>
+                <div style="font-size:0.55rem;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--gray-500);">Pending</div>
+              </div>
+              <div style="text-align:center;padding:8px 0;border-left:1px solid var(--gray-100);">
+                <div style="font-size:0.9rem;font-weight:700;color:#f97316;">5</div>
+                <div style="font-size:0.55rem;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--gray-500);">Flagged</div>
+              </div>
+              <div style="text-align:center;padding:8px 0;border-left:1px solid var(--gray-100);">
+                <div style="font-size:0.9rem;font-weight:700;color:var(--gray-800);">247</div>
+                <div style="font-size:0.55rem;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--gray-500);">Total</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Record List Card -->
+          <div class="sim-progress-card">
+            <!-- Filter tabs -->
+            <div style="margin:6px 10px;display:flex;background:var(--gray-50);border-radius:5px;padding:2px;">
+              <div style="flex:1;text-align:center;padding:4px 0;font-size:0.6rem;font-weight:600;background:#fff;border-radius:4px;color:var(--gray-800);box-shadow:0 1px 2px rgba(0,0,0,0.06);">All <span style="color:var(--gray-400);">(247)</span></div>
+              <div style="flex:1;text-align:center;padding:4px 0;font-size:0.6rem;color:var(--gray-500);">Pending</div>
+              <div style="flex:1;text-align:center;padding:4px 0;font-size:0.6rem;color:var(--gray-500);">Done</div>
+              <div style="flex:1;text-align:center;padding:4px 0;font-size:0.6rem;color:var(--gray-500);">Flagged</div>
+            </div>
+            <div style="display:flex;justify-content:space-between;padding:6px 14px;border-bottom:1px solid var(--gray-100);">
+              <span style="font-size:0.7rem;font-weight:600;color:var(--gray-700);">Records</span>
+              <span style="font-size:0.6rem;color:var(--gray-500);">247 shown</span>
+            </div>
+            <div class="sim-record-item"><span class="sim-record-dot done"></span><span style="font-weight:600;font-size:0.68rem;">#1</span><span style="flex:1;font-family:monospace;font-size:0.58rem;color:var(--gray-400);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">01KFX-a1b2</span></div>
+            <div class="sim-record-item"><span class="sim-record-dot done"></span><span style="font-weight:600;font-size:0.68rem;">#2</span><span style="flex:1;font-family:monospace;font-size:0.58rem;color:var(--gray-400);">01KFX-b2c3</span></div>
+            <div class="sim-record-item current"><span class="sim-record-dot done" style="animation:pulse 2s infinite;"></span><span style="font-weight:600;font-size:0.68rem;">#3</span><span style="flex:1;font-family:monospace;font-size:0.58rem;color:var(--gray-400);">01KFX-a3b4</span></div>
+            <div class="sim-record-item"><span class="sim-record-dot pending"></span><span style="font-weight:600;font-size:0.68rem;">#4</span><span style="flex:1;font-family:monospace;font-size:0.58rem;color:var(--gray-400);">01KFX-c4d5</span></div>
+            <div class="sim-record-item"><span class="sim-record-dot flagged"></span><span style="font-weight:600;font-size:0.68rem;">#5</span><span style="flex:1;font-family:monospace;font-size:0.58rem;color:var(--gray-400);">01KFX-d5e6</span></div>
+            <div class="sim-record-item"><span class="sim-record-dot pending"></span><span style="font-weight:600;font-size:0.68rem;">#6</span><span style="flex:1;font-family:monospace;font-size:0.58rem;color:var(--gray-400);">01KFX-e6f7</span></div>
+          </div>
+
+          <!-- Keyboard Shortcuts Card -->
+          <div class="sim-progress-card" style="margin-top:12px;">
+            <div style="padding:8px 14px;border-bottom:1px solid var(--gray-100);font-size:0.55rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--gray-500);">Keyboard Shortcuts</div>
+            <div style="padding:6px 14px;">
+              <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:0.65rem;">
+                <span style="color:var(--gray-600);">Accept</span><kbd style="font-size:0.6rem;padding:1px 5px;">A</kbd>
+              </div>
+              <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:0.65rem;border-top:1px solid var(--gray-50);">
+                <span style="color:var(--gray-600);">Reject</span><kbd style="font-size:0.6rem;padding:1px 5px;">R</kbd>
+              </div>
+              <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:0.65rem;border-top:1px solid var(--gray-50);">
+                <span style="color:var(--gray-600);">Previous</span><kbd style="font-size:0.6rem;padding:1px 5px;">&#8592; / J</kbd>
+              </div>
+              <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:0.65rem;border-top:1px solid var(--gray-50);">
+                <span style="color:var(--gray-600);">Next</span><kbd style="font-size:0.6rem;padding:1px 5px;">&#8594; / K</kbd>
+              </div>
+              <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:0.65rem;border-top:1px solid var(--gray-50);">
+                <span style="color:var(--gray-600);">Flag / Skip</span><kbd style="font-size:0.6rem;padding:1px 5px;">S</kbd>
+              </div>
+            </div>
+          </div>
+
+          <!-- Callout 8 -->
+          <div style="position:absolute;top:-8px;right:-8px;"><span class="callout-num">8</span></div>
+        </div>
+      </div>
+
+      <!-- Footer Navigation -->
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 20px;border-top:1px solid var(--gray-200);position:relative;">
+        <div class="sim-filter-btn" style="font-size:0.75rem;padding:6px 12px;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px;"><polyline points="15 18 9 12 15 6"/></svg>
+          Previous
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:0.68rem;color:var(--gray-500);">
+          <kbd style="font-size:0.6rem;padding:1px 5px;">&#8592;</kbd>
+          <span>/</span>
+          <kbd style="font-size:0.6rem;padding:1px 5px;">&#8594;</kbd>
+          <span style="margin-left:4px;">to navigate</span>
+        </div>
+        <div style="background:var(--primary);color:#fff;padding:6px 16px;border-radius:6px;font-size:0.75rem;font-weight:600;display:flex;align-items:center;gap:6px;">
+          Next
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px;"><polyline points="9 18 15 12 9 6"/></svg>
+        </div>
+        <!-- Callout 9 -->
+        <div style="position:absolute;top:-8px;left:50%;transform:translateX(-50%);"><span class="callout-num">9</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="screenshot-caption">The Annotation Studio showing the full page anatomy &mdash; header with actions, annotation card with content sections and scoring controls, progress sidebar, and footer navigation.</div>
+</div>
+
+<!-- Callout Legend -->
+<div class="callout-legend">
+  <div class="callout-legend-item">
+    <span class="callout-num">1</span>
+    <div><strong>Page Header &amp; Actions</strong> &mdash; Title with MessageSquare icon. <strong>Configure</strong> opens the settings modal; <strong>Export</strong> downloads annotated CSV.</div>
+  </div>
+  <div class="callout-legend-item">
+    <span class="callout-num">2</span>
+    <div><strong>Record Navigation Bar</strong> &mdash; Previous/Next arrows, current record position (e.g., "Record 3 of 247"), record ID chip, Flag button, and Undo button.</div>
+  </div>
+  <div class="callout-legend-item">
+    <span class="callout-num">3</span>
+    <div><strong>User Query</strong> &mdash; The input prompt displayed in a neutral gray box. Column name configurable via the Configure modal.</div>
+  </div>
+  <div class="callout-legend-item">
+    <span class="callout-num">4</span>
+    <div><strong>AI Response (To Evaluate)</strong> &mdash; The LLM output to review, highlighted with a left accent border and "To Evaluate" badge. Supports Markdown rendering.</div>
+  </div>
+  <div class="callout-legend-item">
+    <span class="callout-num">5</span>
+    <div><strong>Score Selector</strong> &mdash; Binary (Accept/Reject) by default. Switches to 1&ndash;5 scale or custom range via Configure. Keyboard shortcuts shown inline.</div>
+  </div>
+  <div class="callout-legend-item">
+    <span class="callout-num">6</span>
+    <div><strong>Tag Selector</strong> &mdash; Toggle tags to categorize the output. Positive tags highlight green, negative tags highlight red. Tags are customizable.</div>
+  </div>
+  <div class="callout-legend-item">
+    <span class="callout-num">7</span>
+    <div><strong>Critique / Notes</strong> &mdash; Free-text field for detailed feedback. Exported in the <code>critique</code> column and helps reviewers understand annotator reasoning.</div>
+  </div>
+  <div class="callout-legend-item">
+    <span class="callout-num">8</span>
+    <div><strong>Progress Sidebar</strong> &mdash; Live completion percentage, stats grid (Done/Pending/Flagged/Total), filterable record list, and keyboard shortcut reference.</div>
+  </div>
+  <div class="callout-legend-item">
+    <span class="callout-num">9</span>
+    <div><strong>Footer Navigation</strong> &mdash; Previous/Next buttons with the primary "Next" action styled prominently. Keyboard shortcut hints displayed between them.</div>
+  </div>
+</div>
+
+
+<!-- ══════════════ DATA UPLOAD ══════════════ -->
+<h2 id="data-upload">Data Upload</h2>
+<p>When you first open Annotation Studio with no data loaded, the page shows a centered upload zone. This is the same drag-and-drop CSV uploader used across AXIS.</p>
+
+<div class="screenshot">
+  <div class="screenshot-chrome">
+    <div class="screenshot-dots"><span></span><span></span><span></span></div>
+    <div class="screenshot-title">localhost:3500/annotation-studio (empty state)</div>
+  </div>
+  <div class="screenshot-body">
+    <div class="sim-ui" style="text-align:center;padding:40px 20px;">
+      <div style="width:48px;height:48px;margin:0 auto 16px;background:rgba(79,70,229,0.08);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" style="width:24px;height:24px;opacity:0.5;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      </div>
+      <h3 style="font-size:1.1rem;margin-bottom:6px;font-weight:600;">No Data Loaded</h3>
+      <p style="font-size:0.85rem;color:var(--gray-500);max-width:400px;margin:0 auto 24px;">
+        Upload evaluation data to start annotating. The annotation workflow is independent from the evaluation workflow.
+      </p>
+      <div style="border:2px dashed var(--gray-200);border-radius:12px;padding:32px;max-width:500px;margin:0 auto;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="var(--gray-300)" stroke-width="2" style="width:32px;height:32px;margin:0 auto 12px;display:block;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        <p style="font-size:0.85rem;color:var(--gray-600);margin-bottom:4px;font-weight:500;">Drop your CSV file here, or click to browse</p>
+        <p style="font-size:0.75rem;color:var(--gray-400);">Supports evaluation CSV files with query and output columns</p>
+      </div>
+    </div>
+  </div>
+  <div class="screenshot-caption">Empty state with the file upload zone. Drag a CSV file here or click to browse.</div>
+</div>
+
+<p><strong>Supported data formats:</strong></p>
+<ul>
+  <li><strong>Standard evaluation CSVs</strong> &mdash; must contain at least <code>query</code> and <code>actual_output</code> columns</li>
+  <li><strong>Previously annotated CSVs</strong> &mdash; if columns like <code>judgment</code>, <code>critique</code>, <code>user_tags</code>, or <code>annotation_flagged</code> exist, they are imported automatically</li>
+  <li>Records are deduplicated by ID column (auto-detected or configured)</li>
+</ul>
+
+<div class="admonition info">
+  <div class="admonition-title">&#x2139;&#xFE0F; Info</div>
+  The annotation store is independent from the main data store. You can have different datasets loaded in Evaluate and Annotation Studio at the same time.
+</div>
+
+
+<!-- ══════════════ ANNOTATION INTERFACE ══════════════ -->
+<h2 id="annotation-interface">Annotation Interface</h2>
+<p>The annotation card is the main workspace. It displays each record's content fields vertically, followed by the scoring and tagging controls.</p>
+
+<h3 id="content-display">Content Display</h3>
+<p>By default, two columns are shown:</p>
+<ul>
+  <li><strong>User Query</strong> (<code>query</code>) &mdash; displayed in a neutral gray panel</li>
+  <li><strong>AI Response</strong> (<code>actual_output</code>) &mdash; highlighted with a left accent border (primary color) and a "To Evaluate" badge</li>
+</ul>
+
+<p>You can show additional columns (like <code>expected_output</code>, <code>context</code>, or custom fields) by configuring them in the <a href="#configure-modal">Configure modal</a>. Content supports Markdown rendering via the built-in <code>ContentRenderer</code>.</p>
+
+<h3 id="accent-gradient-bar">Accent Gradient Bar</h3>
+<p>A thin gradient bar (sage green to gold) appears at the top of the annotation card. This is a visual cue inherited from the AXIS brand palette. It separates the navigation header from the content.</p>
+
+<div class="admonition note">
+  <div class="admonition-title">&#x1F4DD; Note</div>
+  Each record is identified by an auto-detected ID column. AXIS looks for columns named <code>id</code>, then any column ending in <code>_id</code> or containing <code>uuid</code>, and falls back to <code>dataset_id</code>. Configure this in the settings modal if auto-detection picks the wrong column.
+</div>
+
+
+<!-- ══════════════ SCORING & LABELS ══════════════ -->
+<h2 id="scoring-labels">Scoring &amp; Labels</h2>
+<p>Below the content panels, three annotation controls appear: the score selector, tag selector, and critique field.</p>
+
+<h3 id="score-modes">Score Modes</h3>
+<p>AXIS supports three scoring modes, selectable via the <a href="#configure-modal">Configure modal</a>:</p>
+
+<table class="sim-table" style="margin:16px 0;">
+  <thead>
+    <tr><th>Mode</th><th>UI</th><th>Keyboard</th><th>Export Value</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Binary</strong> (default)</td>
+      <td>Two large buttons: Accept (&#10003;) and Reject (&#10007;)</td>
+      <td><kbd>A</kbd> = Accept, <kbd>R</kbd> = Reject</td>
+      <td><code>accept</code> or <code>reject</code></td>
+    </tr>
+    <tr>
+      <td><strong>1&ndash;5 Scale</strong></td>
+      <td>Five numbered buttons in a row</td>
+      <td><kbd>1</kbd> through <kbd>5</kbd></td>
+      <td>Integer (1, 2, 3, 4, or 5)</td>
+    </tr>
+    <tr>
+      <td><strong>Custom Range</strong></td>
+      <td>Numbered buttons from min to max</td>
+      <td>Number keys within range</td>
+      <td>Integer in configured range</td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- Scale mode screenshot -->
+<div class="screenshot">
+  <div class="screenshot-chrome">
+    <div class="screenshot-dots"><span></span><span></span><span></span></div>
+    <div class="screenshot-title">Score Mode: 1&ndash;5 Scale</div>
+  </div>
+  <div class="screenshot-body">
+    <div class="sim-ui" style="padding:16px 20px;">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;">
+        <span style="font-size:0.62rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--gray-500);">Score (1-5)</span>
+        <span style="font-size:0.6rem;color:var(--gray-400);">Rate this response</span>
+      </div>
+      <div style="display:flex;gap:6px;">
+        <div class="sim-scale-btn">1</div>
+        <div class="sim-scale-btn">2</div>
+        <div class="sim-scale-btn">3</div>
+        <div class="sim-scale-btn active">4</div>
+        <div class="sim-scale-btn">5</div>
+      </div>
+    </div>
+  </div>
+  <div class="screenshot-caption">The 1&ndash;5 scale score selector. The selected score (4) is highlighted with the primary color. Press number keys 1&ndash;5 to score instantly.</div>
+</div>
+
+<h3 id="tags">Tags</h3>
+<p>Tags let you categorize outputs with descriptive labels. AXIS ships with sensible defaults and supports fully custom tag sets.</p>
+
+<ul>
+  <li><strong>Positive tags</strong> (Excellent, Cool, Correct, Positive) highlight in <span class="sim-badge green">green</span> when selected</li>
+  <li><strong>Negative/neutral tags</strong> (Hallucination, Off-topic, Incomplete, etc.) highlight in <span class="sim-badge red">red</span> when selected</li>
+  <li>Unselected tags appear as neutral gray pills</li>
+  <li>Multiple tags can be selected per record</li>
+</ul>
+
+<p><strong>Tag presets</strong> are available in the Configure modal:</p>
+<table class="sim-table" style="margin:12px 0;">
+  <thead><tr><th>Preset</th><th>Tags Included</th></tr></thead>
+  <tbody>
+    <tr><td><span class="sim-badge gray">quality</span></td><td>Excellent, Good, Acceptable, Poor, Terrible</td></tr>
+    <tr><td><span class="sim-badge gray">accuracy</span></td><td>Correct, Partially Correct, Incorrect, Hallucination</td></tr>
+    <tr><td><span class="sim-badge gray">safety</span></td><td>Safe, Risky, Harmful, Needs Review</td></tr>
+    <tr><td><span class="sim-badge gray">custom</span></td><td>Define your own tags via the Manage Tags popover</td></tr>
+  </tbody>
+</table>
+
+<h3 id="critique-notes">Critique / Notes</h3>
+<p>A free-text field below the tags for detailed feedback. This text is exported in the <code>critique</code> column of your CSV.</p>
+
+<div class="admonition tip">
+  <div class="admonition-title">&#x1F4A1; Tip</div>
+  Critique text is especially valuable for building alignment datasets. Use it to explain <em>why</em> a response was scored the way it was &mdash; this reasoning can be used to train reward models or improve evaluation rubrics.
+</div>
+
+
+<!-- ══════════════ NAVIGATION & PROGRESS ══════════════ -->
+<h2 id="navigation-progress">Navigation &amp; Progress</h2>
+<p>AXIS is optimized for rapid sequential annotation. All navigation is available from both the UI and the keyboard.</p>
+
+<h3 id="keyboard-shortcuts">Keyboard Shortcuts</h3>
+<p>The full shortcut reference is always visible in the sidebar. These work globally unless focus is in a text input.</p>
+
+<table class="sim-table" style="margin:16px 0;">
+  <thead>
+    <tr><th>Key</th><th>Action</th><th>Notes</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><kbd>&#8592;</kbd> or <kbd>J</kbd></td><td>Previous record</td><td>Wraps to first record at start</td></tr>
+    <tr><td><kbd>&#8594;</kbd> or <kbd>K</kbd></td><td>Next record</td><td>Stops at last record</td></tr>
+    <tr><td><kbd>A</kbd></td><td>Accept (binary mode)</td><td>Sets score to <code>accept</code></td></tr>
+    <tr><td><kbd>R</kbd></td><td>Reject (binary mode)</td><td>Sets score to <code>reject</code></td></tr>
+    <tr><td><kbd>1</kbd>&ndash;<kbd>5</kbd></td><td>Set score (scale mode)</td><td>Range depends on config</td></tr>
+    <tr><td><kbd>S</kbd></td><td>Flag / Skip record</td><td>Toggles orange flag indicator</td></tr>
+    <tr><td><kbd>Ctrl+Z</kbd></td><td>Undo last annotation</td><td>Up to 20 actions in history</td></tr>
+    <tr><td><kbd>Enter</kbd></td><td>Go to next record</td><td>Convenience alias for &rarr;</td></tr>
+  </tbody>
+</table>
+
+<div class="admonition warning">
+  <div class="admonition-title">&#x26A0;&#xFE0F; Warning</div>
+  Keyboard shortcuts are disabled while focus is in the <strong>Critique</strong> text field. Click outside the textarea or press <kbd>Escape</kbd> to re-enable them. This prevents accidental scoring while typing notes.
+</div>
+
+<h3 id="progress-sidebar">Progress Sidebar</h3>
+<p>The right sidebar provides at-a-glance progress tracking:</p>
+
+<ul>
+  <li><strong>Completion percentage</strong> &mdash; large numeric display with animated progress bar</li>
+  <li><strong>Stats grid</strong> &mdash; Done (green), Pending (gray), Flagged (orange), and Total counts</li>
+  <li><strong>Filter tabs</strong> &mdash; switch the record list between All, Pending, Done, or Flagged views</li>
+  <li><strong>Record list</strong> &mdash; scrollable list with colored status dots. Click any record to jump to it. The current record is highlighted with a left border accent and pulsing dot.</li>
+</ul>
+
+<p>The record list shows up to 100 items at a time. If your dataset has more than 100 records, a "+N more records" indicator appears at the bottom.</p>
+
+<h3 id="flagging">Flagging Records</h3>
+<p>Flagging is useful for marking records that need a second look, are ambiguous, or should be discussed with the team. Flagged records:</p>
+<ul>
+  <li>Show an orange flag icon in the navigation bar</li>
+  <li>Display an orange dot in the record list</li>
+  <li>Can be filtered to view only flagged items</li>
+  <li>Export with <code>annotation_flagged = true</code> in the CSV</li>
+</ul>
+
+
+<!-- ══════════════ CONFIGURE MODAL ══════════════ -->
+<h2 id="configure-modal">Configure Modal</h2>
+<p>Click the <strong>Configure</strong> button in the page header to open the settings modal. All configuration persists in localStorage.</p>
+
+<div class="screenshot">
+  <div class="screenshot-chrome">
+    <div class="screenshot-dots"><span></span><span></span><span></span></div>
+    <div class="screenshot-title">Configure Annotation Modal</div>
+  </div>
+  <div class="screenshot-body">
+    <div class="sim-modal-overlay">
+      <div class="sim-modal" style="max-width:540px;">
+        <div class="sim-modal-header">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div style="background:rgba(79,70,229,0.08);border-radius:8px;padding:6px;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" style="width:18px;height:18px;"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06c.5.5 1.2.7 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9c.26.6.84 1 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            </div>
+            <span style="font-size:1.1rem;font-weight:600;">Configure Annotation</span>
+          </div>
+          <span style="font-size:1.2rem;color:var(--gray-400);cursor:pointer;">&times;</span>
+        </div>
+        <div class="sim-modal-body" style="font-size:0.85rem;">
+          <!-- ID Column -->
+          <div style="margin-bottom:20px;">
+            <h4 style="margin:0 0 4px;font-size:0.9rem;">ID Column</h4>
+            <p style="color:var(--gray-500);font-size:0.8rem;margin-bottom:8px;">Select which column serves as the unique identifier for records.</p>
+            <div style="border:1px solid var(--gray-200);border-radius:6px;padding:7px 10px;font-size:0.82rem;color:var(--gray-700);display:flex;justify-content:space-between;">
+              <span>dataset_id</span>
+              <span style="color:var(--gray-400);">&#x25BE;</span>
+            </div>
+          </div>
+
+          <!-- Display Columns -->
+          <div style="margin-bottom:20px;">
+            <h4 style="margin:0 0 4px;font-size:0.9rem;">Display Columns</h4>
+            <p style="color:var(--gray-500);font-size:0.8rem;margin-bottom:8px;">Select which columns to show in the annotation view.</p>
+            <div style="border:1px solid var(--gray-200);border-radius:6px;padding:8px;display:grid;grid-template-columns:1fr 1fr;gap:4px;">
+              <label style="display:flex;align-items:center;gap:6px;padding:4px 6px;border-radius:4px;font-size:0.78rem;cursor:pointer;">
+                <span style="width:14px;height:14px;border:2px solid var(--primary);border-radius:3px;display:flex;align-items:center;justify-content:center;background:var(--primary);color:#fff;font-size:0.6rem;">&#10003;</span>
+                query
+              </label>
+              <label style="display:flex;align-items:center;gap:6px;padding:4px 6px;border-radius:4px;font-size:0.78rem;cursor:pointer;">
+                <span style="width:14px;height:14px;border:2px solid var(--primary);border-radius:3px;display:flex;align-items:center;justify-content:center;background:var(--primary);color:#fff;font-size:0.6rem;">&#10003;</span>
+                actual_output
+              </label>
+              <label style="display:flex;align-items:center;gap:6px;padding:4px 6px;border-radius:4px;font-size:0.78rem;cursor:pointer;">
+                <span style="width:14px;height:14px;border:2px solid var(--gray-300);border-radius:3px;"></span>
+                expected_output
+              </label>
+              <label style="display:flex;align-items:center;gap:6px;padding:4px 6px;border-radius:4px;font-size:0.78rem;cursor:pointer;">
+                <span style="width:14px;height:14px;border:2px solid var(--gray-300);border-radius:3px;"></span>
+                context
+              </label>
+              <label style="display:flex;align-items:center;gap:6px;padding:4px 6px;border-radius:4px;font-size:0.78rem;cursor:pointer;">
+                <span style="width:14px;height:14px;border:2px solid var(--gray-300);border-radius:3px;"></span>
+                evaluation_name
+              </label>
+              <label style="display:flex;align-items:center;gap:6px;padding:4px 6px;border-radius:4px;font-size:0.78rem;cursor:pointer;">
+                <span style="width:14px;height:14px;border:2px solid var(--gray-300);border-radius:3px;"></span>
+                timestamp
+              </label>
+            </div>
+          </div>
+
+          <!-- Score Mode -->
+          <div style="margin-bottom:20px;">
+            <h4 style="margin:0 0 4px;font-size:0.9rem;">Score Mode</h4>
+            <p style="color:var(--gray-500);font-size:0.8rem;margin-bottom:8px;">Choose how to score annotations.</p>
+            <div style="display:flex;flex-direction:column;gap:6px;">
+              <label style="display:flex;align-items:flex-start;gap:10px;border:1px solid var(--primary);border-radius:8px;padding:10px;background:rgba(79,70,229,0.03);cursor:pointer;">
+                <span style="width:14px;height:14px;border:2px solid var(--primary);border-radius:50%;display:flex;align-items:center;justify-content:center;margin-top:2px;flex-shrink:0;"><span style="width:6px;height:6px;border-radius:50%;background:var(--primary);"></span></span>
+                <div>
+                  <div style="font-weight:500;font-size:0.85rem;">Binary (Accept/Reject)</div>
+                  <div style="font-size:0.75rem;color:var(--gray-500);">Simple thumbs up/down scoring</div>
+                </div>
+              </label>
+              <label style="display:flex;align-items:flex-start;gap:10px;border:1px solid var(--gray-200);border-radius:8px;padding:10px;cursor:pointer;">
+                <span style="width:14px;height:14px;border:2px solid var(--gray-300);border-radius:50%;margin-top:2px;flex-shrink:0;"></span>
+                <div>
+                  <div style="font-weight:500;font-size:0.85rem;">1-5 Scale</div>
+                  <div style="font-size:0.75rem;color:var(--gray-500);">Five-point quality scale</div>
+                </div>
+              </label>
+              <label style="display:flex;align-items:flex-start;gap:10px;border:1px solid var(--gray-200);border-radius:8px;padding:10px;cursor:pointer;">
+                <span style="width:14px;height:14px;border:2px solid var(--gray-300);border-radius:50%;margin-top:2px;flex-shrink:0;"></span>
+                <div>
+                  <div style="font-weight:500;font-size:0.85rem;">Custom Range</div>
+                  <div style="font-size:0.75rem;color:var(--gray-500);">Define your own scoring range</div>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <!-- Tags -->
+          <div>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+              <h4 style="margin:0;font-size:0.9rem;">Tags</h4>
+              <div class="sim-filter-btn" style="font-size:0.72rem;padding:4px 10px;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px;"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+                Manage Tags
+              </div>
+            </div>
+            <p style="color:var(--gray-500);font-size:0.8rem;margin-bottom:8px;">Configure available tags for categorizing annotations.</p>
+            <div style="display:flex;flex-wrap:wrap;gap:5px;">
+              <span style="background:var(--gray-100);border-radius:12px;padding:4px 10px;font-size:0.75rem;color:var(--gray-600);">Correct</span>
+              <span style="background:var(--gray-100);border-radius:12px;padding:4px 10px;font-size:0.75rem;color:var(--gray-600);">Incomplete</span>
+              <span style="background:var(--gray-100);border-radius:12px;padding:4px 10px;font-size:0.75rem;color:var(--gray-600);">Hallucination</span>
+              <span style="background:var(--gray-100);border-radius:12px;padding:4px 10px;font-size:0.75rem;color:var(--gray-600);">Off-topic</span>
+              <span style="background:var(--gray-100);border-radius:12px;padding:4px 10px;font-size:0.75rem;color:var(--gray-600);">Excellent</span>
+              <span style="background:var(--gray-100);border-radius:12px;padding:4px 10px;font-size:0.75rem;color:var(--gray-600);">Needs Context</span>
+            </div>
+          </div>
+        </div>
+        <!-- Footer -->
+        <div style="padding:12px 20px;border-top:1px solid var(--gray-200);background:var(--gray-50);">
+          <div style="display:flex;align-items:center;gap:6px;background:var(--primary);color:#fff;padding:6px 14px;border-radius:6px;font-size:0.8rem;font-weight:600;width:fit-content;cursor:pointer;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><polyline points="20 6 9 17 4 12"/></svg>
+            Done
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="screenshot-caption">The Configure modal with four sections: ID Column, Display Columns, Score Mode, and Tags. All settings persist in localStorage.</div>
+</div>
+
+<p><strong>Configuration sections:</strong></p>
+<ol>
+  <li><strong>ID Column</strong> &mdash; Select which column uniquely identifies records. Auto-detects <code>id</code>, <code>*_id</code>, and <code>*uuid*</code> columns. Shows a warning if duplicate IDs are found.</li>
+  <li><strong>Display Columns</strong> &mdash; Checkbox grid to select which data columns appear in the annotation card. Defaults to <code>query</code> and <code>actual_output</code>.</li>
+  <li><strong>Score Mode</strong> &mdash; Radio buttons for Binary, 1&ndash;5 Scale, or Custom Range. Custom range shows min/max number inputs.</li>
+  <li><strong>Tags</strong> &mdash; Shows current tag set with a "Manage Tags" popover for adding custom tags, applying presets, or resetting to defaults.</li>
+</ol>
+
+
+<!-- ══════════════ EXPORT & REVIEW ══════════════ -->
+<h2 id="export-review">Export &amp; Review</h2>
+<p>Click the <strong>Export</strong> button in the header to download a CSV with all your annotations merged into the original data.</p>
+
+<h3>Exported Columns</h3>
+<p>The export includes all original columns plus four annotation columns:</p>
+
+<table class="sim-table" style="margin:16px 0;">
+  <thead>
+    <tr><th>Column</th><th>Type</th><th>Description</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><code>judgment</code></td><td>string / number</td><td>The score value: <code>accept</code>, <code>reject</code>, or a numeric score (1&ndash;5, etc.)</td></tr>
+    <tr><td><code>critique</code></td><td>string</td><td>Free-text feedback written by the annotator</td></tr>
+    <tr><td><code>user_tags</code></td><td>JSON array string</td><td>Selected tags as a JSON array, e.g. <code>["Correct","Incomplete"]</code></td></tr>
+    <tr><td><code>annotation_flagged</code></td><td>boolean</td><td><code>true</code> if the record was flagged for review</td></tr>
+  </tbody>
+</table>
+
+<pre><code>dataset_id,query,actual_output,judgment,critique,user_tags,annotation_flagged
+01KFX-a1b2,"What is RAG?","RAG retrieves...",accept,"Good explanation","[""Correct""]",
+01KFX-b2c3,"Explain fine-tuning","Fine-tuning is...",reject,"Misses key details","[""Incomplete""]",true</code></pre>
+
+<div class="admonition tip">
+  <div class="admonition-title">&#x1F4A1; Tip</div>
+  The exported CSV can be re-imported into Annotation Studio to continue annotating. Existing annotations are preserved and merged with any new work.
+</div>
+
+<h3>Undo System</h3>
+<p>Every annotation action (scoring, tagging, flagging, critique changes) is tracked in an undo stack. Press <kbd>Ctrl+Z</kbd> (or <kbd>Cmd+Z</kbd> on macOS) to revert the last action. The stack holds up to <strong>20 actions</strong>.</p>
+<p>A toast notification appears at the bottom-right of the screen confirming the undo. The undo button in the navigation header is only visible when there is an action to undo.</p>
+
+
+<!-- ══════════════ DATA PERSISTENCE ══════════════ -->
+<h2 id="persistence">Data Persistence</h2>
+<p>Annotation state is managed carefully to balance persistence with performance:</p>
+
+<table class="sim-table" style="margin:16px 0;">
+  <thead>
+    <tr><th>What</th><th>Where</th><th>Why</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Annotations (scores, tags, critique)</td><td>Zustand store with <code>localStorage</code> persist</td><td>Survives page refreshes. Re-associated with data on reload.</td></tr>
+    <tr><td>Configuration (score mode, display columns, tags)</td><td>UI store with <code>localStorage</code> persist</td><td>Settings carry across sessions.</td></tr>
+    <tr><td>Raw evaluation data</td><td>Zustand store (memory only)</td><td>Too large for localStorage. Must re-upload after browser restart.</td></tr>
+    <tr><td>Undo history</td><td>Zustand store (memory only)</td><td>Reset on page reload. Not persisted.</td></tr>
+  </tbody>
+</table>
+
+<div class="admonition warning">
+  <div class="admonition-title">&#x26A0;&#xFE0F; Warning</div>
+  Your annotation <strong>judgments and tags</strong> are persisted, but the <strong>raw data</strong> (the actual CSV records) is not saved to localStorage. If you close and reopen AXIS, you will need to re-upload the CSV file. Your annotations will automatically re-associate with the data by matching record IDs.
+</div>
+
+
+<!-- ══════════════ NEXT STEPS ══════════════ -->
+<h2 id="next-steps">Next Steps</h2>
+
+<div class="next-steps">
+  <a class="next-step-card" href="#">
+    <h4>&#x1F4CA; Evaluate &rarr;</h4>
+    <p>Run automated evaluations on the same data and compare results with human annotations.</p>
+  </a>
+  <a class="next-step-card" href="#">
+    <h4>&#x2696; Calibration &rarr;</h4>
+    <p>Use annotated data as ground truth to calibrate LLM judges and measure alignment.</p>
+  </a>
+  <a class="next-step-card" href="#">
+    <h4>&#x2699; Configuration &rarr;</h4>
+    <p>Set up database connections and data pipelines for larger annotation workflows.</p>
+  </a>
+</div>
+
+
+<!-- ══════════════ FOOTER ══════════════ -->
+<div style="margin-top:60px;padding-top:24px;border-top:1px solid var(--gray-200);font-size:0.8rem;color:var(--gray-400);text-align:center;">
+  AXIS Documentation &middot; Built with MkDocs Material
+</div>
+
+</div><!-- .content -->
+</main>
+
+<!-- ══════════════════ TABLE OF CONTENTS ══════════════════ -->
+<nav class="toc">
+  <div class="toc-title">On this page</div>
+  <ul class="toc-list">
+    <li><a href="#why-annotation">Why Use Annotation Studio?</a></li>
+    <li><a href="#quick-start">Quick Start</a></li>
+    <li><a href="#page-anatomy">Page Anatomy</a></li>
+    <li><a href="#data-upload">Data Upload</a></li>
+    <li><a href="#annotation-interface">Annotation Interface</a></li>
+    <li class="indent"><a href="#content-display">Content Display</a></li>
+    <li class="indent"><a href="#accent-gradient-bar">Accent Gradient Bar</a></li>
+    <li><a href="#scoring-labels">Scoring &amp; Labels</a></li>
+    <li class="indent"><a href="#score-modes">Score Modes</a></li>
+    <li class="indent"><a href="#tags">Tags</a></li>
+    <li class="indent"><a href="#critique-notes">Critique / Notes</a></li>
+    <li><a href="#navigation-progress">Navigation &amp; Progress</a></li>
+    <li class="indent"><a href="#keyboard-shortcuts">Keyboard Shortcuts</a></li>
+    <li class="indent"><a href="#progress-sidebar">Progress Sidebar</a></li>
+    <li class="indent"><a href="#flagging">Flagging Records</a></li>
+    <li><a href="#configure-modal">Configure Modal</a></li>
+    <li><a href="#export-review">Export &amp; Review</a></li>
+    <li><a href="#persistence">Data Persistence</a></li>
+    <li><a href="#next-steps">Next Steps</a></li>
+  </ul>
+</nav>
+
+</div><!-- .layout -->
+
+</body>
+</html>

@@ -1,0 +1,1480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Monitoring - AXIS User Guide</title>
+<style>
+  /* ── Reset & Base ── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --primary: #4f46e5;
+    --primary-light: #eef2ff;
+    --primary-dark: #3730a3;
+    --green: #16a34a;
+    --green-light: #f0fdf4;
+    --green-border: #bbf7d0;
+    --yellow: #ca8a04;
+    --yellow-light: #fefce8;
+    --yellow-border: #fef08a;
+    --red: #dc2626;
+    --red-light: #fef2f2;
+    --red-border: #fecaca;
+    --blue: #2563eb;
+    --blue-light: #eff6ff;
+    --blue-border: #bfdbfe;
+    --gray-50: #f9fafb;
+    --gray-100: #f3f4f6;
+    --gray-200: #e5e7eb;
+    --gray-300: #d1d5db;
+    --gray-400: #9ca3af;
+    --gray-500: #6b7280;
+    --gray-600: #4b5563;
+    --gray-700: #374151;
+    --gray-800: #1f2937;
+    --gray-900: #111827;
+    --sidebar-w: 260px;
+    --content-max: 860px;
+    --toc-w: 220px;
+  }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    color: var(--gray-800);
+    line-height: 1.7;
+    background: #fff;
+  }
+  a { color: var(--primary); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code {
+    font-family: 'SF Mono', 'Fira Code', 'Fira Mono', Menlo, monospace;
+    font-size: 0.875em;
+    background: var(--gray-100);
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: var(--primary-dark);
+  }
+  pre { background: var(--gray-900); color: #e5e7eb; padding: 16px 20px; border-radius: 8px; overflow-x: auto; font-size: 0.85rem; line-height: 1.6; }
+  pre code { background: none; padding: 0; color: inherit; }
+  kbd {
+    display: inline-block; padding: 2px 6px; font-size: 0.8em;
+    border: 1px solid var(--gray-300); border-radius: 4px;
+    background: var(--gray-50); box-shadow: 0 1px 0 var(--gray-300);
+    font-family: inherit;
+  }
+
+  /* ── Top Nav ── */
+  .topnav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    height: 56px; background: var(--gray-900); color: #fff;
+    display: flex; align-items: center; padding: 0 24px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.3);
+  }
+  .topnav-logo { font-weight: 700; font-size: 1.1rem; letter-spacing: -0.02em; }
+  .topnav-logo span { color: var(--primary); }
+  .topnav-links { margin-left: auto; display: flex; gap: 24px; font-size: 0.875rem; }
+  .topnav-links a { color: var(--gray-300); }
+  .topnav-links a:hover { color: #fff; text-decoration: none; }
+  .topnav-links a.active { color: #fff; font-weight: 600; }
+
+  /* ── Layout ── */
+  .layout { display: flex; margin-top: 56px; min-height: calc(100vh - 56px); }
+
+  /* ── Sidebar ── */
+  .sidebar {
+    position: fixed; top: 56px; left: 0; bottom: 0;
+    width: var(--sidebar-w); background: var(--gray-50);
+    border-right: 1px solid var(--gray-200);
+    overflow-y: auto; padding: 20px 0; font-size: 0.85rem;
+  }
+  .sidebar-section { padding: 0 16px; margin-bottom: 20px; }
+  .sidebar-section-title {
+    font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.08em; color: var(--gray-400); margin-bottom: 8px;
+    padding-left: 8px;
+  }
+  .sidebar-link {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 12px; border-radius: 6px; color: var(--gray-600);
+    transition: all 0.15s;
+  }
+  .sidebar-link:hover { background: var(--gray-200); color: var(--gray-800); text-decoration: none; }
+  .sidebar-link.active { background: var(--primary-light); color: var(--primary); font-weight: 600; }
+  .sidebar-link svg { width: 16px; height: 16px; flex-shrink: 0; }
+
+  /* ── Main Content ── */
+  .main {
+    margin-left: var(--sidebar-w); flex: 1;
+    padding: 40px 40px 80px;
+    margin-right: calc(var(--toc-w) + 48px);
+  }
+  .content { max-width: var(--content-max); width: 100%; }
+
+  /* ── TOC (right rail) ── */
+  .toc {
+    position: fixed; top: 96px; right: 24px;
+    width: var(--toc-w); font-size: 0.78rem;
+  }
+  .toc-title { font-weight: 700; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--gray-400); margin-bottom: 10px; }
+  .toc-list { list-style: none; border-left: 2px solid var(--gray-200); }
+  .toc-list li { padding-left: 14px; margin-bottom: 6px; }
+  .toc-list a { color: var(--gray-500); }
+  .toc-list a:hover { color: var(--primary); text-decoration: none; }
+  .toc-list .indent { padding-left: 28px; }
+
+  /* ── Typography ── */
+  .content h1 { font-size: 2rem; font-weight: 800; letter-spacing: -0.03em; margin-bottom: 8px; color: var(--gray-900); }
+  .content h2 { font-size: 1.45rem; font-weight: 700; margin-top: 48px; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid var(--gray-200); color: var(--gray-900); }
+  .content h3 { font-size: 1.15rem; font-weight: 600; margin-top: 32px; margin-bottom: 12px; color: var(--gray-800); }
+  .content h4 { font-size: 1rem; font-weight: 600; margin-top: 24px; margin-bottom: 8px; color: var(--gray-700); }
+  .content p { margin-bottom: 16px; color: var(--gray-700); }
+  .content > ul, .content > ol { margin-bottom: 16px; padding-left: 24px; color: var(--gray-700); }
+  .content li { margin-bottom: 6px; }
+  .subtitle { font-size: 1.1rem; color: var(--gray-500); margin-bottom: 32px; }
+
+  /* ── Breadcrumb ── */
+  .breadcrumb { font-size: 0.8rem; color: var(--gray-400); margin-bottom: 12px; }
+  .breadcrumb a { color: var(--gray-400); }
+  .breadcrumb a:hover { color: var(--primary); }
+
+  /* ── Admonitions ── */
+  .admonition {
+    border-radius: 8px; padding: 16px 20px; margin: 20px 0;
+    border-left: 4px solid; font-size: 0.9rem;
+  }
+  .admonition-title {
+    font-weight: 700; font-size: 0.8rem; text-transform: uppercase;
+    letter-spacing: 0.04em; margin-bottom: 6px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .admonition.tip { background: var(--green-light); border-color: var(--green); }
+  .admonition.tip .admonition-title { color: var(--green); }
+  .admonition.info { background: var(--blue-light); border-color: var(--blue); }
+  .admonition.info .admonition-title { color: var(--blue); }
+  .admonition.warning { background: var(--yellow-light); border-color: var(--yellow); }
+  .admonition.warning .admonition-title { color: var(--yellow); }
+  .admonition.note { background: var(--gray-50); border-color: var(--gray-400); }
+  .admonition.note .admonition-title { color: var(--gray-600); }
+
+  /* ── Screenshot Frames ── */
+  .screenshot {
+    margin: 24px 0; border-radius: 10px; overflow: hidden;
+    border: 1px solid var(--gray-200); box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+  }
+  .screenshot-chrome {
+    background: var(--gray-100); padding: 8px 14px; display: flex;
+    align-items: center; gap: 8px; border-bottom: 1px solid var(--gray-200);
+  }
+  .screenshot-dots { display: flex; gap: 6px; }
+  .screenshot-dots span { width: 10px; height: 10px; border-radius: 50%; }
+  .screenshot-dots span:nth-child(1) { background: #f87171; }
+  .screenshot-dots span:nth-child(2) { background: #fbbf24; }
+  .screenshot-dots span:nth-child(3) { background: #34d399; }
+  .screenshot-title { font-size: 0.75rem; color: var(--gray-500); margin-left: 8px; }
+  .screenshot-body { background: #fff; position: relative; }
+  .screenshot-caption {
+    text-align: center; font-size: 0.8rem; color: var(--gray-500);
+    padding: 10px; font-style: italic; background: var(--gray-50);
+    border-top: 1px solid var(--gray-200);
+  }
+
+  /* ── Simulated UI ── */
+  .sim-ui { padding: 20px; font-family: inherit; }
+  .sim-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--gray-200); }
+  .sim-header-icon { width: 24px; height: 24px; color: var(--primary); }
+  .sim-header h3 { margin: 0; font-size: 1.1rem; }
+  .sim-header p { margin: 0; font-size: 0.8rem; color: var(--gray-500); }
+
+  .sim-filters { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+  .sim-filter-btn {
+    padding: 6px 14px; border-radius: 6px; font-size: 0.8rem;
+    border: 1px solid var(--gray-200); background: #fff; color: var(--gray-600);
+    display: flex; align-items: center; gap: 6px;
+  }
+  .sim-filter-btn.active { border-color: var(--primary); background: var(--primary-light); color: var(--primary); font-weight: 600; }
+  .sim-filter-btn svg { width: 14px; height: 14px; }
+
+  .sim-kpi-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 20px; }
+  .sim-kpi {
+    border: 1px solid var(--gray-200); border-radius: 8px; padding: 14px 16px;
+    background: #fff;
+  }
+  .sim-kpi-label { font-size: 0.7rem; color: var(--gray-500); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 4px; }
+  .sim-kpi-value { font-size: 1.4rem; font-weight: 700; color: var(--gray-900); }
+  .sim-kpi-trend { font-size: 0.75rem; margin-top: 2px; }
+  .sim-kpi-trend.up { color: var(--green); }
+  .sim-kpi-trend.down { color: var(--red); }
+
+  .sim-tabs { display: flex; border-bottom: 2px solid var(--gray-200); margin-bottom: 16px; }
+  .sim-tab {
+    padding: 8px 16px; font-size: 0.82rem; color: var(--gray-500);
+    border-bottom: 2px solid transparent; margin-bottom: -2px; cursor: pointer;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .sim-tab.active { color: var(--primary); border-color: var(--primary); font-weight: 600; }
+  .sim-tab .badge {
+    background: var(--red); color: #fff; font-size: 0.65rem;
+    padding: 1px 6px; border-radius: 10px; font-weight: 700;
+  }
+
+  .sim-chart-placeholder {
+    height: 200px; background: var(--gray-50); border: 1px solid var(--gray-200);
+    border-radius: 8px; display: flex; align-items: center; justify-content: center;
+    position: relative; overflow: hidden;
+  }
+  .sim-chart-placeholder.tall { height: 280px; }
+
+  /* Chart: Score Trend simulation */
+  .sim-trend-chart { position: relative; width: 100%; height: 100%; }
+  .sim-trend-chart svg { width: 100%; height: 100%; }
+
+  .sim-chart-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 14px; border-bottom: 1px solid var(--gray-200);
+  }
+  .sim-chart-header h4 { font-size: 0.85rem; margin: 0; color: var(--gray-700); }
+  .sim-chart-card { border: 1px solid var(--gray-200); border-radius: 8px; overflow: hidden; margin-bottom: 16px; }
+  .sim-chart-content { padding: 16px; }
+
+  .sim-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+  /* Table simulation */
+  .sim-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+  .sim-table th { background: var(--gray-50); text-align: left; padding: 8px 12px; font-weight: 600; color: var(--gray-600); border-bottom: 1px solid var(--gray-200); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; }
+  .sim-table td { padding: 8px 12px; border-bottom: 1px solid var(--gray-100); color: var(--gray-700); }
+  .sim-table tr:hover td { background: var(--gray-50); }
+  .sim-badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 0.7rem; font-weight: 600; }
+  .sim-badge.green { background: var(--green-light); color: var(--green); border: 1px solid var(--green-border); }
+  .sim-badge.yellow { background: var(--yellow-light); color: var(--yellow); border: 1px solid var(--yellow-border); }
+  .sim-badge.red { background: var(--red-light); color: var(--red); border: 1px solid var(--red-border); }
+  .sim-badge.blue { background: var(--blue-light); color: var(--blue); border: 1px solid var(--blue-border); }
+  .sim-badge.gray { background: var(--gray-100); color: var(--gray-600); border: 1px solid var(--gray-200); }
+  .sim-code { font-family: 'SF Mono', monospace; font-size: 0.75rem; color: var(--primary); }
+  .sim-eye-btn { width: 28px; height: 28px; border: 1px solid var(--gray-200); border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; color: var(--gray-400); cursor: pointer; background: #fff; }
+  .sim-eye-btn:hover { border-color: var(--primary); color: var(--primary); }
+
+  /* ── Annotation Overlay ── */
+  .annotation-overlay { position: absolute; pointer-events: none; }
+  .callout-num {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 24px; height: 24px; border-radius: 50%;
+    background: var(--primary); color: #fff; font-size: 0.7rem; font-weight: 700;
+    box-shadow: 0 2px 6px rgba(79,70,229,0.4);
+  }
+  .callout-ring {
+    position: absolute; border: 2px solid var(--primary);
+    border-radius: 8px; pointer-events: none;
+    box-shadow: 0 0 0 2px rgba(79,70,229,0.15);
+  }
+  .callout-legend { margin: 16px 0; font-size: 0.85rem; }
+  .callout-legend-item { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 8px; }
+  .callout-legend-item .callout-num { flex-shrink: 0; }
+
+  /* ── Step Boxes ── */
+  .step-grid { display: grid; grid-template-columns: 1fr; gap: 16px; margin: 20px 0; }
+  .step-box {
+    display: flex; gap: 16px; padding: 16px 20px;
+    border: 1px solid var(--gray-200); border-radius: 10px;
+    background: #fff; transition: box-shadow 0.15s;
+  }
+  .step-box:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+  .step-num {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: var(--primary); color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 0.85rem; flex-shrink: 0;
+  }
+  .step-content h4 { margin: 0 0 4px; font-size: 0.95rem; }
+  .step-content p { margin: 0; font-size: 0.88rem; color: var(--gray-600); }
+
+  /* ── Feature Cards ── */
+  .feature-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 20px 0; }
+  .feature-card {
+    border: 1px solid var(--gray-200); border-radius: 8px; padding: 16px;
+    transition: box-shadow 0.15s;
+  }
+  .feature-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+  .feature-card h4 { margin: 0 0 6px; font-size: 0.9rem; display: flex; align-items: center; gap: 8px; }
+  .feature-card p { margin: 0; font-size: 0.82rem; color: var(--gray-500); }
+  .feature-icon { font-size: 1.1rem; }
+
+  /* ── Alert Card Sim ── */
+  .sim-alert-card {
+    border: 1px solid var(--gray-200); border-radius: 8px; padding: 14px 18px;
+    border-left: 4px solid; margin-bottom: 10px;
+  }
+  .sim-alert-card.error { border-left-color: var(--red); }
+  .sim-alert-card.warning { border-left-color: var(--yellow); }
+  .sim-alert-title { font-weight: 600; font-size: 0.88rem; display: flex; align-items: center; gap: 8px; }
+  .sim-alert-meta { display: flex; gap: 12px; margin-top: 6px; font-size: 0.78rem; color: var(--gray-500); }
+  .sim-alert-values { display: flex; gap: 8px; margin-top: 8px; }
+  .sim-alert-val { background: var(--gray-50); border-radius: 6px; padding: 6px 10px; font-size: 0.75rem; }
+  .sim-alert-val .label { color: var(--gray-500); display: block; }
+  .sim-alert-val .val { font-weight: 700; font-family: monospace; }
+
+  /* ── Separator ── */
+  .section-sep { display: flex; align-items: center; gap: 12px; margin: 32px 0 24px; color: var(--gray-400); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; }
+  .section-sep::before, .section-sep::after { content: ''; flex: 1; height: 1px; background: var(--gray-200); }
+
+  /* ── Next Steps ── */
+  .next-steps { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin: 24px 0; }
+  .next-step-card {
+    border: 1px solid var(--gray-200); border-radius: 8px; padding: 16px;
+    transition: all 0.15s;
+  }
+  .next-step-card:hover { border-color: var(--primary); box-shadow: 0 2px 8px rgba(79,70,229,0.1); text-decoration: none; }
+  .next-step-card h4 { margin: 0 0 4px; font-size: 0.9rem; color: var(--gray-800); }
+  .next-step-card p { margin: 0; font-size: 0.78rem; color: var(--gray-500); }
+
+  /* ── Modal Sim ── */
+  .sim-modal-overlay {
+    background: rgba(0,0,0,0.04); border-radius: 8px; padding: 20px;
+    border: 1px solid var(--gray-200);
+  }
+  .sim-modal {
+    background: #fff; border-radius: 12px; max-width: 600px; margin: 0 auto;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.12); overflow: hidden;
+  }
+  .sim-modal-header { padding: 16px 20px; border-bottom: 1px solid var(--gray-200); display: flex; justify-content: space-between; align-items: center; }
+  .sim-modal-body { padding: 20px; }
+  .sim-modal-section { margin-bottom: 16px; }
+  .sim-modal-label { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--gray-500); margin-bottom: 4px; }
+  .sim-modal-box { background: var(--gray-50); border-radius: 6px; padding: 10px 14px; font-size: 0.82rem; color: var(--gray-700); }
+  .sim-modal-box.blue { background: var(--blue-light); border: 1px solid var(--blue-border); }
+  .sim-score-display { display: flex; align-items: center; gap: 16px; }
+  .sim-score-circle { width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; font-weight: 800; color: #fff; }
+  .sim-score-circle.green { background: var(--green); }
+  .sim-score-circle.red { background: var(--red); }
+  .sim-score-circle.yellow { background: var(--yellow); }
+  .sim-score-bar { flex: 1; height: 8px; border-radius: 4px; background: var(--gray-200); overflow: hidden; }
+  .sim-score-bar-fill { height: 100%; border-radius: 4px; }
+
+  /* ── Video placeholder ── */
+  .video-placeholder {
+    margin: 24px 0; border-radius: 10px; overflow: hidden;
+    border: 1px solid var(--gray-200); background: var(--gray-900);
+    height: 80px; display: flex; align-items: center; justify-content: center; color: #fff;
+    font-size: 0.85rem; gap: 8px;
+  }
+  .video-placeholder svg { width: 24px; height: 24px; }
+
+  /* ── Responsive ── */
+  @media (max-width: 1200px) {
+    .toc { display: none; }
+    .main { margin-right: 0; }
+  }
+  @media (max-width: 900px) {
+    .sidebar { display: none; }
+    .main { margin-left: 0; }
+    .sim-kpi-row { grid-template-columns: repeat(2,1fr); }
+    .sim-2col { grid-template-columns: 1fr; }
+    .feature-grid { grid-template-columns: 1fr; }
+    .next-steps { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════ TOP NAV ══════════════════ -->
+<nav class="topnav">
+  <div class="topnav-logo"><img src="../assets/axis_transparent.png" alt="AXIS"
+    style="height:20px;vertical-align:middle;margin-right:2px;"> Docs</div>
+    <div class="topnav-links">
+    <a href="../getting-started/">Getting Started</a>
+    <a href="../user-guide/" class="active">User Guide</a>
+    <a href="../configuration/">Configuration</a>
+    <a href="../architecture/">Architecture</a>
+    <a href="../api-reference/">API Reference</a>
+  </div>
+</nav>
+
+<!-- ══════════════════ SIDEBAR ══════════════════ -->
+<div class="layout">
+<aside class="sidebar">
+  <div class="sidebar-section">
+    <div class="sidebar-section-title">User Guide</div>
+    <a class="sidebar-link" href="../user-guide/">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      Overview
+    </a>
+    <a class="sidebar-link" href="evaluate-guide.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      Evaluate
+    </a>
+    <a class="sidebar-link" href="annotation-guide.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+      Annotation Studio
+    </a>
+    <a class="sidebar-link active" href="monitoring-guide.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      Monitoring
+    </a>
+    <a class="sidebar-link" href="production-guide.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      Production
+    </a>
+    <a class="sidebar-link" href="calibration-guide.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+      CaliberHQ
+    </a>
+    <a class="sidebar-link" href="human-signals-guide.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      Human Signals
+    </a>
+    <a class="sidebar-link" href="memory-guide.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+      Memory
+    </a>
+    <a class="sidebar-link" href="agent-replay-guide.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+      Agent Replay
+    </a>
+    <a class="sidebar-link" href="simulation-guide.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+      Simulation
+    </a>
+    <a class="sidebar-link" href="learn-guide.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+      Learn
+    </a>
+    <a class="sidebar-link" href="settings-guide.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+      Settings
+    </a>
+  </div>
+</aside>
+
+<!-- ══════════════════ MAIN CONTENT ══════════════════ -->
+<main class="main">
+<div class="content">
+
+<!-- Breadcrumb -->
+<div class="breadcrumb">
+  <a href="#">Docs</a> / <a href="#">User Guide</a> / <strong>Monitoring</strong>
+</div>
+
+<h1>Monitoring</h1>
+<p class="subtitle">Real-time observability for production AI systems &mdash; track scores, latency, classifications, and anomalies across every deployment.</p>
+
+<!-- ── Why ── -->
+<h2 id="why-monitoring">Why Use Monitoring?</h2>
+<p>Your evaluation metrics don't stop mattering after deployment. The Monitoring module gives you continuous visibility into how your AI agents and models perform <strong>in production</strong>, so you can catch regressions before users do.</p>
+
+<div class="feature-grid">
+  <div class="feature-card">
+    <h4><span class="feature-icon">&#x1F4C8;</span> Score Trends</h4>
+    <p>Track faithfulness, relevance, and custom metrics over time with configurable granularity.</p>
+  </div>
+  <div class="feature-card">
+    <h4><span class="feature-icon">&#x23F1;</span> Latency Tracking</h4>
+    <p>Monitor P50/P95/P99 response times grouped by environment, source, or component.</p>
+  </div>
+  <div class="feature-card">
+    <h4><span class="feature-icon">&#x1F4CA;</span> Classification Breakdowns</h4>
+    <p>See how categorical metrics shift over time — topic drift, sentiment changes, intent distribution.</p>
+  </div>
+  <div class="feature-card">
+    <h4><span class="feature-icon">&#x1F6A8;</span> Anomaly Alerts</h4>
+    <p>Automatic z-score, moving average, and threshold-based alerting with zero configuration.</p>
+  </div>
+</div>
+
+<!-- ── Quick Start ── -->
+<h2 id="quick-start">Quick Start</h2>
+<p>Get monitoring data flowing in under two minutes:</p>
+
+<div class="step-grid">
+  <div class="step-box">
+    <div class="step-num">1</div>
+    <div class="step-content">
+      <h4>Navigate to Monitor</h4>
+      <p>Click <strong>Monitor</strong> in the left sidebar. If no data is loaded, you'll see the upload screen.</p>
+    </div>
+  </div>
+  <div class="step-box">
+    <div class="step-num">2</div>
+    <div class="step-content">
+      <h4>Upload CSV or Connect Database</h4>
+      <p>Drag a CSV file into the upload zone, or configure a DuckDB/Postgres connection in <strong>Settings &rarr; Database</strong> for automatic sync.</p>
+    </div>
+  </div>
+  <div class="step-box">
+    <div class="step-num">3</div>
+    <div class="step-content">
+      <h4>Explore Your Metrics</h4>
+      <p>Once data loads, the dashboard populates with KPI cards, trend charts, and trace tables. Use the filter bar to slice by environment, source, or time range.</p>
+    </div>
+  </div>
+</div>
+
+<div class="admonition tip">
+  <div class="admonition-title">&#x1F4A1; Tip</div>
+  For production deployments, use the PostgreSQL auto-sync. It runs incremental updates automatically so your dashboard always shows the latest data without manual uploads.
+</div>
+
+<!-- ── Page Anatomy ── -->
+<h2 id="page-anatomy">Page Anatomy</h2>
+<p>Here's how the Monitoring dashboard is organized, with every major section labeled:</p>
+
+<!-- Annotated Screenshot Simulation -->
+<div class="screenshot">
+  <div class="screenshot-chrome">
+    <div class="screenshot-dots"><span></span><span></span><span></span></div>
+    <div class="screenshot-title">localhost:3500/monitoring</div>
+  </div>
+  <div class="screenshot-body">
+    <div class="sim-ui" style="position:relative;">
+      <!-- Header -->
+      <div class="sim-header" style="position:relative;">
+        <svg class="sim-header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        <div>
+          <h3 style="font-size:1rem;">Monitor</h3>
+          <p>Real-time performance monitoring and alerts</p>
+        </div>
+        <div style="margin-left:auto;">
+          <div class="sim-filter-btn active" style="font-size:0.75rem;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20"/></svg>
+            alpha_bot
+          </div>
+        </div>
+        <!-- Callout 1 -->
+        <div style="position:absolute;top:-4px;right:-4px;"><span class="callout-num">1</span></div>
+      </div>
+
+      <!-- Filters -->
+      <div class="sim-filters" style="position:relative;">
+        <div class="sim-filter-btn">All Environments &#x25BE;</div>
+        <div class="sim-filter-btn">All Components &#x25BE;</div>
+        <div class="sim-filter-btn">All Types &#x25BE;</div>
+        <div style="margin-left:auto; display:flex; gap:8px;">
+          <div class="sim-filter-btn active" style="gap:4px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px;"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/></svg>
+            Last 24 hours
+          </div>
+          <div class="sim-filter-btn" style="padding:6px 8px;" title="Reset">&#x21BB;</div>
+        </div>
+        <!-- Callout 2 -->
+        <div style="position:absolute;top:-8px;left:40px;"><span class="callout-num">2</span></div>
+        <!-- Callout 3 -->
+        <div style="position:absolute;top:-8px;right:70px;"><span class="callout-num">3</span></div>
+      </div>
+
+      <!-- KPIs -->
+      <div class="sim-kpi-row" style="position:relative;">
+        <div class="sim-kpi">
+          <div class="sim-kpi-label">Avg Score</div>
+          <div class="sim-kpi-value">0.847</div>
+          <div class="sim-kpi-trend up">&#x25B2; Above threshold</div>
+        </div>
+        <div class="sim-kpi">
+          <div class="sim-kpi-label">Pass Rate</div>
+          <div class="sim-kpi-value">89.2%</div>
+          <div class="sim-kpi-trend up">&#x25B2; Above target</div>
+        </div>
+        <div class="sim-kpi">
+          <div class="sim-kpi-label">P95 Latency</div>
+          <div class="sim-kpi-value">2.34s</div>
+          <div class="sim-kpi-trend" style="color:var(--gray-500);">P50: 0.82s &middot; P99: 4.1s</div>
+        </div>
+        <div class="sim-kpi">
+          <div class="sim-kpi-label">Active Alerts</div>
+          <div class="sim-kpi-value" style="color:var(--red);">3</div>
+          <div class="sim-kpi-trend down">&#x25BC; 2 errors, 1 warning</div>
+        </div>
+        <!-- Callout 4 -->
+        <div style="position:absolute;top:-8px;left:50%;transform:translateX(-50%);"><span class="callout-num">4</span></div>
+      </div>
+
+      <!-- Tabs -->
+      <div class="sim-tabs" style="position:relative;">
+        <div class="sim-tab active">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          Score Metrics
+        </div>
+        <div class="sim-tab">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          Classification
+        </div>
+        <div class="sim-tab">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg>
+          Analysis Insights
+        </div>
+        <div class="sim-tab">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          Alerts <span class="badge">3</span>
+        </div>
+        <!-- Callout 5 -->
+        <div style="position:absolute;top:-8px;left:120px;"><span class="callout-num">5</span></div>
+      </div>
+
+      <!-- Chart area placeholder -->
+      <div class="sim-chart-card">
+        <div class="sim-chart-header">
+          <h4>Score Trend</h4>
+          <div style="display:flex;gap:4px;">
+            <div class="sim-filter-btn" style="padding:3px 10px;font-size:0.7rem;">Hourly</div>
+            <div class="sim-filter-btn active" style="padding:3px 10px;font-size:0.7rem;">Daily</div>
+            <div class="sim-filter-btn" style="padding:3px 10px;font-size:0.7rem;">Weekly</div>
+          </div>
+        </div>
+        <div class="sim-chart-content">
+          <div class="sim-chart-placeholder tall" style="position:relative;">
+            <!-- Simulated trend lines -->
+            <svg viewBox="0 0 700 220" style="width:100%;height:100%;">
+              <!-- Grid -->
+              <line x1="50" y1="20" x2="50" y2="200" stroke="#e5e7eb" stroke-width="1"/>
+              <line x1="50" y1="200" x2="680" y2="200" stroke="#e5e7eb" stroke-width="1"/>
+              <line x1="50" y1="60" x2="680" y2="60" stroke="#e5e7eb" stroke-width="0.5" stroke-dasharray="4"/>
+              <line x1="50" y1="100" x2="680" y2="100" stroke="#e5e7eb" stroke-width="0.5" stroke-dasharray="4"/>
+              <line x1="50" y1="140" x2="680" y2="140" stroke="#e5e7eb" stroke-width="0.5" stroke-dasharray="4"/>
+              <!-- Threshold lines -->
+              <line x1="50" y1="74" x2="680" y2="74" stroke="#16a34a" stroke-width="1" stroke-dasharray="6 3"/>
+              <text x="682" y="78" font-size="9" fill="#16a34a">Good (0.7)</text>
+              <line x1="50" y1="110" x2="680" y2="110" stroke="#ca8a04" stroke-width="1" stroke-dasharray="6 3"/>
+              <text x="682" y="114" font-size="9" fill="#ca8a04">Pass (0.5)</text>
+              <!-- Y axis labels -->
+              <text x="40" y="24" font-size="9" fill="#9ca3af" text-anchor="end">1.0</text>
+              <text x="40" y="64" font-size="9" fill="#9ca3af" text-anchor="end">0.8</text>
+              <text x="40" y="104" font-size="9" fill="#9ca3af" text-anchor="end">0.6</text>
+              <text x="40" y="144" font-size="9" fill="#9ca3af" text-anchor="end">0.4</text>
+              <text x="40" y="204" font-size="9" fill="#9ca3af" text-anchor="end">0.0</text>
+              <!-- Faithfulness line -->
+              <polyline points="70,58 130,52 190,60 250,55 310,48 370,56 430,50 490,44 550,52 610,46 660,42" fill="none" stroke="#4f46e5" stroke-width="2.5"/>
+              <!-- Relevance line -->
+              <polyline points="70,70 130,68 190,72 250,66 310,74 370,62 430,68 490,60 550,64 610,58 660,56" fill="none" stroke="#2563eb" stroke-width="2.5"/>
+              <!-- Completeness line -->
+              <polyline points="70,90 130,96 190,88 250,94 310,86 370,92 430,82 490,88 550,80 610,84 660,78" fill="none" stroke="#7c3aed" stroke-width="2.5"/>
+              <!-- Legend -->
+              <circle cx="200" cy="213" r="4" fill="#4f46e5"/><text x="208" y="216" font-size="9" fill="#6b7280">Faithfulness</text>
+              <circle cx="290" cy="213" r="4" fill="#2563eb"/><text x="298" y="216" font-size="9" fill="#6b7280">Relevance</text>
+              <circle cx="365" cy="213" r="4" fill="#7c3aed"/><text x="373" y="216" font-size="9" fill="#6b7280">Completeness</text>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="screenshot-caption">The Monitoring dashboard showing the full page anatomy &mdash; source selector, filters, KPIs, metric tabs, and score trend chart.</div>
+</div>
+
+<!-- Callout Legend -->
+<div class="callout-legend">
+  <div class="callout-legend-item">
+    <span class="callout-num">1</span>
+    <div><strong>Source Selector</strong> &mdash; Choose which data source to analyze. Shows all connected sources (CSV uploads, database tables).</div>
+  </div>
+  <div class="callout-legend-item">
+    <span class="callout-num">2</span>
+    <div><strong>Metadata Filters</strong> &mdash; Narrow data by <code>environment</code>, <code>source_component</code>, and <code>source_type</code>. Only visible when the data contains those fields.</div>
+  </div>
+  <div class="callout-legend-item">
+    <span class="callout-num">3</span>
+    <div><strong>Time Range Picker</strong> &mdash; Presets (1h, 6h, 24h, 7d, 30d) or a custom date range. The reset button next to it clears all active filters.</div>
+  </div>
+  <div class="callout-legend-item">
+    <span class="callout-num">4</span>
+    <div><strong>KPI Cards</strong> &mdash; Pre-aggregated metrics that load instantly: average score, pass rate, latency percentiles, and active alert count.</div>
+  </div>
+  <div class="callout-legend-item">
+    <span class="callout-num">5</span>
+    <div><strong>Metric Category Tabs</strong> &mdash; Switch between Score Metrics, Classification, Analysis Insights, and Alerts. Tabs appear dynamically based on what metric types exist in your data.</div>
+  </div>
+</div>
+
+<!-- ══════════════ SCORE METRICS TAB ══════════════ -->
+<h2 id="score-metrics">Score Metrics Tab</h2>
+<p>The default tab. Shows numeric evaluation scores (0&ndash;1) for metrics like Faithfulness, Relevance, Completeness, and any custom score metrics in your data.</p>
+
+<h3 id="score-trend-chart">Score Trend Chart</h3>
+<p>A full-width time-series chart plotting each metric as a separate line with P50&ndash;P95 band shading. Two dashed reference lines mark your configured thresholds:</p>
+<ul>
+  <li><strong style="color:var(--green);">Good threshold</strong> (default 0.7) &mdash; green dashed line</li>
+  <li><strong style="color:var(--yellow);">Pass threshold</strong> (default 0.5) &mdash; yellow dashed line</li>
+</ul>
+
+<div class="admonition info">
+  <div class="admonition-title">&#x2139;&#xFE0F; Info</div>
+  Thresholds are configurable per source in <strong>Settings &rarr; Database &rarr; Thresholds</strong>. Per-source overrides take priority over global defaults.
+</div>
+
+<p><strong>Controls:</strong></p>
+<ul>
+  <li><strong>Granularity toggle</strong> (top-right of chart) &mdash; switch between <code>Hourly</code>, <code>Daily</code>, and <code>Weekly</code> aggregation</li>
+  <li><strong>Hover</strong> any data point to see metric name, timestamp, avg/P50/P95/P99 scores, and sample count</li>
+  <li>The legend at the bottom is interactive &mdash; click a metric name to show/hide its line</li>
+</ul>
+
+<h3 id="latency-and-breakdown">Latency & Metric Breakdown Charts</h3>
+<p>Below the trend chart, two charts sit side by side:</p>
+
+<!-- Side-by-side chart screenshots -->
+<div class="screenshot">
+  <div class="screenshot-chrome">
+    <div class="screenshot-dots"><span></span><span></span><span></span></div>
+    <div class="screenshot-title">Latency Distribution + Metric Pass Rates</div>
+  </div>
+  <div class="screenshot-body">
+    <div class="sim-ui">
+      <div class="sim-2col">
+        <!-- Latency -->
+        <div class="sim-chart-card">
+          <div class="sim-chart-header">
+            <h4>Latency Distribution</h4>
+            <div class="sim-filter-btn" style="padding:3px 10px;font-size:0.7rem;">By Source &#x25BE;</div>
+          </div>
+          <div class="sim-chart-content">
+            <div class="sim-chart-placeholder" style="height:180px;position:relative;">
+              <svg viewBox="0 0 300 160" style="width:100%;height:100%;">
+                <!-- Histogram bars -->
+                <rect x="30" y="110" width="22" height="30" rx="2" fill="#c7d2fe" opacity="0.8"/>
+                <rect x="56" y="60" width="22" height="80" rx="2" fill="#a5b4fc" opacity="0.8"/>
+                <rect x="82" y="30" width="22" height="110" rx="2" fill="#818cf8" opacity="0.8"/>
+                <rect x="108" y="50" width="22" height="90" rx="2" fill="#a5b4fc" opacity="0.8"/>
+                <rect x="134" y="80" width="22" height="60" rx="2" fill="#c7d2fe" opacity="0.8"/>
+                <rect x="160" y="100" width="22" height="40" rx="2" fill="#ddd6fe" opacity="0.8"/>
+                <rect x="186" y="120" width="22" height="20" rx="2" fill="#ede9fe" opacity="0.8"/>
+                <rect x="212" y="130" width="22" height="10" rx="2" fill="#f5f3ff" opacity="0.8"/>
+                <!-- P50 line -->
+                <line x1="95" y1="20" x2="95" y2="145" stroke="#16a34a" stroke-width="1.5" stroke-dasharray="4 2"/>
+                <text x="97" y="18" font-size="8" fill="#16a34a">P50</text>
+                <!-- P95 line -->
+                <line x1="170" y1="20" x2="170" y2="145" stroke="#ca8a04" stroke-width="1.5" stroke-dasharray="4 2"/>
+                <text x="172" y="18" font-size="8" fill="#ca8a04">P95</text>
+                <!-- P99 line -->
+                <line x1="210" y1="20" x2="210" y2="145" stroke="#dc2626" stroke-width="1.5" stroke-dasharray="4 2"/>
+                <text x="212" y="18" font-size="8" fill="#dc2626">P99</text>
+                <!-- Axis -->
+                <text x="150" y="155" font-size="8" fill="#9ca3af" text-anchor="middle">Latency (s)</text>
+              </svg>
+            </div>
+          </div>
+        </div>
+        <!-- Pass rates -->
+        <div class="sim-chart-card">
+          <div class="sim-chart-header">
+            <h4>Metric Pass Rates</h4>
+          </div>
+          <div class="sim-chart-content">
+            <div class="sim-chart-placeholder" style="height:180px;">
+              <svg viewBox="0 0 300 160" style="width:100%;height:100%;">
+                <!-- Bars -->
+                <text x="5" y="32" font-size="8" fill="#6b7280" text-anchor="start">Faithfulness</text>
+                <rect x="80" y="22" width="180" height="16" rx="3" fill="#16a34a" opacity="0.2"/>
+                <rect x="80" y="22" width="162" height="16" rx="3" fill="#16a34a" opacity="0.8"/>
+                <text x="248" y="33" font-size="8" fill="#16a34a" font-weight="700">90%</text>
+
+                <text x="5" y="62" font-size="8" fill="#6b7280" text-anchor="start">Relevance</text>
+                <rect x="80" y="52" width="180" height="16" rx="3" fill="#16a34a" opacity="0.2"/>
+                <rect x="80" y="52" width="153" height="16" rx="3" fill="#16a34a" opacity="0.8"/>
+                <text x="239" y="63" font-size="8" fill="#16a34a" font-weight="700">85%</text>
+
+                <text x="5" y="92" font-size="8" fill="#6b7280" text-anchor="start">Completeness</text>
+                <rect x="80" y="82" width="180" height="16" rx="3" fill="#ca8a04" opacity="0.2"/>
+                <rect x="80" y="82" width="117" height="16" rx="3" fill="#ca8a04" opacity="0.8"/>
+                <text x="203" y="93" font-size="8" fill="#ca8a04" font-weight="700">65%</text>
+
+                <text x="5" y="122" font-size="8" fill="#6b7280" text-anchor="start">Toxicity</text>
+                <rect x="80" y="112" width="180" height="16" rx="3" fill="#dc2626" opacity="0.2"/>
+                <rect x="80" y="112" width="72" height="16" rx="3" fill="#dc2626" opacity="0.8"/>
+                <text x="158" y="123" font-size="8" fill="#dc2626" font-weight="700">40%</text>
+
+                <!-- Reference lines -->
+                <line x1="170" y1="16" x2="170" y2="136" stroke="#6b7280" stroke-width="0.5" stroke-dasharray="3"/>
+                <text x="170" y="148" font-size="7" fill="#9ca3af" text-anchor="middle">50%</text>
+                <line x1="206" y1="16" x2="206" y2="136" stroke="#6b7280" stroke-width="0.5" stroke-dasharray="3"/>
+                <text x="206" y="148" font-size="7" fill="#9ca3af" text-anchor="middle">70%</text>
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="screenshot-caption">Left: latency histogram with P50/P95/P99 percentile markers. Right: horizontal bar chart showing per-metric pass rates with color-coded thresholds.</div>
+</div>
+
+<h4>Latency Distribution</h4>
+<ul>
+  <li>Histogram showing how response times are distributed</li>
+  <li>Vertical dashed lines mark <strong style="color:var(--green);">P50</strong>, <strong style="color:var(--yellow);">P95</strong>, and <strong style="color:var(--red);">P99</strong> percentiles</li>
+  <li>Use the <strong>Group By</strong> dropdown (top-right) to split by <code>Environment</code>, <code>Source</code>, <code>Component</code>, or <code>Type</code></li>
+</ul>
+
+<h4>Metric Pass Rates</h4>
+<ul>
+  <li>Horizontal bar chart &mdash; one bar per metric</li>
+  <li>Color-coded: <span class="sim-badge green">&#x2265; 70%</span> green, <span class="sim-badge yellow">50&ndash;70%</span> yellow, <span class="sim-badge red">&lt; 50%</span> red</li>
+  <li>Reference lines at the 50% and 70% marks</li>
+  <li>Hover any bar for the exact pass rate, average score, and sample count</li>
+</ul>
+
+<!-- ── Top Failing Outputs ── -->
+<h3 id="failing-outputs">Top Failing Outputs</h3>
+<p>Below the charts, a table surfaces the <strong>15 lowest-scoring traces</strong> across all metrics &mdash; your worst performers at a glance.</p>
+
+<div class="screenshot">
+  <div class="screenshot-chrome">
+    <div class="screenshot-dots"><span></span><span></span><span></span></div>
+    <div class="screenshot-title">Top Failing Outputs</div>
+  </div>
+  <div class="screenshot-body">
+    <div class="sim-ui" style="padding:0;">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid var(--gray-200);">
+        <h4 style="margin:0;font-size:0.9rem;">Top Failing Outputs</h4>
+        <div style="display:flex;align-items:center;gap:8px;font-size:0.8rem;color:var(--gray-500);">
+          Threshold: <div class="sim-filter-btn" style="padding:3px 10px;font-size:0.7rem;">0.5 &#x25BE;</div>
+        </div>
+      </div>
+      <table class="sim-table">
+        <thead>
+          <tr>
+            <th>Metric</th>
+            <th>Trace ID</th>
+            <th>Timestamp</th>
+            <th>Input</th>
+            <th>LLM Output</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--red);margin-right:6px;"></span>Faithfulness <span class="sim-badge red">0.12</span></td>
+            <td><span class="sim-code">01KFX...a3b</span></td>
+            <td style="font-size:0.75rem;white-space:nowrap;">Feb 14, 14:23</td>
+            <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">What are the refund policies for...</td>
+            <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">I'm not sure about that, but I think...</td>
+            <td><span class="sim-eye-btn">&#x1F441;</span></td>
+          </tr>
+          <tr>
+            <td><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--red);margin-right:6px;"></span>Relevance <span class="sim-badge red">0.18</span></td>
+            <td><span class="sim-code">01KFX...d7e</span></td>
+            <td style="font-size:0.75rem;white-space:nowrap;">Feb 14, 13:41</td>
+            <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Can you explain how to configure...</td>
+            <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">The weather today is sunny with a...</td>
+            <td><span class="sim-eye-btn">&#x1F441;</span></td>
+          </tr>
+          <tr>
+            <td><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--yellow);margin-right:6px;"></span>Completeness <span class="sim-badge yellow">0.31</span></td>
+            <td><span class="sim-code">01KFX...f2c</span></td>
+            <td style="font-size:0.75rem;white-space:nowrap;">Feb 14, 12:09</td>
+            <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">List all the integration options...</td>
+            <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">We support Slack integration...</td>
+            <td><span class="sim-eye-btn">&#x1F441;</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="screenshot-caption">Top failing outputs table. Adjust the threshold dropdown to change which records surface. Click the eye icon to open the detail modal.</div>
+</div>
+
+<ul>
+  <li>The <strong>Threshold</strong> dropdown (top-right) controls the cutoff &mdash; options: 0.3, 0.5, 0.7, 0.8, 0.9</li>
+  <li>Each row shows a colored indicator: <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--red);vertical-align:middle;"></span> red for scores below half the threshold, <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--yellow);vertical-align:middle;"></span> yellow otherwise</li>
+  <li>Click the <strong>eye icon</strong> on any row to open the <a href="#detail-modal">Trace Detail Modal</a></li>
+</ul>
+
+<!-- ── Evaluation Traces ── -->
+<h3 id="evaluation-traces">Evaluation Traces Table</h3>
+<p>The full paginated trace table appears below, separated by an "ALL TRACES" divider.</p>
+
+<div class="screenshot">
+  <div class="screenshot-chrome">
+    <div class="screenshot-dots"><span></span><span></span><span></span></div>
+    <div class="screenshot-title">Evaluation Traces</div>
+  </div>
+  <div class="screenshot-body">
+    <div class="sim-ui" style="padding:0;">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid var(--gray-200);flex-wrap:wrap;gap:8px;">
+        <h4 style="margin:0;font-size:0.9rem;">Evaluation Traces <span style="color:var(--gray-400);font-weight:400;">12,847 records</span></h4>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <div style="display:flex;align-items:center;border:1px solid var(--gray-200);border-radius:6px;padding:4px 10px;gap:6px;font-size:0.8rem;color:var(--gray-400);">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <span>Search traces...</span>
+          </div>
+          <div class="sim-filter-btn" style="padding:4px 10px;font-size:0.75rem;">All Metrics &#x25BE;</div>
+          <div class="sim-filter-btn" style="padding:4px 10px;font-size:0.75rem;">&#x2195; Recent</div>
+          <div style="display:flex;align-items:center;gap:4px;font-size:0.78rem;color:var(--gray-500);">
+            <span class="sim-filter-btn" style="padding:3px 8px;">&lsaquo;</span>
+            1 / 1285
+            <span class="sim-filter-btn" style="padding:3px 8px;">&rsaquo;</span>
+          </div>
+        </div>
+      </div>
+      <table class="sim-table">
+        <thead>
+          <tr>
+            <th>Trace ID</th>
+            <th>Timestamp &#x2195;</th>
+            <th>Model</th>
+            <th>Env</th>
+            <th>Latency</th>
+            <th>Metric</th>
+            <th>Score</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="sim-code">01KFX...c9a</span></td>
+            <td style="font-size:0.75rem;">Feb 14, 15:02</td>
+            <td style="font-size:0.78rem;">gpt-4o</td>
+            <td><span class="sim-badge gray">production</span></td>
+            <td>0.84s</td>
+            <td><span class="sim-badge blue">Faithfulness</span></td>
+            <td><span class="sim-badge green">0.92</span></td>
+            <td><span class="sim-eye-btn" style="font-size:0.7rem;">&#x1F441;</span></td>
+          </tr>
+          <tr>
+            <td><span class="sim-code">01KFX...c9a</span></td>
+            <td style="font-size:0.75rem;">Feb 14, 15:02</td>
+            <td style="font-size:0.78rem;">gpt-4o</td>
+            <td><span class="sim-badge gray">production</span></td>
+            <td>0.84s</td>
+            <td><span class="sim-badge blue">Relevance</span></td>
+            <td><span class="sim-badge green">0.88</span></td>
+            <td><span class="sim-eye-btn" style="font-size:0.7rem;">&#x1F441;</span></td>
+          </tr>
+          <tr>
+            <td><span class="sim-code">01KFX...b4f</span></td>
+            <td style="font-size:0.75rem;">Feb 14, 14:58</td>
+            <td style="font-size:0.78rem;">claude-3.5</td>
+            <td><span class="sim-badge gray">staging</span></td>
+            <td>1.23s</td>
+            <td><span class="sim-badge blue">Faithfulness</span></td>
+            <td><span class="sim-badge yellow">0.61</span></td>
+            <td><span class="sim-eye-btn" style="font-size:0.7rem;">&#x1F441;</span></td>
+          </tr>
+          <tr>
+            <td><span class="sim-code">01KFX...a1d</span></td>
+            <td style="font-size:0.75rem;">Feb 14, 14:55</td>
+            <td style="font-size:0.78rem;">gpt-4o</td>
+            <td><span class="sim-badge gray">production</span></td>
+            <td>2.41s</td>
+            <td><span class="sim-badge blue">Completeness</span></td>
+            <td><span class="sim-badge red">0.34</span></td>
+            <td><span class="sim-eye-btn" style="font-size:0.7rem;">&#x1F441;</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="screenshot-caption">Full trace table with search, metric filter, sort controls, and pagination. Each row is one metric observation on one trace.</div>
+</div>
+
+<p><strong>Controls in the header bar:</strong></p>
+<ul>
+  <li><strong>Search</strong> &mdash; filters by trace ID, query text, or output text (debounced 300ms)</li>
+  <li><strong>Metric filter</strong> &mdash; show only a specific metric (e.g., just "Faithfulness")</li>
+  <li><strong>Sort</strong> &mdash; toggle between "Recent" (timestamp) and "Score"; click the arrow to flip ascending/descending</li>
+  <li><strong>Pagination</strong> &mdash; 10 records per page, server-side when using DuckDB</li>
+</ul>
+
+<div class="admonition note">
+  <div class="admonition-title">&#x1F4DD; Note</div>
+  In <strong>long format</strong> data, each row is one metric observation (a trace appears multiple times, once per metric). In <strong>wide format</strong>, each row is one trace with all scores as columns.
+</div>
+
+<!-- ══════════════ CLASSIFICATION TAB ══════════════ -->
+<h2 id="classification">Classification Tab</h2>
+<p>Visible when your data includes metrics with <code>metric_category: CLASSIFICATION</code> (e.g., intent detection, topic classification, sentiment). This tab shows how categorical values are distributed and how they shift over time.</p>
+
+<div class="screenshot">
+  <div class="screenshot-chrome">
+    <div class="screenshot-dots"><span></span><span></span><span></span></div>
+    <div class="screenshot-title">Classification Tab</div>
+  </div>
+  <div class="screenshot-body">
+    <div class="sim-ui">
+      <!-- Toggle -->
+      <div style="display:flex;gap:4px;margin-bottom:16px;">
+        <div class="sim-filter-btn active" style="font-size:0.78rem;">Explanation</div>
+        <div class="sim-filter-btn" style="font-size:0.78rem;">Output</div>
+      </div>
+      <div class="sim-2col">
+        <!-- Summary -->
+        <div class="sim-chart-card">
+          <div class="sim-chart-header">
+            <h4>Classification Summary</h4>
+            <div class="sim-filter-btn" style="padding:3px 10px;font-size:0.7rem;">Intent &#x25BE;</div>
+          </div>
+          <div class="sim-chart-content" style="display:flex;gap:20px;">
+            <div class="sim-kpi" style="flex:1;text-align:center;">
+              <div class="sim-kpi-label">Total Records</div>
+              <div class="sim-kpi-value">4,231</div>
+            </div>
+            <div class="sim-kpi" style="flex:1;text-align:center;">
+              <div class="sim-kpi-label">Unique Categories</div>
+              <div class="sim-kpi-value">8</div>
+            </div>
+          </div>
+        </div>
+        <!-- Distribution chart -->
+        <div class="sim-chart-card">
+          <div class="sim-chart-header">
+            <h4>Category Distribution</h4>
+          </div>
+          <div class="sim-chart-content">
+            <div class="sim-chart-placeholder" style="height:120px;">
+              <svg viewBox="0 0 300 100" style="width:100%;height:100%;">
+                <text x="8" y="17" font-size="8" fill="#6b7280">billing_inquiry</text>
+                <rect x="90" y="8" width="130" height="12" rx="2" fill="#4f46e5" opacity="0.8"/>
+                <text x="225" y="18" font-size="8" fill="#4f46e5" font-weight="700">34%</text>
+                <text x="8" y="37" font-size="8" fill="#6b7280">tech_support</text>
+                <rect x="90" y="28" width="92" height="12" rx="2" fill="#7c3aed" opacity="0.8"/>
+                <text x="187" y="38" font-size="8" fill="#7c3aed" font-weight="700">24%</text>
+                <text x="8" y="57" font-size="8" fill="#6b7280">account_mgmt</text>
+                <rect x="90" y="48" width="69" height="12" rx="2" fill="#2563eb" opacity="0.8"/>
+                <text x="164" y="58" font-size="8" fill="#2563eb" font-weight="700">18%</text>
+                <text x="8" y="77" font-size="8" fill="#6b7280">general_info</text>
+                <rect x="90" y="68" width="38" height="12" rx="2" fill="#0891b2" opacity="0.8"/>
+                <text x="133" y="78" font-size="8" fill="#0891b2" font-weight="700">10%</text>
+                <text x="8" y="97" font-size="8" fill="#6b7280">other</text>
+                <rect x="90" y="88" width="54" height="12" rx="2" fill="#9ca3af" opacity="0.8"/>
+                <text x="149" y="98" font-size="8" fill="#9ca3af" font-weight="700">14%</text>
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Trends chart -->
+      <div class="sim-chart-card" style="margin-top:16px;">
+        <div class="sim-chart-header">
+          <h4>Category Trends</h4>
+          <div style="display:flex;gap:4px;">
+            <div class="sim-filter-btn active" style="padding:3px 10px;font-size:0.7rem;">Percentage</div>
+            <div class="sim-filter-btn" style="padding:3px 10px;font-size:0.7rem;">Count</div>
+          </div>
+        </div>
+        <div class="sim-chart-content">
+          <div class="sim-chart-placeholder" style="height:160px;">
+            <svg viewBox="0 0 600 140" style="width:100%;height:100%;">
+              <!-- Stacked area background -->
+              <path d="M40,20 L130,25 220,22 310,18 400,24 490,20 560,16 560,50 490,54 400,56 310,52 220,56 130,58 40,55 Z" fill="#4f46e5" opacity="0.3"/>
+              <path d="M40,55 L130,58 220,56 310,52 400,56 490,54 560,50 560,78 490,80 400,82 310,80 220,84 130,82 40,80 Z" fill="#7c3aed" opacity="0.3"/>
+              <path d="M40,80 L130,82 220,84 310,80 400,82 490,80 560,78 560,100 490,102 400,104 310,102 220,106 130,104 40,102 Z" fill="#2563eb" opacity="0.3"/>
+              <path d="M40,102 L130,104 220,106 310,102 400,104 490,102 560,100 560,128 490,128 400,128 310,128 220,128 130,128 40,128 Z" fill="#9ca3af" opacity="0.2"/>
+              <!-- Labels -->
+              <text x="300" y="138" font-size="8" fill="#9ca3af" text-anchor="middle">Time &rarr;</text>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="screenshot-caption">Classification tab showing category summary, distribution chart, and stacked area trends with percentage/count toggle.</div>
+</div>
+
+<p><strong>Key interactions:</strong></p>
+<ul>
+  <li><strong>Source toggle</strong> (top) &mdash; switch between grouping by <code>Explanation</code> or <code>Output</code> field</li>
+  <li><strong>Metric selector</strong> &mdash; choose which classification metric to analyze</li>
+  <li><strong>Trends toggle</strong> &mdash; switch the Y-axis between percentage (relative) and count (absolute)</li>
+</ul>
+
+<!-- ══════════════ ANALYSIS INSIGHTS ══════════════ -->
+<h2 id="analysis-insights">Analysis Insights Tab</h2>
+<p>For metrics with <code>metric_category: ANALYSIS</code> &mdash; structured JSON evaluations like detailed reasoning, multi-signal assessments, or chain-of-thought outputs. Instead of charts, this tab shows an expandable card feed.</p>
+
+<div class="screenshot">
+  <div class="screenshot-chrome">
+    <div class="screenshot-dots"><span></span><span></span><span></span></div>
+    <div class="screenshot-title">Analysis Insights Tab</div>
+  </div>
+  <div class="screenshot-body">
+    <div class="sim-ui">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <h4 style="margin:0;font-size:0.9rem;">Recent Analysis Records</h4>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <div class="sim-filter-btn" style="padding:4px 10px;font-size:0.75rem;">All Metrics &#x25BE;</div>
+          <span style="font-size:0.78rem;color:var(--gray-500);">2,341 records</span>
+          <span style="font-size:0.78rem;color:var(--gray-500);">Page 1 of 235</span>
+        </div>
+      </div>
+
+      <!-- Expanded card -->
+      <div style="border:1px solid var(--gray-200);border-radius:8px;margin-bottom:10px;overflow:hidden;">
+        <div style="padding:12px 16px;display:flex;align-items:center;gap:10px;cursor:pointer;background:var(--gray-50);">
+          <span style="color:var(--gray-400);">&#x25BC;</span>
+          <span class="sim-badge blue">Safety Check</span>
+          <span class="sim-code" style="font-size:0.7rem;">01KFX...a4b</span>
+          <span style="font-size:0.78rem;color:var(--gray-600);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">What medications can I take with...</span>
+          <span style="font-size:0.72rem;color:var(--gray-400);white-space:nowrap;">&#x1F4CD; production/alpha_bot</span>
+          <span style="font-size:0.72rem;color:var(--gray-400);white-space:nowrap;">&#x1F552; Feb 14, 14:23</span>
+        </div>
+        <div style="padding:16px;border-top:1px solid var(--gray-200);">
+          <div style="margin-bottom:12px;">
+            <div style="font-size:0.7rem;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:4px;">QUERY</div>
+            <div style="background:var(--gray-50);border-radius:6px;padding:10px;font-size:0.82rem;">What medications can I take with aspirin?</div>
+          </div>
+          <div style="margin-bottom:12px;">
+            <div style="font-size:0.7rem;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:4px;">EXPLANATION</div>
+            <div style="background:var(--blue-light);border:1px solid var(--blue-border);border-radius:6px;padding:10px;font-size:0.82rem;">The response correctly identified drug interaction risks and recommended consulting a healthcare professional. No harmful medical advice was provided.</div>
+          </div>
+          <div>
+            <div style="font-size:0.7rem;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:4px;">SIGNALS</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <span class="sim-badge green">&#x2713; safe_referral</span>
+              <span class="sim-badge green">&#x2713; no_direct_medical_advice</span>
+              <span class="sim-badge green">&#x2713; disclaimer_present</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Collapsed card -->
+      <div style="border:1px solid var(--gray-200);border-radius:8px;margin-bottom:10px;">
+        <div style="padding:12px 16px;display:flex;align-items:center;gap:10px;cursor:pointer;">
+          <span style="color:var(--gray-400);">&#x25B6;</span>
+          <span class="sim-badge blue">Tone Check</span>
+          <span class="sim-code" style="font-size:0.7rem;">01KFX...b8c</span>
+          <span style="font-size:0.78rem;color:var(--gray-600);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">I'm really frustrated with your service...</span>
+          <span style="font-size:0.72rem;color:var(--gray-400);white-space:nowrap;">&#x1F4CD; production/alpha_bot</span>
+          <span style="font-size:0.72rem;color:var(--gray-400);white-space:nowrap;">&#x1F552; Feb 14, 14:18</span>
+        </div>
+      </div>
+
+      <!-- Collapsed card -->
+      <div style="border:1px solid var(--gray-200);border-radius:8px;">
+        <div style="padding:12px 16px;display:flex;align-items:center;gap:10px;cursor:pointer;">
+          <span style="color:var(--gray-400);">&#x25B6;</span>
+          <span class="sim-badge blue">Safety Check</span>
+          <span class="sim-code" style="font-size:0.7rem;">01KFX...c2d</span>
+          <span style="font-size:0.78rem;color:var(--gray-600);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">How do I reset my password?</span>
+          <span style="font-size:0.72rem;color:var(--gray-400);white-space:nowrap;">&#x1F4CD; staging/beta_bot</span>
+          <span style="font-size:0.72rem;color:var(--gray-400);white-space:nowrap;">&#x1F552; Feb 14, 14:12</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="screenshot-caption">Analysis Insights showing expandable cards with query, explanation, and structured signals. Click a card header to expand/collapse.</div>
+</div>
+
+<ul>
+  <li>Cards are <strong>paginated</strong> (10 per page) with controls in the header</li>
+  <li>The first card auto-expands on load</li>
+  <li>Click any card header to expand it and see the full query, output, explanation, and signals</li>
+  <li>Signals render as colored badges: <span class="sim-badge green">&#x2713; pass</span> or <span class="sim-badge red">&#x2717; fail</span></li>
+</ul>
+
+<!-- ══════════════ ALERTS TAB ══════════════ -->
+<h2 id="alerts">Alerts Tab</h2>
+<p>AXIS automatically detects anomalies using multiple detection methods &mdash; no configuration required. When issues are found, the Alerts tab shows a badge count on the tab header.</p>
+
+<div class="screenshot">
+  <div class="screenshot-chrome">
+    <div class="screenshot-dots"><span></span><span></span><span></span></div>
+    <div class="screenshot-title">Alerts Tab</div>
+  </div>
+  <div class="screenshot-body">
+    <div class="sim-ui">
+      <!-- Summary strip -->
+      <div style="display:flex;gap:12px;align-items:center;margin-bottom:16px;padding:8px 14px;background:var(--gray-50);border-radius:8px;font-size:0.82rem;">
+        <span style="display:flex;align-items:center;gap:6px;"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--red);"></span> <strong>2</strong> errors</span>
+        <span style="display:flex;align-items:center;gap:6px;"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--yellow);"></span> <strong>1</strong> warning</span>
+      </div>
+
+      <!-- Group: Threshold -->
+      <div style="margin-bottom:16px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;cursor:pointer;">
+          <span style="color:var(--gray-400);">&#x25BC;</span>
+          <strong style="font-size:0.9rem;">Threshold Alerts</strong>
+          <span class="sim-badge gray">2</span>
+        </div>
+
+        <div class="sim-alert-card error">
+          <div class="sim-alert-title">
+            <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--red);"></span>
+            Faithfulness score dropped below threshold
+            <span class="sim-badge red">ERROR</span>
+            <span class="sim-badge gray" style="font-size:0.65rem;">threshold</span>
+          </div>
+          <div class="sim-alert-values">
+            <div class="sim-alert-val"><span class="label">Current</span><span class="val">0.42</span></div>
+            <div class="sim-alert-val"><span class="label">Target</span><span class="val">0.70</span></div>
+            <div class="sim-alert-val"><span class="label">Gap</span><span class="val" style="color:var(--red);">-0.28</span></div>
+          </div>
+        </div>
+
+        <div class="sim-alert-card error">
+          <div class="sim-alert-title">
+            <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--red);"></span>
+            P95 latency exceeds SLA
+            <span class="sim-badge red">ERROR</span>
+            <span class="sim-badge gray" style="font-size:0.65rem;">threshold</span>
+          </div>
+          <div class="sim-alert-values">
+            <div class="sim-alert-val"><span class="label">Current</span><span class="val">4.8s</span></div>
+            <div class="sim-alert-val"><span class="label">Target</span><span class="val">3.0s</span></div>
+            <div class="sim-alert-val"><span class="label">Gap</span><span class="val" style="color:var(--red);">+1.8s</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Group: Anomaly -->
+      <div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;cursor:pointer;">
+          <span style="color:var(--gray-400);">&#x25BC;</span>
+          <strong style="font-size:0.9rem;">Anomaly Detection</strong>
+          <span class="sim-badge gray">1</span>
+        </div>
+
+        <div class="sim-alert-card warning">
+          <div class="sim-alert-title">
+            <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--yellow);"></span>
+            Unusual score variance on Relevance
+            <span class="sim-badge yellow">WARNING</span>
+            <span class="sim-badge" style="background:#eff6ff;color:#2563eb;border:1px solid #bfdbfe;font-size:0.65rem;">z-score</span>
+          </div>
+          <div class="sim-alert-values">
+            <div class="sim-alert-val"><span class="label">Current</span><span class="val">0.58</span></div>
+            <div class="sim-alert-val"><span class="label">Z-Score</span><span class="val" style="color:var(--yellow);">2.4</span></div>
+            <div class="sim-alert-val"><span class="label">Threshold</span><span class="val">2.0</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="screenshot-caption">Alerts tab showing threshold violations and anomaly detection results, grouped by type with severity indicators and structured value blocks.</div>
+</div>
+
+<p><strong>Alert types and their value blocks:</strong></p>
+
+<table class="sim-table" style="margin:16px 0;">
+  <thead>
+    <tr><th>Detection Method</th><th>Shows</th><th>Description</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><span class="sim-badge gray">threshold</span></td><td>Current, Target, Gap</td><td>Value crossed a configured threshold</td></tr>
+    <tr><td><span class="sim-badge" style="background:#eff6ff;color:#2563eb;border:1px solid #bfdbfe;">z-score</span></td><td>Current, Z-Score, Threshold</td><td>Statistical outlier (default: |z| &gt; 2.0)</td></tr>
+    <tr><td><span class="sim-badge" style="background:#faf5ff;color:#7c3aed;border:1px solid #ddd6fe;">moving-average</span></td><td>Current, MA, Deviation</td><td>Deviated from rolling average</td></tr>
+    <tr><td><span class="sim-badge" style="background:#fff7ed;color:#ea580c;border:1px solid #fed7aa;">rate-of-change</span></td><td>Current, Previous, Change</td><td>Sudden metric shift between periods</td></tr>
+  </tbody>
+</table>
+
+<div class="admonition tip">
+  <div class="admonition-title">&#x1F4A1; Tip</div>
+  When there are no alerts, the tab displays a green "All systems nominal" confirmation. The badge count disappears from the tab header.
+</div>
+
+<!-- ══════════════ DETAIL MODAL ══════════════ -->
+<h2 id="detail-modal">Trace Detail Modal</h2>
+<p>Click the eye icon on any trace row to open a full detail view. The modal shows everything about a single evaluation record in one place.</p>
+
+<div class="screenshot">
+  <div class="screenshot-chrome">
+    <div class="screenshot-dots"><span></span><span></span><span></span></div>
+    <div class="screenshot-title">Trace Detail Modal</div>
+  </div>
+  <div class="screenshot-body">
+    <div class="sim-modal-overlay">
+      <div class="sim-modal">
+        <div class="sim-modal-header">
+          <div class="sim-score-display">
+            <div class="sim-score-circle red">0.34</div>
+            <div style="flex:1;">
+              <div style="font-weight:700;font-size:0.95rem;">Completeness</div>
+              <div class="sim-score-bar"><div class="sim-score-bar-fill" style="width:34%;background:var(--red);"></div></div>
+            </div>
+          </div>
+          <span style="font-size:1.2rem;color:var(--gray-400);cursor:pointer;">&times;</span>
+        </div>
+        <div class="sim-modal-body">
+          <!-- Trace ID -->
+          <div style="background:var(--gray-50);border-radius:6px;padding:8px 12px;display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+            <span style="font-size:0.8rem;display:flex;align-items:center;gap:6px;color:var(--gray-600);">&#x1F517; <span class="sim-code">01KFX-a1d2-b3c4-d5e6-f7890123</span></span>
+            <span style="font-size:0.72rem;color:var(--primary);cursor:pointer;">Copy</span>
+          </div>
+
+          <!-- Input / Output -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+            <div class="sim-modal-section">
+              <div class="sim-modal-label">&#x1F4AC; Input (Query)</div>
+              <div class="sim-modal-box">List all the integration options available for enterprise customers, including setup requirements.</div>
+            </div>
+            <div class="sim-modal-section">
+              <div class="sim-modal-label">&#x1F916; LLM Output</div>
+              <div class="sim-modal-box">We support Slack integration. You can set it up in the settings page.</div>
+            </div>
+          </div>
+
+          <!-- Explanation -->
+          <div class="sim-modal-section">
+            <div class="sim-modal-label">&#x1F4A1; Explanation</div>
+            <div class="sim-modal-box blue">The response only mentions Slack but fails to list other integrations (email, webhook, Zapier, API) or setup requirements. The answer is incomplete relative to the query scope.</div>
+          </div>
+
+          <!-- Signals -->
+          <div class="sim-modal-section">
+            <div class="sim-modal-label">&#x26A1; Signals</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <span class="sim-badge red">&#x2717; covers_all_options</span>
+              <span class="sim-badge red">&#x2717; includes_setup_details</span>
+              <span class="sim-badge green">&#x2713; factually_accurate</span>
+              <span class="sim-badge green">&#x2713; professional_tone</span>
+            </div>
+          </div>
+
+          <!-- Footer metadata -->
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:16px;padding-top:12px;border-top:1px solid var(--gray-200);">
+            <div><div class="sim-modal-label">Model</div><div style="font-size:0.82rem;">gpt-4o</div></div>
+            <div><div class="sim-modal-label">Environment</div><div style="font-size:0.82rem;">production</div></div>
+            <div><div class="sim-modal-label">Latency</div><div style="font-size:0.82rem;">2.41s</div></div>
+            <div><div class="sim-modal-label">Timestamp</div><div style="font-size:0.82rem;">Feb 14, 14:55</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="screenshot-caption">Trace detail modal showing score, input/output side by side, explanation, signal verdicts, and metadata footer.</div>
+</div>
+
+<p><strong>Modal sections (top to bottom):</strong></p>
+<ol>
+  <li><strong>Score header</strong> &mdash; large colored score circle with progress bar and metric name</li>
+  <li><strong>Trace ID banner</strong> &mdash; full ID with a copy button</li>
+  <li><strong>Input / Output</strong> &mdash; side-by-side panels showing the query and LLM response</li>
+  <li><strong>Expected Output</strong> &mdash; the ground truth, if present in your data</li>
+  <li><strong>Explanation</strong> &mdash; blue-highlighted evaluator reasoning</li>
+  <li><strong>Critique</strong> &mdash; yellow-highlighted critique notes, if present</li>
+  <li><strong>Signals</strong> &mdash; colored pass/fail badges from structured evaluation outputs</li>
+  <li><strong>Additional Metadata</strong> &mdash; any extra fields, rendered as key-value pairs or collapsible JSON</li>
+  <li><strong>Footer</strong> &mdash; model, environment, latency, timestamp at a glance</li>
+</ol>
+
+<!-- ══════════════ FILTERING ══════════════ -->
+<h2 id="filtering">Filtering & Time Ranges</h2>
+<p>Filters apply globally across all tabs. When you change a filter, the KPI cards, charts, tables, and alerts all update together.</p>
+
+<h3>Metadata Filters</h3>
+<p>The filter dropdowns at the top appear <strong>conditionally</strong> &mdash; only if your data contains the corresponding field:</p>
+<table class="sim-table" style="margin:12px 0;">
+  <thead><tr><th>Filter</th><th>Data Field</th><th>Example Values</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Environment</strong></td><td><code>environment</code></td><td>production, staging, development</td></tr>
+    <tr><td><strong>Component</strong></td><td><code>source_component</code></td><td>retriever, generator, router</td></tr>
+    <tr><td><strong>Type</strong></td><td><code>source_type</code></td><td>langfuse, custom, opentelemetry</td></tr>
+  </tbody>
+</table>
+
+<div class="admonition warning">
+  <div class="admonition-title">&#x26A0;&#xFE0F; Warning</div>
+  Filtering is by source metadata, not by model name. To compare models, add a <code>source_component</code> or <code>environment</code> column to your data that identifies the model.
+</div>
+
+<h3>Time Range Presets</h3>
+<p>The time range picker offers quick presets plus a custom date range mode:</p>
+<ul>
+  <li><code>Last hour</code> &middot; <code>Last 6 hours</code> &middot; <code>Last 24 hours</code> (default) &middot; <code>Last 7 days</code> &middot; <code>Last 30 days</code></li>
+  <li><strong>Custom range</strong> &mdash; opens two date inputs; click <code>Apply</code> to confirm</li>
+</ul>
+<p>The <strong>reset button</strong> (&#x21BB;) clears all metadata filters and resets the time range back to "Last 24 hours".</p>
+
+<!-- ══════════════ DATA FORMATS ══════════════ -->
+<h2 id="data-formats">Data Formats</h2>
+<p>AXIS auto-detects your CSV format on upload. Two formats are supported:</p>
+
+<h3>Long Format (Recommended)</h3>
+<p>Each row is a single metric observation. Best for production pipelines that emit normalized metric data.</p>
+<pre><code>dataset_id,query,actual_output,metric_name,metric_score,timestamp,environment,source_name
+01KFX...,What is...,The answer...,Faithfulness,0.85,2024-01-15T10:30:00,production,alpha_bot
+01KFX...,What is...,The answer...,Relevance,0.92,2024-01-15T10:30:00,production,alpha_bot</code></pre>
+
+<h3>Wide Format</h3>
+<p>Each row contains all metrics as columns. Columns ending in <code>_score</code> are auto-detected as metrics.</p>
+<pre><code>dataset_id,query,actual_output,faithfulness_score,relevance_score,timestamp
+01KFX...,What is...,The answer...,0.85,0.92,2024-01-15T10:30:00</code></pre>
+
+<div class="admonition tip">
+  <div class="admonition-title">&#x1F4A1; Tip</div>
+  Long format gives you richer per-metric metadata and works better with the Classification and Analysis tabs. Use wide format only for quick ad-hoc uploads.
+</div>
+
+<!-- ══════════════ DATA PIPELINE ══════════════ -->
+<h2 id="data-pipeline">Data Pipeline (DuckDB)</h2>
+<p>For production use, connect AXIS to your PostgreSQL database. The sync engine handles everything automatically:</p>
+
+<div class="step-grid">
+  <div class="step-box">
+    <div class="step-num">1</div>
+    <div class="step-content">
+      <h4>Concurrent Read</h4>
+      <p>The sync engine runs <code>dataset_query</code> and <code>results_query</code> concurrently against your Postgres database.</p>
+    </div>
+  </div>
+  <div class="step-box">
+    <div class="step-num">2</div>
+    <div class="step-content">
+      <h4>Write to DuckDB</h4>
+      <p>Data is written to internal DuckDB tables (<code>monitoring_dataset</code> and <code>monitoring_results</code>).</p>
+    </div>
+  </div>
+  <div class="step-box">
+    <div class="step-num">3</div>
+    <div class="step-content">
+      <h4>Join & Serve</h4>
+      <p>A JOIN view (<code>monitoring_data</code>) combines both tables. All <code>/api/monitoring/analytics/*</code> endpoints query DuckDB directly for fast aggregation.</p>
+    </div>
+  </div>
+  <div class="step-box">
+    <div class="step-num">4</div>
+    <div class="step-content">
+      <h4>Incremental Sync</h4>
+      <p>Periodic sync keeps DuckDB up-to-date without restarts. KPIs use a metadata cache fast path &mdash; pre-aggregated during sync and served instantly.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ NEXT STEPS ══════════════ -->
+<h2 id="next-steps">Next Steps</h2>
+
+<div class="next-steps">
+  <a class="next-step-card" href="#">
+    <h4>&#x1F6E1; Production &rarr;</h4>
+    <p>See the Executive Summary scorecard that aggregates your monitoring data into a health overview.</p>
+  </a>
+  <a class="next-step-card" href="#">
+    <h4>&#x1F4E1; Human Signals &rarr;</h4>
+    <p>Track human feedback, overrides, and escalation patterns alongside automated metrics.</p>
+  </a>
+  <a class="next-step-card" href="#">
+    <h4>&#x2699; Configuration &rarr;</h4>
+    <p>Set up database connections, thresholds, and auto-sync in the Configuration guide.</p>
+  </a>
+</div>
+
+<!-- ══════════════ FOOTER ══════════════ -->
+<div style="margin-top:60px;padding-top:24px;border-top:1px solid var(--gray-200);font-size:0.8rem;color:var(--gray-400);text-align:center;">
+  AXIS Documentation &middot; Built with MkDocs Material
+</div>
+
+</div><!-- .content -->
+</main>
+
+<!-- ══════════════════ TABLE OF CONTENTS ══════════════════ -->
+<nav class="toc">
+  <div class="toc-title">On this page</div>
+  <ul class="toc-list">
+    <li><a href="#why-monitoring">Why Use Monitoring?</a></li>
+    <li><a href="#quick-start">Quick Start</a></li>
+    <li><a href="#page-anatomy">Page Anatomy</a></li>
+    <li><a href="#score-metrics">Score Metrics Tab</a></li>
+    <li class="indent"><a href="#score-trend-chart">Score Trend Chart</a></li>
+    <li class="indent"><a href="#latency-and-breakdown">Latency & Breakdown</a></li>
+    <li class="indent"><a href="#failing-outputs">Top Failing Outputs</a></li>
+    <li class="indent"><a href="#evaluation-traces">Evaluation Traces</a></li>
+    <li><a href="#classification">Classification Tab</a></li>
+    <li><a href="#analysis-insights">Analysis Insights Tab</a></li>
+    <li><a href="#alerts">Alerts Tab</a></li>
+    <li><a href="#detail-modal">Trace Detail Modal</a></li>
+    <li><a href="#filtering">Filtering & Time Ranges</a></li>
+    <li><a href="#data-formats">Data Formats</a></li>
+    <li><a href="#data-pipeline">Data Pipeline (DuckDB)</a></li>
+    <li><a href="#next-steps">Next Steps</a></li>
+  </ul>
+</nav>
+
+</div><!-- .layout -->
+
+</body>
+</html>

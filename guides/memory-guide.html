@@ -1,0 +1,1231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Memory - AXIS User Guide</title>
+<style>
+  /* ── Reset & Base ── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --primary: #4f46e5;
+    --primary-light: #eef2ff;
+    --primary-dark: #3730a3;
+    --green: #16a34a;
+    --green-light: #f0fdf4;
+    --green-border: #bbf7d0;
+    --yellow: #ca8a04;
+    --yellow-light: #fefce8;
+    --yellow-border: #fef08a;
+    --red: #dc2626;
+    --red-light: #fef2f2;
+    --red-border: #fecaca;
+    --blue: #2563eb;
+    --blue-light: #eff6ff;
+    --blue-border: #bfdbfe;
+    --gray-50: #f9fafb;
+    --gray-100: #f3f4f6;
+    --gray-200: #e5e7eb;
+    --gray-300: #d1d5db;
+    --gray-400: #9ca3af;
+    --gray-500: #6b7280;
+    --gray-600: #4b5563;
+    --gray-700: #374151;
+    --gray-800: #1f2937;
+    --gray-900: #111827;
+    --sidebar-w: 260px;
+    --content-max: 860px;
+    --toc-w: 220px;
+  }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    color: var(--gray-800);
+    line-height: 1.7;
+    background: #fff;
+  }
+  a { color: var(--primary); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code {
+    font-family: 'SF Mono', 'Fira Code', 'Fira Mono', Menlo, monospace;
+    font-size: 0.875em;
+    background: var(--gray-100);
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: var(--primary-dark);
+  }
+  pre { background: var(--gray-900); color: #e5e7eb; padding: 16px 20px; border-radius: 8px; overflow-x: auto; font-size: 0.85rem; line-height: 1.6; }
+  pre code { background: none; padding: 0; color: inherit; }
+  kbd {
+    display: inline-block; padding: 2px 6px; font-size: 0.8em;
+    border: 1px solid var(--gray-300); border-radius: 4px;
+    background: var(--gray-50); box-shadow: 0 1px 0 var(--gray-300);
+    font-family: inherit;
+  }
+
+  /* ── Top Nav ── */
+  .topnav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    height: 56px; background: var(--gray-900); color: #fff;
+    display: flex; align-items: center; padding: 0 24px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.3);
+  }
+  .topnav-logo { font-weight: 700; font-size: 1.1rem; letter-spacing: -0.02em; }
+  .topnav-logo span { color: var(--primary); }
+  .topnav-links { margin-left: auto; display: flex; gap: 24px; font-size: 0.875rem; }
+  .topnav-links a { color: var(--gray-300); }
+  .topnav-links a:hover { color: #fff; text-decoration: none; }
+  .topnav-links a.active { color: #fff; font-weight: 600; }
+
+  /* ── Layout ── */
+  .layout { display: flex; margin-top: 56px; min-height: calc(100vh - 56px); }
+
+  /* ── Sidebar ── */
+  .sidebar {
+    position: fixed; top: 56px; left: 0; bottom: 0;
+    width: var(--sidebar-w); background: var(--gray-50);
+    border-right: 1px solid var(--gray-200);
+    overflow-y: auto; padding: 20px 0; font-size: 0.85rem;
+  }
+  .sidebar-section { padding: 0 16px; margin-bottom: 20px; }
+  .sidebar-section-title {
+    font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.08em; color: var(--gray-400); margin-bottom: 8px;
+    padding-left: 8px;
+  }
+  .sidebar-link {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 12px; border-radius: 6px; color: var(--gray-600);
+    transition: all 0.15s;
+  }
+  .sidebar-link:hover { background: var(--gray-200); color: var(--gray-800); text-decoration: none; }
+  .sidebar-link.active { background: var(--primary-light); color: var(--primary); font-weight: 600; }
+  .sidebar-link svg { width: 16px; height: 16px; flex-shrink: 0; }
+
+  /* ── Main Content ── */
+  .main {
+    margin-left: var(--sidebar-w); flex: 1;
+    padding: 40px 40px 80px;
+    margin-right: calc(var(--toc-w) + 48px);
+  }
+  .content { max-width: var(--content-max); width: 100%; }
+
+  /* ── TOC (right rail) ── */
+  .toc {
+    position: fixed; top: 96px; right: 24px;
+    width: var(--toc-w); font-size: 0.78rem;
+  }
+  .toc-title { font-weight: 700; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--gray-400); margin-bottom: 10px; }
+  .toc-list { list-style: none; border-left: 2px solid var(--gray-200); }
+  .toc-list li { padding-left: 14px; margin-bottom: 6px; }
+  .toc-list a { color: var(--gray-500); }
+  .toc-list a:hover { color: var(--primary); text-decoration: none; }
+  .toc-list .indent { padding-left: 28px; }
+
+  /* ── Typography ── */
+  .content h1 { font-size: 2rem; font-weight: 800; letter-spacing: -0.03em; margin-bottom: 8px; color: var(--gray-900); }
+  .content h2 { font-size: 1.45rem; font-weight: 700; margin-top: 48px; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid var(--gray-200); color: var(--gray-900); }
+  .content h3 { font-size: 1.15rem; font-weight: 600; margin-top: 32px; margin-bottom: 12px; color: var(--gray-800); }
+  .content h4 { font-size: 1rem; font-weight: 600; margin-top: 24px; margin-bottom: 8px; color: var(--gray-700); }
+  .content p { margin-bottom: 16px; color: var(--gray-700); }
+  .content > ul, .content > ol { margin-bottom: 16px; padding-left: 24px; color: var(--gray-700); }
+  .content li { margin-bottom: 6px; }
+  .subtitle { font-size: 1.1rem; color: var(--gray-500); margin-bottom: 32px; }
+
+  /* ── Breadcrumb ── */
+  .breadcrumb { font-size: 0.8rem; color: var(--gray-400); margin-bottom: 12px; }
+  .breadcrumb a { color: var(--gray-400); }
+  .breadcrumb a:hover { color: var(--primary); }
+
+  /* ── Admonitions ── */
+  .admonition {
+    border-radius: 8px; padding: 16px 20px; margin: 20px 0;
+    border-left: 4px solid; font-size: 0.9rem;
+  }
+  .admonition-title {
+    font-weight: 700; font-size: 0.8rem; text-transform: uppercase;
+    letter-spacing: 0.04em; margin-bottom: 6px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .admonition.tip { background: var(--green-light); border-color: var(--green); }
+  .admonition.tip .admonition-title { color: var(--green); }
+  .admonition.info { background: var(--blue-light); border-color: var(--blue); }
+  .admonition.info .admonition-title { color: var(--blue); }
+  .admonition.warning { background: var(--yellow-light); border-color: var(--yellow); }
+  .admonition.warning .admonition-title { color: var(--yellow); }
+  .admonition.note { background: var(--gray-50); border-color: var(--gray-400); }
+  .admonition.note .admonition-title { color: var(--gray-600); }
+
+  /* ── Screenshot Frames ── */
+  .screenshot {
+    margin: 24px 0; border-radius: 10px; overflow: hidden;
+    border: 1px solid var(--gray-200); box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+  }
+  .screenshot-chrome {
+    background: var(--gray-100); padding: 8px 14px; display: flex;
+    align-items: center; gap: 8px; border-bottom: 1px solid var(--gray-200);
+  }
+  .screenshot-dots { display: flex; gap: 6px; }
+  .screenshot-dots span { width: 10px; height: 10px; border-radius: 50%; }
+  .screenshot-dots span:nth-child(1) { background: #f87171; }
+  .screenshot-dots span:nth-child(2) { background: #fbbf24; }
+  .screenshot-dots span:nth-child(3) { background: #34d399; }
+  .screenshot-title { font-size: 0.75rem; color: var(--gray-500); margin-left: 8px; }
+  .screenshot-body { background: #fff; position: relative; }
+  .screenshot-caption {
+    text-align: center; font-size: 0.8rem; color: var(--gray-500);
+    padding: 10px; font-style: italic; background: var(--gray-50);
+    border-top: 1px solid var(--gray-200);
+  }
+
+  /* ── Simulated UI ── */
+  .sim-ui { padding: 20px; font-family: inherit; }
+  .sim-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--gray-200); }
+  .sim-header-icon { width: 24px; height: 24px; color: var(--primary); }
+  .sim-header h3 { margin: 0; font-size: 1.1rem; }
+  .sim-header p { margin: 0; font-size: 0.8rem; color: var(--gray-500); }
+
+  .sim-filters { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+  .sim-filter-btn {
+    padding: 6px 14px; border-radius: 6px; font-size: 0.8rem;
+    border: 1px solid var(--gray-200); background: #fff; color: var(--gray-600);
+    display: flex; align-items: center; gap: 6px;
+  }
+  .sim-filter-btn.active { border-color: var(--primary); background: var(--primary-light); color: var(--primary); font-weight: 600; }
+  .sim-filter-btn svg { width: 14px; height: 14px; }
+
+  .sim-kpi-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 20px; }
+  .sim-kpi {
+    border: 1px solid var(--gray-200); border-radius: 8px; padding: 14px 16px;
+    background: #fff; display: flex; align-items: center; gap: 12px;
+  }
+  .sim-kpi-icon {
+    width: 36px; height: 36px; border-radius: 8px; display: flex;
+    align-items: center; justify-content: center; flex-shrink: 0;
+    background: var(--primary-light);
+  }
+  .sim-kpi-icon svg { width: 18px; height: 18px; color: var(--primary); }
+  .sim-kpi-label { font-size: 0.7rem; color: var(--gray-500); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 2px; }
+  .sim-kpi-value { font-size: 1.3rem; font-weight: 700; color: var(--gray-900); }
+
+  .sim-tabs { display: flex; border-bottom: 2px solid var(--gray-200); margin-bottom: 16px; }
+  .sim-tab {
+    padding: 8px 16px; font-size: 0.82rem; color: var(--gray-500);
+    border-bottom: 2px solid transparent; margin-bottom: -2px; cursor: pointer;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .sim-tab.active { color: var(--primary); border-color: var(--primary); font-weight: 600; }
+  .sim-tab .badge {
+    background: var(--red); color: #fff; font-size: 0.65rem;
+    padding: 1px 6px; border-radius: 10px; font-weight: 700;
+  }
+
+  .sim-chart-placeholder {
+    height: 200px; background: var(--gray-50); border: 1px solid var(--gray-200);
+    border-radius: 8px; display: flex; align-items: center; justify-content: center;
+    position: relative; overflow: hidden;
+  }
+  .sim-chart-placeholder.tall { height: 280px; }
+
+  .sim-chart-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 14px; border-bottom: 1px solid var(--gray-200);
+  }
+  .sim-chart-header h4 { font-size: 0.85rem; margin: 0; color: var(--gray-700); }
+  .sim-chart-card { border: 1px solid var(--gray-200); border-radius: 8px; overflow: hidden; margin-bottom: 16px; }
+  .sim-chart-content { padding: 16px; }
+
+  .sim-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+  /* Table simulation */
+  .sim-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+  .sim-table th { background: var(--gray-50); text-align: left; padding: 8px 12px; font-weight: 600; color: var(--gray-600); border-bottom: 1px solid var(--gray-200); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; }
+  .sim-table td { padding: 8px 12px; border-bottom: 1px solid var(--gray-100); color: var(--gray-700); }
+  .sim-table tr:hover td { background: var(--gray-50); }
+  .sim-badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 0.7rem; font-weight: 600; }
+  .sim-badge.green { background: var(--green-light); color: var(--green); border: 1px solid var(--green-border); }
+  .sim-badge.yellow { background: var(--yellow-light); color: var(--yellow); border: 1px solid var(--yellow-border); }
+  .sim-badge.red { background: var(--red-light); color: var(--red); border: 1px solid var(--red-border); }
+  .sim-badge.blue { background: var(--blue-light); color: var(--blue); border: 1px solid var(--blue-border); }
+  .sim-badge.gray { background: var(--gray-100); color: var(--gray-600); border: 1px solid var(--gray-200); }
+  .sim-code { font-family: 'SF Mono', monospace; font-size: 0.75rem; color: var(--primary); }
+
+  /* ── Annotation Overlay ── */
+  .annotation-overlay { position: absolute; pointer-events: none; }
+  .callout-num {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 24px; height: 24px; border-radius: 50%;
+    background: var(--primary); color: #fff; font-size: 0.7rem; font-weight: 700;
+    box-shadow: 0 2px 6px rgba(79,70,229,0.4);
+  }
+  .callout-legend { margin: 16px 0; font-size: 0.85rem; }
+  .callout-legend-item { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 8px; }
+  .callout-legend-item .callout-num { flex-shrink: 0; }
+
+  /* ── Step Boxes ── */
+  .step-grid { display: grid; grid-template-columns: 1fr; gap: 16px; margin: 20px 0; }
+  .step-box {
+    display: flex; gap: 16px; padding: 16px 20px;
+    border: 1px solid var(--gray-200); border-radius: 10px;
+    background: #fff; transition: box-shadow 0.15s;
+  }
+  .step-box:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+  .step-num {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: var(--primary); color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 0.85rem; flex-shrink: 0;
+  }
+  .step-content h4 { margin: 0 0 4px; font-size: 0.95rem; }
+  .step-content p { margin: 0; font-size: 0.88rem; color: var(--gray-600); }
+
+  /* ── Feature Cards ── */
+  .feature-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 20px 0; }
+  .feature-card {
+    border: 1px solid var(--gray-200); border-radius: 8px; padding: 16px;
+    transition: box-shadow 0.15s;
+  }
+  .feature-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+  .feature-card h4 { margin: 0 0 6px; font-size: 0.9rem; display: flex; align-items: center; gap: 8px; }
+  .feature-card p { margin: 0; font-size: 0.82rem; color: var(--gray-500); }
+  .feature-icon { font-size: 1.1rem; }
+
+  /* ── Hard Stop Card Sim ── */
+  .sim-hardstop-card {
+    border: 1px solid var(--gray-200); border-radius: 8px; padding: 14px 18px;
+    border-left: 4px solid var(--red); background: #fff;
+  }
+  .sim-hardstop-title { font-weight: 600; font-size: 0.88rem; display: flex; align-items: center; gap: 8px; }
+  .sim-hardstop-meta { font-size: 0.75rem; color: var(--gray-500); margin-top: 4px; }
+  .sim-hardstop-desc { font-size: 0.82rem; color: var(--gray-700); margin-top: 8px; }
+  .sim-hardstop-tags { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+
+  /* ── Quality Column Sim ── */
+  .sim-quality-col {
+    border: 1px solid var(--gray-200); border-radius: 8px; padding: 14px; background: #fff;
+  }
+  .sim-quality-header { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; font-size: 0.88rem; font-weight: 600; }
+  .sim-quality-item {
+    border: 1px solid var(--gray-200); border-radius: 8px; padding: 10px 12px;
+    background: var(--gray-50); margin-bottom: 8px; font-size: 0.82rem;
+  }
+
+  /* ── Batch Card Sim ── */
+  .sim-batch-card {
+    border: 1px solid var(--gray-200); border-radius: 8px; padding: 16px; background: #fff; margin-bottom: 12px;
+  }
+  .sim-progress-bar { height: 10px; border-radius: 5px; background: var(--gray-200); overflow: hidden; display: flex; margin-top: 8px; }
+  .sim-progress-fill { height: 100%; }
+
+  /* ── Graph Sim ── */
+  .sim-graph-area {
+    height: 300px; background: var(--gray-50); border: 1px solid var(--gray-200);
+    border-radius: 8px; display: flex; align-items: center; justify-content: center;
+    position: relative; overflow: hidden;
+  }
+  .sim-graph-legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 0.75rem; color: var(--gray-500); }
+  .sim-graph-legend-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 4px; vertical-align: middle; }
+
+  /* ── Separator ── */
+  .section-sep { display: flex; align-items: center; gap: 12px; margin: 32px 0 24px; color: var(--gray-400); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; }
+  .section-sep::before, .section-sep::after { content: ''; flex: 1; height: 1px; background: var(--gray-200); }
+
+  /* ── Next Steps ── */
+  .next-steps { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin: 24px 0; }
+  .next-step-card {
+    border: 1px solid var(--gray-200); border-radius: 8px; padding: 16px;
+    transition: all 0.15s;
+  }
+  .next-step-card:hover { border-color: var(--primary); box-shadow: 0 2px 8px rgba(79,70,229,0.1); text-decoration: none; }
+  .next-step-card h4 { margin: 0 0 4px; font-size: 0.9rem; color: var(--gray-800); }
+  .next-step-card p { margin: 0; font-size: 0.78rem; color: var(--gray-500); }
+
+  /* ── Responsive ── */
+  @media (max-width: 1200px) {
+    .toc { display: none; }
+    .main { margin-right: 0; }
+  }
+  @media (max-width: 900px) {
+    .sidebar { display: none; }
+    .main { margin-left: 0; }
+    .sim-kpi-row { grid-template-columns: repeat(2,1fr); }
+    .sim-2col { grid-template-columns: 1fr; }
+    .feature-grid { grid-template-columns: 1fr; }
+    .next-steps { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════ TOP NAV ══════════════════ -->
+<nav class="topnav">
+  <div class="topnav-logo"><img src="../assets/axis_transparent.png" alt="AXIS"
+    style="height:20px;vertical-align:middle;margin-right:2px;"> Docs</div>
+    <div class="topnav-links">
+    <a href="../getting-started/">Getting Started</a>
+    <a href="../user-guide/" class="active">User Guide</a>
+    <a href="../configuration/">Configuration</a>
+    <a href="../architecture/">Architecture</a>
+    <a href="../api-reference/">API Reference</a>
+  </div>
+</nav>
+
+<!-- ══════════════════ SIDEBAR ══════════════════ -->
+<div class="layout">
+<aside class="sidebar">
+  <div class="sidebar-section">
+    <div class="sidebar-section-title">User Guide</div>
+    <a class="sidebar-link" href="../user-guide/">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      Overview
+    </a>
+    <a class="sidebar-link" href="evaluate-guide.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      Evaluate
+    </a>
+    <a class="sidebar-link" href="annotation-guide.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+      Annotation Studio
+    </a>
+    <a class="sidebar-link" href="monitoring-guide.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      Monitoring
+    </a>
+    <a class="sidebar-link" href="production-guide.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      Production
+    </a>
+    <a class="sidebar-link" href="calibration-guide.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+      CaliberHQ
+    </a>
+    <a class="sidebar-link" href="human-signals-guide.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      Human Signals
+    </a>
+    <a class="sidebar-link active" href="memory-guide.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+      Memory
+    </a>
+    <a class="sidebar-link" href="agent-replay-guide.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+      Agent Replay
+    </a>
+    <a class="sidebar-link" href="simulation-guide.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+      Simulation
+    </a>
+    <a class="sidebar-link" href="learn-guide.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+      Learn
+    </a>
+    <a class="sidebar-link" href="settings-guide.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+      Settings
+    </a>
+  </div>
+</aside>
+
+<!-- ══════════════════ MAIN CONTENT ══════════════════ -->
+<main class="main">
+<div class="content">
+
+<!-- Breadcrumb -->
+<div class="breadcrumb">
+  <a href="#">Docs</a> / <a href="#">User Guide</a> / <strong>Memory</strong>
+</div>
+
+<h1>Memory</h1>
+<p class="subtitle">Extracted decision rules, logic, and agent learning from source documents &mdash; organized, searchable, and visualized as a knowledge graph.</p>
+
+<!-- ── Why ── -->
+<h2 id="why-memory">Why Use Memory?</h2>
+<p>AI agents encode learned behavior in rules, thresholds, and decision paths. The Memory module makes this implicit knowledge <strong>explicit and auditable</strong>, letting you inspect exactly how your agents decide.</p>
+
+<div class="feature-grid">
+  <div class="feature-card">
+    <h4><span class="feature-icon">&#x1F4D6;</span> Rule Library</h4>
+    <p>Browse every extracted rule with filters by action, product, risk category, and threshold type. Full-text search and inline editing.</p>
+  </div>
+  <div class="feature-card">
+    <h4><span class="feature-icon">&#x1F6D1;</span> Hard Stop Detection</h4>
+    <p>Automatically surface unmitigated decline rules &mdash; the "absolute no" decisions with no available workarounds.</p>
+  </div>
+  <div class="feature-card">
+    <h4><span class="feature-icon">&#x2696;</span> Decision Quality</h4>
+    <p>Categorize rules as aligned, divergent, or partial. Spot soft thresholds and conflicting logic across risk factors.</p>
+  </div>
+  <div class="feature-card">
+    <h4><span class="feature-icon">&#x1F578;</span> Knowledge Graph</h4>
+    <p>Visualize how risk factors, rules, outcomes, mitigants, and sources connect in an interactive D3 force-directed graph.</p>
+  </div>
+</div>
+
+<!-- ── Quick Start ── -->
+<h2 id="quick-start">Quick Start</h2>
+<p>Get your rule extractions into AXIS in three steps:</p>
+
+<div class="step-grid">
+  <div class="step-box">
+    <div class="step-num">1</div>
+    <div class="step-content">
+      <h4>Navigate to Memory</h4>
+      <p>Click <strong>Memory</strong> in the left sidebar. If no data is loaded, you will see the upload screen with expected column hints.</p>
+    </div>
+  </div>
+  <div class="step-box">
+    <div class="step-num">2</div>
+    <div class="step-content">
+      <h4>Upload Rule Extractions CSV</h4>
+      <p>Drag a CSV into the upload zone. By default, required columns are: <code>id</code>, <code>rule_name</code>, <code>action</code>, <code>batch_id</code>, <code>ingestion_status</code>. Additional columns like <code>risk_category</code>, <code>risk_factor</code>, <code>product_type</code>, <code>mitigants</code>, and <code>threshold_type</code> enrich the dashboard but are optional. Column names are configurable via <a href="../configuration/yaml-configs.html#memory-config-memoryyaml"><code>memory.yaml</code></a>.</p>
+    </div>
+  </div>
+  <div class="step-box">
+    <div class="step-num">3</div>
+    <div class="step-content">
+      <h4>Explore the Dashboard</h4>
+      <p>Once data loads, the summary KPI strip, charts, and five tabs populate automatically. Use filters to slice by action, product, or risk category.</p>
+    </div>
+  </div>
+</div>
+
+<div class="admonition tip">
+  <div class="admonition-title">&#x1F4A1; Tip</div>
+  The Knowledge Graph tab works independently of CSV data. It connects to FalkorDB to display graph-structured rule relationships, even before you upload any CSV.
+</div>
+
+<!-- ── Page Anatomy ── -->
+<h2 id="page-anatomy">Page Anatomy</h2>
+<p>Here is how the Memory dashboard is organized, with every major section labeled:</p>
+
+<!-- Annotated Screenshot Simulation -->
+<div class="screenshot">
+  <div class="screenshot-chrome">
+    <div class="screenshot-dots"><span></span><span></span><span></span></div>
+    <div class="screenshot-title">localhost:3500/memory</div>
+  </div>
+  <div class="screenshot-body">
+    <div class="sim-ui" style="position:relative;">
+      <!-- Header -->
+      <div class="sim-header" style="position:relative;">
+        <svg class="sim-header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a2 2 0 0 1-2 2H10a2 2 0 0 1-2-2v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7z"/><line x1="10" y1="22" x2="14" y2="22"/></svg>
+        <div>
+          <h3 style="font-size:1rem;">Memory</h3>
+          <p>Extracted decision rules, logic, and agent learning</p>
+        </div>
+        <div style="margin-left:auto;">
+          <div class="sim-filter-btn" style="font-size:0.75rem;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px;"><path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+            Start Over
+          </div>
+        </div>
+        <!-- Callout 1 -->
+        <div style="position:absolute;top:-4px;right:-4px;"><span class="callout-num">1</span></div>
+      </div>
+
+      <!-- KPIs -->
+      <div class="sim-kpi-row" style="position:relative;">
+        <div class="sim-kpi">
+          <div class="sim-kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></div>
+          <div><div class="sim-kpi-value">73</div><div class="sim-kpi-label">Rules</div></div>
+        </div>
+        <div class="sim-kpi">
+          <div class="sim-kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a2 2 0 0 1-2 2H10a2 2 0 0 1-2-2v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7z"/></svg></div>
+          <div><div class="sim-kpi-value">18</div><div class="sim-kpi-label">Risk Factors</div></div>
+        </div>
+        <div class="sim-kpi">
+          <div class="sim-kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+          <div><div class="sim-kpi-value">34</div><div class="sim-kpi-label">Mitigants</div></div>
+        </div>
+        <div class="sim-kpi">
+          <div class="sim-kpi-icon" style="background:var(--red-light);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--red);"><polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></div>
+          <div><div class="sim-kpi-value">12</div><div class="sim-kpi-label">Hard Stops</div></div>
+        </div>
+        <!-- Callout 2 -->
+        <div style="position:absolute;top:-8px;left:50%;transform:translateX(-50%);"><span class="callout-num">2</span></div>
+      </div>
+
+      <!-- Charts row -->
+      <div class="sim-2col" style="position:relative;margin-bottom:16px;">
+        <div class="sim-chart-card">
+          <div class="sim-chart-header"><h4>Rules by Action</h4></div>
+          <div class="sim-chart-content">
+            <div class="sim-chart-placeholder" style="height:140px;">
+              <svg viewBox="0 0 300 120" style="width:100%;height:100%;">
+                <text x="5" y="22" font-size="9" fill="#6b7280">Approve</text>
+                <rect x="60" y="12" width="160" height="14" rx="2" fill="#8B9F4F" opacity="0.8"/>
+                <text x="225" y="23" font-size="9" fill="#2C3E50" font-weight="600">28</text>
+                <text x="5" y="44" font-size="9" fill="#6b7280">Decline</text>
+                <rect x="60" y="34" width="105" height="14" rx="2" fill="#A4B86C" opacity="0.8"/>
+                <text x="170" y="45" font-size="9" fill="#2C3E50" font-weight="600">18</text>
+                <text x="5" y="66" font-size="9" fill="#6b7280">Verify</text>
+                <rect x="60" y="56" width="80" height="14" rx="2" fill="#6B7A3A" opacity="0.8"/>
+                <text x="145" y="67" font-size="9" fill="#2C3E50" font-weight="600">14</text>
+                <text x="5" y="88" font-size="9" fill="#6b7280">Refer</text>
+                <rect x="60" y="78" width="50" height="14" rx="2" fill="#D4AF37" opacity="0.8"/>
+                <text x="115" y="89" font-size="9" fill="#2C3E50" font-weight="600">8</text>
+                <text x="5" y="110" font-size="9" fill="#6b7280">Exclude</text>
+                <rect x="60" y="100" width="30" height="14" rx="2" fill="#B8C5D3" opacity="0.8"/>
+                <text x="95" y="111" font-size="9" fill="#2C3E50" font-weight="600">5</text>
+              </svg>
+            </div>
+          </div>
+        </div>
+        <div class="sim-chart-card">
+          <div class="sim-chart-header"><h4>Rules by Product</h4></div>
+          <div class="sim-chart-content">
+            <div class="sim-chart-placeholder" style="height:140px;">
+              <svg viewBox="0 0 300 120" style="width:100%;height:100%;">
+                <!-- Donut -->
+                <circle cx="150" cy="60" r="42" fill="none" stroke="#8B9F4F" stroke-width="18" stroke-dasharray="92 172" stroke-dashoffset="0"/>
+                <circle cx="150" cy="60" r="42" fill="none" stroke="#A4B86C" stroke-width="18" stroke-dasharray="66 198" stroke-dashoffset="-92"/>
+                <circle cx="150" cy="60" r="42" fill="none" stroke="#D4AF37" stroke-width="18" stroke-dasharray="53 211" stroke-dashoffset="-158"/>
+                <circle cx="150" cy="60" r="42" fill="none" stroke="#B8C5D3" stroke-width="18" stroke-dasharray="53 211" stroke-dashoffset="-211"/>
+                <text x="150" y="57" font-size="14" fill="#2C3E50" text-anchor="middle" font-weight="700">73</text>
+                <text x="150" y="69" font-size="8" fill="#6b7280" text-anchor="middle">rules</text>
+                <!-- Legend -->
+                <circle cx="30" cy="108" r="4" fill="#8B9F4F"/><text x="38" y="111" font-size="8" fill="#6b7280">Commercial 35%</text>
+                <circle cx="130" cy="108" r="4" fill="#A4B86C"/><text x="138" y="111" font-size="8" fill="#6b7280">Personal 25%</text>
+                <circle cx="220" cy="108" r="4" fill="#D4AF37"/><text x="228" y="111" font-size="8" fill="#6b7280">Auto 20%</text>
+              </svg>
+            </div>
+          </div>
+        </div>
+        <!-- Callout 3 -->
+        <div style="position:absolute;top:-8px;left:50%;transform:translateX(-50%);"><span class="callout-num">3</span></div>
+      </div>
+
+      <!-- Tabs -->
+      <div class="sim-tabs" style="position:relative;">
+        <div class="sim-tab active">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          Rules
+        </div>
+        <div class="sim-tab">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+          Decision Quality
+        </div>
+        <div class="sim-tab">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+          Hard Stops
+        </div>
+        <div class="sim-tab">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><circle cx="12" cy="5" r="3"/><line x1="12" y1="8" x2="12" y2="21"/><path d="M5 12h14"/></svg>
+          Knowledge Graph
+        </div>
+        <div class="sim-tab">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a4 4 0 0 0-8 0v2"/></svg>
+          Batches
+        </div>
+        <!-- Callout 4 -->
+        <div style="position:absolute;top:-8px;left:100px;"><span class="callout-num">4</span></div>
+      </div>
+
+      <!-- Table preview -->
+      <div style="position:relative;">
+        <table class="sim-table">
+          <thead>
+            <tr><th>Rule Name</th><th>Action</th><th>Risk Factor</th><th>Product</th><th>Status</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="font-weight:600;">Max Loan-to-Value Check</td>
+              <td><span class="sim-badge red">decline</span></td>
+              <td>LTV Ratio</td>
+              <td>Commercial</td>
+              <td><span style="display:flex;align-items:center;gap:4px;"><span style="width:6px;height:6px;border-radius:50%;background:var(--green);"></span> ingested</span></td>
+            </tr>
+            <tr>
+              <td style="font-weight:600;">Credit Score Floor</td>
+              <td><span class="sim-badge yellow">verify</span></td>
+              <td>Credit Score</td>
+              <td>Personal</td>
+              <td><span style="display:flex;align-items:center;gap:4px;"><span style="width:6px;height:6px;border-radius:50%;background:var(--green);"></span> ingested</span></td>
+            </tr>
+            <tr>
+              <td style="font-weight:600;">Response Time SLA</td>
+              <td><span class="sim-badge green">approve</span></td>
+              <td>SLA Compliance</td>
+              <td>Enterprise</td>
+              <td><span style="display:flex;align-items:center;gap:4px;"><span style="width:6px;height:6px;border-radius:50%;background:var(--green);"></span> ingested</span></td>
+            </tr>
+          </tbody>
+        </table>
+        <!-- Callout 5 -->
+        <div style="position:absolute;top:-8px;right:20px;"><span class="callout-num">5</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="screenshot-caption">The Memory dashboard showing the full page anatomy &mdash; header, KPI strip, summary charts, tab bar, and rules table.</div>
+</div>
+
+<!-- Callout Legend -->
+<div class="callout-legend">
+  <div class="callout-legend-item">
+    <span class="callout-num">1</span>
+    <div><strong>Page Header</strong> &mdash; Brain icon, title, subtitle, and "Start Over" button to clear data and return to the upload screen.</div>
+  </div>
+  <div class="callout-legend-item">
+    <span class="callout-num">2</span>
+    <div><strong>Summary KPI Strip</strong> &mdash; Four compact cards showing total Rules, Risk Factors, Mitigants, and Hard Stops at a glance.</div>
+  </div>
+  <div class="callout-legend-item">
+    <span class="callout-num">3</span>
+    <div><strong>Summary Charts</strong> &mdash; "Rules by Action" horizontal bar chart and "Rules by Product" donut chart, side by side. A conflict banner appears below if contradictory actions are detected.</div>
+  </div>
+  <div class="callout-legend-item">
+    <span class="callout-num">4</span>
+    <div><strong>Tab Bar</strong> &mdash; Switch between Rules, Decision Quality, Hard Stops, Knowledge Graph, and Batches. Each tab has its own icon.</div>
+  </div>
+  <div class="callout-legend-item">
+    <span class="callout-num">5</span>
+    <div><strong>Active Tab Content</strong> &mdash; The main content area changes based on the selected tab. The Rules tab (default) shows a filterable, sortable, paginated table.</div>
+  </div>
+</div>
+
+<!-- ══════════════ SUMMARY STRIP ══════════════ -->
+<h2 id="summary-strip">Summary Strip</h2>
+<p>The summary strip appears at the top of the dashboard whenever CSV data is loaded. It includes two sections:</p>
+
+<h3>KPI Cards</h3>
+<p>Four compact inline cards using the standard AXIS KPI pattern &mdash; icon on the left, bold value and label on the right:</p>
+<ul>
+  <li><strong>Rules</strong> &mdash; total count of extracted rules</li>
+  <li><strong>Risk Factors</strong> &mdash; unique risk factors across all rules</li>
+  <li><strong>Mitigants</strong> &mdash; total mitigants available across the rule set</li>
+  <li><strong>Hard Stops</strong> &mdash; unmitigated decline rules (red-tinted icon)</li>
+</ul>
+
+<h3>Charts</h3>
+<p>Two side-by-side charts provide a distribution overview:</p>
+<ul>
+  <li><strong>Rules by Action</strong> &mdash; horizontal bar chart grouped by action type (approve, decline, verify, refer, exclude). Color-coded using the AXIS chart palette.</li>
+  <li><strong>Rules by Product</strong> &mdash; donut chart breaking down rules by product type. The center annotation shows the total count.</li>
+</ul>
+
+<div class="admonition info">
+  <div class="admonition-title">&#x2139;&#xFE0F; Info</div>
+  If the data contains risk factors with contradictory actions (e.g., the same risk factor triggers both "decline" and "approve with conditions"), an amber <strong>conflict banner</strong> appears below the charts showing the conflict count.
+</div>
+
+<!-- ══════════════ RULES TAB ══════════════ -->
+<h2 id="rules-tab">Rules Tab</h2>
+<p>The default tab. Displays every extracted rule in a sortable table with multi-facet filtering and inline CRUD operations.</p>
+
+<h3 id="rules-filters">Filters</h3>
+<p>The filter bar sits above the table with dropdown selects for each dimension:</p>
+<table class="sim-table" style="margin:12px 0;">
+  <thead><tr><th>Filter</th><th>Role</th><th>Default Column</th><th>Example Values</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Action</strong></td><td><code>action</code></td><td><code>action</code></td><td>approve, decline, verify, refer, exclude</td></tr>
+    <tr><td><strong>Product</strong></td><td><code>product</code></td><td><code>product_type</code></td><td>commercial, personal, auto, all</td></tr>
+    <tr><td><strong>Risk Category</strong></td><td><code>category</code></td><td><code>risk_category</code></td><td>credit, operational, market, compliance</td></tr>
+    <tr><td><strong>Threshold</strong></td><td><code>threshold_type</code></td><td><code>threshold_type</code></td><td>hard, soft</td></tr>
+    <tr><td><strong>Status</strong></td><td><code>status</code></td><td><code>ingestion_status</code></td><td>ingested, pending, failed</td></tr>
+  </tbody>
+</table>
+<p>Filters are configurable via <code>filter_roles</code> in <a href="../configuration/yaml-configs.html#memory-config-memoryyaml"><code>memory.yaml</code></a>. The order in the YAML list determines the order in the UI. A <strong>Clear</strong> button appears when any filter is active. Changing a filter resets pagination to page 1.</p>
+
+<h3 id="rules-table">Table Columns</h3>
+<p>Click any column header to sort ascending/descending:</p>
+<ul>
+  <li><strong>Rule Name</strong> &mdash; the primary identifier. Click the row chevron to expand and see the full decision path diagram.</li>
+  <li><strong>Action</strong> &mdash; color-coded badge (approve=green, decline=red, verify=yellow, etc.)</li>
+  <li><strong>Risk Factor</strong> / <strong>Risk Category</strong> &mdash; what the rule evaluates</li>
+  <li><strong>Product Type</strong> &mdash; which product line the rule applies to</li>
+  <li><strong>Mitigants</strong> &mdash; comma-separated list of available mitigating actions</li>
+  <li><strong>Status</strong> &mdash; ingestion status dot (green=ingested, gray=pending, red=failed)</li>
+  <li><strong>Actions</strong> &mdash; edit (pencil) and delete (trash) icons for inline CRUD</li>
+</ul>
+
+<h3 id="rules-pagination">Pagination</h3>
+<p>The table shows <strong>15 rules per page</strong>. Pagination controls appear at the bottom with pill-style page buttons. At most 5 page buttons are visible, centered around the current page. A "Showing X-Y of Z rules" label sits on the left.</p>
+
+<div class="admonition tip">
+  <div class="admonition-title">&#x1F4A1; Tip</div>
+  Expand any rule row to see the <strong>Decision Path Diagram</strong> &mdash; a visual flow showing the rule's condition chain from risk factor through threshold to action and mitigants.
+</div>
+
+<!-- ══════════════ HARD STOPS TAB ══════════════ -->
+<h2 id="hard-stops">Hard Stops Tab</h2>
+<p>Hard stops are rules matching the configured <code>hard_stops.action_value</code> (default: <code>decline</code>) with <strong>zero mitigants</strong> &mdash; absolute refusals with no workaround. This tab isolates them for focused review. Both the action value and mitigant requirement are configurable in <code>memory.yaml</code>.</p>
+
+<div class="screenshot">
+  <div class="screenshot-chrome">
+    <div class="screenshot-dots"><span></span><span></span><span></span></div>
+    <div class="screenshot-title">Hard Stops Tab</div>
+  </div>
+  <div class="screenshot-body">
+    <div class="sim-ui">
+      <p style="font-size:0.82rem;color:var(--gray-600);margin-bottom:14px;"><strong>12</strong> hard stop rules &mdash; unmitigated declines with no available mitigants</p>
+      <div class="sim-2col">
+        <div class="sim-hardstop-card">
+          <div class="sim-hardstop-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="2" style="width:16px;height:16px;"><polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+            Sanctions List Match
+          </div>
+          <div class="sim-hardstop-meta">sanctions_check / compliance / commercial</div>
+          <div class="sim-hardstop-desc">Application is automatically declined if the applicant appears on any government sanctions list.</div>
+          <div class="sim-hardstop-tags">
+            <span class="sim-badge gray">Threshold: hard</span>
+          </div>
+        </div>
+        <div class="sim-hardstop-card">
+          <div class="sim-hardstop-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="2" style="width:16px;height:16px;"><polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+            Fraud Flag Active
+          </div>
+          <div class="sim-hardstop-meta">fraud_indicator / operational / all</div>
+          <div class="sim-hardstop-desc">Any active fraud flag triggers an immediate hard decline. No manual override is permitted.</div>
+          <div class="sim-hardstop-tags">
+            <span class="sim-badge gray">Threshold: hard</span>
+            <span style="background:var(--red-light);color:var(--red);padding:2px 8px;border-radius:12px;font-size:0.7rem;font-weight:600;">Compound: multi-signal</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="screenshot-caption">Hard Stops tab showing severity cards with red left-accent border, description, and metadata tags in a two-column grid.</div>
+</div>
+
+<p><strong>Card anatomy:</strong></p>
+<ul>
+  <li><strong>Red left accent border</strong> &mdash; <code>border-l-4 border-l-red-400</code> on a white background (no all-red styling)</li>
+  <li><strong>Octagon X icon</strong> &mdash; red-tinted stop sign icon</li>
+  <li><strong>Title</strong> &mdash; the rule name in semibold neutral text</li>
+  <li><strong>Metadata line</strong> &mdash; <code>group_by / category / product</code> role values</li>
+  <li><strong>Description</strong> &mdash; the <code>outcome_description</code> field, line-clamped to 3 lines</li>
+  <li><strong>Tags</strong> &mdash; threshold type (gray pill) and compound trigger (red-50 pill) when present</li>
+</ul>
+<p>Cards are paginated at <strong>10 per page</strong> in a two-column grid.</p>
+
+<!-- ══════════════ DECISION QUALITY TAB ══════════════ -->
+<h2 id="decision-quality">Decision Quality Tab</h2>
+<p>This tab categorizes rules by how well they align with expected decision logic, displayed in scrollable column cards.</p>
+
+<div class="screenshot">
+  <div class="screenshot-chrome">
+    <div class="screenshot-dots"><span></span><span></span><span></span></div>
+    <div class="screenshot-title">Decision Quality Tab</div>
+  </div>
+  <div class="screenshot-body">
+    <div class="sim-ui">
+      <div class="sim-2col" style="margin-bottom:16px;">
+        <!-- Aligned -->
+        <div class="sim-quality-col">
+          <div class="sim-quality-header">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2" style="width:14px;height:14px;"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+            Aligned
+            <span class="sim-badge green" style="margin-left:auto;">42</span>
+          </div>
+          <div class="sim-quality-item">
+            <div style="font-weight:600;font-size:0.82rem;">Debt-to-Income Ratio</div>
+            <div style="font-size:0.72rem;color:var(--gray-500);">DTI / personal</div>
+            <span class="sim-badge green" style="margin-top:4px;">approve</span>
+          </div>
+          <div class="sim-quality-item">
+            <div style="font-weight:600;font-size:0.82rem;">Collateral Valuation</div>
+            <div style="font-size:0.72rem;color:var(--gray-500);">property_value / commercial</div>
+            <span class="sim-badge green" style="margin-top:4px;">approve</span>
+          </div>
+          <div style="font-size:0.75rem;color:var(--gray-400);text-align:center;padding:4px;">...scrollable (max-h: 500px)</div>
+        </div>
+        <!-- Divergent -->
+        <div class="sim-quality-col">
+          <div class="sim-quality-header">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#ca8a04" stroke-width="2" style="width:14px;height:14px;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            Divergent
+            <span class="sim-badge yellow" style="margin-left:auto;">8</span>
+          </div>
+          <div class="sim-quality-item">
+            <div style="font-weight:600;font-size:0.82rem;">Industry Exclusion Override</div>
+            <div style="font-size:0.72rem;color:var(--gray-500);">industry_type / commercial</div>
+            <span class="sim-badge yellow" style="margin-top:4px;">refer</span>
+          </div>
+          <div class="sim-quality-item">
+            <div style="font-weight:600;font-size:0.82rem;">Conflicting LTV Guidance</div>
+            <div style="font-size:0.72rem;color:var(--gray-500);">LTV / personal</div>
+            <span class="sim-badge red" style="margin-top:4px;">decline</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Partial section -->
+      <div style="border:1px solid var(--gray-200);border-radius:8px;padding:14px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:0.88rem;font-weight:600;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2" style="width:14px;height:14px;"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Partial
+          <span class="sim-badge gray" style="margin-left:auto;">23</span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+          <div class="sim-quality-item">
+            <div style="font-weight:600;font-size:0.82rem;">Employment Verification</div>
+            <div style="font-size:0.72rem;color:var(--gray-500);">Partially matches expected logic</div>
+          </div>
+          <div class="sim-quality-item">
+            <div style="font-weight:600;font-size:0.82rem;">Asset Documentation</div>
+            <div style="font-size:0.72rem;color:var(--gray-500);">Partially matches expected logic</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="screenshot-caption">Decision Quality tab with Aligned (green), Divergent (amber), and Partial (gray) columns. Each column is scrollable with max-height.</div>
+</div>
+
+<p><strong>Three categories:</strong></p>
+<ul>
+  <li><strong style="color:var(--green);">Aligned</strong> &mdash; rules that match expected decision logic. Green check icon, count badge.</li>
+  <li><strong style="color:var(--yellow);">Divergent</strong> &mdash; rules that contradict expected patterns. Amber warning icon. These need review.</li>
+  <li><strong>Partial</strong> &mdash; rules with incomplete alignment. Gray minus icon, displayed in a 2-column grid.</li>
+</ul>
+<p>Each column has a <code>max-h-[500px]</code> scroll container. Below the main columns, a <strong>Soft Thresholds</strong> table lists rules with <code>threshold_type: soft</code>, showing rule name, risk factor, threshold value, and action.</p>
+
+<!-- ══════════════ BATCHES TAB ══════════════ -->
+<h2 id="batches">Batches Tab</h2>
+<p>Tracks ingestion pipeline history. Each batch card shows progress and risk category coverage.</p>
+
+<div class="screenshot">
+  <div class="screenshot-chrome">
+    <div class="screenshot-dots"><span></span><span></span><span></span></div>
+    <div class="screenshot-title">Batches Tab</div>
+  </div>
+  <div class="screenshot-body">
+    <div class="sim-ui">
+      <p style="font-size:0.82rem;color:var(--gray-500);margin-bottom:14px;">Pipeline batch history and ingestion progress.</p>
+      <div class="sim-batch-card">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div style="width:40px;height:40px;border-radius:12px;background:var(--primary-light);display:flex;align-items:center;justify-content:center;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" style="width:20px;height:20px;"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a4 4 0 0 0-8 0v2"/></svg>
+            </div>
+            <div>
+              <div style="font-family:monospace;font-size:0.85rem;font-weight:600;">a3f8c2d1...</div>
+              <div style="font-size:0.72rem;color:var(--gray-500);">Feb 9, 2026 10:30 AM</div>
+            </div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:1.1rem;font-weight:700;">73</div>
+            <div style="font-size:0.72rem;color:var(--gray-500);">rules</div>
+          </div>
+        </div>
+        <!-- Progress -->
+        <div style="margin-top:12px;">
+          <div style="display:flex;justify-content:space-between;font-size:0.72rem;color:var(--gray-500);margin-bottom:4px;">
+            <span>Ingestion Progress</span><span>96%</span>
+          </div>
+          <div class="sim-progress-bar">
+            <div class="sim-progress-fill" style="width:96%;background:var(--green);"></div>
+            <div class="sim-progress-fill" style="width:1%;background:var(--gray-400);"></div>
+            <div class="sim-progress-fill" style="width:3%;background:var(--red);"></div>
+          </div>
+          <div style="display:flex;gap:16px;margin-top:6px;font-size:0.72rem;">
+            <span style="color:var(--green);"><strong>70</strong> ingested</span>
+            <span style="color:var(--gray-500);"><strong>1</strong> pending</span>
+            <span style="color:var(--red);"><strong>2</strong> failed</span>
+          </div>
+        </div>
+        <!-- Categories -->
+        <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;">
+          <span class="sim-badge blue">credit</span>
+          <span class="sim-badge blue">operational</span>
+          <span class="sim-badge blue">compliance</span>
+          <span class="sim-badge blue">market</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="screenshot-caption">Batch card showing pipeline ID, timestamp, rule count, stacked progress bar (green/gray/red), status counts, and risk category tags.</div>
+</div>
+
+<p><strong>Batch card anatomy:</strong></p>
+<ul>
+  <li><strong>Batch ID</strong> &mdash; truncated <code>batch_id</code> with a Layers icon</li>
+  <li><strong>Created date</strong> &mdash; earliest <code>created_at</code> timestamp in the batch</li>
+  <li><strong>Rule count</strong> &mdash; total rules in the batch (right-aligned)</li>
+  <li><strong>Progress bar</strong> &mdash; stacked bar with green (ingested), gray (pending), red (failed) segments and percentage label</li>
+  <li><strong>Status counts</strong> &mdash; color-coded count labels below the bar</li>
+  <li><strong>Risk categories</strong> &mdash; blue pill tags showing all unique risk categories in the batch</li>
+</ul>
+<p>Batches are listed in a scrollable container (<code>max-h-[600px]</code>).</p>
+
+<!-- ══════════════ KNOWLEDGE GRAPH TAB ══════════════ -->
+<h2 id="knowledge-graph">Knowledge Graph Tab</h2>
+<p>The Knowledge Graph tab connects to <strong>FalkorDB</strong> to visualize how rules, risk factors, outcomes, mitigants, and sources relate to each other in an interactive force-directed graph.</p>
+
+<div class="screenshot">
+  <div class="screenshot-chrome">
+    <div class="screenshot-dots"><span></span><span></span><span></span></div>
+    <div class="screenshot-title">Knowledge Graph Tab</div>
+  </div>
+  <div class="screenshot-body">
+    <div class="sim-ui">
+      <!-- Stats strip -->
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:14px;">
+        <div style="border:1px solid var(--gray-200);border-radius:8px;padding:10px 12px;display:flex;align-items:center;gap:8px;">
+          <div style="width:28px;height:28px;border-radius:6px;background:#dc262620;display:flex;align-items:center;justify-content:center;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2" style="width:14px;height:14px;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+          </div>
+          <div><div style="font-size:1rem;font-weight:700;">18</div><div style="font-size:0.65rem;color:var(--gray-500);">Risk Factors</div></div>
+        </div>
+        <div style="border:1px solid var(--gray-200);border-radius:8px;padding:10px 12px;display:flex;align-items:center;gap:8px;">
+          <div style="width:28px;height:28px;border-radius:6px;background:#2563eb20;display:flex;align-items:center;justify-content:center;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" style="width:14px;height:14px;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          </div>
+          <div><div style="font-size:1rem;font-weight:700;">73</div><div style="font-size:0.65rem;color:var(--gray-500);">Rules</div></div>
+        </div>
+        <div style="border:1px solid var(--gray-200);border-radius:8px;padding:10px 12px;display:flex;align-items:center;gap:8px;">
+          <div style="width:28px;height:28px;border-radius:6px;background:#16a34a20;display:flex;align-items:center;justify-content:center;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2" style="width:14px;height:14px;"><circle cx="12" cy="12" r="10"/></svg>
+          </div>
+          <div><div style="font-size:1rem;font-weight:700;">45</div><div style="font-size:0.65rem;color:var(--gray-500);">Outcomes</div></div>
+        </div>
+        <div style="border:1px solid var(--gray-200);border-radius:8px;padding:10px 12px;display:flex;align-items:center;gap:8px;">
+          <div style="width:28px;height:28px;border-radius:6px;background:#7c3aed20;display:flex;align-items:center;justify-content:center;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2" style="width:14px;height:14px;"><line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>
+          </div>
+          <div><div style="font-size:1rem;font-weight:700;">34</div><div style="font-size:0.65rem;color:var(--gray-500);">Mitigants</div></div>
+        </div>
+        <div style="border:1px solid var(--gray-200);border-radius:8px;padding:10px 12px;display:flex;align-items:center;gap:8px;">
+          <div style="width:28px;height:28px;border-radius:6px;background:#ca8a0420;display:flex;align-items:center;justify-content:center;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#ca8a04" stroke-width="2" style="width:14px;height:14px;"><line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>
+          </div>
+          <div><div style="font-size:1rem;font-weight:700;">5</div><div style="font-size:0.65rem;color:var(--gray-500);">Sources</div></div>
+        </div>
+      </div>
+
+      <!-- Search + Filter bar -->
+      <div style="display:flex;gap:8px;margin-bottom:14px;">
+        <div class="sim-filter-btn" style="flex:1;justify-content:flex-start;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          Search nodes...
+        </div>
+        <div class="sim-filter-btn">All Types &#x25BE;</div>
+      </div>
+
+      <!-- Graph area -->
+      <div class="sim-graph-area">
+        <svg viewBox="0 0 500 260" style="width:100%;height:100%;">
+          <!-- Edges -->
+          <line x1="180" y1="100" x2="280" y2="60" stroke="#e5e7eb" stroke-width="1.5"/>
+          <line x1="180" y1="100" x2="300" y2="130" stroke="#e5e7eb" stroke-width="1.5"/>
+          <line x1="180" y1="100" x2="260" y2="180" stroke="#e5e7eb" stroke-width="1.5"/>
+          <line x1="280" y1="60" x2="400" y2="50" stroke="#e5e7eb" stroke-width="1.5"/>
+          <line x1="300" y1="130" x2="400" y2="120" stroke="#e5e7eb" stroke-width="1.5"/>
+          <line x1="300" y1="130" x2="420" y2="170" stroke="#e5e7eb" stroke-width="1.5"/>
+          <line x1="260" y1="180" x2="380" y2="210" stroke="#e5e7eb" stroke-width="1.5"/>
+          <line x1="100" y1="60" x2="180" y2="100" stroke="#e5e7eb" stroke-width="1.5"/>
+          <line x1="80" y1="180" x2="180" y2="100" stroke="#e5e7eb" stroke-width="1.5"/>
+          <!-- Source node -->
+          <circle cx="80" cy="180" r="10" fill="#ca8a04" opacity="0.8"/>
+          <text x="80" y="200" font-size="7" fill="#6b7280" text-anchor="middle">Source</text>
+          <!-- RiskFactor nodes -->
+          <circle cx="100" cy="60" r="12" fill="#dc2626" opacity="0.8"/>
+          <text x="100" y="42" font-size="7" fill="#6b7280" text-anchor="middle">LTV Ratio</text>
+          <circle cx="180" cy="100" r="14" fill="#dc2626" opacity="0.8"/>
+          <text x="180" y="82" font-size="7" fill="#6b7280" text-anchor="middle">Credit Score</text>
+          <!-- Rule nodes -->
+          <circle cx="280" cy="60" r="10" fill="#2563eb" opacity="0.8"/>
+          <text x="280" y="42" font-size="7" fill="#6b7280" text-anchor="middle">Max LTV Check</text>
+          <circle cx="300" cy="130" r="10" fill="#2563eb" opacity="0.8"/>
+          <text x="300" y="148" font-size="7" fill="#6b7280" text-anchor="middle">Credit Floor</text>
+          <circle cx="260" cy="180" r="10" fill="#2563eb" opacity="0.8"/>
+          <text x="260" y="198" font-size="7" fill="#6b7280" text-anchor="middle">Score Verify</text>
+          <!-- Outcome nodes -->
+          <circle cx="400" cy="50" r="8" fill="#16a34a" opacity="0.8"/>
+          <text x="400" y="38" font-size="7" fill="#6b7280" text-anchor="middle">Decline</text>
+          <circle cx="400" cy="120" r="8" fill="#16a34a" opacity="0.8"/>
+          <text x="400" y="108" font-size="7" fill="#6b7280" text-anchor="middle">Approve</text>
+          <!-- Mitigant node -->
+          <circle cx="420" cy="170" r="8" fill="#7c3aed" opacity="0.8"/>
+          <text x="420" y="188" font-size="7" fill="#6b7280" text-anchor="middle">Co-signer</text>
+          <circle cx="380" cy="210" r="8" fill="#7c3aed" opacity="0.8"/>
+          <text x="380" y="228" font-size="7" fill="#6b7280" text-anchor="middle">Manual Review</text>
+        </svg>
+      </div>
+
+      <!-- Legend -->
+      <div style="margin-top:10px;" class="sim-graph-legend">
+        <span><span class="sim-graph-legend-dot" style="background:#dc2626;"></span>Risk Factor</span>
+        <span><span class="sim-graph-legend-dot" style="background:#2563eb;"></span>Rule</span>
+        <span><span class="sim-graph-legend-dot" style="background:#16a34a;"></span>Outcome</span>
+        <span><span class="sim-graph-legend-dot" style="background:#7c3aed;"></span>Mitigant</span>
+        <span><span class="sim-graph-legend-dot" style="background:#ca8a04;"></span>Source</span>
+      </div>
+    </div>
+  </div>
+  <div class="screenshot-caption">Knowledge Graph showing the D3 force-directed graph with color-coded node types, search bar, type filter, and stats strip.</div>
+</div>
+
+<h3>Graph Controls</h3>
+<ul>
+  <li><strong>Search bar</strong> &mdash; fuzzy-search across node labels. Matching nodes highlight and the graph centers on them.</li>
+  <li><strong>Type filter</strong> &mdash; dropdown to filter by node type: All Types, Risk Factors, Rules, Outcomes, Mitigants, Sources.</li>
+  <li><strong>Zoom &amp; pan</strong> &mdash; scroll to zoom, drag to pan the canvas.</li>
+  <li><strong>Click a node</strong> &mdash; opens the detail panel on the right side showing node properties, connected edges, and neighbor traversal.</li>
+</ul>
+
+<h3>Node Types</h3>
+<table class="sim-table" style="margin:12px 0;">
+  <thead><tr><th>Type</th><th>Color</th><th>Description</th></tr></thead>
+  <tbody>
+    <tr><td><strong>RiskFactor</strong></td><td><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#dc2626;vertical-align:middle;margin-right:6px;"></span> Red</td><td>What the rule evaluates (e.g., LTV Ratio, Credit Score)</td></tr>
+    <tr><td><strong>Rule</strong></td><td><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#2563eb;vertical-align:middle;margin-right:6px;"></span> Blue</td><td>Individual decision rules</td></tr>
+    <tr><td><strong>Outcome</strong></td><td><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#16a34a;vertical-align:middle;margin-right:6px;"></span> Green</td><td>Decision outcomes (approve, decline, etc.)</td></tr>
+    <tr><td><strong>Mitigant</strong></td><td><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#7c3aed;vertical-align:middle;margin-right:6px;"></span> Purple</td><td>Available mitigating actions</td></tr>
+    <tr><td><strong>Source</strong></td><td><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#ca8a04;vertical-align:middle;margin-right:6px;"></span> Amber</td><td>Data sources (policy documents, databases)</td></tr>
+  </tbody>
+</table>
+
+<div class="admonition info">
+  <div class="admonition-title">&#x2139;&#xFE0F; Info</div>
+  The Knowledge Graph requires FalkorDB running on port 6379. Configure the connection in <strong>Settings &rarr; Database</strong> with <code>graph_db_host</code>, <code>graph_db_port</code>, <code>graph_db_name</code>, and <code>graph_db_password</code>.
+</div>
+
+<h3>Node Detail Panel</h3>
+<p>When you click a node, a 288px-wide panel slides in from the right showing:</p>
+<ul>
+  <li><strong>Node label and type</strong> &mdash; with the type-colored icon</li>
+  <li><strong>Properties</strong> &mdash; all key-value pairs stored on the node</li>
+  <li><strong>Connected edges</strong> &mdash; list of relationships (e.g., "EVALUATES", "MITIGATES", "PRODUCES")</li>
+  <li><strong>Neighbor traversal</strong> &mdash; click a connected node to navigate to it</li>
+</ul>
+
+<!-- ══════════════ DATA FORMAT ══════════════ -->
+<h2 id="data-format">Data Format</h2>
+<p>The Memory module expects a CSV with rule extraction records. Column names are mapped to internal <strong>roles</strong> via the <code>field_roles</code> setting in <a href="../configuration/yaml-configs.html#memory-config-memoryyaml"><code>memory.yaml</code></a>. The defaults below match the standard column names.</p>
+
+<h3>Required Columns (default names)</h3>
+<p>These columns must exist in your CSV. Upload fails with a descriptive error if any are missing. The required set is configurable via <code>required_roles</code>.</p>
+<pre><code>id, rule_name, action, batch_id, ingestion_status</code></pre>
+
+<h3>Recommended Columns</h3>
+<p>These columns are optional but enrich the dashboard significantly. If all are empty across your dataset, a warning banner appears on the Memory page.</p>
+<pre><code>risk_category, risk_factor, product_type, mitigants, threshold_type</code></pre>
+
+<h3>Additional Optional Columns</h3>
+<pre><code>outcome_description, threshold, compound_trigger, confidence,
+decision_quality, created_at, agent_name, source, source_type,
+historical_exceptions, data_fields, ingestion_error, ingested_at</code></pre>
+
+<h3>Custom Column Names</h3>
+<p>If your CSV uses different column names, map them in <code>memory.yaml</code>:</p>
+<pre><code># memory.yaml
+memory:
+  field_roles:
+    category: compliance_area     # your column → "category" role
+    group_by: risk_dimension      # your column → "group_by" role
+    product: line_of_business     # your column → "product" role</code></pre>
+
+<h3>Example Row</h3>
+<pre><code>id,rule_name,action,risk_category,risk_factor,product_type,mitigants,threshold_type,outcome_description,decision_quality,batch_id,ingestion_status
+R001,Max LTV Check,decline,credit,LTV Ratio,commercial,"",hard,"Decline if LTV exceeds 80%",aligned,a3f8c2d1,ingested</code></pre>
+
+<div class="admonition warning">
+  <div class="admonition-title">&#x26A0;&#xFE0F; Warning</div>
+  The <code>mitigants</code> column (configurable via <code>field_roles</code>) should be a comma-separated list, or empty for hard stops. By default, rules with <code>action: decline</code> and an empty mitigants field are classified as hard stops. These thresholds are configurable via the <code>hard_stops</code> setting.
+</div>
+
+<h3>Key Field Values</h3>
+<p>The values below are the defaults. Each can be customized in <code>memory.yaml</code> under <code>quality_values</code>, <code>hard_stops</code>, and <code>soft_threshold_value</code>.</p>
+<table class="sim-table" style="margin:12px 0;">
+  <thead><tr><th>Role</th><th>Default Column</th><th>Default Values</th><th>Used By</th></tr></thead>
+  <tbody>
+    <tr><td><code>action</code></td><td><code>action</code></td><td>approve, decline, verify, refer, exclude, approve_with_conditions</td><td>Rules tab badges, summary charts, hard stop detection</td></tr>
+    <tr><td><code>threshold_type</code></td><td><code>threshold_type</code></td><td>hard, soft</td><td>Decision Quality soft threshold table</td></tr>
+    <tr><td><code>quality</code></td><td><code>decision_quality</code></td><td>aligned, divergent, partial</td><td>Decision Quality tab categorization</td></tr>
+    <tr><td><code>status</code></td><td><code>ingestion_status</code></td><td>ingested, pending, failed</td><td>Rules tab status dot, Batches progress bar</td></tr>
+  </tbody>
+</table>
+
+<!-- ══════════════ CONFIGURATION ══════════════ -->
+<h2 id="configuration">Configuration</h2>
+<p>The Memory module is fully configurable via <code>backend/config/memory.yaml</code>. No config file is needed for the default column names &mdash; every setting has a sensible default.</p>
+
+<h3>What You Can Customize</h3>
+<table class="sim-table" style="margin:12px 0;">
+  <thead><tr><th>Setting</th><th>What It Controls</th></tr></thead>
+  <tbody>
+    <tr><td><code>field_roles</code></td><td>Maps your CSV column names to internal role names (e.g., <code>compliance_area</code> &rarr; <code>category</code>)</td></tr>
+    <tr><td><code>required_roles</code></td><td>Which roles must be present in uploads (fails with clear error if missing)</td></tr>
+    <tr><td><code>labels</code></td><td>Display labels for filter dropdowns and table headers</td></tr>
+    <tr><td><code>filter_roles</code></td><td>Which roles appear as filter dropdowns (and their order)</td></tr>
+    <tr><td><code>list_fields</code></td><td>Which roles contain comma-separated list data</td></tr>
+    <tr><td><code>hard_stops</code></td><td>Action value and mitigant requirement for hard stop detection</td></tr>
+    <tr><td><code>quality_values</code></td><td>Values for aligned, divergent, and partial categorization</td></tr>
+    <tr><td><code>action_colors</code></td><td>Colors for action badges in summary charts</td></tr>
+    <tr><td><code>contradictory_pairs</code></td><td>Action pairs that trigger the conflict detection banner</td></tr>
+  </tbody>
+</table>
+
+<h3>Quick Example</h3>
+<p>If your CSV has columns <code>compliance_area</code>, <code>risk_dimension</code>, and <code>line_of_business</code> instead of the defaults:</p>
+<pre><code># backend/config/memory.yaml
+memory:
+  field_roles:
+    category: compliance_area
+    group_by: risk_dimension
+    product: line_of_business
+  labels:
+    category: Compliance Area
+    group_by: Risk Dimension
+    product: Line of Business
+  filter_roles: [action, product, category, status]</code></pre>
+
+<div class="admonition tip">
+  <div class="admonition-title">&#x1F4A1; Tip</div>
+  See the <a href="../configuration/yaml-configs.html#memory-config-memoryyaml">YAML Config Reference</a> for the full schema and field descriptions. Copy <code>memory.yaml.example</code> to <code>memory.yaml</code> to get started.
+</div>
+
+<!-- ══════════════ NEXT STEPS ══════════════ -->
+<h2 id="next-steps">Next Steps</h2>
+
+<div class="next-steps">
+  <a class="next-step-card" href="#">
+    <h4>&#x1F4CA; Monitoring &rarr;</h4>
+    <p>Track how your extracted rules perform in production with real-time score trends and alerts.</p>
+  </a>
+  <a class="next-step-card" href="#">
+    <h4>&#x1F6E1; Production &rarr;</h4>
+    <p>See the Executive Summary scorecard that aggregates monitoring data into a health overview.</p>
+  </a>
+  <a class="next-step-card" href="#">
+    <h4>&#x2699; Configuration &rarr;</h4>
+    <p>Set up FalkorDB, database connections, and theme customization in the Configuration guide.</p>
+  </a>
+</div>
+
+<!-- ══════════════ FOOTER ══════════════ -->
+<div style="margin-top:60px;padding-top:24px;border-top:1px solid var(--gray-200);font-size:0.8rem;color:var(--gray-400);text-align:center;">
+  AXIS Documentation &middot; Built with MkDocs Material
+</div>
+
+</div><!-- .content -->
+</main>
+
+<!-- ══════════════════ TABLE OF CONTENTS ══════════════════ -->
+<nav class="toc">
+  <div class="toc-title">On this page</div>
+  <ul class="toc-list">
+    <li><a href="#why-memory">Why Use Memory?</a></li>
+    <li><a href="#quick-start">Quick Start</a></li>
+    <li><a href="#page-anatomy">Page Anatomy</a></li>
+    <li><a href="#summary-strip">Summary Strip</a></li>
+    <li><a href="#rules-tab">Rules Tab</a></li>
+    <li class="indent"><a href="#rules-filters">Filters</a></li>
+    <li class="indent"><a href="#rules-table">Table Columns</a></li>
+    <li class="indent"><a href="#rules-pagination">Pagination</a></li>
+    <li><a href="#hard-stops">Hard Stops Tab</a></li>
+    <li><a href="#decision-quality">Decision Quality Tab</a></li>
+    <li><a href="#batches">Batches Tab</a></li>
+    <li><a href="#knowledge-graph">Knowledge Graph Tab</a></li>
+    <li><a href="#data-format">Data Format</a></li>
+    <li><a href="#configuration">Configuration</a></li>
+    <li><a href="#next-steps">Next Steps</a></li>
+  </ul>
+</nav>
+
+</div><!-- .layout -->
+
+</body>
+</html>
