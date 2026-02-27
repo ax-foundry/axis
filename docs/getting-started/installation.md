@@ -39,7 +39,7 @@ From the repository root:
 make install
 ```
 
-This runs `pip install -r requirements.txt` in `backend/` and `npm install` in `frontend/`, plus installs pre-commit hooks.
+This runs `pip install -e ".[dev,graph]"` in `backend/` and `npm install` in `frontend/`, plus installs pre-commit hooks.
 
 ### Manual install
 
@@ -49,7 +49,9 @@ If you prefer to install each service separately:
 
     ```bash
     cd backend
-    pip install -r requirements.txt
+    pip install -e .               # runtime only
+    pip install -e ".[dev]"        # + linters & tests
+    pip install -e ".[dev,graph]"  # full development with graph features
     ```
 
 === "Frontend"

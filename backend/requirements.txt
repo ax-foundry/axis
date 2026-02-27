@@ -1,3 +1,6 @@
+# Derived from pyproject.toml — used for Docker layer caching.
+# For local development, prefer: pip install -e ".[dev,graph]"
+
 # FastAPI and ASGI
 fastapi>=0.115.0
 uvicorn[standard]>=0.32.0
@@ -22,17 +25,12 @@ pydantic-ai>=0.0.14
 pydantic-graph>=0.0.10
 sse-starlette>=2.0.0
 
-# Clustering (optional)
-# bertopic>=0.16.0
-# hdbscan>=0.8.0
-# umap-learn>=0.5.0
-
 # Database connectivity
 psycopg[binary]>=3.1.0
 psycopg-pool>=3.1.0
 duckdb>=1.1.0
 
-# Graph database
+# Graph database ([graph] optional extra in pyproject.toml)
 falkordb>=1.0.0
 
 # Utilities
@@ -41,8 +39,3 @@ httpx>=0.28.0
 
 # Axion (evaluation framework)
 axion[bertopic,langfuse] @ git+https://github.com/ax-foundry/axion.git
-
-# Testing
-pytest>=8.0.0
-pytest-asyncio>=0.24.0
-httpx>=0.28.0
