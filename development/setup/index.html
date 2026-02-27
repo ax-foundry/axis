@@ -3541,7 +3541,7 @@
 <p>This runs three steps:</p>
 <ol>
 <li>Installs pre-commit hooks</li>
-<li><code>pip install -r requirements.txt</code> in <code>backend/</code></li>
+<li><code>pip install -e ".[dev,graph]"</code> in <code>backend/</code> (all runtime, dev, and graph deps from <code>pyproject.toml</code>)</li>
 <li><code>npm install</code> in <code>frontend/</code></li>
 </ol>
 <h3 id="manual-install">Manual install<a class="headerlink" href="#manual-install" title="Permanent link">&para;</a></h3>
@@ -3549,8 +3549,9 @@
 <div class="tabbed-content">
 <div class="tabbed-block">
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nb">cd</span><span class="w"> </span>backend
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>requirements.txt
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>pip<span class="w"> </span>install<span class="w"> </span>ruff<span class="w"> </span>mypy<span class="w"> </span>pandas-stubs<span class="w">    </span><span class="c1"># Dev tools</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span>.<span class="w">               </span><span class="c1"># runtime only</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span><span class="s2">&quot;.[dev]&quot;</span><span class="w">        </span><span class="c1"># + linters &amp; tests</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span><span class="s2">&quot;.[dev,graph]&quot;</span><span class="w">  </span><span class="c1"># full development with graph features</span>
 </span></code></pre></div>
 </div>
 <div class="tabbed-block">
