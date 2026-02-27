@@ -42,7 +42,7 @@ make install
 This runs three steps:
 
 1. Installs pre-commit hooks
-2. `pip install -r requirements.txt` in `backend/`
+2. `pip install -e ".[dev,graph]"` in `backend/` (all runtime, dev, and graph deps from `pyproject.toml`)
 3. `npm install` in `frontend/`
 
 ### Manual install
@@ -51,8 +51,9 @@ This runs three steps:
 
     ```bash
     cd backend
-    pip install -r requirements.txt
-    pip install ruff mypy pandas-stubs    # Dev tools
+    pip install -e .               # runtime only
+    pip install -e ".[dev]"        # + linters & tests
+    pip install -e ".[dev,graph]"  # full development with graph features
     ```
 
 === "Frontend"

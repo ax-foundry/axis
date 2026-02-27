@@ -43,8 +43,7 @@ setup:
 
 install: install-hooks setup
 	@echo "Installing backend dependencies..."
-	cd backend && pip install -r requirements.txt
-	cd backend && pip install ruff mypy pandas-stubs
+	cd backend && pip install -e ".[dev,graph]"
 	@echo "Installing frontend dependencies..."
 	cd frontend && npm install
 	@echo "Done! All dependencies installed."

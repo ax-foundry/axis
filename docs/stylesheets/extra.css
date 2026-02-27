@@ -327,9 +327,23 @@
   --axis-sidebar-bg: #111827;
   --axis-sidebar-active-bg: rgba(129, 132, 255, 0.12);
   --axis-sidebar-active-color: #8B8EF7;
+  --axis-sidebar-border: rgba(255, 255, 255, 0.06);
 }
 
-/* Dark mode sidebar */
+/* Dark mode sidebar background + border */
+[data-md-color-scheme="slate"] .md-sidebar--primary {
+  background: var(--axis-sidebar-bg);
+  border-right-color: var(--axis-sidebar-border);
+}
+
+@media screen and (min-width: 76.25em) {
+  [data-md-color-scheme="slate"] .md-main::before {
+    background: var(--axis-sidebar-bg);
+    border-right-color: var(--axis-sidebar-border);
+  }
+}
+
+/* Dark mode sidebar nav */
 [data-md-color-scheme="slate"] .md-sidebar--primary .md-nav__link--active {
   background-color: var(--axis-sidebar-active-bg);
   color: var(--axis-sidebar-active-color) !important;

@@ -13,7 +13,9 @@ See the full documentation:
 
 ```bash
 cd backend
-pip install -r requirements.txt
+pip install -e .               # core only
+pip install -e ".[dev]"        # + linters & tests
+pip install -e ".[dev,graph]"  # + FalkorDB graph features
 uvicorn app.main:app --reload --port 8500
 ```
 
