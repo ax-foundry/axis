@@ -351,7 +351,7 @@ async def get_monitoring_db_config() -> dict[str, Any]:
 
     Returns connection details and whether auto-connect/auto-load is enabled.
     """
-    from app.config import monitoring_db_config
+    from app.config.db.monitoring import monitoring_db_config
 
     return {
         "success": True,
@@ -413,7 +413,7 @@ async def auto_import_from_database() -> dict[str, Any]:
     Supports custom SQL queries or table-based import.
     Uses the connection settings from YAML config or environment variables.
     """
-    from app.config import monitoring_db_config
+    from app.config.db.monitoring import monitoring_db_config
 
     if not monitoring_db_config.is_configured:
         raise HTTPException(

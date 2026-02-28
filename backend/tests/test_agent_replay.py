@@ -19,10 +19,27 @@ class TestReplayStatus:
 
     def test_status_returns_not_configured(self, client):
         """Without env vars, status returns configured=false."""
-        response = client.get("/api/agent-replay/status")
-        assert response.status_code == 200
-        data = response.json()
-        assert data["configured"] is False
+        from app.plugins.agent_replay.config import ReplayConfig
+
+        mock_cfg = ReplayConfig(langfuse_agents={})
+        with (
+            patch(
+                "app.plugins.agent_replay.services.replay_service.settings.langfuse_public_key",
+                None,
+            ),
+            patch(
+                "app.plugins.agent_replay.services.replay_service.settings.langfuse_secret_key",
+                None,
+            ),
+            patch(
+                "app.plugins.agent_replay.services.replay_service.get_replay_config",
+                return_value=mock_cfg,
+            ),
+        ):
+            response = client.get("/api/agent-replay/status")
+            assert response.status_code == 200
+            data = response.json()
+            assert data["configured"] is False
 
     def test_status_response_shape(self, client):
         """Status response has all expected fields, no secrets leaked."""
@@ -40,65 +57,64 @@ class TestReplayStatus:
         assert "secret_key" not in response_text
 
 
-
 class TestReplayRouter:
     """Test that data endpoints are gated by the enabled flag."""
 
-    @patch("app.config.settings.agent_replay_enabled", False)
+    @patch("app.config.env.settings.agent_replay_enabled", False)
     def test_traces_list_returns_403_when_disabled(self, client):
         """GET /traces returns 403 when plugin is disabled."""
         response = client.get("/api/agent-replay/traces")
         assert response.status_code == 403
 
-    @patch("app.config.settings.agent_replay_enabled", False)
+    @patch("app.config.env.settings.agent_replay_enabled", False)
     def test_trace_detail_returns_403_when_disabled(self, client):
         """GET /traces/{id} returns 403 when plugin is disabled."""
         response = client.get("/api/agent-replay/traces/some-id")
         assert response.status_code == 403
 
-    @patch("app.config.settings.agent_replay_enabled", False)
+    @patch("app.config.env.settings.agent_replay_enabled", False)
     def test_step_detail_returns_403_when_disabled(self, client):
         """GET /traces/{id}/steps/0 returns 403 when plugin is disabled."""
         response = client.get("/api/agent-replay/traces/some-id/steps/0")
         assert response.status_code == 403
 
-    @patch("app.config.settings.agent_replay_enabled", True)
+    @patch("app.config.env.settings.agent_replay_enabled", True)
     def test_traces_returns_503_when_not_configured(self, client):
         """GET /traces returns 503 when Langfuse creds are missing."""
         response = client.get("/api/agent-replay/traces")
         assert response.status_code == 503
 
-    @patch("app.config.settings.agent_replay_enabled", True)
+    @patch("app.config.env.settings.agent_replay_enabled", True)
     def test_trace_detail_returns_503_when_not_configured(self, client):
         """GET /traces/{id} returns 503 when Langfuse creds are missing."""
         response = client.get("/api/agent-replay/traces/some-id")
         assert response.status_code == 503
 
-    @patch("app.config.settings.agent_replay_enabled", True)
+    @patch("app.config.env.settings.agent_replay_enabled", True)
     def test_invalid_limit_returns_422(self, client):
         """GET /traces?limit=999 returns 422 validation error."""
         response = client.get("/api/agent-replay/traces?limit=999")
         assert response.status_code == 422
 
-    @patch("app.config.settings.agent_replay_enabled", True)
+    @patch("app.config.env.settings.agent_replay_enabled", True)
     def test_invalid_limit_zero_returns_422(self, client):
         """GET /traces?limit=0 returns 422 validation error."""
         response = client.get("/api/agent-replay/traces?limit=0")
         assert response.status_code == 422
 
-    @patch("app.config.settings.agent_replay_enabled", True)
+    @patch("app.config.env.settings.agent_replay_enabled", True)
     def test_invalid_days_back_returns_422(self, client):
         """GET /traces?days_back=-1 returns 422 validation error."""
         response = client.get("/api/agent-replay/traces?days_back=-1")
         assert response.status_code == 422
 
-    @patch("app.config.settings.agent_replay_enabled", True)
+    @patch("app.config.env.settings.agent_replay_enabled", True)
     def test_invalid_max_chars_zero_returns_422(self, client):
         """GET /traces/{id}?max_chars=0 returns 422 validation error."""
         response = client.get("/api/agent-replay/traces/some-id?max_chars=0")
         assert response.status_code == 422
 
-    @patch("app.config.settings.agent_replay_enabled", True)
+    @patch("app.config.env.settings.agent_replay_enabled", True)
     def test_invalid_max_chars_too_large_returns_422(self, client):
         """GET /traces/{id}?max_chars=999999 returns 422 validation error."""
         response = client.get("/api/agent-replay/traces/some-id?max_chars=999999")

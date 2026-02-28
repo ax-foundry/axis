@@ -1,6 +1,6 @@
 import logging
 
-from app.config import kpi_db_config
+from app.config.db.kpi import kpi_db_config
 from app.models.kpi_schemas import (
     KpiCategoriesResponse,
     KpiCategoryItem,

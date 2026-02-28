@@ -6,16 +6,14 @@ from fastapi import APIRouter, HTTPException, Response
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
-from app.config import (
-    CUSTOM_DIR,
-    agents_config,
-    eval_db_config,
-    human_signals_db_config,
-    kpi_db_config,
-    monitoring_db_config,
-    settings,
-    theme_config,
-)
+from app.config.agents import agents_config
+from app.config.db.eval_db import eval_db_config
+from app.config.db.human_signals import human_signals_db_config
+from app.config.db.kpi import kpi_db_config
+from app.config.db.monitoring import monitoring_db_config
+from app.config.env import settings
+from app.config.paths import CUSTOM_DIR
+from app.config.theme import theme_config
 from app.plugins import discover_plugins
 
 logger = logging.getLogger(__name__)

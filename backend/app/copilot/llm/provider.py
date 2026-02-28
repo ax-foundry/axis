@@ -7,7 +7,7 @@ from typing import Any
 from pydantic_ai import Agent
 from pydantic_ai.models import Model
 
-from app.config import settings
+from app.config.env import settings
 
 logger = logging.getLogger("axis.copilot.llm")
 

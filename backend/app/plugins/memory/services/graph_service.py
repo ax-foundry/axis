@@ -4,7 +4,7 @@ from typing import Any
 
 from falkordb import FalkorDB, Graph
 
-from app.config import settings
+from app.config.env import settings
 from app.plugins.memory.models.graph_schemas import (
     GraphData,
     GraphEdge,

@@ -526,7 +526,7 @@ async def _sync_internal_table(
 
     No sync status management — caller handles that.
     """
-    from app.config import duckdb_config
+    from app.config.db.duckdb import duckdb_config
     from app.services.db import get_backend
 
     start = time.time()
@@ -1015,12 +1015,10 @@ async def sync_all_for_reason(
     - "startup": requires per-dataset auto_load/auto_connect + enabled
     - "manual": requires configured query + enabled
     """
-    from app.config import (
-        eval_db_config,
-        human_signals_db_config,
-        kpi_db_config,
-        monitoring_db_config,
-    )
+    from app.config.db.eval_db import eval_db_config
+    from app.config.db.human_signals import human_signals_db_config
+    from app.config.db.kpi import kpi_db_config
+    from app.config.db.monitoring import monitoring_db_config
 
     if store is None:
         store = get_store()
@@ -1076,12 +1074,10 @@ async def sync_single(
     force_full: bool = False,
 ) -> SyncResult:
     """Sync a single dataset by name."""
-    from app.config import (
-        eval_db_config,
-        human_signals_db_config,
-        kpi_db_config,
-        monitoring_db_config,
-    )
+    from app.config.db.eval_db import eval_db_config
+    from app.config.db.human_signals import human_signals_db_config
+    from app.config.db.kpi import kpi_db_config
+    from app.config.db.monitoring import monitoring_db_config
 
     if store is None:
         store = get_store()
@@ -1152,12 +1148,10 @@ async def periodic_sync_loop(store: DuckDBStore) -> None:
     Runs forever until cancelled. Each iteration sleeps until the next
     dataset is due, then syncs all due datasets concurrently.
     """
-    from app.config import (
-        eval_db_config,
-        human_signals_db_config,
-        kpi_db_config,
-        monitoring_db_config,
-    )
+    from app.config.db.eval_db import eval_db_config
+    from app.config.db.human_signals import human_signals_db_config
+    from app.config.db.kpi import kpi_db_config
+    from app.config.db.monitoring import monitoring_db_config
 
     datasets: list[tuple[Any, str, str]] = [
         (monitoring_db_config, "monitoring_data", "monitoring"),

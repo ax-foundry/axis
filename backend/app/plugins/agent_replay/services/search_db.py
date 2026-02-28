@@ -5,7 +5,7 @@ from dataclasses import dataclass
 
 from psycopg import sql
 
-from app.plugins.agent_replay.config import replay_config
+from app.plugins.agent_replay.config import get_replay_config
 from app.services.db._registry import get_backend
 
 logger = logging.getLogger(__name__)
@@ -59,7 +59,7 @@ async def lookup_trace_ids(
         SearchDBNotConfiguredError: If the DB is not enabled or lacks config.
         SearchDBQueryError: If the database query fails.
     """
-    cfg = replay_config.search_db
+    cfg = get_replay_config().search_db
 
     if not cfg.enabled:
         raise SearchDBNotConfiguredError(

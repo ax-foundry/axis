@@ -14,7 +14,7 @@ AXIS reads configuration from three layers, evaluated in a specific order:
 
 | Layer | Location | Purpose |
 |-------|----------|---------|
-| **Defaults** | `backend/app/config.py` | Hardcoded fallbacks for every setting |
+| **Defaults** | `backend/app/config/` | Hardcoded fallbacks for every setting |
 | **Environment variables** | `backend/.env` | Server, AI, database, and theme overrides |
 | **YAML config files** | `custom/config/*.yaml` | Database auto-load and theme palettes |
 

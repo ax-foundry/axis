@@ -12,7 +12,7 @@ from axion.reporting.issue_extractor import ExtractedIssue as AxionExtractedIssu
 from axion.reporting.issue_extractor import IssueExtractionResult as AxionIssueExtractionResult
 from pydantic import BaseModel, Field
 
-from app.config import settings
+from app.config.env import settings
 
 __all__ = [
     "AVAILABLE_CONTEXT_FIELDS",

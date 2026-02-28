@@ -93,13 +93,11 @@ async def trigger_sync_dataset(
 @router.get("/status")
 async def get_store_status() -> dict[str, Any]:
     """Per-table sync status with incremental refresh info."""
-    from app.config import (
-        duckdb_config,
-        eval_db_config,
-        human_signals_db_config,
-        kpi_db_config,
-        monitoring_db_config,
-    )
+    from app.config.db.duckdb import duckdb_config
+    from app.config.db.eval_db import eval_db_config
+    from app.config.db.human_signals import human_signals_db_config
+    from app.config.db.kpi import kpi_db_config
+    from app.config.db.monitoring import monitoring_db_config
 
     store = get_store()
     datasets_status = store.get_all_sync_status()

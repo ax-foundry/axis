@@ -93,7 +93,7 @@ AXIS registers **14 routers** in `main.py`. Each handles a distinct domain:
 
 ### Settings Class
 
-The `Settings` class in `app/config.py` uses `pydantic-settings` to load configuration from environment variables and `.env` files:
+The `Settings` class in `app/config/env.py` uses `pydantic-settings` to load configuration from environment variables and `.env` files:
 
 ```python
 class Settings(BaseSettings):
@@ -137,7 +137,7 @@ Database and theme settings can also be loaded from YAML files in `custom/config
 
 ### Shared Constants
 
-The `config.py` module exports three constant classes used across the backend and mirrored in the frontend:
+The `app/config/constants.py` module exports three constant classes used across the backend and mirrored in the frontend:
 
 === "Columns"
 

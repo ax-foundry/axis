@@ -197,7 +197,7 @@ async def get_example_human_signals_dataset(dataset_name: str) -> dict[str, Any]
 @router.get("/db-config")
 async def get_human_signals_db_config() -> dict[str, Any]:
     """Get the human signals database configuration."""
-    from app.config import human_signals_db_config
+    from app.config.db.human_signals import human_signals_db_config
 
     return {
         "success": True,
@@ -230,7 +230,8 @@ async def auto_import_from_database() -> dict[str, Any]:
     a DuckDB sync (Postgres → DuckDB staging → atomic swap → derived tables).
     Falls back to legacy one-shot import otherwise.
     """
-    from app.config import duckdb_config, human_signals_db_config
+    from app.config.db.duckdb import duckdb_config
+    from app.config.db.human_signals import human_signals_db_config
 
     if not human_signals_db_config.is_configured:
         raise HTTPException(

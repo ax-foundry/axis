@@ -4,7 +4,7 @@ from typing import Any
 import anyio
 from fastapi import APIRouter, HTTPException
 
-from app.config import Columns, Thresholds
+from app.config.constants import Columns, Thresholds
 from app.services.duckdb_store import get_store
 
 logger = logging.getLogger(__name__)

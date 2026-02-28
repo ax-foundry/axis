@@ -7,7 +7,8 @@ from typing import Any
 
 import yaml
 
-from app.config import resolve_config_path, settings
+from app.config.env import settings
+from app.config.paths import resolve_config_path
 
 logger = logging.getLogger(__name__)
 
@@ -187,12 +188,12 @@ def load_replay_db_config() -> ReplayDBConfig:
 
                 config = ReplayDBConfig(
                     enabled=db.get("enabled", False),
-                    url=db.get("url"),
+                    url=db.get("url") or settings.agent_replay_db_url,
                     host=db.get("host"),
                     port=int(db.get("port", 5432)),
                     database=db.get("database"),
                     username=db.get("username"),
-                    password=db.get("password"),
+                    password=db.get("password") or settings.agent_replay_db_password,
                     ssl_mode=db.get("ssl_mode", "prefer"),
                     schema=db.get("schema", "public"),
                     table=db.get("table", "trace_lookup"),
@@ -284,4 +285,16 @@ def load_replay_config() -> ReplayConfig:
     return config
 
 
-replay_config = load_replay_config()
+_replay_config: ReplayConfig | None = None
+
+
+def get_replay_config() -> ReplayConfig:
+    """Return the replay config singleton, loading on first call.
+
+    Deferred so that ``os.environ`` is fully populated (via ``bootstrap_env``)
+    before we scan for ``LANGFUSE_*`` agent keys.
+    """
+    global _replay_config
+    if _replay_config is None:
+        _replay_config = load_replay_config()
+    return _replay_config
