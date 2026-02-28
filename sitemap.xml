@@ -2,238 +2,238 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://ax-foundry.github.io/axis/</loc>
-         <lastmod>2026-02-27</lastmod>
+         <lastmod>2026-02-28</lastmod>
     </url>
     <url>
          <loc>https://ax-foundry.github.io/axis/404/</loc>
-         <lastmod>2026-02-27</lastmod>
+         <lastmod>2026-02-28</lastmod>
     </url>
     <url>
          <loc>https://ax-foundry.github.io/axis/contributing/</loc>
-         <lastmod>2026-02-27</lastmod>
+         <lastmod>2026-02-28</lastmod>
     </url>
     <url>
          <loc>https://ax-foundry.github.io/axis/api-reference/</loc>
-         <lastmod>2026-02-27</lastmod>
+         <lastmod>2026-02-28</lastmod>
     </url>
     <url>
          <loc>https://ax-foundry.github.io/axis/api-reference/rest-api/</loc>
-         <lastmod>2026-02-27</lastmod>
+         <lastmod>2026-02-28</lastmod>
     </url>
     <url>
          <loc>https://ax-foundry.github.io/axis/api-reference/backend/config/</loc>
-         <lastmod>2026-02-27</lastmod>
+         <lastmod>2026-02-28</lastmod>
     </url>
     <url>
          <loc>https://ax-foundry.github.io/axis/api-reference/backend/data-processor/</loc>
-         <lastmod>2026-02-27</lastmod>
+         <lastmod>2026-02-28</lastmod>
     </url>
     <url>
          <loc>https://ax-foundry.github.io/axis/api-reference/backend/database-service/</loc>
-         <lastmod>2026-02-27</lastmod>
+         <lastmod>2026-02-28</lastmod>
     </url>
     <url>
          <loc>https://ax-foundry.github.io/axis/api-reference/backend/eval-runner-service/</loc>
-         <lastmod>2026-02-27</lastmod>
+         <lastmod>2026-02-28</lastmod>
     </url>
     <url>
          <loc>https://ax-foundry.github.io/axis/api-reference/backend/graph-service/</loc>
-         <lastmod>2026-02-27</lastmod>
+         <lastmod>2026-02-28</lastmod>
     </url>
     <url>
          <loc>https://ax-foundry.github.io/axis/api-reference/backend/human-signals-service/</loc>
-         <lastmod>2026-02-27</lastmod>
+         <lastmod>2026-02-28</lastmod>
     </url>
     <url>
          <loc>https://ax-foundry.github.io/axis/api-reference/backend/memory-service/</loc>
-         <lastmod>2026-02-27</lastmod>
+         <lastmod>2026-02-28</lastmod>
     </url>
     <url>
          <loc>https://ax-foundry.github.io/axis/api-reference/backend/schemas/</loc>
-         <lastmod>2026-02-27</lastmod>
+         <lastmod>2026-02-28</lastmod>
     </url>
     <url>
          <loc>https://ax-foundry.github.io/axis/api-reference/frontend/api-client/</loc>
-         <lastmod>2026-02-27</lastmod>
+         <lastmod>2026-02-28</lastmod>
     </url>
     <url>
          <loc>https://ax-foundry.github.io/axis/api-reference/frontend/hooks/</loc>
-         <lastmod>2026-02-27</lastmod>
+         <lastmod>2026-02-28</lastmod>
     </url>
     <url>
          <loc>https://ax-foundry.github.io/axis/api-reference/frontend/stores/</loc>
-         <lastmod>2026-02-27</lastmod>
+         <lastmod>2026-02-28</lastmod>
     </url>
     <url>
          <loc>https://ax-foundry.github.io/axis/api-reference/frontend/types/</loc>
-         <lastmod>2026-02-27</lastmod>
+         <lastmod>2026-02-28</lastmod>
     </url>
     <url>
          <loc>https://ax-foundry.github.io/axis/architecture/</loc>
-         <lastmod>2026-02-27</lastmod>
+         <lastmod>2026-02-28</lastmod>
     </url>
     <url>
          <loc>https://ax-foundry.github.io/axis/architecture/backend/</loc>
-         <lastmod>2026-02-27</lastmod>
+         <lastmod>2026-02-28</lastmod>
     </url>
     <url>
          <loc>https://ax-foundry.github.io/axis/architecture/data-formats/</loc>
-         <lastmod>2026-02-27</lastmod>
+         <lastmod>2026-02-28</lastmod>
     </url>
     <url>
          <loc>https://ax-foundry.github.io/axis/architecture/duckdb-store/</loc>
-         <lastmod>2026-02-27</lastmod>
+         <lastmod>2026-02-28</lastmod>
     </url>
     <url>
          <loc>https://ax-foundry.github.io/axis/architecture/frontend/</loc>
-         <lastmod>2026-02-27</lastmod>
+         <lastmod>2026-02-28</lastmod>
     </url>
     <url>
          <loc>https://ax-foundry.github.io/axis/architecture/plugin-system/</loc>
-         <lastmod>2026-02-27</lastmod>
+         <lastmod>2026-02-28</lastmod>
     </url>
     <url>
          <loc>https://ax-foundry.github.io/axis/architecture/state-management/</loc>
-         <lastmod>2026-02-27</lastmod>
+         <lastmod>2026-02-28</lastmod>
     </url>
     <url>
          <loc>https://ax-foundry.github.io/axis/configuration/</loc>
-         <lastmod>2026-02-27</lastmod>
+         <lastmod>2026-02-28</lastmod>
     </url>
     <url>
          <loc>https://ax-foundry.github.io/axis/configuration/customization/</loc>
-         <lastmod>2026-02-27</lastmod>
+         <lastmod>2026-02-28</lastmod>
     </url>
     <url>
          <loc>https://ax-foundry.github.io/axis/configuration/data-sources/</loc>
-         <lastmod>2026-02-27</lastmod>
+         <lastmod>2026-02-28</lastmod>
     </url>
     <url>
          <loc>https://ax-foundry.github.io/axis/configuration/duckdb/</loc>
-         <lastmod>2026-02-27</lastmod>
+         <lastmod>2026-02-28</lastmod>
     </url>
     <url>
          <loc>https://ax-foundry.github.io/axis/configuration/environment-variables/</loc>
-         <lastmod>2026-02-27</lastmod>
+         <lastmod>2026-02-28</lastmod>
     </url>
     <url>
          <loc>https://ax-foundry.github.io/axis/configuration/multi-agent/</loc>
-         <lastmod>2026-02-27</lastmod>
+         <lastmod>2026-02-28</lastmod>
     </url>
     <url>
          <loc>https://ax-foundry.github.io/axis/configuration/theming/</loc>
-         <lastmod>2026-02-27</lastmod>
+         <lastmod>2026-02-28</lastmod>
     </url>
     <url>
          <loc>https://ax-foundry.github.io/axis/configuration/yaml-configs/</loc>
-         <lastmod>2026-02-27</lastmod>
+         <lastmod>2026-02-28</lastmod>
     </url>
     <url>
          <loc>https://ax-foundry.github.io/axis/deployment/</loc>
-         <lastmod>2026-02-27</lastmod>
+         <lastmod>2026-02-28</lastmod>
     </url>
     <url>
          <loc>https://ax-foundry.github.io/axis/deployment/docker/</loc>
-         <lastmod>2026-02-27</lastmod>
+         <lastmod>2026-02-28</lastmod>
     </url>
     <url>
          <loc>https://ax-foundry.github.io/axis/deployment/duckdb-sync-runbook/</loc>
-         <lastmod>2026-02-27</lastmod>
+         <lastmod>2026-02-28</lastmod>
     </url>
     <url>
          <loc>https://ax-foundry.github.io/axis/deployment/production/</loc>
-         <lastmod>2026-02-27</lastmod>
+         <lastmod>2026-02-28</lastmod>
     </url>
     <url>
          <loc>https://ax-foundry.github.io/axis/deployment/security/</loc>
-         <lastmod>2026-02-27</lastmod>
+         <lastmod>2026-02-28</lastmod>
     </url>
     <url>
          <loc>https://ax-foundry.github.io/axis/development/</loc>
-         <lastmod>2026-02-27</lastmod>
+         <lastmod>2026-02-28</lastmod>
     </url>
     <url>
          <loc>https://ax-foundry.github.io/axis/development/adding-features/</loc>
-         <lastmod>2026-02-27</lastmod>
+         <lastmod>2026-02-28</lastmod>
     </url>
     <url>
          <loc>https://ax-foundry.github.io/axis/development/code-conventions/</loc>
-         <lastmod>2026-02-27</lastmod>
+         <lastmod>2026-02-28</lastmod>
     </url>
     <url>
          <loc>https://ax-foundry.github.io/axis/development/design-system/</loc>
-         <lastmod>2026-02-27</lastmod>
+         <lastmod>2026-02-28</lastmod>
     </url>
     <url>
          <loc>https://ax-foundry.github.io/axis/development/repository-model/</loc>
-         <lastmod>2026-02-27</lastmod>
+         <lastmod>2026-02-28</lastmod>
     </url>
     <url>
          <loc>https://ax-foundry.github.io/axis/development/setup/</loc>
-         <lastmod>2026-02-27</lastmod>
+         <lastmod>2026-02-28</lastmod>
     </url>
     <url>
          <loc>https://ax-foundry.github.io/axis/development/testing/</loc>
-         <lastmod>2026-02-27</lastmod>
+         <lastmod>2026-02-28</lastmod>
     </url>
     <url>
          <loc>https://ax-foundry.github.io/axis/getting-started/</loc>
-         <lastmod>2026-02-27</lastmod>
+         <lastmod>2026-02-28</lastmod>
     </url>
     <url>
          <loc>https://ax-foundry.github.io/axis/getting-started/first-run/</loc>
-         <lastmod>2026-02-27</lastmod>
+         <lastmod>2026-02-28</lastmod>
     </url>
     <url>
          <loc>https://ax-foundry.github.io/axis/getting-started/installation/</loc>
-         <lastmod>2026-02-27</lastmod>
+         <lastmod>2026-02-28</lastmod>
     </url>
     <url>
          <loc>https://ax-foundry.github.io/axis/user-guide/</loc>
-         <lastmod>2026-02-27</lastmod>
+         <lastmod>2026-02-28</lastmod>
     </url>
     <url>
          <loc>https://ax-foundry.github.io/axis/user-guide/agent-replay/</loc>
-         <lastmod>2026-02-27</lastmod>
+         <lastmod>2026-02-28</lastmod>
     </url>
     <url>
          <loc>https://ax-foundry.github.io/axis/user-guide/annotation/</loc>
-         <lastmod>2026-02-27</lastmod>
+         <lastmod>2026-02-28</lastmod>
     </url>
     <url>
          <loc>https://ax-foundry.github.io/axis/user-guide/calibration/</loc>
-         <lastmod>2026-02-27</lastmod>
+         <lastmod>2026-02-28</lastmod>
     </url>
     <url>
          <loc>https://ax-foundry.github.io/axis/user-guide/evaluate/</loc>
-         <lastmod>2026-02-27</lastmod>
+         <lastmod>2026-02-28</lastmod>
     </url>
     <url>
          <loc>https://ax-foundry.github.io/axis/user-guide/human-signals/</loc>
-         <lastmod>2026-02-27</lastmod>
+         <lastmod>2026-02-28</lastmod>
     </url>
     <url>
          <loc>https://ax-foundry.github.io/axis/user-guide/learn/</loc>
-         <lastmod>2026-02-27</lastmod>
+         <lastmod>2026-02-28</lastmod>
     </url>
     <url>
          <loc>https://ax-foundry.github.io/axis/user-guide/memory/</loc>
-         <lastmod>2026-02-27</lastmod>
+         <lastmod>2026-02-28</lastmod>
     </url>
     <url>
          <loc>https://ax-foundry.github.io/axis/user-guide/monitoring/</loc>
-         <lastmod>2026-02-27</lastmod>
+         <lastmod>2026-02-28</lastmod>
     </url>
     <url>
          <loc>https://ax-foundry.github.io/axis/user-guide/production/</loc>
-         <lastmod>2026-02-27</lastmod>
+         <lastmod>2026-02-28</lastmod>
     </url>
     <url>
          <loc>https://ax-foundry.github.io/axis/user-guide/settings/</loc>
-         <lastmod>2026-02-27</lastmod>
+         <lastmod>2026-02-28</lastmod>
     </url>
     <url>
          <loc>https://ax-foundry.github.io/axis/user-guide/simulation/</loc>
-         <lastmod>2026-02-27</lastmod>
+         <lastmod>2026-02-28</lastmod>
     </url>
 </urlset>

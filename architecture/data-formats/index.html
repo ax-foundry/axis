@@ -3799,7 +3799,7 @@
 <p>If <code>metric_category</code> is not provided, the metric defaults to <code>SCORE</code>.</p>
 <h2 id="shared-constants">Shared Constants<a class="headerlink" href="#shared-constants" title="Permanent link">&para;</a></h2>
 <p>Column names, thresholds, and colors are defined in both the Python backend and the TypeScript frontend to keep them in sync.</p>
-<div class="tabbed-set tabbed-alternate" data-tabs="2:2"><input checked="checked" id="__tabbed_2_1" name="__tabbed_2" type="radio" /><input id="__tabbed_2_2" name="__tabbed_2" type="radio" /><div class="tabbed-labels"><label for="__tabbed_2_1">Python (backend/app/config.py)</label><label for="__tabbed_2_2">TypeScript (frontend/src/types/index.ts)</label></div>
+<div class="tabbed-set tabbed-alternate" data-tabs="2:2"><input checked="checked" id="__tabbed_2_1" name="__tabbed_2" type="radio" /><input id="__tabbed_2_2" name="__tabbed_2" type="radio" /><div class="tabbed-labels"><label for="__tabbed_2_1">Python (backend/app/config/constants.py)</label><label for="__tabbed_2_2">TypeScript (frontend/src/types/index.ts)</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
 <div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">Columns</span><span class="p">:</span>
@@ -3858,7 +3858,7 @@
 </div>
 <div class="admonition warning">
 <p class="admonition-title">Keep in sync</p>
-<p>When adding or renaming a column constant, update <strong>both</strong> <code>backend/app/config.py</code> and <code>frontend/src/types/index.ts</code>. There is no code generation step -- these are maintained manually.</p>
+<p>When adding or renaming a column constant, update <strong>both</strong> <code>backend/app/config/constants.py</code> and <code>frontend/src/types/index.ts</code>. There is no code generation step -- these are maintained manually.</p>
 </div>
 <h2 id="monitoring-column-reference">Monitoring Column Reference<a class="headerlink" href="#monitoring-column-reference" title="Permanent link">&para;</a></h2>
 <p>Complete reference of standard monitoring columns:</p>
