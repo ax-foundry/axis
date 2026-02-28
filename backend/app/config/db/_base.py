@@ -1,5 +1,3 @@
-"""Shared base class and parser for all database import configs."""
-
 from dataclasses import dataclass, field
 from typing import Any
 

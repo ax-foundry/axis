@@ -1,5 +1,3 @@
-"""Database configuration sub-package."""
-
 from ._base import BaseDBImportConfig  # — used by get_import_config
 from .eval_db import eval_db_config
 from .human_signals import human_signals_db_config

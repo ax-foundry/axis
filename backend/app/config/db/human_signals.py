@@ -1,5 +1,3 @@
-"""Human signals database configuration."""
-
 import logging
 from dataclasses import dataclass, field
 from typing import Any
