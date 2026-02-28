@@ -4,7 +4,7 @@ import logging
 
 from fastapi import APIRouter, HTTPException, Query
 
-from app.config import settings
+from app.config.env import settings
 from app.plugins.agent_replay.models.replay_schemas import (
     ObservationNodeResponse,
     RecentTracesResponse,

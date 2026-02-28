@@ -8,7 +8,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from sse_starlette.sse import EventSourceResponse
 
-from app.config import settings
+from app.config.env import settings
 from app.copilot.agent import CopilotAgent
 from app.copilot.thoughts import ThoughtStream
 from app.models.copilot_schemas import (

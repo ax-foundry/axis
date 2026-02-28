@@ -16,7 +16,6 @@ def client():
     return TestClient(app)
 
 
-
 class TestReviewSchemas:
     """Test Pydantic model validation for review schemas."""
 
@@ -83,7 +82,7 @@ class TestReviewSchemas:
 class TestReviewRouter:
     """Test that review endpoints are gated by the enabled flag."""
 
-    @patch("app.config.settings.agent_replay_enabled", False)
+    @patch("app.config.env.settings.agent_replay_enabled", False)
     def test_post_reviews_returns_403_when_disabled(self, client):
         """POST /reviews returns 403 when plugin is disabled."""
         response = client.post(
@@ -92,19 +91,19 @@ class TestReviewRouter:
         )
         assert response.status_code == 403
 
-    @patch("app.config.settings.agent_replay_enabled", False)
+    @patch("app.config.env.settings.agent_replay_enabled", False)
     def test_get_trace_reviews_returns_403_when_disabled(self, client):
         """GET /traces/{id}/reviews returns 403 when plugin is disabled."""
         response = client.get("/api/agent-replay/traces/some-id/reviews")
         assert response.status_code == 403
 
-    @patch("app.config.settings.agent_replay_enabled", False)
+    @patch("app.config.env.settings.agent_replay_enabled", False)
     def test_get_datasets_returns_403_when_disabled(self, client):
         """GET /datasets returns 403 when plugin is disabled."""
         response = client.get("/api/agent-replay/datasets")
         assert response.status_code == 403
 
-    @patch("app.config.settings.agent_replay_enabled", True)
+    @patch("app.config.env.settings.agent_replay_enabled", True)
     def test_post_reviews_returns_503_when_not_configured(self, client):
         """POST /reviews returns 503 when Langfuse creds are missing."""
         with patch(
@@ -117,7 +116,7 @@ class TestReviewRouter:
             )
         assert response.status_code == 503
 
-    @patch("app.config.settings.agent_replay_enabled", True)
+    @patch("app.config.env.settings.agent_replay_enabled", True)
     def test_get_trace_reviews_returns_503_when_not_configured(self, client):
         """GET /traces/{id}/reviews returns 503 when creds are missing."""
         with patch(
@@ -127,7 +126,7 @@ class TestReviewRouter:
             response = client.get("/api/agent-replay/traces/some-id/reviews")
         assert response.status_code == 503
 
-    @patch("app.config.settings.agent_replay_enabled", True)
+    @patch("app.config.env.settings.agent_replay_enabled", True)
     def test_get_datasets_returns_503_when_not_configured(self, client):
         """GET /datasets returns 503 when creds are missing."""
         with patch(
@@ -137,7 +136,7 @@ class TestReviewRouter:
             response = client.get("/api/agent-replay/datasets")
         assert response.status_code == 503
 
-    @patch("app.config.settings.agent_replay_enabled", True)
+    @patch("app.config.env.settings.agent_replay_enabled", True)
     def test_post_reviews_invalid_verdict_returns_422(self, client):
         """POST /reviews with invalid verdict returns 422."""
         response = client.post(
@@ -146,7 +145,7 @@ class TestReviewRouter:
         )
         assert response.status_code == 422
 
-    @patch("app.config.settings.agent_replay_enabled", True)
+    @patch("app.config.env.settings.agent_replay_enabled", True)
     def test_post_reviews_missing_trace_id_returns_422(self, client):
         """POST /reviews without trace_id returns 422."""
         response = client.post(

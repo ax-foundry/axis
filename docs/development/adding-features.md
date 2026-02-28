@@ -371,7 +371,7 @@ export const useWidgetsStore = create<WidgetsState>()(
 
 ### Backend
 
-**Step 1** -- Add to `backend/app/config.py`:
+**Step 1** -- Add to `backend/app/config/env.py`:
 
 ```python
 class Settings(BaseSettings):
@@ -398,7 +398,7 @@ widget_api_key=your_key_here
 **Step 3** -- Use in service code:
 
 ```python
-from app.config import settings
+from app.config.env import settings
 
 async def call_widget_api():
     if not settings.widget_api_url:
@@ -445,7 +445,7 @@ widgets:
 ```python
 import yaml
 
-from app.config import resolve_config_path
+from app.config.paths import resolve_config_path
 
 _CONFIG_PATH = resolve_config_path("widgets.yaml")
 

@@ -5,7 +5,7 @@ from typing import Any
 
 import pandas as pd
 
-from app.config import Columns
+from app.config.constants import Columns
 
 
 def detect_data_format(df: pd.DataFrame) -> str:

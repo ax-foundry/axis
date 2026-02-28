@@ -1,6 +1,5 @@
 import logging
 import math
-import os
 from collections.abc import Callable
 from typing import Any
 
@@ -22,13 +21,6 @@ from app.models.align_schemas import (
     JudgeConfig,
 )
 
-# Configure logging
-LOG_LEVEL = os.environ.get("AXIS_LOG_LEVEL", "INFO").upper()
-logging.basicConfig(
-    level=getattr(logging, LOG_LEVEL, logging.INFO),
-    format="%(asctime)s | %(levelname)-8s | %(name)s | %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S",
-)
 logger = logging.getLogger("axis.axion_adapter")
 
 

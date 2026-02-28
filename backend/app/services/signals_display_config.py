@@ -3,7 +3,7 @@ from typing import Any
 
 import yaml
 
-from app.config import resolve_config_path
+from app.config.paths import resolve_config_path
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +28,7 @@ def generate_display_config(schema: dict[str, Any]) -> dict[str, Any]:
     Tries YAML overrides first; falls back to auto-generated defaults.
     Reads ``visible_kpis`` from the human signals DB config to filter KPIs.
     """
-    from app.config import human_signals_db_config
+    from app.config.db.human_signals import human_signals_db_config
 
     visible_kpis = human_signals_db_config.visible_kpis or None
 

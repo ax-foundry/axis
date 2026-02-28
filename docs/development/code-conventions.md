@@ -376,7 +376,7 @@ docs: add deployment guide for Docker
 
 ### Environment Variables
 
-- **Backend**: Add new vars to `app/config.py` `Settings` class, document in `.env.example`
+- **Backend**: Add new vars to `app/config/env.py` `Settings` class, document in `.env.example`
 - **Frontend**: Only `NEXT_PUBLIC_*` vars are browser-accessible; add to `.env.local`
 - **Naming**: Backend uses `snake_case`, frontend uses `SCREAMING_SNAKE_CASE` with `NEXT_PUBLIC_` prefix
 

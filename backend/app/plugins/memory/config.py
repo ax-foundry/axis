@@ -6,7 +6,7 @@ from typing import Any, ClassVar
 
 import yaml
 
-from app.config import resolve_config_path
+from app.config.paths import resolve_config_path
 
 logger = logging.getLogger(__name__)
 

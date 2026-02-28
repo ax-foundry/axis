@@ -8,7 +8,7 @@ import anyio
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 
-from app.config import monitoring_db_config
+from app.config.db.monitoring import monitoring_db_config
 from app.services.duckdb_store import get_store
 
 logger = logging.getLogger(__name__)

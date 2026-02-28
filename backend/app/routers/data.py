@@ -219,7 +219,7 @@ async def get_eval_db_config() -> dict[str, Any]:
 
     Returns whether auto-load is enabled and configuration status.
     """
-    from app.config import eval_db_config
+    from app.config.db.eval_db import eval_db_config
 
     return {
         "success": True,
@@ -237,7 +237,7 @@ async def auto_import_eval_from_database() -> UploadResponse:
 
     Executes the pre-configured SQL query and returns processed data.
     """
-    from app.config import eval_db_config
+    from app.config.db.eval_db import eval_db_config
     from app.services.db import get_backend
 
     if not eval_db_config.is_configured:

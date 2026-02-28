@@ -6,7 +6,7 @@ from typing import Any
 
 from fastapi import FastAPI
 
-from app.config import settings
+from app.config.env import settings
 from app.plugins.types import PluginMeta
 
 logger = logging.getLogger(__name__)

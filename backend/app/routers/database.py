@@ -6,7 +6,7 @@ import pandas as pd
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import SecretStr
 
-from app.config import get_import_config
+from app.config.db import get_import_config
 from app.models.database_schemas import (
     ConnectResponse,
     DatabaseConnectionRequest,
@@ -39,10 +39,7 @@ def _normalize_monitoring_columns(df: pd.DataFrame) -> pd.DataFrame:
             if target != col:  # Only rename if different
                 rename_map[col] = target
     if rename_map:
-        print(f"[DB IMPORT] Normalizing columns: {rename_map}")
         df = df.rename(columns=rename_map)
-    else:
-        print("[DB IMPORT] No columns needed normalization")
     return df
 
 
@@ -457,7 +454,6 @@ def _process_import_data(data: list[dict[str, Any]], source: str) -> UploadRespo
         )
 
     df = pd.DataFrame(data)
-    print(f"[DB IMPORT] Columns before processing: {list(df.columns)}")
 
     # Apply column_rename_map from config (if the store config has one)
     # This is applied before standard processing so renamed columns are recognized
@@ -466,7 +462,6 @@ def _process_import_data(data: list[dict[str, Any]], source: str) -> UploadRespo
         if cfg.column_rename_map:
             applicable = {k: v for k, v in cfg.column_rename_map.items() if k in df.columns}
             if applicable:
-                print(f"[DB IMPORT] Applying column_rename_map: {applicable}")
                 df = df.rename(columns=applicable)
     except ValueError:
         pass
@@ -479,7 +474,6 @@ def _process_import_data(data: list[dict[str, Any]], source: str) -> UploadRespo
 
     # Apply monitoring column normalization
     processed_df = _normalize_monitoring_columns(processed_df)
-    print(f"[DB IMPORT] Columns after normalization: {list(processed_df.columns)}")
 
     # Pre-import validation: warn if no usable columns found
     result_cols = set(processed_df.columns)

@@ -44,7 +44,7 @@ The backend resolves configuration in this order:
 
 1. **YAML file** in `custom/config/` (if present)
 2. **Environment variables** (override YAML values)
-3. **Hardcoded defaults** in `backend/app/config.py`
+3. **Hardcoded defaults** in the `backend/app/config/` package
 
 ## AXIS_CUSTOM_DIR
 

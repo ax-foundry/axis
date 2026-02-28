@@ -202,7 +202,7 @@ Each plugin's discovery and `register()` call is individually wrapped in `try/ex
 
 ## Enable / Disable
 
-The `AXIS_PLUGINS_ENABLED` setting in `app/config.py` controls which plugins are active:
+The `AXIS_PLUGINS_ENABLED` setting in `app/config/env.py` controls which plugins are active:
 
 | Value | Effect |
 |-------|--------|

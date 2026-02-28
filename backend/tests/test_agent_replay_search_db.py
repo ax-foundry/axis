@@ -48,7 +48,6 @@ class TestCanonicalizeAgentName:
         assert _canonicalize_agent_name("simple_agent") == "simple_agent"
 
 
-
 class TestReplayDBConfig:
     """Test ReplayDBConfig dataclass and loader."""
 
@@ -186,6 +185,7 @@ class TestReplayDBConfig:
 
         assert cfg.search_columns == {}
 
+
 class TestStatusSearchFields:
     """Test search_fields in the /status response."""
 
@@ -208,11 +208,13 @@ class TestStatusSearchFields:
             url="postgresql://localhost/test",
             search_columns={"case_reference": "Case Reference"},
         )
-        with patch("app.plugins.agent_replay.services.replay_service.replay_config") as mock_config:
-            mock_config.search_db = mock_db
-            mock_config.langfuse_agents = {}
-            mock_config.default_limit = 20
-            mock_config.default_days_back = 7
+        with patch(
+            "app.plugins.agent_replay.services.replay_service.get_replay_config"
+        ) as mock_config:
+            mock_config.return_value.search_db = mock_db
+            mock_config.return_value.langfuse_agents = {}
+            mock_config.return_value.default_limit = 20
+            mock_config.return_value.default_days_back = 7
             response = client.get("/api/agent-replay/status")
 
         data = response.json()
@@ -232,11 +234,13 @@ class TestStatusSearchFields:
                 "business_name": "Business Name",
             },
         )
-        with patch("app.plugins.agent_replay.services.replay_service.replay_config") as mock_config:
-            mock_config.search_db = mock_db
-            mock_config.langfuse_agents = {}
-            mock_config.default_limit = 20
-            mock_config.default_days_back = 7
+        with patch(
+            "app.plugins.agent_replay.services.replay_service.get_replay_config"
+        ) as mock_config:
+            mock_config.return_value.search_db = mock_db
+            mock_config.return_value.langfuse_agents = {}
+            mock_config.return_value.default_limit = 20
+            mock_config.return_value.default_days_back = 7
             response = client.get("/api/agent-replay/status")
 
         data = response.json()
@@ -254,11 +258,13 @@ class TestStatusSearchFields:
             url="postgresql://localhost/test",
             search_columns={},
         )
-        with patch("app.plugins.agent_replay.services.replay_service.replay_config") as mock_config:
-            mock_config.search_db = mock_db
-            mock_config.langfuse_agents = {}
-            mock_config.default_limit = 20
-            mock_config.default_days_back = 7
+        with patch(
+            "app.plugins.agent_replay.services.replay_service.get_replay_config"
+        ) as mock_config:
+            mock_config.return_value.search_db = mock_db
+            mock_config.return_value.langfuse_agents = {}
+            mock_config.return_value.default_limit = 20
+            mock_config.return_value.default_days_back = 7
             response = client.get("/api/agent-replay/status")
 
         data = response.json()
@@ -266,18 +272,17 @@ class TestStatusSearchFields:
         assert data["search_fields"][0]["value"] == "trace_id"
 
 
-
 class TestSearchByValidation:
     """Test search_by query parameter validation."""
 
-    @patch("app.config.settings.agent_replay_enabled", True)
+    @patch("app.config.env.settings.agent_replay_enabled", True)
     def test_search_by_defaults_to_trace_id(self, client):
         """Default search_by is trace_id (returns 503 without Langfuse creds)."""
         response = client.get("/api/agent-replay/search?query=test")
         # Without Langfuse configured, trace_id mode returns 503
         assert response.status_code == 503
 
-    @patch("app.config.settings.agent_replay_enabled", True)
+    @patch("app.config.env.settings.agent_replay_enabled", True)
     def test_unknown_column_search_by_returns_503(self, client):
         """Unknown search_by column returns 503 when no search columns configured."""
         from app.plugins.agent_replay.services.search_db import SearchDBNotConfiguredError
@@ -291,11 +296,10 @@ class TestSearchByValidation:
         assert response.status_code == 503
 
 
-
 class TestSearchByField:
     """Test search_by=field mode (DB lookup)."""
 
-    @patch("app.config.settings.agent_replay_enabled", True)
+    @patch("app.config.env.settings.agent_replay_enabled", True)
     def test_field_mode_db_not_configured_returns_503(self, client):
         """search_by=field with unconfigured DB returns 503."""
         from app.plugins.agent_replay.services.search_db import SearchDBNotConfiguredError
@@ -308,7 +312,7 @@ class TestSearchByField:
             response = client.get("/api/agent-replay/search?query=locator123&search_by=field")
         assert response.status_code == 503
 
-    @patch("app.config.settings.agent_replay_enabled", True)
+    @patch("app.config.env.settings.agent_replay_enabled", True)
     def test_field_mode_returns_empty_when_db_returns_no_rows(self, client):
         """search_by=field with 0 DB rows returns empty response."""
         with patch(
@@ -323,7 +327,7 @@ class TestSearchByField:
         assert data["total"] == 0
         assert data["traces"] == []
 
-    @patch("app.config.settings.agent_replay_enabled", True)
+    @patch("app.config.env.settings.agent_replay_enabled", True)
     def test_field_mode_with_mock_matches(self, client):
         """search_by=field with mocked matches fetches traces from Langfuse."""
         from app.plugins.agent_replay.models.replay_schemas import TraceSummary
@@ -363,30 +367,30 @@ class TestSearchByField:
         data = response.json()
         assert data["total"] == 1
 
-    @patch("app.config.settings.agent_replay_enabled", True)
+    @patch("app.config.env.settings.agent_replay_enabled", True)
     def test_named_column_search(self, client):
         """search_by=case_reference queries the named column directly."""
         from app.plugins.agent_replay.services.search_db import TraceMatch
 
-        with patch(
-            "app.plugins.agent_replay.services.search_db.lookup_trace_ids",
-            new_callable=AsyncMock,
-            return_value=[TraceMatch(trace_id="t1", agent_name=None)],
-        ) as mock_lookup, patch(
-            "app.plugins.agent_replay.services.replay_service._fetch_summaries_from_matches",
-            new_callable=AsyncMock,
-            return_value=[],
+        with (
+            patch(
+                "app.plugins.agent_replay.services.search_db.lookup_trace_ids",
+                new_callable=AsyncMock,
+                return_value=[TraceMatch(trace_id="t1", agent_name=None)],
+            ) as mock_lookup,
+            patch(
+                "app.plugins.agent_replay.services.replay_service._fetch_summaries_from_matches",
+                new_callable=AsyncMock,
+                return_value=[],
+            ),
         ):
-            response = client.get(
-                "/api/agent-replay/search?query=test&search_by=case_reference"
-            )
+            response = client.get("/api/agent-replay/search?query=test&search_by=case_reference")
 
         assert response.status_code == 200
         # Verify search_column was passed as "case_reference"
         mock_lookup.assert_called_once()
         call_kwargs = mock_lookup.call_args
         assert call_kwargs.kwargs.get("search_column") == "case_reference"
-
 
 
 class TestLookupTraceIds:
@@ -402,8 +406,8 @@ class TestLookupTraceIds:
         )
 
         mock_db = ReplayDBConfig(enabled=False)
-        with patch("app.plugins.agent_replay.services.search_db.replay_config") as mock_config:
-            mock_config.search_db = mock_db
+        with patch("app.plugins.agent_replay.services.search_db.get_replay_config") as mock_config:
+            mock_config.return_value.search_db = mock_db
             with pytest.raises(SearchDBNotConfiguredError, match="not enabled"):
                 await lookup_trace_ids("test")
 
@@ -417,8 +421,8 @@ class TestLookupTraceIds:
         )
 
         mock_db = ReplayDBConfig(enabled=True)  # no url or host
-        with patch("app.plugins.agent_replay.services.search_db.replay_config") as mock_config:
-            mock_config.search_db = mock_db
+        with patch("app.plugins.agent_replay.services.search_db.get_replay_config") as mock_config:
+            mock_config.return_value.search_db = mock_db
             with pytest.raises(SearchDBNotConfiguredError, match="not configured"):
                 await lookup_trace_ids("test")
 
@@ -436,8 +440,8 @@ class TestLookupTraceIds:
             url="postgresql://localhost/test",
             search_columns={},
         )
-        with patch("app.plugins.agent_replay.services.search_db.replay_config") as mock_config:
-            mock_config.search_db = mock_db
+        with patch("app.plugins.agent_replay.services.search_db.get_replay_config") as mock_config:
+            mock_config.return_value.search_db = mock_db
             with pytest.raises(SearchDBNotConfiguredError, match="No search columns"):
                 await lookup_trace_ids("test")
 
@@ -455,8 +459,8 @@ class TestLookupTraceIds:
             url="postgresql://localhost/test",
             search_columns={"case_reference": "Case Reference"},
         )
-        with patch("app.plugins.agent_replay.services.search_db.replay_config") as mock_config:
-            mock_config.search_db = mock_db
+        with patch("app.plugins.agent_replay.services.search_db.get_replay_config") as mock_config:
+            mock_config.return_value.search_db = mock_db
             with pytest.raises(SearchDBNotConfiguredError, match="not configured"):
                 await lookup_trace_ids("test", search_column="nonexistent")
 
@@ -492,13 +496,13 @@ class TestLookupTraceIds:
         mock_backend.pooled_connection.return_value = mock_cm
 
         with (
-            patch("app.plugins.agent_replay.services.search_db.replay_config") as mock_config,
+            patch("app.plugins.agent_replay.services.search_db.get_replay_config") as mock_config,
             patch(
                 "app.plugins.agent_replay.services.search_db.get_backend",
                 return_value=mock_backend,
             ),
         ):
-            mock_config.search_db = mock_db
+            mock_config.return_value.search_db = mock_db
             results = await lookup_trace_ids("test-locator", limit=10)
 
         assert len(results) == 2
@@ -534,13 +538,13 @@ class TestLookupTraceIds:
         mock_backend.pooled_connection.return_value = mock_cm
 
         with (
-            patch("app.plugins.agent_replay.services.search_db.replay_config") as mock_config,
+            patch("app.plugins.agent_replay.services.search_db.get_replay_config") as mock_config,
             patch(
                 "app.plugins.agent_replay.services.search_db.get_backend",
                 return_value=mock_backend,
             ),
         ):
-            mock_config.search_db = mock_db
+            mock_config.return_value.search_db = mock_db
             results = await lookup_trace_ids("loc-123")
 
         assert len(results) == 1
@@ -569,16 +573,15 @@ class TestLookupTraceIds:
         mock_backend.pooled_connection.return_value = mock_cm
 
         with (
-            patch("app.plugins.agent_replay.services.search_db.replay_config") as mock_config,
+            patch("app.plugins.agent_replay.services.search_db.get_replay_config") as mock_config,
             patch(
                 "app.plugins.agent_replay.services.search_db.get_backend",
                 return_value=mock_backend,
             ),
         ):
-            mock_config.search_db = mock_db
+            mock_config.return_value.search_db = mock_db
             with pytest.raises(SearchDBQueryError, match="Database query failed"):
                 await lookup_trace_ids("test")
-
 
 
 class TestFetchSummariesFromMatches:
@@ -646,7 +649,6 @@ class TestFetchSummariesFromMatches:
         # Only the good agent's traces are returned
         assert len(summaries) == 1
         assert summaries[0].id == "t1"
-
 
 
 class TestGetAgentConfig:
@@ -836,7 +838,6 @@ class TestGetAgentConfig:
         assert cfg.agents["beta_bot"].search_columns == {"ticket_number": "Ticket Number"}
 
 
-
 class TestAgentSearchFields:
     """Test agent_search_fields in the /status response."""
 
@@ -865,11 +866,16 @@ class TestAgentSearchFields:
                 ),
             },
         )
-        with patch("app.plugins.agent_replay.services.replay_service.replay_config") as mock_config:
-            mock_config.search_db = mock_db
-            mock_config.langfuse_agents = {"alpha_bot": MagicMock(), "beta_bot": MagicMock()}
-            mock_config.default_limit = 20
-            mock_config.default_days_back = 7
+        with patch(
+            "app.plugins.agent_replay.services.replay_service.get_replay_config"
+        ) as mock_config:
+            mock_config.return_value.search_db = mock_db
+            mock_config.return_value.langfuse_agents = {
+                "alpha_bot": MagicMock(),
+                "beta_bot": MagicMock(),
+            }
+            mock_config.return_value.default_limit = 20
+            mock_config.return_value.default_days_back = 7
             response = client.get("/api/agent-replay/status")
 
         data = response.json()
@@ -926,13 +932,13 @@ class TestLookupWithAgentName:
         mock_backend.pooled_connection.return_value = mock_cm
 
         with (
-            patch("app.plugins.agent_replay.services.search_db.replay_config") as mock_config,
+            patch("app.plugins.agent_replay.services.search_db.get_replay_config") as mock_config,
             patch(
                 "app.plugins.agent_replay.services.search_db.get_backend",
                 return_value=mock_backend,
             ),
         ):
-            mock_config.search_db = mock_db
+            mock_config.return_value.search_db = mock_db
             results = await lookup_trace_ids("TKT-123", agent_name="beta_bot", limit=10)
 
         assert len(results) == 1

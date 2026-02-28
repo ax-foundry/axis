@@ -7,7 +7,7 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
-from app.config import human_signals_db_config
+from app.config.db.human_signals import human_signals_db_config
 
 logger = logging.getLogger(__name__)
 

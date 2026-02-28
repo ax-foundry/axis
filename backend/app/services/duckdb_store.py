@@ -541,7 +541,7 @@ def get_store() -> DuckDBStore:
     """Return the global DuckDBStore singleton. Creates it on first call."""
     global _store
     if _store is None:
-        from app.config import duckdb_config
+        from app.config.db.duckdb import duckdb_config
 
         _store = DuckDBStore(
             db_path=duckdb_config.path,

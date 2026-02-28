@@ -203,7 +203,7 @@ If `metric_category` is not provided, the metric defaults to `SCORE`.
 
 Column names, thresholds, and colors are defined in both the Python backend and the TypeScript frontend to keep them in sync.
 
-=== "Python (backend/app/config.py)"
+=== "Python (backend/app/config/constants.py)"
 
     ```python
     class Columns:
@@ -261,7 +261,7 @@ Column names, thresholds, and colors are defined in both the Python backend and 
     ```
 
 !!! warning "Keep in sync"
-    When adding or renaming a column constant, update **both** `backend/app/config.py` and `frontend/src/types/index.ts`. There is no code generation step -- these are maintained manually.
+    When adding or renaming a column constant, update **both** `backend/app/config/constants.py` and `frontend/src/types/index.ts`. There is no code generation step -- these are maintained manually.
 
 ## Monitoring Column Reference
 

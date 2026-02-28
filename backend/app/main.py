@@ -7,12 +7,9 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.config import settings
-
-logger = logging.getLogger(__name__)
-
-from app.plugins import get_all_tags_metadata, register_all  # noqa: E402
-from app.routers import (  # noqa: E402
+from app.config.env import settings
+from app.plugins import get_all_tags_metadata, register_all
+from app.routers import (
     ai,
     align,
     analytics,
@@ -27,6 +24,8 @@ from app.routers import (  # noqa: E402
     reports,
     store,
 )
+
+logger = logging.getLogger(__name__)
 
 # Configure logging
 logging.basicConfig(
@@ -50,7 +49,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     print(f"Starting AXIS Backend on {settings.HOST}:{settings.PORT}")
 
     # DuckDB store initialization
-    from app.config import duckdb_config
+    from app.config.db.duckdb import duckdb_config
 
     # Background tasks to keep alive during app lifetime
     background_tasks: set[asyncio.Task[object]] = set()

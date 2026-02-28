@@ -10,8 +10,8 @@ from collections import OrderedDict
 from datetime import datetime
 from typing import Any
 
-from app.config import settings
-from app.plugins.agent_replay.config import replay_config
+from app.config.env import settings
+from app.plugins.agent_replay.config import get_replay_config
 from app.plugins.agent_replay.models.replay_schemas import (
     ObservationNodeResponse,
     ObservationSummary,
@@ -289,7 +289,7 @@ def _cache_put(trace_id: str, collection: Any) -> None:
 
 def _get_loader(agent_name: str | None = None) -> Any:
     if agent_name:
-        creds = replay_config.langfuse_agents.get(agent_name)
+        creds = get_replay_config().langfuse_agents.get(agent_name)
         if not creds:
             raise LangfuseNotConfiguredError(
                 f"No Langfuse credentials configured for agent {agent_name!r}. "
@@ -420,16 +420,16 @@ def _traces_to_summaries(raw_traces: list[Any]) -> list[TraceSummary]:
 
 
 def get_configured_agents() -> list[str]:
-    return sorted(replay_config.langfuse_agents.keys())
+    return sorted(get_replay_config().langfuse_agents.keys())
 
 
 def get_status() -> ReplayStatusResponse:
     has_global = bool(settings.langfuse_public_key and settings.langfuse_secret_key)
-    has_agents = bool(replay_config.langfuse_agents)
+    has_agents = bool(get_replay_config().langfuse_agents)
     configured = has_global or has_agents
 
     search_fields = [SearchFieldOption(value="trace_id", label="Trace ID")]
-    search_db = replay_config.search_db
+    search_db = get_replay_config().search_db
     if search_db.enabled and search_db.is_configured:
         for col_name, col_label in search_db.search_columns.items():
             search_fields.append(SearchFieldOption(value=col_name, label=col_label))
@@ -448,8 +448,8 @@ def get_status() -> ReplayStatusResponse:
         enabled=settings.agent_replay_enabled,
         configured=configured,
         langfuse_host=settings.langfuse_host,
-        default_limit=replay_config.default_limit,
-        default_days_back=replay_config.default_days_back,
+        default_limit=get_replay_config().default_limit,
+        default_days_back=get_replay_config().default_days_back,
         agents=get_configured_agents(),
         search_fields=search_fields,
         agent_search_fields=agent_search_fields,
@@ -543,7 +543,7 @@ async def search_traces(
 
     # Metadata search
     loader = _get_loader(agent_name)
-    metadata_key = replay_config.search_metadata_key
+    metadata_key = get_replay_config().search_metadata_key
     raw_traces = await asyncio.to_thread(
         loader.fetch_traces,
         limit=limit,
