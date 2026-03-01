@@ -65,6 +65,7 @@ import type {
   MonitoringGroupBy,
   MonitoringRecord,
   MonitoringSummaryMetrics,
+  MonitoringTrendData,
 } from '@/types';
 
 // Time range preset options
@@ -148,6 +149,188 @@ function computeSummaryMetrics(
     p99LatencyMs: getPercentile(latencies, 99),
     activeAlerts: 0, // Will be computed from alerts
   };
+}
+
+// ---------------------------------------------------------------------------
+// Client-side chart data helpers (CSV mode fallback)
+// ---------------------------------------------------------------------------
+
+function truncateTimestamp(ts: string, granularity: MonitoringChartGranularity): string {
+  const d = new Date(ts);
+  if (isNaN(d.getTime())) return ts;
+  if (granularity === 'weekly') {
+    // Truncate to Monday of that week
+    const day = d.getUTCDay();
+    const diff = (day + 6) % 7; // Mon=0
+    d.setUTCDate(d.getUTCDate() - diff);
+    d.setUTCHours(0, 0, 0, 0);
+  } else if (granularity === 'daily') {
+    d.setUTCHours(0, 0, 0, 0);
+  } else {
+    // hourly
+    d.setUTCMinutes(0, 0, 0);
+  }
+  return d.toISOString();
+}
+
+function percentile(arr: number[], p: number): number {
+  if (arr.length === 0) return 0;
+  const sorted = [...arr].sort((a, b) => a - b);
+  const idx = Math.ceil((p / 100) * sorted.length) - 1;
+  return sorted[Math.max(0, idx)];
+}
+
+/** Compute MonitoringTrendData[] from scoreData for CSV mode. */
+function computeClientTrendData(
+  records: MonitoringRecord[],
+  metricColumns: string[],
+  granularity: MonitoringChartGranularity
+): MonitoringTrendData[] {
+  if (records.length === 0) return [];
+
+  const isLong = records.length > 0 && 'metric_name' in records[0] && 'metric_score' in records[0];
+
+  // Collect scores by (bucket, metric)
+  const buckets = new Map<string, number[]>(); // key = `${bucket}||${metric}`
+
+  records.forEach((r) => {
+    const ts = r.timestamp ? truncateTimestamp(String(r.timestamp), granularity) : '';
+    if (!ts) return;
+
+    if (isLong) {
+      const metric = String(r.metric_name || 'metric_score');
+      const score = typeof r.metric_score === 'number' ? r.metric_score : NaN;
+      if (!isNaN(score)) {
+        const key = `${ts}||${metric}`;
+        const arr = buckets.get(key);
+        if (arr) arr.push(score);
+        else buckets.set(key, [score]);
+      }
+    } else {
+      metricColumns.forEach((col) => {
+        const score = typeof r[col] === 'number' ? (r[col] as number) : NaN;
+        if (!isNaN(score)) {
+          const key = `${ts}||${col.replace(/_score$/, '')}`;
+          const arr = buckets.get(key);
+          if (arr) arr.push(score);
+          else buckets.set(key, [score]);
+        }
+      });
+    }
+  });
+
+  const result: MonitoringTrendData[] = [];
+  Array.from(buckets.entries()).forEach(([key, scores]) => {
+    const [timestamp, metric] = key.split('||');
+    const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
+    result.push({
+      timestamp,
+      metric,
+      avg,
+      p50: percentile(scores, 50),
+      p95: percentile(scores, 95),
+      p99: percentile(scores, 99),
+      count: scores.length,
+    });
+  });
+
+  // Sort by timestamp
+  result.sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+  return result;
+}
+
+/** Compute latency histogram + percentiles from scoreData for CSV mode. */
+function computeClientLatencyDist(
+  records: MonitoringRecord[],
+  bins: number
+): {
+  histogram: { counts: number[]; edges: number[] };
+  percentiles: { p50: number; p95: number; p99: number };
+  byGroup?: Record<
+    string,
+    { counts: number[]; percentiles: { p50: number; p95: number; p99: number } }
+  >;
+} | null {
+  const latencies = records
+    .map((r) => r.latency)
+    .filter((l): l is number => typeof l === 'number' && !isNaN(l));
+
+  if (latencies.length === 0) return null;
+
+  const sorted = [...latencies].sort((a, b) => a - b);
+  const min = sorted[0];
+  const max = sorted[sorted.length - 1];
+  const binWidth = (max - min) / bins || 1;
+
+  const edges: number[] = [];
+  for (let i = 0; i <= bins; i++) edges.push(min + i * binWidth);
+
+  const counts = new Array<number>(bins).fill(0);
+  sorted.forEach((v) => {
+    let idx = Math.floor((v - min) / binWidth);
+    if (idx >= bins) idx = bins - 1;
+    counts[idx]++;
+  });
+
+  return {
+    histogram: { counts, edges },
+    percentiles: {
+      p50: percentile(sorted, 50),
+      p95: percentile(sorted, 95),
+      p99: percentile(sorted, 99),
+    },
+  };
+}
+
+/** Compute metric breakdown (pass rates) from scoreData for CSV mode. */
+function computeClientMetricBreakdown(
+  records: MonitoringRecord[],
+  metricColumns: string[]
+): { name: string; passRate: number; avg: number; count: number }[] {
+  if (records.length === 0) return [];
+
+  const isLong = records.length > 0 && 'metric_name' in records[0] && 'metric_score' in records[0];
+
+  // Accumulate per-metric stats
+  const stats = new Map<string, { sum: number; count: number; pass: number }>();
+
+  records.forEach((r) => {
+    if (isLong) {
+      const metric = String(r.metric_name || 'metric_score');
+      const score = typeof r.metric_score === 'number' ? r.metric_score : NaN;
+      if (!isNaN(score)) {
+        const s = stats.get(metric) ?? { sum: 0, count: 0, pass: 0 };
+        s.sum += score;
+        s.count++;
+        if (score >= 0.5) s.pass++;
+        stats.set(metric, s);
+      }
+    } else {
+      metricColumns.forEach((col) => {
+        const score = typeof r[col] === 'number' ? (r[col] as number) : NaN;
+        if (!isNaN(score)) {
+          const name = col.replace(/_score$/, '');
+          const s = stats.get(name) ?? { sum: 0, count: 0, pass: 0 };
+          s.sum += score;
+          s.count++;
+          if (score >= 0.5) s.pass++;
+          stats.set(name, s);
+        }
+      });
+    }
+  });
+
+  const result: { name: string; passRate: number; avg: number; count: number }[] = [];
+  Array.from(stats.entries()).forEach(([name, s]) => {
+    result.push({
+      name,
+      passRate: s.count > 0 ? (s.pass / s.count) * 100 : 0,
+      avg: s.count > 0 ? s.sum / s.count : 0,
+      count: s.count,
+    });
+  });
+
+  return result.sort((a, b) => a.name.localeCompare(b.name));
 }
 
 // Resolve thresholds: per_source override > default > hardcoded fallback
@@ -508,8 +691,6 @@ export default function MonitoringPage() {
     chartGranularity,
     distributionGroupBy,
     activeMetricCategoryTab,
-    selectedAnalysisMetric,
-    analysisInsightsPage,
     isLoading,
     datasetReady,
     metadata: storeMetadata,
@@ -524,8 +705,6 @@ export default function MonitoringPage() {
     setChartGranularity,
     setDistributionGroupBy,
     setActiveMetricCategoryTab,
-    setSelectedAnalysisMetric,
-    setAnalysisInsightsPage,
     setSyncStatus,
     populateFiltersFromMetadata,
   } = useMonitoringStore();
@@ -700,20 +879,27 @@ export default function MonitoringPage() {
     scoreData,
     classificationData,
     analysisData,
+    hasScoreMetrics,
     hasClassificationMetrics,
     hasAnalysisMetrics,
   } = useMemo(() => {
     // In DuckDB mode, derive category availability from cached metadata filter_values
     if (datasetReady) {
       const metricCategories = storeMetadata?.filter_values?.metric_category ?? [];
+      const upperCats = metricCategories.map((c: string) => c.toUpperCase());
+      // Score metrics exist unless every distinct category is a non-SCORE label.
+      // No column / empty array / contains SCORE / has NULL rows (not in filter_values) → true.
+      const nonScoreCats = upperCats.filter(
+        (c: string) => c === 'CLASSIFICATION' || c === 'ANALYSIS'
+      );
+      const hasScore = upperCats.length === 0 || upperCats.length !== nonScoreCats.length;
       return {
         scoreData: [] as MonitoringRecord[],
         classificationData: [] as MonitoringRecord[],
         analysisData: [] as MonitoringRecord[],
-        hasClassificationMetrics: metricCategories.some(
-          (c: string) => c.toUpperCase() === 'CLASSIFICATION'
-        ),
-        hasAnalysisMetrics: metricCategories.some((c: string) => c.toUpperCase() === 'ANALYSIS'),
+        hasScoreMetrics: hasScore,
+        hasClassificationMetrics: upperCats.includes('CLASSIFICATION'),
+        hasAnalysisMetrics: upperCats.includes('ANALYSIS'),
       };
     }
 
@@ -736,10 +922,34 @@ export default function MonitoringPage() {
       scoreData: score,
       classificationData: classification,
       analysisData: analysis,
+      hasScoreMetrics: score.length > 0,
       hasClassificationMetrics: classification.length > 0,
       hasAnalysisMetrics: analysis.length > 0,
     };
   }, [filteredData, datasetReady, storeMetadata]);
+
+  // Auto-switch tab if the active tab's category has no data
+  useEffect(() => {
+    const tabAvailable: Record<string, boolean> = {
+      score: hasScoreMetrics,
+      classification: hasClassificationMetrics,
+      analysis: hasAnalysisMetrics,
+      alerts: true, // always available
+    };
+    if (!tabAvailable[activeMetricCategoryTab]) {
+      // Switch to the first available tab
+      const fallback =
+        (['score', 'classification', 'analysis', 'alerts'] as const).find((t) => tabAvailable[t]) ??
+        'alerts';
+      setActiveMetricCategoryTab(fallback);
+    }
+  }, [
+    hasScoreMetrics,
+    hasClassificationMetrics,
+    hasAnalysisMetrics,
+    activeMetricCategoryTab,
+    setActiveMetricCategoryTab,
+  ]);
 
   // Metric filter options for trace table
   const traceMetricOptions = useMemo(() => {
@@ -873,7 +1083,9 @@ export default function MonitoringPage() {
   // --------------------------------------------------------------------------
   // React Query hooks for chart data (Score tab — always enabled when ready)
   // --------------------------------------------------------------------------
-  const chartsEnabled = datasetReady || (scoreData.length > 0 && metricColumns.length > 0);
+  // Server-side chart queries — only fire in DuckDB mode.
+  // In CSV mode, chart data is computed client-side below.
+  const chartsEnabled = datasetReady;
 
   const trendsQuery = useMonitoringTrends(
     scoreFilters,
@@ -881,7 +1093,6 @@ export default function MonitoringPage() {
     chartGranularity,
     chartsEnabled
   );
-  const trendData = useMemo(() => trendsQuery.data ?? [], [trendsQuery.data]);
 
   const latencyQuery = useMonitoringLatencyDist(
     scoreFilters,
@@ -889,13 +1100,6 @@ export default function MonitoringPage() {
     distributionGroupBy,
     chartsEnabled
   );
-  const latencyDist = latencyQuery.data?.success
-    ? {
-        histogram: latencyQuery.data.histogram,
-        percentiles: latencyQuery.data.percentiles,
-        byGroup: latencyQuery.data.by_group,
-      }
-    : null;
 
   const breakdownQuery = useMonitoringMetricBreakdown(
     scoreFilters,
@@ -903,10 +1107,44 @@ export default function MonitoringPage() {
     distributionGroupBy,
     chartsEnabled
   );
-  const metricBreakdown = breakdownQuery.data ?? [];
+
+  // Client-side chart data fallbacks for CSV mode
+  const clientTrendData = useMemo(
+    () => (datasetReady ? [] : computeClientTrendData(scoreData, metricColumns, chartGranularity)),
+    [datasetReady, scoreData, metricColumns, chartGranularity]
+  );
+
+  const clientLatencyDist = useMemo(
+    () => (datasetReady ? null : computeClientLatencyDist(scoreData, 20)),
+    [datasetReady, scoreData]
+  );
+
+  const clientMetricBreakdown = useMemo(
+    () => (datasetReady ? [] : computeClientMetricBreakdown(scoreData, metricColumns)),
+    [datasetReady, scoreData, metricColumns]
+  );
+
+  // Merge: prefer server data in DuckDB mode, client-side in CSV mode
+  const trendData = useMemo(
+    () => (datasetReady ? (trendsQuery.data ?? []) : clientTrendData),
+    [datasetReady, trendsQuery.data, clientTrendData]
+  );
+
+  const latencyDist = datasetReady
+    ? latencyQuery.data?.success
+      ? {
+          histogram: latencyQuery.data.histogram,
+          percentiles: latencyQuery.data.percentiles,
+          byGroup: latencyQuery.data.by_group,
+        }
+      : null
+    : clientLatencyDist;
+
+  const metricBreakdown = datasetReady ? (breakdownQuery.data ?? []) : clientMetricBreakdown;
 
   const chartsLoading =
-    trendsQuery.isFetching || latencyQuery.isFetching || breakdownQuery.isFetching;
+    datasetReady &&
+    (trendsQuery.isFetching || latencyQuery.isFetching || breakdownQuery.isFetching);
 
   // Lightweight summary KPIs (renders KPI cards before charts finish)
   const summaryQuery = useMonitoringSummary(monitoringFilters, datasetReady);
@@ -1092,6 +1330,7 @@ export default function MonitoringPage() {
                 activeTab={activeMetricCategoryTab}
                 onTabChange={setActiveMetricCategoryTab}
                 alertCount={alerts.length}
+                hasScoreMetrics={hasScoreMetrics}
                 hasClassificationMetrics={hasClassificationMetrics}
                 hasAnalysisMetrics={hasAnalysisMetrics}
               />
@@ -1762,6 +2001,7 @@ export default function MonitoringPage() {
                 data={classificationData}
                 filters={{ ...monitoringFilters, metric_category: 'CLASSIFICATION' }}
                 chartGranularity={chartGranularity}
+                datasetReady={datasetReady}
               />
             )}
 
@@ -1770,10 +2010,7 @@ export default function MonitoringPage() {
               <AnalysisInsightsTab
                 data={analysisData}
                 filters={{ ...monitoringFilters, metric_category: 'ANALYSIS' }}
-                selectedMetric={selectedAnalysisMetric}
-                onMetricChange={setSelectedAnalysisMetric}
-                page={analysisInsightsPage}
-                onPageChange={setAnalysisInsightsPage}
+                datasetReady={datasetReady}
               />
             )}
 

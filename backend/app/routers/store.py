@@ -259,9 +259,14 @@ async def get_dataset_data(
     for col, val in filter_map.items():
         if val and col in table_cols:
             if col == "metric_category":
-                # Case-insensitive comparison (data may store lowercase)
-                conditions.append(f"UPPER(CAST({col} AS VARCHAR)) = ?")
-                params.append(val.upper())
+                cat_upper = val.upper()
+                if cat_upper == "SCORE":
+                    # SCORE is the default bucket: match explicit SCORE or NULL/missing
+                    conditions.append(f"(UPPER(CAST({col} AS VARCHAR)) = ? OR {col} IS NULL)")
+                    params.append(cat_upper)
+                else:
+                    conditions.append(f"UPPER(CAST({col} AS VARCHAR)) = ?")
+                    params.append(cat_upper)
             else:
                 conditions.append(f"{col} = ?")
                 params.append(val)

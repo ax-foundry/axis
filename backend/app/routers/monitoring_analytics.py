@@ -50,6 +50,15 @@ def _validate_group_by(group_by: str | None) -> str | None:
     return group_by
 
 
+def _table_columns() -> set[str]:
+    """Return the set of column names in the monitoring_data table."""
+    store = get_store()
+    meta = store.get_metadata(TABLE)
+    if meta and "columns" in meta:
+        return {c["column_name"] for c in meta["columns"]}
+    return set()
+
+
 def _build_where(
     environment: str | None = None,
     source_name: str | None = None,
@@ -77,8 +86,23 @@ def _build_where(
         conds.append("source_type = ?")
         vals.append(source_type)
     if metric_category:
-        conds.append("UPPER(CAST(metric_category AS VARCHAR)) = ?")
-        vals.append(metric_category.upper())
+        cat_upper = metric_category.upper()
+        has_col = "metric_category" in _table_columns()
+        if cat_upper == "SCORE":
+            if has_col:
+                # SCORE is the default bucket: match explicit SCORE or NULL/missing
+                conds.append(
+                    "(UPPER(CAST(metric_category AS VARCHAR)) = ? " "OR metric_category IS NULL)"
+                )
+                vals.append(cat_upper)
+            # If column doesn't exist, all rows are implicitly SCORE — no filter needed
+        else:
+            if has_col:
+                conds.append("UPPER(CAST(metric_category AS VARCHAR)) = ?")
+                vals.append(cat_upper)
+            else:
+                # Column doesn't exist and category is not SCORE — no rows can match
+                conds.append("1=0")
     if metric_name:
         conds.append("metric_name = ?")
         vals.append(metric_name)
