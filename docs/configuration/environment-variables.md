@@ -192,6 +192,11 @@ Environment-level theme overrides. These are applied **on top of** the YAML them
 | `AXIS_THEME_HERO_OPACITY` | `float` | -- | Hero image opacity (1.0 = fully visible) |
 | `AXIS_THEME_HERO_MODE` | `str` | -- | Hero section mode: `dark` (default) or `light` |
 
+!!! info "Shimmer colors are YAML-only"
+    The title shimmer gradient (`shimmerFrom`, `shimmerTo`) is configured
+    exclusively in `theme.yaml`. There are no `AXIS_THEME_SHIMMER_*` env vars.
+    See [Theming > Title Shimmer Effect](theming.md#title-shimmer-effect).
+
 ---
 
 ## Frontend -- `frontend/.env.local`

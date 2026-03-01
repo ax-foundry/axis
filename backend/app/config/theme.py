@@ -1,5 +1,5 @@
 import logging
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field, fields
 from typing import Any
 
 import yaml
@@ -36,28 +36,26 @@ class ThemePalette:
     heroBrightness: float | None = None  # 1.0 = normal, 0.8 = darker
     heroOpacity: float | None = None  # 1.0 = fully visible, 0.5 = semi-transparent
     heroMode: str | None = None  # "dark" (default) or "light"
+    # Hero title shimmer gradient colors
+    shimmerFrom: str | None = None  # Start color of shimmer sweep (e.g., "#4CD9A0")
+    shimmerTo: str | None = None  # End color of shimmer sweep (e.g., "#80D4F0")
 
     def to_dict(self) -> dict[str, Any]:
         """Convert palette to dict for JSON serialization."""
-        return {
-            "name": self.name,
-            "primary": self.primary,
-            "primaryLight": self.primaryLight,
-            "primaryDark": self.primaryDark,
-            "primarySoft": self.primarySoft,
-            "primaryPale": self.primaryPale,
-            "accentGold": self.accentGold,
-            "accentSilver": self.accentSilver,
-            "heroImage": self.heroImage,
-            "logoUrl": self.logoUrl,
-            "faviconUrl": self.faviconUrl,
-            "appIconUrl": self.appIconUrl,
-            "heroContrast": self.heroContrast,
-            "heroSaturation": self.heroSaturation,
-            "heroBrightness": self.heroBrightness,
-            "heroOpacity": self.heroOpacity,
-            "heroMode": self.heroMode,
-        }
+        return asdict(self)
+
+    @classmethod
+    def from_yaml(cls, data: dict[str, Any], fallback_name: str = "") -> "ThemePalette":
+        """Create a ThemePalette from YAML dict, ignoring unknown keys."""
+        defaults = cls()
+        known = {f.name for f in fields(cls)}
+        kwargs: dict[str, Any] = {"name": data.get("name", fallback_name or defaults.name)}
+        for key in known:
+            if key == "name":
+                continue
+            if key in data:
+                kwargs[key] = data[key]
+        return cls(**kwargs)
 
 
 # Default palettes
@@ -100,16 +98,17 @@ class BrandingConfig:
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dict for JSON serialization."""
-        return {
-            "app_name": self.app_name,
-            "tagline": self.tagline,
-            "subtitle": self.subtitle,
-            "description": self.description,
-            "report_footer": self.report_footer,
-            "docs_url": self.docs_url,
-            "footer_name": self.footer_name or self.app_name,
-            "footer_icon": self.footer_icon or None,
-        }
+        d = asdict(self)
+        d["footer_name"] = self.footer_name or self.app_name
+        d["footer_icon"] = self.footer_icon or None
+        return d
+
+    @classmethod
+    def from_yaml(cls, data: dict[str, Any]) -> "BrandingConfig":
+        """Create a BrandingConfig from YAML dict, ignoring unknown keys."""
+        known = {f.name for f in fields(cls)}
+        kwargs = {k: v for k, v in data.items() if k in known}
+        return cls(**kwargs)
 
 
 @dataclass
@@ -131,6 +130,28 @@ class ThemeConfig:
             "palettes": {name: palette.to_dict() for name, palette in self.palettes.items()},
             "branding": self.branding.to_dict(),
         }
+
+
+# Mapping from env var settings attributes to ThemePalette field names.
+# Only fields with env var overrides are listed here.
+_ENV_OVERRIDES: dict[str, str] = {
+    "axis_theme_primary": "primary",
+    "axis_theme_primary_light": "primaryLight",
+    "axis_theme_primary_dark": "primaryDark",
+    "axis_theme_primary_soft": "primarySoft",
+    "axis_theme_primary_pale": "primaryPale",
+    "axis_theme_accent_gold": "accentGold",
+    "axis_theme_accent_silver": "accentSilver",
+    "axis_theme_hero_image": "heroImage",
+    "axis_theme_logo_url": "logoUrl",
+    "axis_theme_favicon_url": "faviconUrl",
+    "axis_theme_app_icon_url": "appIconUrl",
+    "axis_theme_hero_contrast": "heroContrast",
+    "axis_theme_hero_saturation": "heroSaturation",
+    "axis_theme_hero_brightness": "heroBrightness",
+    "axis_theme_hero_opacity": "heroOpacity",
+    "axis_theme_hero_mode": "heroMode",
+}
 
 
 def load_theme_config() -> ThemeConfig:
@@ -156,47 +177,13 @@ def load_theme_config() -> ThemeConfig:
                 # Load custom palettes
                 if theme_data.get("palettes"):
                     for palette_name, palette_data in theme_data["palettes"].items():
-                        config.palettes[palette_name] = ThemePalette(
-                            name=palette_data.get("name", palette_name),
-                            primary=palette_data.get("primary", "#8B9F4F"),
-                            primaryLight=palette_data.get("primaryLight", "#A4B86C"),
-                            primaryDark=palette_data.get("primaryDark", "#6B7A3A"),
-                            primarySoft=palette_data.get("primarySoft", "#B8C78A"),
-                            primaryPale=palette_data.get("primaryPale", "#D4E0B8"),
-                            accentGold=palette_data.get("accentGold", "#D4AF37"),
-                            accentSilver=palette_data.get("accentSilver", "#B8C5D3"),
-                            heroImage=palette_data.get("heroImage"),
-                            logoUrl=palette_data.get("logoUrl"),
-                            faviconUrl=palette_data.get("faviconUrl"),
-                            appIconUrl=palette_data.get("appIconUrl"),
-                            heroContrast=palette_data.get("heroContrast"),
-                            heroSaturation=palette_data.get("heroSaturation"),
-                            heroBrightness=palette_data.get("heroBrightness"),
-                            heroOpacity=palette_data.get("heroOpacity"),
-                            heroMode=palette_data.get("heroMode"),
+                        config.palettes[palette_name] = ThemePalette.from_yaml(
+                            palette_data, fallback_name=palette_name
                         )
 
                 # Load branding config
                 if theme_data.get("branding"):
-                    branding_data = theme_data["branding"]
-                    config.branding = BrandingConfig(
-                        app_name=branding_data.get("app_name", "AXIS"),
-                        tagline=branding_data.get("tagline", "AI Evaluation Platform"),
-                        subtitle=branding_data.get("subtitle", "The AI Evaluation Studio"),
-                        description=branding_data.get(
-                            "description", "Agent X-ray Interface & Statistics"
-                        ),
-                        report_footer=branding_data.get(
-                            "report_footer",
-                            "Report generated by AXIS AI Evaluation Platform",
-                        ),
-                        docs_url=branding_data.get(
-                            "docs_url",
-                            "https://ax-foundry.github.io/axis/",
-                        ),
-                        footer_name=branding_data.get("footer_name", ""),
-                        footer_icon=branding_data.get("footer_icon", ""),
-                    )
+                    config.branding = BrandingConfig.from_yaml(theme_data["branding"])
 
                 logger.info(f"Loaded theme config from {THEME_CONFIG_PATH}")
         except Exception as e:
@@ -207,62 +194,17 @@ def load_theme_config() -> ThemeConfig:
         config.active = settings.axis_theme_active
         logger.info(f"Theme active palette overridden by env: {config.active}")
 
-    # If individual color env vars are set, create/modify the active palette
-    # Check if any env override is set
-    has_overrides = any(
-        v is not None
-        for v in [
-            settings.axis_theme_primary,
-            settings.axis_theme_primary_light,
-            settings.axis_theme_primary_dark,
-            settings.axis_theme_primary_soft,
-            settings.axis_theme_primary_pale,
-            settings.axis_theme_accent_gold,
-            settings.axis_theme_accent_silver,
-            settings.axis_theme_hero_image,
-            settings.axis_theme_logo_url,
-            settings.axis_theme_favicon_url,
-            settings.axis_theme_app_icon_url,
-            settings.axis_theme_hero_contrast,
-            settings.axis_theme_hero_saturation,
-            settings.axis_theme_hero_brightness,
-            settings.axis_theme_hero_opacity,
-            settings.axis_theme_hero_mode,
-        ]
-    )
+    # Collect env overrides into a dict of {palette_field: value}
+    overrides: dict[str, Any] = {}
+    for settings_attr, palette_field in _ENV_OVERRIDES.items():
+        val = getattr(settings, settings_attr, None)
+        if val is not None:
+            overrides[palette_field] = val
 
-    if has_overrides:
-        # Get current active palette as base
-        base_palette = config.get_active_palette()
-
-        # Create new palette with overrides (access settings directly for type safety)
-        config.palettes[config.active] = ThemePalette(
-            name=base_palette.name,
-            primary=settings.axis_theme_primary or base_palette.primary,
-            primaryLight=settings.axis_theme_primary_light or base_palette.primaryLight,
-            primaryDark=settings.axis_theme_primary_dark or base_palette.primaryDark,
-            primarySoft=settings.axis_theme_primary_soft or base_palette.primarySoft,
-            primaryPale=settings.axis_theme_primary_pale or base_palette.primaryPale,
-            accentGold=settings.axis_theme_accent_gold or base_palette.accentGold,
-            accentSilver=settings.axis_theme_accent_silver or base_palette.accentSilver,
-            heroImage=settings.axis_theme_hero_image or base_palette.heroImage,
-            logoUrl=settings.axis_theme_logo_url or base_palette.logoUrl,
-            faviconUrl=settings.axis_theme_favicon_url or base_palette.faviconUrl,
-            appIconUrl=settings.axis_theme_app_icon_url or base_palette.appIconUrl,
-            heroContrast=settings.axis_theme_hero_contrast
-            if settings.axis_theme_hero_contrast is not None
-            else base_palette.heroContrast,
-            heroSaturation=settings.axis_theme_hero_saturation
-            if settings.axis_theme_hero_saturation is not None
-            else base_palette.heroSaturation,
-            heroBrightness=settings.axis_theme_hero_brightness
-            if settings.axis_theme_hero_brightness is not None
-            else base_palette.heroBrightness,
-            heroOpacity=settings.axis_theme_hero_opacity
-            if settings.axis_theme_hero_opacity is not None
-            else base_palette.heroOpacity,
-            heroMode=settings.axis_theme_hero_mode or base_palette.heroMode,
-        )
+    if overrides:
+        base = asdict(config.get_active_palette())
+        base.update(overrides)
+        config.palettes[config.active] = ThemePalette(**base)
         logger.info("Theme palette overridden by environment variables")
 
     return config

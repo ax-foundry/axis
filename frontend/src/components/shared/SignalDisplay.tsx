@@ -3,6 +3,7 @@
 import { ChevronDown, ChevronRight, Star, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import { useState } from 'react';
 
+import { pythonToJson } from '@/components/shared';
 import { formatScore } from '@/lib/scorecard-utils';
 import { cn } from '@/lib/utils';
 import { Colors, Thresholds, type GroupedSignals, type Signal } from '@/types';
@@ -365,11 +366,26 @@ export function parseSignals(
 
   // If it's a string, try to parse as JSON
   if (typeof signals === 'string') {
-    try {
-      const parsed = JSON.parse(signals);
+    let parsed: unknown;
+    let didParse = false;
 
+    // 1. Try JSON.parse
+    try {
+      parsed = JSON.parse(signals);
+      didParse = true;
+    } catch {
+      // 2. Try pythonToJson fallback (handles nan, single quotes, None, True/False)
+      try {
+        parsed = JSON.parse(pythonToJson(signals));
+        didParse = true;
+      } catch {
+        // Not parseable
+      }
+    }
+
+    if (didParse) {
       // Check if it's grouped signals
-      if (typeof parsed === 'object' && !Array.isArray(parsed)) {
+      if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
         return parsed as GroupedSignals;
       }
 
@@ -380,19 +396,19 @@ export function parseSignals(
 
       // Plain string that was valid JSON but not what we expect
       return { raw: [{ name: 'output', value: signals }] } as GroupedSignals;
-    } catch {
-      // Not JSON - treat as raw log output, split by newlines
-      const lines = signals.split('\n').filter((s) => s.trim());
-      if (lines.length > 0) {
-        return {
-          logs: lines.map((line, i) => ({
-            name: `line_${i + 1}`,
-            value: line.trim(),
-          })),
-        } as GroupedSignals;
-      }
-      return null;
     }
+
+    // Not JSON - treat as raw log output, split by newlines
+    const lines = signals.split('\n').filter((s) => s.trim());
+    if (lines.length > 0) {
+      return {
+        logs: lines.map((line, i) => ({
+          name: `line_${i + 1}`,
+          value: line.trim(),
+        })),
+      } as GroupedSignals;
+    }
+    return null;
   }
 
   // If it's an array

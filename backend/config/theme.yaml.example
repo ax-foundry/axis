@@ -69,6 +69,9 @@ theme:
       # heroSaturation: 0.8
       # heroBrightness: 1.0
       # heroOpacity: 0.9
+      # Hero title shimmer gradient (left-to-right sweep)
+      # shimmerFrom: "#4CD9A0"   # Start color (e.g., mint green)
+      # shimmerTo: "#80D4F0"     # End color (e.g., sky cyan)
 
     # -----------------------------------------------------
     # Professional Blue - Professional enterprise palette
@@ -94,6 +97,8 @@ theme:
       # heroSaturation: 0.8
       # heroBrightness: 1.0
       # heroOpacity: 1.0
+      # shimmerFrom: "#5C9AFF"
+      # shimmerTo: "#A78BFA"
 
     # -----------------------------------------------------
     # Example: Custom branded palette

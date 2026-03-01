@@ -43,6 +43,7 @@ interface MetricCategoryTabsProps {
   activeTab: MetricCategoryTab;
   onTabChange: (tab: MetricCategoryTab) => void;
   alertCount?: number;
+  hasScoreMetrics?: boolean;
   hasClassificationMetrics?: boolean;
   hasAnalysisMetrics?: boolean;
 }
@@ -51,11 +52,13 @@ export function MetricCategoryTabs({
   activeTab,
   onTabChange,
   alertCount = 0,
+  hasScoreMetrics = true,
   hasClassificationMetrics = false,
   hasAnalysisMetrics = false,
 }: MetricCategoryTabsProps) {
   // Filter tabs based on available data
   const availableTabs = TABS.filter((tab) => {
+    if (tab.id === 'score' && !hasScoreMetrics) return false;
     if (tab.id === 'classification' && !hasClassificationMetrics) return false;
     if (tab.id === 'analysis' && !hasAnalysisMetrics) return false;
     return true;

@@ -95,6 +95,14 @@ export function useHeroMode(): 'dark' | 'light' {
 }
 
 /**
+ * Hook to check if shimmer is enabled (both colors configured).
+ */
+export function useHasShimmer(): boolean {
+  const { palette } = useThemeStore();
+  return Boolean(palette.shimmerFrom && palette.shimmerTo);
+}
+
+/**
  * Hook to get hero image filter settings from current theme.
  * Returns filter values and a pre-computed CSS filter string.
  */

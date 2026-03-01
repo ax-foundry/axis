@@ -93,6 +93,9 @@ theme:
       heroBrightness: 1.1
       heroOpacity: 0.95
       heroMode: "dark"
+      # Title shimmer effect (optional)
+      shimmerFrom: "#4CD9A0"
+      shimmerTo: "#80D4F0"
 ```
 
 **Step 3** -- Restart the backend to load the new theme.
@@ -160,6 +163,8 @@ Every palette consists of the following color tokens. These are applied across t
 | `primaryPale` | Subtle backgrounds, card tints |
 | `accentGold` | Call-to-action highlights, premium indicators |
 | `accentSilver` | Secondary accents, muted borders |
+| `shimmerFrom` | Start color of animated title shimmer sweep (optional) |
+| `shimmerTo` | End color of animated title shimmer sweep (optional) |
 
 ---
 
@@ -248,6 +253,35 @@ heroMode: "dark"
 
 ---
 
+## Title Shimmer Effect
+
+The hero section title supports an optional animated shimmer -- a gradient highlight that sweeps across the app name for a polished, branded feel. The shimmer is **disabled by default** and activates only when both `shimmerFrom` and `shimmerTo` are set in the active palette.
+
+| Field | Default | Description |
+|-------|---------|-------------|
+| `shimmerFrom` | -- | Start color of the shimmer gradient (e.g., `#4CD9A0` for mint green) |
+| `shimmerTo` | -- | End color of the shimmer gradient (e.g., `#80D4F0` for sky cyan) |
+
+Both fields must be set to activate the shimmer. If either is omitted or `null`, the title renders as plain text.
+
+Example -- an aurora-style shimmer:
+
+```yaml
+shimmerFrom: "#4CD9A0"   # Mint green
+shimmerTo: "#80D4F0"     # Sky cyan
+```
+
+The shimmer automatically adapts to the hero mode:
+
+- **Dark mode**: sweeps across white text
+- **Light mode**: sweeps across dark text
+
+!!! info "YAML-only configuration"
+    Shimmer colors are configured exclusively through the YAML palette.
+    There are no `AXIS_THEME_SHIMMER_*` environment variable overrides.
+
+---
+
 ## Fork / White-Label Checklist
 
 When deploying AXIS as a white-labeled product, follow this checklist:
@@ -257,6 +291,7 @@ When deploying AXIS as a white-labeled product, follow this checklist:
 - [ ] Place logo, favicon, app icon, and hero image in `custom/branding/`
 - [ ] Set `heroImage`, `logoUrl`, `faviconUrl`, and `appIconUrl` in the palette
 - [ ] Adjust hero filters (`heroContrast`, `heroSaturation`, etc.) to match your brand
+- [ ] Optionally set `shimmerFrom` and `shimmerTo` for an animated title effect
 - [ ] Update `APP_NAME` in `backend/.env` if you want a different name in the API docs
 - [ ] Test both light and dark mode in the frontend to verify contrast
 

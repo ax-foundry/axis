@@ -23,16 +23,34 @@ interface ClassificationMetricsTabProps {
   data: MonitoringRecord[];
   filters?: MonitoringFilters;
   chartGranularity: MonitoringChartGranularity;
+  datasetReady?: boolean;
+}
+
+/** Truncate a date to the given granularity bucket. */
+function truncateDate(date: Date, granularity: MonitoringChartGranularity): string {
+  const d = new Date(date);
+  if (granularity === 'hourly') {
+    d.setMinutes(0, 0, 0);
+  } else if (granularity === 'weekly') {
+    d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() - d.getDay()); // start of week (Sunday)
+  } else {
+    // daily
+    d.setHours(0, 0, 0, 0);
+  }
+  return d.toISOString();
 }
 
 export function ClassificationMetricsTab({
   data,
   filters,
   chartGranularity,
+  datasetReady = false,
 }: ClassificationMetricsTabProps) {
-  const [breakdownData, setBreakdownData] = useState<ClassificationBreakdown[]>([]);
-  const [trendData, setTrendData] = useState<ClassificationTrendPoint[]>([]);
-  const [uniqueCategories, setUniqueCategories] = useState<string[]>([]);
+  // Server-side state (DuckDB mode)
+  const [serverBreakdown, setServerBreakdown] = useState<ClassificationBreakdown[]>([]);
+  const [serverTrendData, setServerTrendData] = useState<ClassificationTrendPoint[]>([]);
+  const [serverUniqueCategories, setServerUniqueCategories] = useState<string[]>([]);
   const [selectedMetric, setSelectedMetric] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [categorySource, setCategorySource] = useState<CategorySource>('explanation');
@@ -46,16 +64,98 @@ export function ClassificationMetricsTab({
   const [selectedRecord, setSelectedRecord] = useState<MonitoringRecord | null>(null);
   const tablePageSize = 10;
 
-  // Server-side traces (DuckDB mode: data is empty, filters is provided)
-  const isDuckDBMode = data.length === 0 && !!filters;
+  // Server-side traces (DuckDB mode)
   const [serverTraces, setServerTraces] = useState<MonitoringRecord[]>([]);
   const [serverTraceTotal, setServerTraceTotal] = useState(0);
   const [tracesLoading, setTracesLoading] = useState(false);
 
-  // Fetch breakdown data
+  // ---- Client-side computation (CSV mode) ----
+  const clientBreakdown = useMemo((): ClassificationBreakdown[] => {
+    if (datasetReady || data.length === 0) return [];
+
+    // Group by metric_name, count category values
+    const byMetric = new Map<string, Map<string, number>>();
+    data.forEach((r) => {
+      const mn = String(r.metric_name ?? 'unknown');
+      const catVal = String(
+        categorySource === 'explanation'
+          ? (r.explanation ?? r.actual_output ?? '')
+          : (r.actual_output ?? '')
+      );
+      if (!catVal) return;
+      if (!byMetric.has(mn)) byMetric.set(mn, new Map());
+      const counts = byMetric.get(mn)!;
+      counts.set(catVal, (counts.get(catVal) ?? 0) + 1);
+    });
+
+    const result: ClassificationBreakdown[] = [];
+    Array.from(byMetric.entries()).forEach(([mn, counts]) => {
+      const total = Array.from(counts.values()).reduce((a, b) => a + b, 0);
+      if (total === 0) return;
+      const categories = Array.from(counts.entries())
+        .sort((a, b) => b[1] - a[1])
+        .map(([value, count]) => ({
+          value,
+          count,
+          percentage: Math.round((count / total) * 1000) / 10,
+        }));
+      result.push({ metric_name: mn, categories, total_count: total });
+    });
+    return result;
+  }, [data, datasetReady, categorySource]);
+
+  const clientTrendData = useMemo((): {
+    trends: ClassificationTrendPoint[];
+    categories: string[];
+  } => {
+    if (datasetReady || !selectedMetric) return { trends: [], categories: [] };
+
+    const filtered = data.filter((r) => String(r.metric_name) === selectedMetric);
+    const bucketed = new Map<string, Map<string, number>>();
+    const uniqueCats = new Set<string>();
+
+    filtered.forEach((r) => {
+      if (!r.timestamp) return;
+      const catVal = String(
+        categorySource === 'explanation'
+          ? (r.explanation ?? r.actual_output ?? '')
+          : (r.actual_output ?? '')
+      );
+      if (!catVal) return;
+      const ts = truncateDate(new Date(r.timestamp), chartGranularity);
+      uniqueCats.add(catVal);
+      if (!bucketed.has(ts)) bucketed.set(ts, new Map());
+      const bucket = bucketed.get(ts)!;
+      bucket.set(catVal, (bucket.get(catVal) ?? 0) + 1);
+    });
+
+    const trends = Array.from(bucketed.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([ts, cats]) => ({
+        timestamp: ts,
+        categories: Object.fromEntries(cats),
+      }));
+
+    return { trends, categories: Array.from(uniqueCats).sort() };
+  }, [data, datasetReady, selectedMetric, chartGranularity, categorySource]);
+
+  // Pick the right data source
+  const breakdownData = datasetReady ? serverBreakdown : clientBreakdown;
+  const trendData = datasetReady ? serverTrendData : clientTrendData.trends;
+  const uniqueCategories = datasetReady ? serverUniqueCategories : clientTrendData.categories;
+
+  // Auto-select first metric when breakdown data changes
+  useEffect(() => {
+    if (!selectedMetric && breakdownData.length > 0) {
+      setSelectedMetric(breakdownData[0].metric_name);
+    }
+  }, [breakdownData, selectedMetric]);
+
+  // Fetch breakdown data (DuckDB mode only)
   const fetchBreakdown = useCallback(async () => {
-    if (data.length === 0 && !filters) {
-      setBreakdownData([]);
+    if (!datasetReady) return;
+    if (!filters) {
+      setServerBreakdown([]);
       return;
     }
 
@@ -64,26 +164,23 @@ export function ClassificationMetricsTab({
       const f = filters || {};
       const response = await getClassificationBreakdown(f, undefined, undefined, categorySource);
       if (response.success) {
-        setBreakdownData(response.metrics);
-        // Set default selected metric if none selected
-        if (!selectedMetric && response.metrics.length > 0) {
-          setSelectedMetric(response.metrics[0].metric_name);
-        }
+        setServerBreakdown(response.metrics);
       }
     } catch (error) {
       console.error('Failed to fetch classification breakdown:', error);
     } finally {
       setIsLoading(false);
     }
-  }, [data.length, filters, selectedMetric, categorySource]);
+  }, [datasetReady, filters, categorySource]);
 
-  // Fetch trend data for selected metric
+  // Fetch trend data for selected metric (DuckDB mode only)
   const fetchTrends = useCallback(async () => {
-    if ((data.length === 0 && !filters) || !selectedMetric) {
-      setTrendData([]);
-      setUniqueCategories([]);
+    if (!datasetReady || !selectedMetric) {
+      setServerTrendData([]);
+      setServerUniqueCategories([]);
       return;
     }
+    if (!filters) return;
 
     try {
       const f = filters || {};
@@ -94,13 +191,13 @@ export function ClassificationMetricsTab({
         categorySource
       );
       if (response.success) {
-        setTrendData(response.data);
-        setUniqueCategories(response.unique_categories);
+        setServerTrendData(response.data);
+        setServerUniqueCategories(response.unique_categories);
       }
     } catch (error) {
       console.error('Failed to fetch classification trends:', error);
     }
-  }, [data.length, filters, selectedMetric, chartGranularity, categorySource]);
+  }, [datasetReady, filters, selectedMetric, chartGranularity, categorySource]);
 
   useEffect(() => {
     fetchBreakdown();
@@ -112,7 +209,7 @@ export function ClassificationMetricsTab({
 
   // Fetch server-side traces in DuckDB mode
   useEffect(() => {
-    if (!isDuckDBMode) return;
+    if (!datasetReady) return;
 
     let cancelled = false;
     setTracesLoading(true);
@@ -144,7 +241,7 @@ export function ClassificationMetricsTab({
     return () => {
       cancelled = true;
     };
-  }, [isDuckDBMode, filters, tablePage, traceSortDirection, traceMetricFilter, traceSearch]);
+  }, [datasetReady, filters, tablePage, traceSortDirection, traceMetricFilter, traceSearch]);
 
   // Get current metric breakdown
   const currentMetricBreakdown = useMemo(() => {
@@ -297,7 +394,7 @@ export function ClassificationMetricsTab({
   // Filtered + sorted classification traces
   const filteredTraces = useMemo(() => {
     // DuckDB mode: server handles filtering, sorting, pagination
-    if (isDuckDBMode) return serverTraces;
+    if (datasetReady) return serverTraces;
 
     let result = data;
 
@@ -331,17 +428,17 @@ export function ClassificationMetricsTab({
     });
 
     return result;
-  }, [data, isDuckDBMode, serverTraces, traceSearch, traceMetricFilter, traceSortDirection]);
+  }, [data, datasetReady, serverTraces, traceSearch, traceMetricFilter, traceSortDirection]);
 
   // Total count for pagination
-  const traceTotal = isDuckDBMode ? serverTraceTotal : filteredTraces.length;
+  const traceTotal = datasetReady ? serverTraceTotal : filteredTraces.length;
 
   // Reset table page when trace filters change
   useEffect(() => {
     setTablePage(1);
   }, [traceSearch, traceMetricFilter, traceSortDirection]);
 
-  if (data.length === 0 && !filters) {
+  if (data.length === 0 && !datasetReady) {
     return (
       <div className="flex h-64 items-center justify-center text-sm text-text-muted">
         No data available
@@ -349,7 +446,7 @@ export function ClassificationMetricsTab({
     );
   }
 
-  if (isLoading) {
+  if (isLoading && datasetReady) {
     return (
       <div className="flex h-64 items-center justify-center">
         <Loader2 className="h-6 w-6 animate-spin text-primary" />
@@ -641,7 +738,7 @@ export function ClassificationMetricsTab({
               </tr>
             </thead>
             <tbody>
-              {(isDuckDBMode
+              {(datasetReady
                 ? filteredTraces
                 : filteredTraces.slice((tablePage - 1) * tablePageSize, tablePage * tablePageSize)
               ).map((record, idx) => (

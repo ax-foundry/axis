@@ -371,6 +371,9 @@ theme:
       # logoUrl: "/api/config/assets/branding/logo.png"
       # faviconUrl: "/api/config/assets/branding/favicon.ico"
       # appIconUrl: "/api/config/assets/branding/ax-icon.png"
+      # Hero title shimmer (optional — both required to activate)
+      # shimmerFrom: "#4CD9A0"
+      # shimmerTo: "#80D4F0"
 
     professional_blue:
       name: "Professional Blue"
@@ -404,6 +407,8 @@ theme:
 | `heroBrightness` | `float` | CSS brightness filter (1.0 = normal) |
 | `heroOpacity` | `float` | Image opacity (1.0 = fully visible) |
 | `heroMode` | `str` | Hero section mode: `dark` (default) or `light` |
+| `shimmerFrom` | `hex` | Start color of the hero title shimmer gradient (e.g., `#4CD9A0`). Both `shimmerFrom` and `shimmerTo` must be set to activate |
+| `shimmerTo` | `hex` | End color of the hero title shimmer gradient (e.g., `#80D4F0`). Both must be set to activate |
 
 ---
 
