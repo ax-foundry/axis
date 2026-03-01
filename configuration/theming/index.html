@@ -1596,6 +1596,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#title-shimmer-effect" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Title Shimmer Effect
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#fork-white-label-checklist" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3361,6 +3372,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#title-shimmer-effect" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Title Shimmer Effect
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#fork-white-label-checklist" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3564,6 +3586,9 @@ presentations.</p>
 </span><span id="__span-1-32"><a id="__codelineno-1-32" name="__codelineno-1-32" href="#__codelineno-1-32"></a><span class="w">      </span><span class="nt">heroBrightness</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1.1</span>
 </span><span id="__span-1-33"><a id="__codelineno-1-33" name="__codelineno-1-33" href="#__codelineno-1-33"></a><span class="w">      </span><span class="nt">heroOpacity</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.95</span>
 </span><span id="__span-1-34"><a id="__codelineno-1-34" name="__codelineno-1-34" href="#__codelineno-1-34"></a><span class="w">      </span><span class="nt">heroMode</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;dark&quot;</span>
+</span><span id="__span-1-35"><a id="__codelineno-1-35" name="__codelineno-1-35" href="#__codelineno-1-35"></a><span class="w">      </span><span class="c1"># Title shimmer effect (optional)</span>
+</span><span id="__span-1-36"><a id="__codelineno-1-36" name="__codelineno-1-36" href="#__codelineno-1-36"></a><span class="w">      </span><span class="nt">shimmerFrom</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;#4CD9A0&quot;</span>
+</span><span id="__span-1-37"><a id="__codelineno-1-37" name="__codelineno-1-37" href="#__codelineno-1-37"></a><span class="w">      </span><span class="nt">shimmerTo</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;#80D4F0&quot;</span>
 </span></code></pre></div>
 <p><strong>Step 3</strong> -- Restart the backend to load the new theme.</p>
 <h3 id="option-b-environment-variables-quick-overrides">Option B: Environment Variables (Quick Overrides)<a class="headerlink" href="#option-b-environment-variables-quick-overrides" title="Permanent link">&para;</a></h3>
@@ -3643,6 +3668,14 @@ in YAML and tweak one color at deploy time via an env var.</p>
 <tr>
 <td><code>accentSilver</code></td>
 <td>Secondary accents, muted borders</td>
+</tr>
+<tr>
+<td><code>shimmerFrom</code></td>
+<td>Start color of animated title shimmer sweep (optional)</td>
+</tr>
+<tr>
+<td><code>shimmerTo</code></td>
+<td>End color of animated title shimmer sweep (optional)</td>
 </tr>
 </tbody>
 </table>
@@ -3765,6 +3798,45 @@ in YAML and tweak one color at deploy time via an env var.</p>
 </span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="nt">heroMode</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;dark&quot;</span>
 </span></code></pre></div>
 <hr />
+<h2 id="title-shimmer-effect">Title Shimmer Effect<a class="headerlink" href="#title-shimmer-effect" title="Permanent link">&para;</a></h2>
+<p>The hero section title supports an optional animated shimmer -- a gradient highlight that sweeps across the app name for a polished, branded feel. The shimmer is <strong>disabled by default</strong> and activates only when both <code>shimmerFrom</code> and <code>shimmerTo</code> are set in the active palette.</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>shimmerFrom</code></td>
+<td>--</td>
+<td>Start color of the shimmer gradient (e.g., <code>#4CD9A0</code> for mint green)</td>
+</tr>
+<tr>
+<td><code>shimmerTo</code></td>
+<td>--</td>
+<td>End color of the shimmer gradient (e.g., <code>#80D4F0</code> for sky cyan)</td>
+</tr>
+</tbody>
+</table>
+<p>Both fields must be set to activate the shimmer. If either is omitted or <code>null</code>, the title renders as plain text.</p>
+<p>Example -- an aurora-style shimmer:</p>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="nt">shimmerFrom</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;#4CD9A0&quot;</span><span class="w">   </span><span class="c1"># Mint green</span>
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="nt">shimmerTo</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;#80D4F0&quot;</span><span class="w">     </span><span class="c1"># Sky cyan</span>
+</span></code></pre></div>
+<p>The shimmer automatically adapts to the hero mode:</p>
+<ul>
+<li><strong>Dark mode</strong>: sweeps across white text</li>
+<li><strong>Light mode</strong>: sweeps across dark text</li>
+</ul>
+<div class="admonition info">
+<p class="admonition-title">YAML-only configuration</p>
+<p>Shimmer colors are configured exclusively through the YAML palette.
+There are no <code>AXIS_THEME_SHIMMER_*</code> environment variable overrides.</p>
+</div>
+<hr />
 <h2 id="fork-white-label-checklist">Fork / White-Label Checklist<a class="headerlink" href="#fork-white-label-checklist" title="Permanent link">&para;</a></h2>
 <p>When deploying AXIS as a white-labeled product, follow this checklist:</p>
 <ul class="task-list">
@@ -3773,6 +3845,7 @@ in YAML and tweak one color at deploy time via an env var.</p>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Place logo, favicon, app icon, and hero image in <code>custom/branding/</code></li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Set <code>heroImage</code>, <code>logoUrl</code>, <code>faviconUrl</code>, and <code>appIconUrl</code> in the palette</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Adjust hero filters (<code>heroContrast</code>, <code>heroSaturation</code>, etc.) to match your brand</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Optionally set <code>shimmerFrom</code> and <code>shimmerTo</code> for an animated title effect</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Update <code>APP_NAME</code> in <code>backend/.env</code> if you want a different name in the API docs</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Test both light and dark mode in the frontend to verify contrast</li>
 </ul>
