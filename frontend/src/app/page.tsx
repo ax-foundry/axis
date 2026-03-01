@@ -40,7 +40,7 @@ const rotatingMessages = [
   'Analyze Nuanced LLM Outputs',
 ];
 
-function RotatingText() {
+function RotatingText({ isLight }: { isLight?: boolean }) {
   const [current, setCurrent] = useState(0);
   const [exiting, setExiting] = useState(-1);
 
@@ -48,29 +48,29 @@ function RotatingText() {
     const id = setInterval(() => {
       setCurrent((prev) => {
         setExiting(prev);
-        setTimeout(() => setExiting(-1), 500);
+        setTimeout(() => setExiting(-1), 600);
         return (prev + 1) % rotatingMessages.length;
       });
-    }, 3500);
+    }, 4000);
     return () => clearInterval(id);
   }, []);
 
   return (
-    <div className="flex items-center justify-center gap-4">
-      <div className="sage-line-glow h-[1px] w-16" />
-      <div className="relative h-9 min-w-[380px] overflow-hidden">
+    <div className="flex items-center justify-center gap-5">
+      <div className="sage-line-glow h-[1px] w-12 sm:w-16" />
+      <div className="relative h-8 w-full max-w-[420px] overflow-hidden sm:h-9">
         {rotatingMessages.map((msg, i) => (
           <span
             key={i}
-            className={`rotating-text-item text-xl font-semibold text-primary ${
-              i === current ? 'active' : ''
-            } ${i === exiting ? 'exiting' : ''}`}
+            className={`rotating-text-item text-lg font-medium sm:text-xl ${
+              isLight ? 'text-primary-dark' : 'text-primary'
+            } ${i === current ? 'active' : ''} ${i === exiting ? 'exiting' : ''}`}
           >
             {msg}
           </span>
         ))}
       </div>
-      <div className="sage-line-glow h-[1px] w-16" />
+      <div className="sage-line-glow h-[1px] w-12 sm:w-16" />
     </div>
   );
 }
@@ -1521,35 +1521,34 @@ export default function Home() {
         <div className="relative z-10 px-6 text-center">
           {/* Pill badge */}
           <div
-            className={`mb-10 inline-flex items-center gap-2 rounded-full border px-5 py-2 backdrop-blur-sm ${
-              isLight ? 'border-primary/20 bg-white/80' : 'border-white/10 bg-white/5'
+            className={`animate-hero-entrance mb-8 inline-flex items-center gap-2 rounded-full border px-4 py-1.5 backdrop-blur-sm ${
+              isLight ? 'border-primary/15 bg-white/70' : 'border-white/[0.06] bg-white/[0.03]'
             }`}
           >
-            <Zap className="h-4 w-4 text-accent-gold" />
+            <Zap className="h-3.5 w-3.5 text-accent-gold" />
             <span
-              className={`text-sm font-semibold ${isLight ? 'text-text-secondary' : 'text-white/60'}`}
+              className={`text-xs font-medium tracking-wide ${isLight ? 'text-text-secondary' : 'text-white/50'}`}
             >
               {branding.tagline}
             </span>
           </div>
 
           {/* Title */}
-          <h1
-            className={`mb-4 text-[120px] font-black leading-none tracking-[-0.04em] ${
-              isLight ? 'text-text-primary' : 'text-white'
-            }`}
-            style={{
-              textShadow: isLight ? 'none' : '0 0 80px rgba(139,159,79,0.15)',
-            }}
-          >
-            {branding.app_name}
-          </h1>
+          <div className={`animate-hero-entrance-delay-1 ${!isLight ? 'hero-title-glow' : ''}`}>
+            <h1
+              className={`mb-4 text-[clamp(64px,11vw,132px)] font-black leading-[0.85] tracking-[-0.04em] ${
+                isLight ? 'animate-hero-shimmer-light' : 'animate-hero-shimmer-dark'
+              }`}
+            >
+              {branding.app_name}
+            </h1>
+          </div>
 
           {/* Subtitle */}
           <h2
-            className="mb-3 text-3xl font-bold"
+            className="animate-hero-entrance-delay-2 mb-8 text-xl font-medium tracking-wide sm:text-2xl"
             style={{
-              background: 'linear-gradient(135deg, #8B9F4F 0%, #D4AF37 100%)',
+              background: 'linear-gradient(135deg, #4CD9A0 0%, #80D4F0 100%)',
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
               backgroundClip: 'text',
@@ -1558,50 +1557,31 @@ export default function Home() {
             {branding.subtitle}
           </h2>
 
-          {/* Acronym */}
-          <p
-            className={`mb-8 whitespace-pre-line text-sm font-medium uppercase tracking-[0.15em] ${
-              isLight ? 'text-text-muted/50' : 'text-white/25'
-            }`}
-          >
-            {branding.description}
-          </p>
-
           {/* Rotating text */}
-          <div className="mb-8">
-            <RotatingText />
+          <div className="animate-hero-entrance-delay-3 mb-12">
+            <RotatingText isLight={isLight} />
           </div>
 
-          {/* Tagline */}
-          <p
-            className={`mx-auto mb-12 max-w-xl text-lg leading-relaxed ${
-              isLight ? 'text-text-muted' : 'text-white/40'
-            }`}
-          >
-            Comprehensive metrics, hierarchical analysis, and human-calibrated evaluation for AI
-            agents.
-          </p>
-
           {/* CTAs */}
-          <div className="mx-auto flex w-full max-w-xl flex-wrap justify-center gap-3 sm:gap-4">
+          <div className="animate-hero-entrance-delay-4 mx-auto flex w-full max-w-md flex-wrap justify-center gap-3 sm:gap-4">
             <Link
               href="/production"
-              className="animate-glow-pulse inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-8 py-3.5 text-base font-semibold text-white transition-colors hover:bg-primary-light sm:w-auto"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-8 py-3 text-sm font-semibold text-white shadow-lg shadow-primary/20 transition-all duration-200 hover:bg-primary-light hover:shadow-xl hover:shadow-primary/25 sm:w-auto"
             >
-              <BarChart3 className="h-5 w-5" />
+              <BarChart3 className="h-4 w-4" />
               Production Overview
             </Link>
             <Link
               href={userGuideUrl}
               target={userGuideUrl.startsWith('http') ? '_blank' : undefined}
               rel={userGuideUrl.startsWith('http') ? 'noopener noreferrer' : undefined}
-              className={`inline-flex w-full items-center justify-center gap-2 rounded-xl border px-8 py-3.5 text-base font-semibold backdrop-blur-sm transition-colors sm:w-auto ${
+              className={`inline-flex w-full items-center justify-center gap-2 rounded-xl border px-8 py-3 text-sm font-semibold backdrop-blur-sm transition-all duration-200 sm:w-auto ${
                 isLight
-                  ? 'border-primary bg-white text-primary hover:bg-primary/5'
-                  : 'border-white/10 bg-white/5 text-white/70 hover:border-white/20 hover:text-white'
+                  ? 'border-border bg-white text-text-secondary shadow-sm hover:border-primary/30 hover:text-primary'
+                  : 'border-white/[0.08] bg-white/[0.03] text-white/50 hover:border-white/15 hover:text-white/70'
               }`}
             >
-              <BookOpen className="h-5 w-5" />
+              <BookOpen className="h-4 w-4" />
               User Guides
             </Link>
           </div>
