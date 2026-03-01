@@ -131,7 +131,13 @@ export function KPITrendChart({ displayName, unit, data, onClose }: KPITrendChar
       yaxis: {
         ...axisConfig,
         automargin: true,
-        ...(unit === 'seconds' ? { visible: false } : suffix ? { ticksuffix: suffix } : {}),
+        ...(unit === 'seconds'
+          ? { visible: false }
+          : unit === 'percent'
+            ? { ticksuffix: '%', range: [0, 100] }
+            : suffix
+              ? { ticksuffix: suffix }
+              : {}),
       },
     };
 
