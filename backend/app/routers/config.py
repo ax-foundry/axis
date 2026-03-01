@@ -12,7 +12,7 @@ from app.config.db.human_signals import human_signals_db_config
 from app.config.db.kpi import kpi_db_config
 from app.config.db.monitoring import monitoring_db_config
 from app.config.env import settings
-from app.config.paths import CUSTOM_DIR
+from app.config.paths import get_custom_dir
 from app.config.theme import theme_config
 from app.plugins import discover_plugins
 
@@ -42,6 +42,8 @@ class ThemePaletteResponse(BaseModel):
     heroBrightness: float | None = None
     heroOpacity: float | None = None
     heroMode: str | None = None
+    shimmerFrom: str | None = None
+    shimmerTo: str | None = None
 
 
 class BrandingResponse(BaseModel):
@@ -108,6 +110,8 @@ async def get_theme() -> ThemeConfigResponse:
             heroBrightness=active_palette.heroBrightness,
             heroOpacity=active_palette.heroOpacity,
             heroMode=active_palette.heroMode,
+            shimmerFrom=active_palette.shimmerFrom,
+            shimmerTo=active_palette.shimmerTo,
         ),
         palettes={
             name: ThemePaletteResponse(
@@ -128,6 +132,8 @@ async def get_theme() -> ThemeConfigResponse:
                 heroBrightness=palette.heroBrightness,
                 heroOpacity=palette.heroOpacity,
                 heroMode=palette.heroMode,
+                shimmerFrom=palette.shimmerFrom,
+                shimmerTo=palette.shimmerTo,
             )
             for name, palette in theme_config.palettes.items()
         },
@@ -271,7 +277,7 @@ async def get_asset(asset_type: str, filename: str) -> FileResponse:
     if asset_type not in _ASSET_TYPES:
         raise HTTPException(status_code=404, detail="Not found")
 
-    base = (CUSTOM_DIR / asset_type).resolve()
+    base = (get_custom_dir() / asset_type).resolve()
     path = (base / filename).resolve()
 
     # Path-traversal protection

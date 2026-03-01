@@ -36,6 +36,9 @@ class ThemePalette:
     heroBrightness: float | None = None  # 1.0 = normal, 0.8 = darker
     heroOpacity: float | None = None  # 1.0 = fully visible, 0.5 = semi-transparent
     heroMode: str | None = None  # "dark" (default) or "light"
+    # Hero title shimmer gradient colors
+    shimmerFrom: str | None = None  # Start color of shimmer sweep (e.g., "#4CD9A0")
+    shimmerTo: str | None = None  # End color of shimmer sweep (e.g., "#80D4F0")
 
     def to_dict(self) -> dict[str, Any]:
         """Convert palette to dict for JSON serialization."""
@@ -57,6 +60,8 @@ class ThemePalette:
             "heroBrightness": self.heroBrightness,
             "heroOpacity": self.heroOpacity,
             "heroMode": self.heroMode,
+            "shimmerFrom": self.shimmerFrom,
+            "shimmerTo": self.shimmerTo,
         }
 
 
@@ -174,6 +179,8 @@ def load_theme_config() -> ThemeConfig:
                             heroBrightness=palette_data.get("heroBrightness"),
                             heroOpacity=palette_data.get("heroOpacity"),
                             heroMode=palette_data.get("heroMode"),
+                            shimmerFrom=palette_data.get("shimmerFrom"),
+                            shimmerTo=palette_data.get("shimmerTo"),
                         )
 
                 # Load branding config
@@ -262,6 +269,8 @@ def load_theme_config() -> ThemeConfig:
             if settings.axis_theme_hero_opacity is not None
             else base_palette.heroOpacity,
             heroMode=settings.axis_theme_hero_mode or base_palette.heroMode,
+            shimmerFrom=base_palette.shimmerFrom,
+            shimmerTo=base_palette.shimmerTo,
         )
         logger.info("Theme palette overridden by environment variables")
 

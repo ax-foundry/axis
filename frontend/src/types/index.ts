@@ -559,6 +559,9 @@ export interface ThemePalette {
   heroOpacity?: number | null;
   // Hero mode: 'dark' (default) or 'light' (white background)
   heroMode?: string | null;
+  // Hero title shimmer gradient colors
+  shimmerFrom?: string | null;
+  shimmerTo?: string | null;
 }
 
 export interface BrandingConfig {

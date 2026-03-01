@@ -116,6 +116,22 @@ function applyCSSVariables(palette: ThemePalette): void {
   } else {
     root.style.removeProperty('--hero-opacity');
   }
+
+  // Set shimmer gradient colors if provided
+  if (palette.shimmerFrom) {
+    root.style.setProperty('--shimmer-from', palette.shimmerFrom);
+    root.style.setProperty('--shimmer-from-rgb', hexToRgb(palette.shimmerFrom));
+  } else {
+    root.style.removeProperty('--shimmer-from');
+    root.style.removeProperty('--shimmer-from-rgb');
+  }
+  if (palette.shimmerTo) {
+    root.style.setProperty('--shimmer-to', palette.shimmerTo);
+    root.style.setProperty('--shimmer-to-rgb', hexToRgb(palette.shimmerTo));
+  } else {
+    root.style.removeProperty('--shimmer-to');
+    root.style.removeProperty('--shimmer-to-rgb');
+  }
 }
 
 // Default palette from DefaultColors

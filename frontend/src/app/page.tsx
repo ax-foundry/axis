@@ -27,6 +27,7 @@ import {
   useAppIconUrl,
   useBranding,
   useColors,
+  useHasShimmer,
   useHeroFilter,
   useHeroImage,
   useHeroMode,
@@ -1465,6 +1466,7 @@ export default function Home() {
   const heroMode = useHeroMode();
   const isLight = heroMode === 'light';
   const branding = useBranding();
+  const hasShimmer = useHasShimmer();
   const appIconUrl = useAppIconUrl();
   const docsBaseUrl = branding.docs_url?.replace(/\/+$/, '');
   const userGuideUrl = docsBaseUrl ? `${docsBaseUrl}/user-guide/` : '/learn';
@@ -1534,11 +1536,24 @@ export default function Home() {
           </div>
 
           {/* Title */}
-          <div className={`animate-hero-entrance-delay-1 ${!isLight ? 'hero-title-glow' : ''}`}>
+          <div
+            className={`animate-hero-entrance-delay-1 ${hasShimmer && !isLight ? 'hero-title-glow' : ''}`}
+          >
             <h1
               className={`mb-4 text-[clamp(64px,11vw,132px)] font-black leading-[0.85] tracking-[-0.04em] ${
-                isLight ? 'animate-hero-shimmer-light' : 'animate-hero-shimmer-dark'
+                hasShimmer
+                  ? isLight
+                    ? 'animate-hero-shimmer-light'
+                    : 'animate-hero-shimmer-dark'
+                  : isLight
+                    ? 'text-text-primary'
+                    : 'text-white'
               }`}
+              style={
+                !hasShimmer && !isLight
+                  ? { textShadow: '0 0 80px rgba(255,255,255,0.08)' }
+                  : undefined
+              }
             >
               {branding.app_name}
             </h1>
@@ -1546,19 +1561,26 @@ export default function Home() {
 
           {/* Subtitle */}
           <h2
-            className="animate-hero-entrance-delay-2 mb-8 text-xl font-medium tracking-wide sm:text-2xl"
-            style={{
-              background: 'linear-gradient(135deg, #4CD9A0 0%, #80D4F0 100%)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              backgroundClip: 'text',
-            }}
+            className={`animate-hero-entrance-delay-2 mb-8 text-xl font-medium tracking-wide sm:text-2xl ${
+              isLight ? 'text-text-secondary' : 'text-white/60'
+            }`}
           >
             {branding.subtitle}
           </h2>
 
+          {/* Description */}
+          {branding.description && (
+            <p
+              className={`animate-hero-entrance-delay-2 mx-auto mb-8 max-w-lg whitespace-pre-line text-base leading-relaxed ${
+                isLight ? 'text-text-muted' : 'text-white/40'
+              }`}
+            >
+              {branding.description}
+            </p>
+          )}
+
           {/* Rotating text */}
-          <div className="animate-hero-entrance-delay-3 mb-12">
+          <div className="animate-hero-entrance-delay-3 mb-10">
             <RotatingText isLight={isLight} />
           </div>
 

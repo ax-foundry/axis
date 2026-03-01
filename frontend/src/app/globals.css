@@ -671,14 +671,16 @@
 }
 
 .animate-hero-shimmer-dark {
+  --sf: var(--shimmer-from-rgb, 76 217 160);
+  --st: var(--shimmer-to-rgb, 128 212 240);
   background: linear-gradient(
     90deg,
     #ffffff 0%,
     #ffffff 38%,
-    rgba(125, 227, 209, 0.4) 43%,
-    rgba(100, 232, 190, 0.8) 48%,
-    rgba(128, 212, 240, 0.85) 52%,
-    rgba(125, 227, 209, 0.4) 57%,
+    rgba(var(--sf) / 0.4) 43%,
+    rgba(var(--sf) / 0.8) 48%,
+    rgba(var(--st) / 0.85) 52%,
+    rgba(var(--st) / 0.4) 57%,
     #ffffff 62%,
     #ffffff 100%
   );
@@ -690,14 +692,16 @@
 }
 
 .animate-hero-shimmer-light {
+  --sf: var(--shimmer-from-rgb, 76 217 160);
+  --st: var(--shimmer-to-rgb, 128 212 240);
   background: linear-gradient(
     90deg,
     #2c3e50 0%,
     #2c3e50 38%,
-    rgba(76, 217, 160, 0.5) 43%,
-    rgba(60, 200, 150, 0.85) 48%,
-    rgba(100, 200, 230, 0.9) 52%,
-    rgba(76, 217, 160, 0.5) 57%,
+    rgba(var(--sf) / 0.5) 43%,
+    rgba(var(--sf) / 0.85) 48%,
+    rgba(var(--st) / 0.9) 52%,
+    rgba(var(--sf) / 0.5) 57%,
     #2c3e50 62%,
     #2c3e50 100%
   );
@@ -710,8 +714,8 @@
 
 /* Hero title glow (behind text, works with background-clip) */
 .hero-title-glow {
-  filter: drop-shadow(0 0 80px rgba(100, 232, 190, 0.1))
-    drop-shadow(0 0 160px rgba(128, 212, 240, 0.05));
+  filter: drop-shadow(0 0 80px rgba(var(--shimmer-from-rgb, 76 217 160) / 0.1))
+    drop-shadow(0 0 160px rgba(var(--shimmer-to-rgb, 128 212 240) / 0.05));
 }
 
 /* Hero entrance */
