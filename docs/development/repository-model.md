@@ -136,6 +136,8 @@ theme:
       appIconUrl: "/api/config/assets/branding/app-icon.ico"
       heroMode: "light"
       heroOpacity: 0.6
+      # shimmerFrom: "#4CD9A0"
+      # shimmerTo: "#80D4F0"
 ```
 
 Image paths use `/api/config/assets/branding/*` — the backend serves these from `CUSTOM_DIR/branding/`. This works in both local dev (via Next.js rewrite) and production (via reverse proxy).
