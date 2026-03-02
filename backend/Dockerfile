@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1
 # Backend Dockerfile
 FROM python:3.12-slim
 
@@ -14,9 +15,15 @@ RUN apt-get update && apt-get install -y \
     libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Python dependencies
+# Install Python dependencies (BuildKit secret for git-based deps like axion)
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN --mount=type=secret,id=git_token \
+    if [ -f /run/secrets/git_token ]; then \
+      GIT_TOKEN=$(cat /run/secrets/git_token) && \
+      git config --global url."https://${GIT_TOKEN}@github.com/".insteadOf "https://github.com/"; \
+    fi && \
+    pip install --no-cache-dir -r requirements.txt && \
+    git config --global --remove-section url 2>/dev/null || true
 
 # Copy application code
 COPY . .
