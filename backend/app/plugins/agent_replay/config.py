@@ -257,9 +257,18 @@ class ReplayConfig:
     max_chars: int = 50000
     search_metadata_key: str = "caseReference"
     whatif_enabled: bool = True
+    whatif_disabled_agents: list[str] = field(default_factory=list)
     langfuse_agents: dict[str, LangfuseAgentCreds] = field(default_factory=dict)
     search_db: ReplayDBConfig = field(default_factory=ReplayDBConfig)
     prompt_patterns: Any = None  # PromptPatternsBase instance (or None)
+
+    def is_whatif_allowed(self, agent_name: str | None) -> bool:
+        """Check if what-if is enabled globally and for the given agent."""
+        if not self.whatif_enabled:
+            return False
+        if agent_name and agent_name.lower() in self.whatif_disabled_agents:
+            return False
+        return True
 
 
 def _build_prompt_patterns(raw: dict[str, Any] | None) -> Any:
@@ -343,12 +352,19 @@ def load_replay_config() -> ReplayConfig:
 
             if yaml_config.get("agent_replay"):
                 data = yaml_config["agent_replay"]
+                # Parse whatif_disabled_agents — normalize to lowercase
+                raw_disabled = data.get("whatif_disabled_agents") or []
+                disabled_agents = [
+                    str(a).strip().lower() for a in raw_disabled if str(a).strip()
+                ]
+
                 config = ReplayConfig(
                     default_limit=data.get("default_limit", 20),
                     default_days_back=data.get("default_days_back", 7),
                     max_chars=data.get("max_chars", 50000),
                     search_metadata_key=data.get("search_metadata_key", "caseReference"),
                     whatif_enabled=data.get("whatif_enabled", True),
+                    whatif_disabled_agents=disabled_agents,
                     prompt_patterns=_build_prompt_patterns(data.get("prompt_patterns")),
                 )
                 logger.info("Loaded agent replay config from %s", REPLAY_CONFIG_PATH)

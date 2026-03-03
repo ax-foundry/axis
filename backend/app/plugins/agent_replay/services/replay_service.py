@@ -307,6 +307,7 @@ def get_status() -> ReplayStatusResponse:
         default_limit=get_replay_config().default_limit,
         default_days_back=get_replay_config().default_days_back,
         whatif_enabled=get_replay_config().whatif_enabled,
+        whatif_disabled_agents=get_replay_config().whatif_disabled_agents,
         agents=get_configured_agents(),
         search_fields=search_fields,
         agent_search_fields=agent_search_fields,

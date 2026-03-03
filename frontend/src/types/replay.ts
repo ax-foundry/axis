@@ -91,6 +91,7 @@ export interface ReplayStatusResponse {
   default_limit: number;
   default_days_back: number;
   whatif_enabled: boolean;
+  whatif_disabled_agents: string[];
   agents: string[];
   search_fields: SearchFieldOption[];
   agent_search_fields: Record<string, SearchFieldOption[]>;
