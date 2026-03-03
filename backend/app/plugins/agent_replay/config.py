@@ -354,9 +354,7 @@ def load_replay_config() -> ReplayConfig:
                 data = yaml_config["agent_replay"]
                 # Parse whatif_disabled_agents — normalize to lowercase
                 raw_disabled = data.get("whatif_disabled_agents") or []
-                disabled_agents = [
-                    str(a).strip().lower() for a in raw_disabled if str(a).strip()
-                ]
+                disabled_agents = [str(a).strip().lower() for a in raw_disabled if str(a).strip()]
 
                 config = ReplayConfig(
                     default_limit=data.get("default_limit", 20),

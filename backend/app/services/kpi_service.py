@@ -1,4 +1,7 @@
 import logging
+import re
+from dataclasses import dataclass
+from typing import Any
 
 from app.config.db.kpi import kpi_db_config
 from app.models.kpi_schemas import (
@@ -18,6 +21,65 @@ from app.services.duckdb_store import DuckDBStore
 logger = logging.getLogger(__name__)
 
 TABLE = "kpi_data"
+
+
+# -- Prefix utilities ----------------------------------------------------------
+
+
+def _matches_prefix(kpi_name: str, prefixes: list[str]) -> bool:
+    """Check if kpi_name starts with any of the given prefixes."""
+    return any(kpi_name.startswith(p) for p in prefixes)
+
+
+def _find_longest_matching_prefix(kpi_name: str, prefix_dict: dict[str, Any]) -> str | None:
+    """Find the longest prefix key in prefix_dict that matches kpi_name."""
+    match = None
+    for prefix in prefix_dict:
+        if kpi_name.startswith(prefix) and (match is None or len(prefix) > len(match)):
+            match = prefix
+    return match
+
+
+def _parse_dynamic_display_name(kpi_name: str) -> str | None:
+    """Try to parse a human-readable display name using label_format.
+
+    Resolution:
+    1. Find matching prefix in kpi_override_prefixes with label_format
+    2. Strip prefix, split remainder on '__' to get segments
+    3. Extract expected keys from label_format via regex
+    4. Match segments to keys, title-case extracted values
+    5. Format and return; on any KeyError return None
+    """
+    prefix = _find_longest_matching_prefix(kpi_name, kpi_db_config.kpi_override_prefixes)
+    if prefix is None:
+        return None
+    override = kpi_db_config.kpi_override_prefixes[prefix]
+    fmt = override.get("label_format")
+    if not fmt:
+        return None
+
+    remainder = kpi_name[len(prefix) :]
+    segments = [s for s in remainder.split("__") if s]
+    keys = re.findall(r"\{(\w+)\}", fmt)
+    if not keys:
+        return None
+
+    values: dict[str, str] = {}
+    for seg in segments:
+        for key in keys:
+            if key in values:
+                continue
+            if seg.startswith(key + "_"):
+                values[key] = seg[len(key) + 1 :].replace("_", " ").title()
+                break
+            elif seg == key:
+                values[key] = key.replace("_", " ").title()
+                break
+
+    try:
+        return fmt.format(**values)
+    except KeyError:
+        return None
 
 
 # -- Display config helpers ----------------------------------------------------
@@ -40,7 +102,15 @@ def _get_card_display_value(kpi_name: str, source_name: str | None = None) -> st
         if "card_display_value" in src_cfg:
             return str(src_cfg["card_display_value"])
     global_kpi = kpi_db_config.kpi_overrides.get(kpi_name, {})
-    return str(global_kpi.get("card_display_value", kpi_db_config.card_display_value))
+    if "card_display_value" in global_kpi:
+        return str(global_kpi["card_display_value"])
+    # Prefix fallback
+    prefix = _find_longest_matching_prefix(kpi_name, kpi_db_config.kpi_override_prefixes)
+    if prefix:
+        val = kpi_db_config.kpi_override_prefixes[prefix].get("card_display_value")
+        if val is not None:
+            return str(val)
+    return kpi_db_config.card_display_value
 
 
 def _get_trend_lines(kpi_name: str, source_name: str | None = None) -> list[str]:
@@ -60,7 +130,15 @@ def _get_trend_lines(kpi_name: str, source_name: str | None = None) -> list[str]
         if "trend_lines" in src_cfg:
             return list(src_cfg["trend_lines"])
     global_kpi = kpi_db_config.kpi_overrides.get(kpi_name, {})
-    return list(global_kpi.get("trend_lines", kpi_db_config.trend_lines))
+    if "trend_lines" in global_kpi:
+        return list(global_kpi["trend_lines"])
+    # Prefix fallback
+    prefix = _find_longest_matching_prefix(kpi_name, kpi_db_config.kpi_override_prefixes)
+    if prefix:
+        val = kpi_db_config.kpi_override_prefixes[prefix].get("trend_lines")
+        if val is not None:
+            return list(val)
+    return list(kpi_db_config.trend_lines)
 
 
 def _get_unit(kpi_name: str, source_name: str | None = None) -> str:
@@ -79,6 +157,12 @@ def _get_unit(kpi_name: str, source_name: str | None = None) -> str:
     global_kpi = kpi_db_config.kpi_overrides.get(kpi_name, {})
     if "unit" in global_kpi:
         return str(global_kpi["unit"])
+    # Prefix fallback
+    prefix = _find_longest_matching_prefix(kpi_name, kpi_db_config.kpi_override_prefixes)
+    if prefix:
+        val = kpi_db_config.kpi_override_prefixes[prefix].get("unit")
+        if val is not None:
+            return str(val)
     return "score"
 
 
@@ -88,7 +172,9 @@ def _get_display_name(kpi_name: str, source_name: str | None = None) -> str:
     Resolution order:
     1. display_per_source[source].kpi_overrides[kpi].display_name
     2. kpi_overrides[kpi].display_name (global per-KPI)
-    3. Auto-generated from kpi_name
+    3. Dynamic parse from label_format (if prefix matches)
+    4. Prefix static display_name fallback
+    5. Title-case from kpi_name
     """
     if source_name:
         src_cfg = kpi_db_config.display_per_source.get(source_name, {})
@@ -98,6 +184,16 @@ def _get_display_name(kpi_name: str, source_name: str | None = None) -> str:
     global_kpi = kpi_db_config.kpi_overrides.get(kpi_name, {})
     if "display_name" in global_kpi:
         return str(global_kpi["display_name"])
+    # Dynamic parse from label_format
+    dynamic = _parse_dynamic_display_name(kpi_name)
+    if dynamic is not None:
+        return dynamic
+    # Prefix static display_name fallback
+    prefix = _find_longest_matching_prefix(kpi_name, kpi_db_config.kpi_override_prefixes)
+    if prefix:
+        val = kpi_db_config.kpi_override_prefixes[prefix].get("display_name")
+        if val is not None:
+            return str(val)
     return kpi_name.replace("_", " ").title()
 
 
@@ -117,16 +213,36 @@ def _get_polarity(kpi_name: str, source_name: str | None = None) -> str:
     global_kpi = kpi_db_config.kpi_overrides.get(kpi_name, {})
     if "polarity" in global_kpi:
         return str(global_kpi["polarity"])
+    # Prefix fallback
+    prefix = _find_longest_matching_prefix(kpi_name, kpi_db_config.kpi_override_prefixes)
+    if prefix:
+        val = kpi_db_config.kpi_override_prefixes[prefix].get("polarity")
+        if val is not None:
+            return str(val)
     return "higher_better"
 
 
 # -- SQL helpers ---------------------------------------------------------------
 
 
-def _sum_kpi_names(source_name: str | None = None) -> set[str]:
-    """Return kpi_names that should use SUM aggregation (count-type KPIs).
+@dataclass
+class SumKpiSpec:
+    """Specification for KPIs that should use SUM aggregation."""
 
-    Checks kpi_overrides and display_per_source for unit == 'count'.
+    exact_names: set[str]
+    prefixes: list[str]
+
+    @property
+    def is_empty(self) -> bool:
+        """Return True if no exact names or prefixes are configured."""
+        return not self.exact_names and not self.prefixes
+
+
+def _sum_kpi_spec(source_name: str | None = None) -> SumKpiSpec:
+    """Build a SumKpiSpec from exact names and prefix config.
+
+    Exact names come from kpi_overrides / display_per_source where unit == 'count'.
+    Prefixes come from sum_kpi_prefixes (explicit source of truth).
     """
     names: set[str] = set()
     for kpi_name, overrides in kpi_db_config.kpi_overrides.items():
@@ -137,19 +253,26 @@ def _sum_kpi_names(source_name: str | None = None) -> set[str]:
         for kpi_name, overrides in src_cfg.get("kpi_overrides", {}).items():
             if overrides.get("unit") == "count":
                 names.add(kpi_name)
-    return names
-
-
-def _daily_agg_expr(sum_kpis: set[str], params: list[object]) -> str:
-    """Build a SQL expression that uses SUM for count KPIs, AVG otherwise."""
-    if not sum_kpis:
-        return "AVG(numeric_value)"
-    placeholders = ", ".join("?" for _ in sum_kpis)
-    params.extend(sorted(sum_kpis))
-    return (
-        f"CASE WHEN kpi_name IN ({placeholders}) "
-        f"THEN SUM(numeric_value) ELSE AVG(numeric_value) END"
+    return SumKpiSpec(
+        exact_names=names,
+        prefixes=list(kpi_db_config.sum_kpi_prefixes),
     )
+
+
+def _daily_agg_expr(spec: SumKpiSpec, params: list[object]) -> str:
+    """Build a SQL expression that uses SUM for count KPIs, AVG otherwise."""
+    if spec.is_empty:
+        return "AVG(numeric_value)"
+    conditions: list[str] = []
+    if spec.exact_names:
+        placeholders = ", ".join("?" for _ in spec.exact_names)
+        params.extend(sorted(spec.exact_names))
+        conditions.append(f"kpi_name IN ({placeholders})")
+    for prefix in dict.fromkeys(spec.prefixes):  # dedupe, preserve order
+        conditions.append("kpi_name LIKE ?")
+        params.append(prefix + "%")
+    combined = " OR ".join(conditions)
+    return f"CASE WHEN ({combined}) " f"THEN SUM(numeric_value) ELSE AVG(numeric_value) END"
 
 
 def _build_where(
@@ -194,13 +317,20 @@ def _build_where(
         params.extend(kpi_names)
     else:
         # Per-source override takes precedence, then global default
-        effective = (
+        effective_exact = (
             kpi_db_config.visible_kpis_per_source.get(source_name, []) if source_name else []
         ) or kpi_db_config.visible_kpis
-        if effective:
-            placeholders = ", ".join("?" for _ in effective)
-            conditions.append(f"kpi_name IN ({placeholders})")
-            params.extend(effective)
+        effective_prefixes = list(dict.fromkeys(kpi_db_config.visible_kpi_prefixes))
+        if effective_exact or effective_prefixes:
+            parts: list[str] = []
+            if effective_exact:
+                placeholders = ", ".join("?" for _ in effective_exact)
+                parts.append(f"kpi_name IN ({placeholders})")
+                params.extend(effective_exact)
+            for prefix in effective_prefixes:
+                parts.append("kpi_name LIKE ?")
+                params.append(prefix + "%")
+            conditions.append(f"({' OR '.join(parts)})")
 
     return " AND ".join(conditions), params
 
@@ -226,7 +356,7 @@ def get_kpi_categories(
     if not store.has_table(TABLE):
         return KpiCategoriesResponse(categories=[])
 
-    sum_kpis = _sum_kpi_names(source_name)
+    sum_kpis = _sum_kpi_spec(source_name)
 
     where, params = _build_where(
         source_name=source_name,
@@ -443,7 +573,7 @@ def get_kpi_trends(
     if not store.has_table(TABLE):
         return KpiTrendsResponse(data=[], kpi_names=[])
 
-    sum_kpis = _sum_kpi_names(source_name)
+    sum_kpis = _sum_kpi_spec(source_name)
 
     where, params = _build_where(
         source_name=source_name,
@@ -531,8 +661,12 @@ def get_kpi_filters(store: DuckDBStore) -> KpiFiltersResponse:
     visible_set: set[str] = set(kpi_db_config.visible_kpis)
     for per_source_list in kpi_db_config.visible_kpis_per_source.values():
         visible_set.update(per_source_list)
-    if visible_set:
-        all_kpi_names = [n for n in all_kpi_names if n in visible_set]
+    if visible_set or kpi_db_config.visible_kpi_prefixes:
+        all_kpi_names = [
+            n
+            for n in all_kpi_names
+            if n in visible_set or _matches_prefix(n, kpi_db_config.visible_kpi_prefixes)
+        ]
 
     try:
         segments = _distinct("segment")

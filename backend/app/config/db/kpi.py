@@ -55,6 +55,12 @@ class KpiDBConfig:
     categories: dict[str, dict[str, str]] = field(default_factory=dict)
     # Composition chart definitions: stacked bar charts built from existing KPI values
     composition_charts: list[dict[str, Any]] = field(default_factory=list)
+    # Prefix-based visibility (global, Phase 1)
+    visible_kpi_prefixes: list[str] = field(default_factory=list)
+    # Prefix-based SUM aggregation (count-type KPIs)
+    sum_kpi_prefixes: list[str] = field(default_factory=list)
+    # Prefix-scoped display overrides (supports label_format for dynamic names)
+    kpi_override_prefixes: dict[str, dict[str, Any]] = field(default_factory=dict)
 
     @property
     def is_configured(self) -> bool:
@@ -199,6 +205,51 @@ def _parse_display_per_source(raw: Any) -> dict[str, dict[str, Any]]:
     return result
 
 
+def _parse_prefix_list(raw: Any) -> list[str]:
+    """Parse a YAML list of prefix strings, stripping whitespace and rejecting blanks."""
+    if not isinstance(raw, list):
+        return []
+    return [str(item).strip() for item in raw if item and str(item).strip()]
+
+
+def _parse_kpi_override_prefixes(raw: Any) -> dict[str, dict[str, Any]]:
+    """Parse prefix-scoped display overrides from YAML config.
+
+    Same validation as _parse_kpi_overrides, plus accepts label_format.
+    """
+    if not isinstance(raw, dict):
+        return {}
+    result: dict[str, dict[str, Any]] = {}
+    for prefix, overrides in raw.items():
+        if not isinstance(overrides, dict):
+            continue
+        parsed: dict[str, Any] = {}
+        if "card_display_value" in overrides:
+            val = str(overrides["card_display_value"])
+            if val in VALID_CARD_DISPLAY_VALUES:
+                parsed["card_display_value"] = val
+        if "trend_lines" in overrides and isinstance(overrides["trend_lines"], list):
+            parsed["trend_lines"] = [
+                str(t) for t in overrides["trend_lines"] if str(t) in VALID_TREND_LINES
+            ]
+        if "unit" in overrides:
+            val = str(overrides["unit"])
+            if val in VALID_UNITS:
+                parsed["unit"] = val
+        if "display_name" in overrides:
+            parsed["display_name"] = str(overrides["display_name"])
+        if "polarity" in overrides and overrides["polarity"] in (
+            "higher_better",
+            "lower_better",
+        ):
+            parsed["polarity"] = str(overrides["polarity"])
+        if "label_format" in overrides:
+            parsed["label_format"] = str(overrides["label_format"])
+        if parsed:
+            result[str(prefix)] = parsed
+    return result
+
+
 def load_kpi_db_config() -> KpiDBConfig:
     """Load KPI database config from YAML file first, then env vars.
 
@@ -255,6 +306,11 @@ def load_kpi_db_config() -> KpiDBConfig:
                     categories=_parse_categories(db_config.get("categories")),
                     composition_charts=_parse_composition_charts(
                         db_config.get("composition_charts")
+                    ),
+                    visible_kpi_prefixes=_parse_prefix_list(db_config.get("visible_kpi_prefixes")),
+                    sum_kpi_prefixes=_parse_prefix_list(db_config.get("sum_kpi_prefixes")),
+                    kpi_override_prefixes=_parse_kpi_override_prefixes(
+                        db_config.get("kpi_override_prefixes")
                     ),
                 )
                 logger.info("Loaded KPI DB config from %s", KPI_DB_CONFIG_PATH)
