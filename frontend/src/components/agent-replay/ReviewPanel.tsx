@@ -124,11 +124,11 @@ export function ReviewPanel({ traceId, agent, traceName, tree, traceInput }: Rev
   return (
     <div className="flex h-full flex-col bg-white">
       {/* Header */}
-      <div className="flex items-center justify-between bg-primary px-4 py-3">
-        <h2 className="text-sm font-semibold text-white">Review Trace</h2>
+      <div className="flex items-center justify-between bg-gradient-to-r from-primary to-primary-dark px-4 py-3">
+        <h2 className="text-sm font-bold text-white">Review Trace</h2>
         <button
           onClick={toggleReviewPanel}
-          className="rounded-md p-1 text-white/70 transition-colors hover:bg-white/20 hover:text-white"
+          className="rounded-md p-1 text-white/60 transition-colors hover:bg-white/20 hover:text-white"
         >
           <X className="h-4 w-4" />
         </button>
@@ -138,8 +138,8 @@ export function ReviewPanel({ traceId, agent, traceName, tree, traceInput }: Rev
       <div className="flex-1 space-y-5 overflow-y-auto px-4 py-4">
         {/* Existing reviews banner */}
         {existingCount > 0 && (
-          <div className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2">
-            <p className="text-xs font-medium text-blue-700">
+          <div className="rounded-lg border border-primary/20 bg-primary/5 px-3 py-2">
+            <p className="text-xs font-medium text-primary-dark">
               {existingCount} existing review score{existingCount !== 1 ? 's' : ''} on this trace
             </p>
           </div>
@@ -196,7 +196,7 @@ export function ReviewPanel({ traceId, agent, traceName, tree, traceInput }: Rev
             value={reviewToolingNeeds}
             onChange={(e) => setReviewToolingNeeds(e.target.value)}
             placeholder="What would the agent need to arrive at the correct decision?"
-            className="w-full resize-none rounded-lg border border-border bg-white px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+            className="w-full resize-none rounded-lg border border-primary/15 bg-white px-3 py-2 text-sm text-text-primary shadow-sm placeholder:text-text-muted focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/15"
           />
           <p className="mt-0.5 text-right text-[10px] text-text-muted">
             {reviewToolingNeeds.length}/2000
@@ -212,7 +212,7 @@ export function ReviewPanel({ traceId, agent, traceName, tree, traceInput }: Rev
             value={reviewRationale}
             onChange={(e) => setReviewRationale(e.target.value)}
             placeholder="Why did we approve or decline? Feedback loop back to the agent."
-            className="w-full resize-none rounded-lg border border-border bg-white px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+            className="w-full resize-none rounded-lg border border-primary/15 bg-white px-3 py-2 text-sm text-text-primary shadow-sm placeholder:text-text-muted focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/15"
           />
           <p className="mt-0.5 text-right text-[10px] text-text-muted">
             {reviewRationale.length}/2000
@@ -230,7 +230,7 @@ export function ReviewPanel({ traceId, agent, traceName, tree, traceInput }: Rev
             value={reviewExpectedOutput}
             onChange={(e) => setReviewExpectedOutput(e.target.value)}
             placeholder="What should the correct answer be? Ground truth for eval."
-            className="w-full resize-none rounded-lg border border-border bg-white px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+            className="w-full resize-none rounded-lg border border-primary/15 bg-white px-3 py-2 text-sm text-text-primary shadow-sm placeholder:text-text-muted focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/15"
           />
           <p className="mt-0.5 text-right text-[10px] text-text-muted">
             {reviewExpectedOutput.length}/2000
@@ -249,14 +249,14 @@ export function ReviewPanel({ traceId, agent, traceName, tree, traceInput }: Rev
       </div>
 
       {/* Sticky footer */}
-      <div className="border-t border-border px-4 py-3">
+      <div className="border-t border-primary/10 bg-primary/[0.02] px-4 py-3">
         <button
           onClick={handleSave}
           disabled={!canSave}
           className={cn(
-            'flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-colors',
+            'flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-bold transition-all',
             canSave
-              ? 'bg-primary text-white hover:bg-primary-dark'
+              ? 'bg-gradient-to-r from-primary to-primary-dark text-white shadow-md shadow-primary/25 hover:shadow-lg hover:shadow-primary/30 hover:brightness-110'
               : 'cursor-not-allowed bg-gray-100 text-gray-400'
           )}
         >

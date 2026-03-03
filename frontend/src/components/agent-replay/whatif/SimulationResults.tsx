@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowDown, ArrowUp, Clock, Equal } from 'lucide-react';
+import { ArrowDown, ArrowUp, Clock, Equal, Sparkles } from 'lucide-react';
 
 import { OutputViewer } from '@/components/agent-replay/OutputViewer';
 import { cn } from '@/lib/utils';
@@ -27,15 +27,15 @@ function formatTokens(n: number): string {
 
 export function SimulationResults({ result }: SimulationResultsProps) {
   return (
-    <div className="flex h-full flex-col gap-3 overflow-y-auto p-3">
+    <div className="flex h-full flex-col gap-3 overflow-y-auto p-4">
       {/* Original output (frozen) */}
-      <div className="rounded-lg border border-border bg-gray-50/80">
-        <div className="flex items-center gap-2 border-b border-border px-3 py-1.5">
-          <span className="text-[10px] font-bold uppercase tracking-wide text-text-muted">
+      <div className="overflow-hidden rounded-lg border border-border bg-gray-50/60">
+        <div className="flex items-center gap-2 border-b border-border px-3 py-2">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-text-muted">
             Original
           </span>
           {result.original_model && (
-            <span className="rounded-full bg-gray-200 px-2 py-px text-[10px] text-text-muted">
+            <span className="rounded-full bg-gray-200/80 px-2 py-0.5 text-[10px] text-text-muted">
               {result.original_model}
             </span>
           )}
@@ -59,24 +59,27 @@ export function SimulationResults({ result }: SimulationResultsProps) {
       </div>
 
       {/* Simulated output */}
-      <div className="rounded-lg border border-border bg-white">
-        <div className="flex items-center gap-2 border-b border-border px-3 py-1.5">
-          <span className="text-[10px] font-bold uppercase tracking-wide text-amber-600">
-            Simulated
-          </span>
+      <div className="overflow-hidden rounded-lg border-2 border-primary/20 bg-white shadow-sm shadow-primary/5">
+        <div className="flex items-center gap-2 border-b border-primary/10 bg-primary/[0.03] px-3 py-2">
+          <div className="flex items-center gap-1">
+            <Sparkles className="h-3 w-3 text-primary" />
+            <span className="text-[10px] font-bold uppercase tracking-wider text-primary">
+              Simulated
+            </span>
+          </div>
           {result.simulated_model && (
-            <span className="rounded-full bg-amber-100 px-2 py-px text-[10px] text-amber-700">
+            <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary-dark">
               {result.simulated_model}
             </span>
           )}
           <div className="ml-auto flex items-center gap-2">
             {result.simulated_usage && result.simulated_usage.total > 0 && (
-              <span className="text-[10px] text-text-primary">
+              <span className="text-[10px] font-medium text-text-primary">
                 {formatTokens(result.simulated_usage.total)} tokens
               </span>
             )}
             {result.simulated_latency_ms != null && (
-              <span className="flex items-center gap-0.5 text-[10px] text-text-primary">
+              <span className="flex items-center gap-0.5 text-[10px] font-medium text-text-primary">
                 <Clock className="h-2.5 w-2.5" />
                 {formatMs(result.simulated_latency_ms)}
               </span>
@@ -86,7 +89,7 @@ export function SimulationResults({ result }: SimulationResultsProps) {
             {result.token_delta !== 0 && (
               <span
                 className={cn(
-                  'flex items-center gap-0.5 rounded-full px-2 py-px text-[10px] font-semibold',
+                  'flex items-center gap-0.5 rounded-full px-2 py-0.5 text-[10px] font-bold',
                   result.token_delta > 0
                     ? 'bg-red-50 text-red-600'
                     : 'bg-emerald-50 text-emerald-600'
@@ -102,7 +105,7 @@ export function SimulationResults({ result }: SimulationResultsProps) {
               </span>
             )}
             {result.token_delta === 0 && !result.output_changed && (
-              <span className="flex items-center gap-0.5 rounded-full bg-gray-100 px-2 py-px text-[10px] text-text-muted">
+              <span className="flex items-center gap-0.5 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
                 <Equal className="h-2.5 w-2.5" />
                 No change
               </span>

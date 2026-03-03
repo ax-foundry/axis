@@ -1,6 +1,6 @@
 'use client';
 
-import { ChevronDown, RotateCcw } from 'lucide-react';
+import { ChevronDown, Play, RotateCcw } from 'lucide-react';
 import { useState } from 'react';
 
 import { cn } from '@/lib/utils';
@@ -42,22 +42,22 @@ export function VariableEditor({ fixture, onSimulate, isSimulating }: VariableEd
         {/* Model parameters (read-only from trace) */}
         {(fixture.model || fixture.temperature != null || fixture.max_tokens != null) && (
           <div>
-            <h4 className="mb-2 text-[10px] font-bold uppercase tracking-wide text-text-muted">
-              Model Parameters (from trace)
+            <h4 className="mb-2.5 text-[10px] font-bold uppercase tracking-wider text-primary-dark/60">
+              Model Parameters
             </h4>
             <div className="flex flex-wrap gap-2">
               {fixture.model && (
-                <span className="rounded-md bg-gray-100 px-2 py-1 font-mono text-[11px] text-text-secondary">
+                <span className="rounded-lg border border-primary/15 bg-primary/5 px-2.5 py-1 font-mono text-[11px] font-medium text-primary-dark">
                   {fixture.model}
                 </span>
               )}
               {fixture.temperature != null && (
-                <span className="rounded-md bg-gray-100 px-2 py-1 font-mono text-[11px] text-text-secondary">
+                <span className="rounded-lg border border-primary/15 bg-primary/5 px-2.5 py-1 font-mono text-[11px] font-medium text-primary-dark">
                   temp: {fixture.temperature}
                 </span>
               )}
               {fixture.max_tokens != null && (
-                <span className="rounded-md bg-gray-100 px-2 py-1 font-mono text-[11px] text-text-secondary">
+                <span className="rounded-lg border border-primary/15 bg-primary/5 px-2.5 py-1 font-mono text-[11px] font-medium text-primary-dark">
                   max_tokens: {fixture.max_tokens}
                 </span>
               )}
@@ -68,8 +68,11 @@ export function VariableEditor({ fixture, onSimulate, isSimulating }: VariableEd
         {/* Variables */}
         {variableFields.length > 0 && (
           <div>
-            <h4 className="mb-2 text-[10px] font-bold uppercase tracking-wide text-text-muted">
+            <h4 className="mb-3 text-[10px] font-bold uppercase tracking-wider text-primary-dark/60">
               Variables
+              <span className="ml-1.5 rounded-full bg-primary/10 px-1.5 py-px text-[9px] font-semibold text-primary">
+                {variableFields.length}
+              </span>
             </h4>
             <div className="space-y-4">
               {variableFields.map((field) => (
@@ -89,18 +92,24 @@ export function VariableEditor({ fixture, onSimulate, isSimulating }: VariableEd
           <div>
             <button
               onClick={() => setPromptOpen(!promptOpen)}
-              className="flex w-full items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide text-text-muted"
+              className="flex w-full items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-primary-dark/60 transition-colors hover:text-primary-dark"
             >
               <ChevronDown
                 className={cn('h-3 w-3 transition-transform', !promptOpen && '-rotate-90')}
               />
-              Prompt Messages ({fixture.prompt_messages.length})
+              Prompt Messages
+              <span className="rounded-full bg-primary/10 px-1.5 py-px text-[9px] font-semibold text-primary">
+                {fixture.prompt_messages.length}
+              </span>
             </button>
             {promptOpen && (
-              <div className="mt-2 space-y-2">
+              <div className="mt-3 space-y-2">
                 {(whatIf.promptMessagesOverride ?? fixture.prompt_messages).map((msg, idx) => (
-                  <div key={idx} className="rounded-lg border border-border">
-                    <div className="flex items-center gap-1.5 border-b border-border bg-gray-50 px-2 py-1">
+                  <div
+                    key={idx}
+                    className="overflow-hidden rounded-lg border border-primary/10 shadow-sm"
+                  >
+                    <div className="flex items-center gap-1.5 border-b border-primary/10 bg-primary/[0.03] px-2.5 py-1.5">
                       <span
                         className={cn(
                           'rounded px-1.5 py-px text-[9px] font-bold uppercase',
@@ -119,7 +128,7 @@ export function VariableEditor({ fixture, onSimulate, isSimulating }: VariableEd
                     <textarea
                       value={msg.content}
                       onChange={(e) => handlePromptChange(idx, e.target.value)}
-                      className="w-full resize-y rounded-b-lg border-0 bg-white px-2 py-1.5 font-mono text-[11px] text-text-primary focus:outline-none focus:ring-1 focus:ring-primary/30"
+                      className="w-full resize-y border-0 bg-white px-2.5 py-2 font-mono text-[11px] leading-relaxed text-text-primary focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary/20"
                       rows={Math.min(8, Math.max(2, msg.content.split('\n').length))}
                     />
                   </div>
@@ -131,11 +140,11 @@ export function VariableEditor({ fixture, onSimulate, isSimulating }: VariableEd
       </div>
 
       {/* Action bar */}
-      <div className="flex items-center gap-2 border-t border-border bg-gray-50/80 px-4 py-2.5">
+      <div className="flex items-center gap-2 border-t border-primary/10 bg-primary/[0.02] px-4 py-3">
         {hasOverrides && (
           <button
             onClick={resetWhatIfOverrides}
-            className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-text-muted transition-colors hover:bg-gray-200 hover:text-text-primary"
+            className="flex items-center gap-1 rounded-md border border-border px-2.5 py-1 text-xs text-text-muted transition-colors hover:border-primary/30 hover:bg-primary/5 hover:text-primary"
           >
             <RotateCcw className="h-3 w-3" />
             Reset
@@ -144,8 +153,9 @@ export function VariableEditor({ fixture, onSimulate, isSimulating }: VariableEd
         <button
           onClick={onSimulate}
           disabled={isSimulating}
-          className="ml-auto rounded-lg bg-primary px-5 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-primary-dark disabled:opacity-50"
+          className="ml-auto flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-primary to-primary-dark px-5 py-2 text-xs font-bold text-white shadow-md shadow-primary/25 transition-all hover:shadow-lg hover:shadow-primary/30 hover:brightness-110 disabled:opacity-50 disabled:shadow-none"
         >
+          <Play className="h-3 w-3" />
           {isSimulating ? 'Simulating...' : 'Simulate'}
         </button>
       </div>
@@ -171,14 +181,14 @@ function FieldInput({
   switch (field.field_type) {
     case 'select':
       return (
-        <div>
-          <label className="mb-1 block text-[11px] font-medium text-text-secondary">
+        <div className="rounded-lg border-l-[3px] border-l-primary/40 pl-3">
+          <label className="mb-1.5 block text-[11px] font-semibold text-text-primary">
             {field.label}
           </label>
           <select
             value={stringValue}
             onChange={(e) => onChange(e.target.value)}
-            className="w-full rounded-md border border-border bg-white px-2 py-1.5 text-xs text-text-primary focus:outline-none focus:ring-1 focus:ring-primary/30"
+            className="w-full rounded-lg border border-primary/15 bg-white px-2.5 py-2 text-xs text-text-primary shadow-sm transition-colors focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/15"
           >
             {field.options?.map((opt) => (
               <option key={opt} value={opt}>
@@ -191,10 +201,10 @@ function FieldInput({
 
     case 'slider':
       return (
-        <div>
-          <div className="mb-1 flex items-center justify-between">
-            <label className="text-[11px] font-medium text-text-secondary">{field.label}</label>
-            <span className="font-mono text-[11px] font-semibold text-text-primary">
+        <div className="rounded-lg border-l-[3px] border-l-primary/40 pl-3">
+          <div className="mb-1.5 flex items-center justify-between">
+            <label className="text-[11px] font-semibold text-text-primary">{field.label}</label>
+            <span className="rounded-md bg-primary/10 px-2 py-0.5 font-mono text-[11px] font-bold text-primary">
               {stringValue}
             </span>
           </div>
@@ -212,45 +222,45 @@ function FieldInput({
 
     case 'number':
       return (
-        <div>
-          <label className="mb-1 block text-[11px] font-medium text-text-secondary">
+        <div className="rounded-lg border-l-[3px] border-l-primary/40 pl-3">
+          <label className="mb-1.5 block text-[11px] font-semibold text-text-primary">
             {field.label}
           </label>
           <input
             type="number"
             value={stringValue}
             onChange={(e) => onChange(e.target.value)}
-            className="w-full rounded-md border border-border bg-white px-2 py-1.5 font-mono text-xs text-text-primary focus:outline-none focus:ring-1 focus:ring-primary/30"
+            className="w-full rounded-lg border border-primary/15 bg-white px-2.5 py-2 font-mono text-xs text-text-primary shadow-sm transition-colors focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/15"
           />
         </div>
       );
 
     case 'textarea':
       return (
-        <div>
-          <label className="mb-1.5 block text-[11px] font-medium text-text-secondary">
+        <div className="rounded-lg border-l-[3px] border-l-primary/40 pl-3">
+          <label className="mb-1.5 block text-[11px] font-semibold text-text-primary">
             {field.label}
           </label>
           <textarea
             value={stringValue}
             onChange={(e) => onChange(e.target.value)}
             rows={5}
-            className="w-full resize-y rounded-md border border-border bg-white px-2.5 py-2 font-mono text-xs leading-relaxed text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+            className="w-full resize-y rounded-lg border border-primary/15 bg-white px-3 py-2 font-mono text-xs leading-relaxed text-text-primary shadow-sm transition-colors focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/15"
           />
         </div>
       );
 
     default:
       return (
-        <div>
-          <label className="mb-1 block text-[11px] font-medium text-text-secondary">
+        <div className="rounded-lg border-l-[3px] border-l-primary/40 pl-3">
+          <label className="mb-1.5 block text-[11px] font-semibold text-text-primary">
             {field.label}
           </label>
           <input
             type="text"
             value={stringValue}
             onChange={(e) => onChange(e.target.value)}
-            className="w-full rounded-md border border-border bg-white px-2 py-1.5 text-xs text-text-primary focus:outline-none focus:ring-1 focus:ring-primary/30"
+            className="w-full rounded-lg border border-primary/15 bg-white px-2.5 py-2 text-xs text-text-primary shadow-sm transition-colors focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/15"
           />
         </div>
       );

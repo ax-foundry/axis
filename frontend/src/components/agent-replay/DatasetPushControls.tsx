@@ -45,7 +45,7 @@ export function DatasetPushControls({
             value={datasetName}
             onChange={(e) => onDatasetNameChange(e.target.value)}
             placeholder={defaultName}
-            className="w-full rounded-lg border border-border bg-white px-3 py-1.5 text-sm text-text-primary placeholder:text-text-muted focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+            className="w-full rounded-lg border border-primary/15 bg-white px-3 py-1.5 text-sm text-text-primary shadow-sm placeholder:text-text-muted focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/15"
           />
           <datalist id="dataset-suggestions">
             {datasetNames.map((name) => (
