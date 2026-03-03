@@ -99,6 +99,7 @@ class ReplayStatusResponse(BaseModel):
     langfuse_host: str = ""
     default_limit: int = 20
     default_days_back: int = 7
+    whatif_enabled: bool = True
     agents: list[str] = Field(default_factory=list)
     search_fields: list[SearchFieldOption] = Field(default_factory=list)
     agent_search_fields: dict[str, list[SearchFieldOption]] = Field(default_factory=dict)

@@ -90,6 +90,7 @@ export interface ReplayStatusResponse {
   langfuse_host: string;
   default_limit: number;
   default_days_back: number;
+  whatif_enabled: boolean;
   agents: string[];
   search_fields: SearchFieldOption[];
   agent_search_fields: Record<string, SearchFieldOption[]>;

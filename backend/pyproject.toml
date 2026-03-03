@@ -17,7 +17,7 @@ dependencies = [
     "openai>=1.55.0",
     "orjson>=3.10.0",
     "httpx>=0.28.0",
-    "axion[bertopic,langfuse] @ git+https://github.com/ax-foundry/axion.git",
+    "axion[langfuse] @ git+https://github.com/ax-foundry/axion.git",
     # AI Copilot dependencies
     "pydantic-ai>=0.0.14",
     "pydantic-graph>=0.0.10",

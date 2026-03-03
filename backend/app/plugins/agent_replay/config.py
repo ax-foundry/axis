@@ -256,6 +256,7 @@ class ReplayConfig:
     default_days_back: int = 7
     max_chars: int = 50000
     search_metadata_key: str = "caseReference"
+    whatif_enabled: bool = True
     langfuse_agents: dict[str, LangfuseAgentCreds] = field(default_factory=dict)
     search_db: ReplayDBConfig = field(default_factory=ReplayDBConfig)
     prompt_patterns: Any = None  # PromptPatternsBase instance (or None)
@@ -347,11 +348,16 @@ def load_replay_config() -> ReplayConfig:
                     default_days_back=data.get("default_days_back", 7),
                     max_chars=data.get("max_chars", 50000),
                     search_metadata_key=data.get("search_metadata_key", "caseReference"),
+                    whatif_enabled=data.get("whatif_enabled", True),
                     prompt_patterns=_build_prompt_patterns(data.get("prompt_patterns")),
                 )
                 logger.info("Loaded agent replay config from %s", REPLAY_CONFIG_PATH)
         except Exception as e:
             logger.warning("Failed to load agent replay YAML config: %s", e)
+
+    # Env var override for whatif_enabled
+    if settings.agent_replay_whatif_enabled is not None:
+        config.whatif_enabled = settings.agent_replay_whatif_enabled
 
     config.langfuse_agents = discover_langfuse_agents()
     config.search_db = load_replay_db_config()

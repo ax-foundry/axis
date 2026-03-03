@@ -317,8 +317,9 @@ export default function AgentReplayPage() {
                 </span>
               )}
               <div className="ml-auto flex items-center gap-1.5">
-                {/* What-If button — only for GENERATION nodes */}
-                {selectedNode &&
+                {/* What-If button — only for GENERATION nodes, gated by whatif_enabled */}
+                {status?.whatif_enabled !== false &&
+                  selectedNode &&
                   !isTraceIOSelected &&
                   (whatIf.active ? (
                     <button

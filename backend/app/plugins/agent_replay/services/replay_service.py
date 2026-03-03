@@ -306,6 +306,7 @@ def get_status() -> ReplayStatusResponse:
         langfuse_host=settings.langfuse_host,
         default_limit=get_replay_config().default_limit,
         default_days_back=get_replay_config().default_days_back,
+        whatif_enabled=get_replay_config().whatif_enabled,
         agents=get_configured_agents(),
         search_fields=search_fields,
         agent_search_fields=agent_search_fields,

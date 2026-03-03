@@ -188,7 +188,7 @@ export function WhatIfPanel({ traceId, nodeId, nodeName, agent }: WhatIfPanelPro
       )}
 
       {fixture && !fixtureLoading && (
-        <div className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-2">
+        <div className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[35%_1fr]">
           {/* Left: Variable Editor */}
           <div className="min-h-0 min-w-0 overflow-hidden border-b border-primary/10 bg-gradient-to-b from-primary/[0.02] to-transparent lg:border-b-0 lg:border-r lg:border-r-primary/10">
             <VariableEditor
@@ -199,7 +199,7 @@ export function WhatIfPanel({ traceId, nodeId, nodeName, agent }: WhatIfPanelPro
           </div>
 
           {/* Right: Results */}
-          <div className="min-w-0">
+          <div className="min-h-0 min-w-0 overflow-hidden">
             {isSimulating && (
               <div className="flex h-full flex-col items-center justify-center gap-4 p-8 text-text-muted">
                 <div className="relative">

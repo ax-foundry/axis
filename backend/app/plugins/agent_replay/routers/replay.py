@@ -48,6 +48,18 @@ def _check_enabled() -> None:
         )
 
 
+def _check_whatif_enabled() -> None:
+    _check_enabled()
+    from app.plugins.agent_replay.config import get_replay_config
+
+    if not get_replay_config().whatif_enabled:
+        raise HTTPException(
+            status_code=403,
+            detail="What-If Simulator is disabled. Set whatif_enabled: true in agent_replay.yaml "
+            "or AGENT_REPLAY_WHATIF_ENABLED=true to enable.",
+        )
+
+
 # ---------------------------------------------------------------------------
 # Endpoints
 # ---------------------------------------------------------------------------
@@ -203,7 +215,7 @@ async def get_step_fixture(
     agent: str | None = Query(default=None, description="Agent name for per-agent credentials"),
 ) -> StepFixture:
     """Extract a step fixture for what-if simulation (GENERATION nodes only)."""
-    _check_enabled()
+    _check_whatif_enabled()
     try:
         from app.plugins.agent_replay.services import whatif_service
 
@@ -236,7 +248,7 @@ async def run_simulation(
     agent: str | None = Query(default=None, description="Agent name for per-agent credentials"),
 ) -> SimulateResponse:
     """Run a stateless what-if simulation with overrides."""
-    _check_enabled()
+    _check_whatif_enabled()
     try:
         from app.plugins.agent_replay.services import whatif_service
 

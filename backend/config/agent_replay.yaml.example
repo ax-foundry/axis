@@ -27,6 +27,7 @@ agent_replay:
   default_days_back: 7           # How far back to look for traces (1-90)
   max_chars: 50000               # Default truncation limit for step content (1-200000)
   search_metadata_key: caseReference  # Langfuse metadata key used for smart search
+  whatif_enabled: true            # Enable/disable the What-If Simulator (env: AGENT_REPLAY_WHATIF_ENABLED)
 
   # ── Prompt variable extraction (What-If Simulator) ──
   # Define extraction patterns that pull editable variables from GENERATION

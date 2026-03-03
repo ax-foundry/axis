@@ -38,4 +38,4 @@ orjson>=3.10.0
 httpx>=0.28.0
 
 # Axion (evaluation framework)
-axion[bertopic,langfuse] @ git+https://github.com/ax-foundry/axion.git
+axion[langfuse] @ git+https://github.com/ax-foundry/axion.git

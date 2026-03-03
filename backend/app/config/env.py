@@ -185,6 +185,11 @@ class Settings(BaseSettings):
     agent_replay_enabled: bool = Field(
         default=False, description="Enable agent replay plugin (off by default)."
     )
+    agent_replay_whatif_enabled: bool | None = Field(
+        default=None,
+        description="Enable/disable the What-If Simulator within Agent Replay. "
+        "Defaults to true when agent replay is enabled. Set to false to hide the What-If UI.",
+    )
     langfuse_public_key: str | None = Field(
         default=None, description="Langfuse public key for agent replay."
     )

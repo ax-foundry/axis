@@ -1,13 +1,13 @@
 'use client';
 
 import { Sparkles, ChevronDown, ChevronUp, Loader2, RefreshCw } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+
+import type { ClusteringMethod, ErrorPattern } from '@/types';
 
 import { useClusterPatterns } from '@/lib/hooks';
 import { cn } from '@/lib/utils';
 import { useCalibrationStore } from '@/stores/calibration-store';
-
-import type { ClusteringMethod, ErrorPattern } from '@/types';
 
 interface PatternCardProps {
   pattern: ErrorPattern;
@@ -77,8 +77,6 @@ function PatternCard({ pattern, onSelectRecords }: PatternCardProps) {
 
 const CLUSTERING_METHODS: { value: ClusteringMethod; label: string; description: string }[] = [
   { value: 'llm', label: 'LLM', description: 'AI-powered categorization' },
-  { value: 'bertopic', label: 'BERTopic', description: 'Local topic modeling' },
-  { value: 'hybrid', label: 'Hybrid', description: 'BERTopic + LLM labels' },
 ];
 
 interface PatternSidebarProps {
@@ -96,16 +94,6 @@ export function PatternSidebar({ onSelectRecordIds }: PatternSidebarProps) {
   const notesCount = Object.values(humanAnnotations).filter(
     (ann) => ann.notes && ann.notes.trim()
   ).length;
-
-  const MIN_NOTES_FOR_BERTOPIC = 10;
-  const needsMoreNotes = notesCount < MIN_NOTES_FOR_BERTOPIC;
-
-  // Auto-switch to LLM if selected method requires more notes than available
-  useEffect(() => {
-    if (needsMoreNotes && (selectedMethod === 'bertopic' || selectedMethod === 'hybrid')) {
-      setSelectedMethod('llm');
-    }
-  }, [needsMoreNotes, selectedMethod]);
 
   const handleClusterPatterns = () => {
     clusterMutation.mutate({
@@ -153,8 +141,7 @@ export function PatternSidebar({ onSelectRecordIds }: PatternSidebarProps) {
           <p className="mb-2 text-xs font-medium text-text-muted">Clustering Method</p>
           <div className="flex gap-1">
             {CLUSTERING_METHODS.map((method) => {
-              const requiresMinNotes = method.value === 'bertopic' || method.value === 'hybrid';
-              const isDisabled = isClusteringPatterns || (requiresMinNotes && needsMoreNotes);
+              const isDisabled = isClusteringPatterns;
               return (
                 <button
                   key={method.value}
@@ -167,11 +154,7 @@ export function PatternSidebar({ onSelectRecordIds }: PatternSidebarProps) {
                       : 'bg-white text-text-secondary hover:bg-gray-100',
                     isDisabled && 'cursor-not-allowed opacity-50'
                   )}
-                  title={
-                    requiresMinNotes && needsMoreNotes
-                      ? `Requires ${MIN_NOTES_FOR_BERTOPIC}+ notes (${notesCount} available)`
-                      : method.description
-                  }
+                  title={method.description}
                 >
                   {method.label}
                 </button>
@@ -181,11 +164,6 @@ export function PatternSidebar({ onSelectRecordIds }: PatternSidebarProps) {
           <p className="mt-1.5 text-xs text-text-muted">
             {CLUSTERING_METHODS.find((m) => m.value === selectedMethod)?.description}
           </p>
-          {needsMoreNotes && (
-            <p className="mt-1 text-xs text-text-muted">
-              BERTopic/Hybrid require {MIN_NOTES_FOR_BERTOPIC}+ notes ({notesCount} available)
-            </p>
-          )}
           {clusterMutation.error && (
             <p className="mt-1.5 text-xs text-red-600">
               {clusterMutation.error instanceof Error
