@@ -7,6 +7,9 @@ import type {
   ReplayStatusResponse,
   ReviewCreateRequest,
   ReviewResponse,
+  SimulateRequest,
+  SimulateResponse,
+  StepFixture,
   StepSummary,
   TraceDetail,
   TraceReviewsResponse,
@@ -88,6 +91,42 @@ export async function getNodeDetail(
   const qs = agent ? `?agent=${encodeURIComponent(agent)}` : '';
   return fetchApi(
     `/api/agent-replay/traces/${encodeURIComponent(traceId)}/nodes/${encodeURIComponent(nodeId)}${qs}`
+  );
+}
+
+// ============================================
+// What-If API
+// ============================================
+
+export async function getStepFixture(
+  traceId: string,
+  nodeId: string,
+  agent?: string | null
+): Promise<StepFixture> {
+  const qs = new URLSearchParams();
+  if (agent) qs.append('agent', agent);
+  const query = qs.toString();
+  return fetchApi(
+    `/api/agent-replay/traces/${encodeURIComponent(traceId)}/nodes/${encodeURIComponent(nodeId)}/fixture${query ? `?${query}` : ''}`
+  );
+}
+
+export async function runSimulation(
+  traceId: string,
+  nodeId: string,
+  agent: string | null | undefined,
+  request: SimulateRequest
+): Promise<SimulateResponse> {
+  const qs = new URLSearchParams();
+  if (agent) qs.append('agent', agent);
+  const query = qs.toString();
+  return fetchApi(
+    `/api/agent-replay/traces/${encodeURIComponent(traceId)}/nodes/${encodeURIComponent(nodeId)}/simulate${query ? `?${query}` : ''}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(request),
+    }
   );
 }
 

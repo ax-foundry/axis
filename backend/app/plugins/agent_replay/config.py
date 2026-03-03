@@ -258,6 +258,78 @@ class ReplayConfig:
     search_metadata_key: str = "caseReference"
     langfuse_agents: dict[str, LangfuseAgentCreds] = field(default_factory=dict)
     search_db: ReplayDBConfig = field(default_factory=ReplayDBConfig)
+    prompt_patterns: Any = None  # PromptPatternsBase instance (or None)
+
+
+def _build_prompt_patterns(raw: dict[str, Any] | None) -> Any:
+    """Build a PromptPatternsBase subclass from inline YAML config.
+
+    YAML format::
+
+        prompt_patterns:
+          analysis:
+            inputData: "between:INPUT DATA:EVALUATION CRITERIA"
+            criteria: "between:EVALUATION CRITERIA:INSTRUCTIONS"
+            instructions: "between:INSTRUCTIONS:$"
+
+    Supported pattern formats:
+
+    - ``between:Start:End`` — captures between ``Start:`` and ``End``
+    - ``between:Start:End|$`` — captures between ``Start:`` and ``End`` or
+      end-of-string (for the last section in a prompt)
+    - Raw regex string — used as-is (must contain one capture group)
+    """
+    if not raw:
+        return None
+
+    try:
+        from axion._core.tracing.collection.prompt_patterns import (
+            PromptPatternsBase,
+            create_extraction_pattern,
+        )
+    except ImportError:
+        logger.warning("axion prompt_patterns not available — variable extraction disabled")
+        return None
+
+    import re as _re
+
+    # Build methods dict for the dynamic subclass
+    methods: dict[str, Any] = {}
+    for step_name, variables in raw.items():
+        if not isinstance(variables, dict):
+            continue
+        patterns: dict[str, str] = {}
+        for var_name, pattern_str in variables.items():
+            if isinstance(pattern_str, str) and pattern_str.startswith("between:"):
+                parts = pattern_str.split(":", 2)
+                if len(parts) == 3:
+                    start_text = parts[1].strip()
+                    end_text = parts[2].strip()
+                    # Support "End Text|$" for last-section-or-end-of-string
+                    if end_text.endswith("|$"):
+                        literal = end_text[:-2].strip()
+                        end_regex = f"{_re.escape(literal)}|$" if literal else "$"
+                    elif end_text == "$":
+                        end_regex = "$"
+                    else:
+                        end_regex = _re.escape(end_text)
+                    patterns[var_name] = create_extraction_pattern(start_text, end_regex)
+                else:
+                    patterns[var_name] = pattern_str
+            else:
+                patterns[var_name] = str(pattern_str)
+
+        # Create a classmethod for this step
+        safe_name = _re.sub(r"[^a-z0-9_]", "_", step_name.lower()).strip("_")
+        # Use default arg to capture patterns in closure
+        methods[f"_patterns_{safe_name}"] = classmethod(lambda cls, _p=patterns: _p)
+
+    if not methods:
+        return None
+
+    klass = type("YAMLPromptPatterns", (PromptPatternsBase,), methods)
+    logger.info("Built prompt patterns for steps: %s", list(raw.keys()))
+    return klass
 
 
 def load_replay_config() -> ReplayConfig:
@@ -275,6 +347,7 @@ def load_replay_config() -> ReplayConfig:
                     default_days_back=data.get("default_days_back", 7),
                     max_chars=data.get("max_chars", 50000),
                     search_metadata_key=data.get("search_metadata_key", "caseReference"),
+                    prompt_patterns=_build_prompt_patterns(data.get("prompt_patterns")),
                 )
                 logger.info("Loaded agent replay config from %s", REPLAY_CONFIG_PATH)
         except Exception as e:

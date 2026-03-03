@@ -2,6 +2,8 @@
 
 import {
   AlertCircle,
+  ArrowLeft,
+  FlaskConical,
   Loader2,
   Logs,
   MessageSquarePlus,
@@ -20,6 +22,7 @@ import {
   TRACE_IO_NODE_ID,
   TraceIOPanel,
   TracePicker,
+  WhatIfPanel,
 } from '@/components/agent-replay';
 import {
   collectAllNodeIds,
@@ -41,12 +44,15 @@ export default function AgentReplayPage() {
     sidebarCollapsed,
     selectedAgent,
     reviewPanelOpen,
+    whatIf,
     setTraceId,
     setSelectedNodeId,
     setExpandedNodeIds,
     toggleNodeExpanded,
     toggleSidebar,
     toggleReviewPanel,
+    enterWhatIf,
+    exitWhatIf,
     setAvailableAgents,
     reset,
   } = useReplayStore();
@@ -310,15 +316,46 @@ export default function AgentReplayPage() {
                     : selectedNode?.name || selectedNode?.type || 'node'}
                 </span>
               )}
-              <div className="ml-auto">
+              <div className="ml-auto flex items-center gap-1.5">
+                {/* What-If button — only for GENERATION nodes */}
+                {selectedNode &&
+                  !isTraceIOSelected &&
+                  (whatIf.active ? (
+                    <button
+                      onClick={() => exitWhatIf()}
+                      className="flex items-center gap-1.5 rounded-md bg-primary px-2.5 py-1 text-xs font-bold text-white transition-colors hover:bg-primary-dark"
+                      title="Exit What-If Simulator and return to node details"
+                    >
+                      <ArrowLeft className="h-3.5 w-3.5" />
+                      Exit What-If
+                    </button>
+                  ) : selectedNode.type?.toUpperCase() === 'GENERATION' ? (
+                    <button
+                      onClick={() => enterWhatIf(selectedNode.id)}
+                      className="flex items-center gap-1.5 rounded-md bg-primary px-2.5 py-1 text-xs font-bold text-white shadow-sm transition-all hover:bg-primary-dark hover:shadow-md"
+                      title="Open What-If Simulator — re-run this LLM call with different inputs"
+                    >
+                      <FlaskConical className="h-3.5 w-3.5" />
+                      What-If
+                    </button>
+                  ) : (
+                    <span
+                      className="flex cursor-default items-center gap-1.5 rounded-md bg-gray-100 px-2.5 py-1 text-xs text-text-muted"
+                      title="What-If is available on LLM generation steps (look for steps marked GEN in the tree)"
+                    >
+                      <FlaskConical className="h-3.5 w-3.5" />
+                      What-If
+                    </span>
+                  ))}
                 <button
                   onClick={toggleReviewPanel}
                   className={cn(
-                    'flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors',
+                    'flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-bold transition-colors',
                     reviewPanelOpen
                       ? 'bg-primary text-white'
-                      : 'text-text-muted hover:bg-gray-200 hover:text-text-primary'
+                      : 'bg-primary/10 text-primary hover:bg-primary/20'
                   )}
+                  title="Submit a review for this trace"
                 >
                   <MessageSquarePlus className="h-3.5 w-3.5" />
                   Review
@@ -327,7 +364,14 @@ export default function AgentReplayPage() {
             </div>
 
             <div className="flex-1 overflow-y-auto p-3">
-              {isTraceIOSelected ? (
+              {whatIf.active && selectedNode ? (
+                <WhatIfPanel
+                  traceId={trace.id}
+                  nodeId={selectedNode.id}
+                  nodeName={selectedNode.name}
+                  agent={selectedAgent}
+                />
+              ) : isTraceIOSelected ? (
                 <TraceIOPanel trace={trace} />
               ) : selectedNode ? (
                 <NodeDetailPanel node={selectedNode} traceId={trace.id} agent={selectedAgent} />

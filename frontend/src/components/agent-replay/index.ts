@@ -9,3 +9,4 @@ export { VerdictSelector } from './VerdictSelector';
 export { FailureStepSelector } from './FailureStepSelector';
 export { DatasetPushControls } from './DatasetPushControls';
 export { ReviewPanel } from './ReviewPanel';
+export { WhatIfPanel } from './whatif';

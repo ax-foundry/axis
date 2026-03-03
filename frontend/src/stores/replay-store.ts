@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-import type { ReviewVerdict } from '@/types/replay';
+import type { ReviewVerdict, WhatIfChatMessage } from '@/types/replay';
 
 const INITIAL_REVIEW_STATE = {
   reviewPanelOpen: false,
@@ -11,6 +11,22 @@ const INITIAL_REVIEW_STATE = {
   reviewExpectedOutput: '',
   reviewAddToDataset: false,
   reviewDatasetName: '',
+};
+
+interface WhatIfState {
+  active: boolean;
+  nodeId: string | null;
+  fixtureHash: string | null;
+  overrides: Record<string, unknown>;
+  promptMessagesOverride: WhatIfChatMessage[] | null;
+}
+
+const INITIAL_WHATIF_STATE: WhatIfState = {
+  active: false,
+  nodeId: null,
+  fixtureHash: null,
+  overrides: {},
+  promptMessagesOverride: null,
 };
 
 interface ReplayState {
@@ -31,6 +47,9 @@ interface ReplayState {
   reviewExpectedOutput: string;
   reviewAddToDataset: boolean;
   reviewDatasetName: string;
+
+  // What-If state
+  whatIf: WhatIfState;
 
   setTraceId: (id: string | null) => void;
   setSelectedNodeId: (id: string | null) => void;
@@ -54,6 +73,14 @@ interface ReplayState {
   setReviewAddToDataset: (v: boolean) => void;
   setReviewDatasetName: (v: string) => void;
   resetReviewForm: () => void;
+
+  // What-If actions
+  enterWhatIf: (nodeId: string) => void;
+  exitWhatIf: () => void;
+  setWhatIfFixtureHash: (hash: string) => void;
+  setWhatIfOverride: (key: string, value: unknown) => void;
+  resetWhatIfOverrides: () => void;
+  setWhatIfPromptMessages: (msgs: WhatIfChatMessage[] | null) => void;
 }
 
 export const useReplayStore = create<ReplayState>()((set) => ({
@@ -65,6 +92,7 @@ export const useReplayStore = create<ReplayState>()((set) => ({
   selectedAgent: null,
   availableAgents: [],
   ...INITIAL_REVIEW_STATE,
+  whatIf: { ...INITIAL_WHATIF_STATE },
 
   setTraceId: (id) =>
     set({
@@ -73,6 +101,7 @@ export const useReplayStore = create<ReplayState>()((set) => ({
       expandedNodeIds: {},
       isPickerOpen: !id,
       ...INITIAL_REVIEW_STATE,
+      whatIf: { ...INITIAL_WHATIF_STATE },
     }),
 
   setSelectedNodeId: (id) => set({ selectedNodeId: id }),
@@ -102,6 +131,7 @@ export const useReplayStore = create<ReplayState>()((set) => ({
       selectedNodeId: null,
       expandedNodeIds: {},
       ...INITIAL_REVIEW_STATE,
+      whatIf: { ...INITIAL_WHATIF_STATE },
     }),
 
   setAvailableAgents: (names) => set({ availableAgents: names }),
@@ -113,6 +143,7 @@ export const useReplayStore = create<ReplayState>()((set) => ({
       expandedNodeIds: {},
       isPickerOpen: true,
       ...INITIAL_REVIEW_STATE,
+      whatIf: { ...INITIAL_WHATIF_STATE },
     }),
 
   // Review actions
@@ -125,4 +156,32 @@ export const useReplayStore = create<ReplayState>()((set) => ({
   setReviewAddToDataset: (v) => set({ reviewAddToDataset: v }),
   setReviewDatasetName: (v) => set({ reviewDatasetName: v }),
   resetReviewForm: () => set(INITIAL_REVIEW_STATE),
+
+  // What-If actions
+  enterWhatIf: (nodeId) =>
+    set({
+      whatIf: { ...INITIAL_WHATIF_STATE, active: true, nodeId },
+      reviewPanelOpen: false,
+    }),
+
+  exitWhatIf: () => set({ whatIf: { ...INITIAL_WHATIF_STATE } }),
+
+  setWhatIfFixtureHash: (hash) => set((s) => ({ whatIf: { ...s.whatIf, fixtureHash: hash } })),
+
+  setWhatIfOverride: (key, value) =>
+    set((s) => ({
+      whatIf: { ...s.whatIf, overrides: { ...s.whatIf.overrides, [key]: value } },
+    })),
+
+  resetWhatIfOverrides: () =>
+    set((s) => ({
+      whatIf: {
+        ...s.whatIf,
+        overrides: {},
+        promptMessagesOverride: null,
+      },
+    })),
+
+  setWhatIfPromptMessages: (msgs) =>
+    set((s) => ({ whatIf: { ...s.whatIf, promptMessagesOverride: msgs } })),
 }));

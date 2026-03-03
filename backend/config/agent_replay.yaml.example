@@ -27,3 +27,26 @@ agent_replay:
   default_days_back: 7           # How far back to look for traces (1-90)
   max_chars: 50000               # Default truncation limit for step content (1-200000)
   search_metadata_key: caseReference  # Langfuse metadata key used for smart search
+
+  # ── Prompt variable extraction (What-If Simulator) ──
+  # Define extraction patterns that pull editable variables from GENERATION
+  # prompt text. Each top-level key is a step name (matched against the
+  # observation name in the trace tree). Each nested key is a variable name;
+  # the value is a pattern.
+  #
+  # Pattern formats:
+  #   "between:Start Text:End Text"       — captures between "Start Text:" and "End Text"
+  #   "between:Start Text:End Text|$"     — captures between "Start Text:" and "End Text" or end-of-string
+  #   "between:Start Text:$"              — captures from "Start Text:" to end-of-string
+  #   "raw regex with (capture group)"    — any string not starting with "between:" is raw regex
+  #
+  # prompt_patterns:
+  #   analysis:
+  #     inputData: "between:INPUT DATA:EVALUATION CRITERIA"
+  #     criteria: "between:EVALUATION CRITERIA:INSTRUCTIONS"
+  #     instructions: "between:INSTRUCTIONS:$"
+  #   summarization:
+  #     sourceText: "between:SOURCE TEXT:OUTPUT FORMAT|$"
+  #   chat:
+  #     userMessage: '\*\*User Message:\*\*\s*(.*?)\s*(?:\*\*Context:\*\*)'
+  #     context: '\*\*Context:\*\*\s*(.*?)\s*(?:$)'

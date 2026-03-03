@@ -6,13 +6,15 @@ import {
   getRecentTraces,
   getReplayStatus,
   getStepDetail,
+  getStepFixture,
   getTraceDetail,
   getTraceReviews,
   listDatasets,
+  runSimulation,
   searchTraces,
 } from '@/lib/api/replay-api';
 
-import type { ReviewCreateRequest } from '@/types/replay';
+import type { ReviewCreateRequest, SimulateRequest } from '@/types/replay';
 
 export function useReplayStatus() {
   return useQuery({
@@ -81,6 +83,36 @@ export function useNodeDetail(
     queryFn: () => getNodeDetail(traceId!, nodeId!, agent),
     enabled: false,
     staleTime: 5 * 60_000,
+  });
+}
+
+// ---------------------------------------------------------------------------
+// What-If hooks
+// ---------------------------------------------------------------------------
+
+export function useStepFixture(
+  traceId: string | null,
+  nodeId: string | null,
+  agent?: string | null,
+  enabled = false
+) {
+  return useQuery({
+    queryKey: ['step-fixture', traceId, nodeId, agent],
+    queryFn: () => getStepFixture(traceId!, nodeId!, agent),
+    enabled: enabled && !!traceId && !!nodeId,
+    staleTime: 5 * 60_000,
+    retry: 1,
+  });
+}
+
+export function useRunSimulation() {
+  return useMutation({
+    mutationFn: (params: {
+      traceId: string;
+      nodeId: string;
+      agent: string | null | undefined;
+      request: SimulateRequest;
+    }) => runSimulation(params.traceId, params.nodeId, params.agent, params.request),
   });
 }
 
