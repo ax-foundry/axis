@@ -99,7 +99,7 @@ def _parse_dynamic_display_name(kpi_name: str) -> str | None:
 
     titled = {k: v.replace("_", " ").title() for k, v in raw.items()}
     try:
-        return fmt.format(**titled)
+        return str(fmt.format(**titled))
     except KeyError:
         return None
 
@@ -870,15 +870,15 @@ def _build_sankey_chart(
         sk_type = sk_config.get("type")
         sk_label = str(sk_config.get("label", ""))
         sk_unit = str(sk_config.get("unit", "count"))
-        sk_color = sk_config.get("color")
-        sk_column = sk_config.get("column", "")
+        sk_color: str | None = sk_config.get("color")
+        sk_column: str = str(sk_config.get("column", ""))
 
         if sk_type == "column_total":
-            val = col_totals.get(sk_column, 0.0)
+            col_val = col_totals.get(sk_column, 0.0)
             summary_kpis.append(
                 KpiSankeySummaryKpi(
                     label=sk_label,
-                    value=int(val),
+                    value=int(col_val),
                     unit=sk_unit,
                     color=sk_color,
                 )
