@@ -266,9 +266,7 @@ class ReplayConfig:
         """Check if what-if is enabled globally and for the given agent."""
         if not self.whatif_enabled:
             return False
-        if agent_name and agent_name.lower() in self.whatif_disabled_agents:
-            return False
-        return True
+        return not (agent_name and agent_name.lower() in self.whatif_disabled_agents)
 
 
 def _build_prompt_patterns(raw: dict[str, Any] | None) -> Any:

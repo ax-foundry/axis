@@ -67,7 +67,7 @@ export function BarChart({ data, showPercent = true }: BarChartProps) {
       plot_bgcolor: 'transparent',
       font: { family: 'Inter, system-ui, sans-serif' },
     }),
-    [showPercent]
+    [showPercent, maxVal]
   );
 
   if (data.length === 0) {

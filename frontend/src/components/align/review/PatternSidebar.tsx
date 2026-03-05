@@ -3,11 +3,11 @@
 import { Sparkles, ChevronDown, ChevronUp, Loader2, RefreshCw } from 'lucide-react';
 import { useState } from 'react';
 
-import type { ClusteringMethod, ErrorPattern } from '@/types';
-
 import { useClusterPatterns } from '@/lib/hooks';
 import { cn } from '@/lib/utils';
 import { useCalibrationStore } from '@/stores/calibration-store';
+
+import type { ClusteringMethod, ErrorPattern } from '@/types';
 
 interface PatternCardProps {
   pattern: ErrorPattern;
