@@ -59,9 +59,9 @@ logger = logging.getLogger(__name__)
 # Re-export exceptions for backward compat (router references them as replay_service.X)
 __all__ = [
     "LangfuseNotConfiguredError",
+    "NodeNotFoundError",
     "ReplayServiceError",
     "StepNotFoundError",
-    "NodeNotFoundError",
 ]
 
 # Pattern to detect trace IDs: UUIDs or long hex strings (32+ chars)
