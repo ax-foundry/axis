@@ -66,6 +66,7 @@ export function KPICompositionChart({ config, kpis }: KPICompositionChartProps) 
 
   return (
     <div className="overflow-hidden rounded-lg border border-border bg-white">
+      {/* Header */}
       <button
         type="button"
         onClick={() => setExpanded((v) => !v)}
@@ -74,9 +75,10 @@ export function KPICompositionChart({ config, kpis }: KPICompositionChartProps) 
         <h3 className="text-sm font-medium text-text-primary">{config.title}</h3>
         <ChevronIcon className="h-4 w-4 text-text-muted" />
       </button>
+
+      {/* Always-visible summary strip */}
       <div className="px-4 py-3">
-        {/* Legend row */}
-        <div className="mb-3 flex flex-wrap items-center gap-x-6 gap-y-1.5">
+        <div className="grid auto-cols-fr grid-flow-col items-center gap-4">
           {segments.map((seg) => (
             <div key={seg.label} className="flex items-center gap-2">
               <span
@@ -90,37 +92,40 @@ export function KPICompositionChart({ config, kpis }: KPICompositionChartProps) 
             </div>
           ))}
         </div>
-
-        {/* Stacked bar */}
-        <div className="flex h-8 w-full overflow-hidden rounded-md">
-          {segments
-            .filter((seg) => seg.pct > 0)
-            .map((seg) => {
-              const width = (seg.pct / total) * 100;
-              return (
-                <div
-                  key={seg.label}
-                  className="transition-all duration-300"
-                  style={{
-                    width: `${width}%`,
-                    backgroundColor: seg.color,
-                    minWidth: width > 0 ? '2px' : '0',
-                  }}
-                  title={`${seg.label}: ${seg.pct.toFixed(1)}%`}
-                />
-              );
-            })}
-        </div>
       </div>
 
-      {/* Expandable time series */}
+      {/* Expandable detail: stacked bar + time series */}
       {expanded && (
-        <div className="animate-in fade-in slide-in-from-top-2 border-t border-border duration-200">
-          <KPICompositionTimeSeries
-            config={config}
-            trendData={trendsData?.data ?? []}
-            isLoading={trendsLoading}
-          />
+        <div className="animate-in fade-in slide-in-from-top-2 duration-200">
+          <div className="border-t border-border px-4 py-3">
+            <div className="flex h-8 w-full overflow-hidden rounded-md">
+              {segments
+                .filter((seg) => seg.pct > 0)
+                .map((seg) => {
+                  const width = (seg.pct / total) * 100;
+                  return (
+                    <div
+                      key={seg.label}
+                      className="transition-all duration-300"
+                      style={{
+                        width: `${width}%`,
+                        backgroundColor: seg.color,
+                        minWidth: width > 0 ? '2px' : '0',
+                      }}
+                      title={`${seg.label}: ${seg.pct.toFixed(1)}%`}
+                    />
+                  );
+                })}
+            </div>
+          </div>
+
+          <div className="border-t border-border">
+            <KPICompositionTimeSeries
+              config={config}
+              trendData={trendsData?.data ?? []}
+              isLoading={trendsLoading}
+            />
+          </div>
         </div>
       )}
     </div>

@@ -1,9 +1,3 @@
-"""What-If Simulator Pydantic models.
-
-All validation follows a reject-not-clamp philosophy: invalid parameters
-return 422 errors with clear messages — never silently adjusted.
-"""
-
 from __future__ import annotations
 
 import json
@@ -13,10 +7,6 @@ from typing import Any
 from pydantic import BaseModel, Field, field_validator, model_validator
 
 from app.plugins.agent_replay.models.replay_schemas import TokenUsage  # noqa: TCH001
-
-# ---------------------------------------------------------------------------
-# Chat messages (strict typed)
-# ---------------------------------------------------------------------------
 
 
 class ChatMessageRole(StrEnum):
@@ -35,11 +25,6 @@ class ChatMessage(BaseModel):
     content: str
     tool_call_id: str | None = None
     name: str | None = None
-
-
-# ---------------------------------------------------------------------------
-# Overridable field descriptor
-# ---------------------------------------------------------------------------
 
 
 class FieldType(StrEnum):
@@ -70,11 +55,6 @@ class OverridableField(BaseModel):
     category: FieldCategory
 
 
-# ---------------------------------------------------------------------------
-# Step fixture (GET response)
-# ---------------------------------------------------------------------------
-
-
 class StepFixture(BaseModel):
     """Extracted fixture for a GENERATION node, ready for what-if editing."""
 
@@ -92,10 +72,6 @@ class StepFixture(BaseModel):
     overridable_fields: list[OverridableField] = Field(default_factory=list)
     fixture_hash: str = ""
 
-
-# ---------------------------------------------------------------------------
-# Simulate request (POST body)
-# ---------------------------------------------------------------------------
 
 _MAX_VARIABLE_KEYS = 50
 _MAX_VARIABLE_VALUE_LEN = 10_000
@@ -143,11 +119,6 @@ class SimulateRequest(BaseModel):
                 )
                 raise ValueError(msg)
         return self
-
-
-# ---------------------------------------------------------------------------
-# Simulate response
-# ---------------------------------------------------------------------------
 
 
 class SimulateResponse(BaseModel):

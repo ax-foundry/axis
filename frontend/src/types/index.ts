@@ -1730,4 +1730,38 @@ export interface KpiFiltersResponse {
   segments: string[];
   kpi_order: Record<string, string[]>;
   composition_charts?: KpiCompositionChartConfig[];
+  has_sankey_charts?: boolean;
+  card_hidden_kpi_names?: string[];
+}
+
+export interface KpiSankeyNode {
+  label: string;
+  color: string;
+}
+
+export interface KpiSankeyLink {
+  source: number;
+  target: number;
+  value: number;
+  color: string;
+}
+
+export interface KpiSankeySummaryKpi {
+  label: string;
+  value: number | string;
+  unit: string;
+  color?: string;
+}
+
+export interface KpiSankeyChartData {
+  title: string;
+  nodes: KpiSankeyNode[];
+  links: KpiSankeyLink[];
+  summary_kpis: KpiSankeySummaryKpi[];
+  column_labels: string[];
+}
+
+export interface KpiSankeyResponse {
+  success: boolean;
+  charts: KpiSankeyChartData[];
 }

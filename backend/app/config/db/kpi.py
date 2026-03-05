@@ -61,6 +61,11 @@ class KpiDBConfig:
     sum_kpi_prefixes: list[str] = field(default_factory=list)
     # Prefix-scoped display overrides (supports label_format for dynamic names)
     kpi_override_prefixes: dict[str, dict[str, Any]] = field(default_factory=dict)
+    # Sankey chart definitions
+    sankey_charts: list[dict[str, Any]] = field(default_factory=list)
+    # Hide KPIs from card grid (still queryable by charts)
+    card_hidden_kpis: list[str] = field(default_factory=list)
+    card_hidden_kpi_prefixes: list[str] = field(default_factory=list)
 
     @property
     def is_configured(self) -> bool:
@@ -250,6 +255,62 @@ def _parse_kpi_override_prefixes(raw: Any) -> dict[str, dict[str, Any]]:
     return result
 
 
+def _parse_sankey_charts(raw: Any) -> list[dict[str, Any]]:
+    """Parse sankey_charts list from YAML config.
+
+    Each chart must have a title, kpi_prefixes list, and columns list.
+    """
+    if not isinstance(raw, list):
+        return []
+    charts: list[dict[str, Any]] = []
+    for entry in raw:
+        if not isinstance(entry, dict):
+            continue
+        title = entry.get("title")
+        kpi_prefixes = entry.get("kpi_prefixes")
+        columns = entry.get("columns")
+        if (
+            not title
+            or not isinstance(kpi_prefixes, list)
+            or not kpi_prefixes
+            or not isinstance(columns, list)
+            or len(columns) < 2
+        ):
+            continue
+        parsed_prefixes = [str(p).strip() for p in kpi_prefixes if p and str(p).strip()]
+        if not parsed_prefixes:
+            continue
+        parsed_columns = []
+        for col in columns:
+            if isinstance(col, dict) and col.get("key") and col.get("label"):
+                parsed_col: dict[str, Any] = {
+                    "key": str(col["key"]),
+                    "label": str(col["label"]),
+                }
+                if "value_order" in col and isinstance(col["value_order"], list):
+                    parsed_col["value_order"] = [str(v) for v in col["value_order"]]
+                parsed_columns.append(parsed_col)
+        if len(parsed_columns) < 2:
+            continue
+        chart: dict[str, Any] = {
+            "title": str(title),
+            "kpi_prefixes": parsed_prefixes,
+            "columns": parsed_columns,
+        }
+        if "ignore_keys" in entry and isinstance(entry["ignore_keys"], list):
+            chart["ignore_keys"] = [str(k) for k in entry["ignore_keys"] if k]
+        if "node_colors" in entry and isinstance(entry["node_colors"], dict):
+            chart["node_colors"] = {str(k): str(v) for k, v in entry["node_colors"].items()}
+        if "summary_kpis" in entry and isinstance(entry["summary_kpis"], list):
+            parsed_summary = []
+            for sk in entry["summary_kpis"]:
+                if isinstance(sk, dict) and sk.get("type") and sk.get("label"):
+                    parsed_summary.append({str(k): v for k, v in sk.items()})
+            chart["summary_kpis"] = parsed_summary
+        charts.append(chart)
+    return charts
+
+
 def load_kpi_db_config() -> KpiDBConfig:
     """Load KPI database config from YAML file first, then env vars.
 
@@ -311,6 +372,11 @@ def load_kpi_db_config() -> KpiDBConfig:
                     sum_kpi_prefixes=_parse_prefix_list(db_config.get("sum_kpi_prefixes")),
                     kpi_override_prefixes=_parse_kpi_override_prefixes(
                         db_config.get("kpi_override_prefixes")
+                    ),
+                    sankey_charts=_parse_sankey_charts(db_config.get("sankey_charts")),
+                    card_hidden_kpis=_parse_prefix_list(db_config.get("card_hidden_kpis")),
+                    card_hidden_kpi_prefixes=_parse_prefix_list(
+                        db_config.get("card_hidden_kpi_prefixes")
                     ),
                 )
                 logger.info("Loaded KPI DB config from %s", KPI_DB_CONFIG_PATH)

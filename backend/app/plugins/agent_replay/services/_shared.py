@@ -1,9 +1,3 @@
-"""Shared helpers for agent_replay services.
-
-Extracted from replay_service.py to allow reuse across replay, review,
-and what-if services without circular imports.
-"""
-
 from __future__ import annotations
 
 import json

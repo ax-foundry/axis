@@ -3,9 +3,19 @@ import logging
 import anyio
 from fastapi import APIRouter, Query
 
-from app.models.kpi_schemas import KpiCategoriesResponse, KpiFiltersResponse, KpiTrendsResponse
+from app.models.kpi_schemas import (
+    KpiCategoriesResponse,
+    KpiFiltersResponse,
+    KpiSankeyResponse,
+    KpiTrendsResponse,
+)
 from app.services.duckdb_store import get_store
-from app.services.kpi_service import get_kpi_categories, get_kpi_filters, get_kpi_trends
+from app.services.kpi_service import (
+    get_kpi_categories,
+    get_kpi_filters,
+    get_kpi_sankey,
+    get_kpi_trends,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -73,5 +83,30 @@ async def kpi_filters() -> KpiFiltersResponse:
     store = get_store()
     return await anyio.to_thread.run_sync(
         lambda: get_kpi_filters(store),
+        limiter=store.query_limiter,
+    )
+
+
+@router.get("/sankey", response_model=KpiSankeyResponse)
+async def kpi_sankey(
+    source_name: str | None = None,
+    environment: str | None = None,
+    source_type: str | None = None,
+    segment: str | None = None,
+    time_start: str | None = None,
+    time_end: str | None = None,
+) -> KpiSankeyResponse:
+    """Sankey flow diagrams for decision flow KPIs."""
+    store = get_store()
+    return await anyio.to_thread.run_sync(
+        lambda: get_kpi_sankey(
+            store,
+            source_name=source_name,
+            environment=environment,
+            source_type=source_type,
+            segment=segment,
+            time_start=time_start,
+            time_end=time_end,
+        ),
         limiter=store.query_limiter,
     )

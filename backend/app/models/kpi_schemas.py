@@ -96,3 +96,47 @@ class KpiFiltersResponse(BaseModel):
     segments: list[str]
     kpi_order: dict[str, list[str]]
     composition_charts: list[KpiCompositionChartConfig] = []
+    has_sankey_charts: bool = False
+    card_hidden_kpi_names: list[str] = []
+
+
+class KpiSankeyNode(BaseModel):
+    """A node in the Sankey diagram."""
+
+    label: str
+    color: str
+
+
+class KpiSankeyLink(BaseModel):
+    """A link between two nodes."""
+
+    source: int
+    target: int
+    value: float
+    color: str
+
+
+class KpiSankeySummaryKpi(BaseModel):
+    """A summary KPI card displayed above the Sankey."""
+
+    label: str
+    value: float | str
+    unit: str
+    color: str | None = None
+
+
+class KpiSankeyChartData(BaseModel):
+    """Assembled data for a single Sankey chart."""
+
+    title: str
+    nodes: list[KpiSankeyNode]
+    links: list[KpiSankeyLink]
+    summary_kpis: list[KpiSankeySummaryKpi]
+    column_labels: list[str]
+
+
+class KpiSankeyResponse(BaseModel):
+    """Response for GET /api/kpi/sankey."""
+
+    success: bool = True
+    charts: list[KpiSankeyChartData]

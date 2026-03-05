@@ -195,6 +195,54 @@ kpi_db:
   #     remainder_label: "Declined"
   #     remainder_color: "#F87171"
 
+  # --- Card Grid Hiding ---
+  # Hide specific KPIs from the card grid while keeping them queryable
+  # for composition charts, sankey charts, and trend views.
+  #
+  # card_hidden_kpis:              # Exact KPI names to hide from cards
+  #   - referral_rate
+  #   - modification_rate
+  # card_hidden_kpi_prefixes:      # Prefix-based hiding from cards
+  #   - decision_flow_engine_to_athena__
+  #   - decision_flow_athena_to_final__
+
+  # --- Sankey Charts ---
+  # Optional Sankey flow diagrams built from count-type KPIs.
+  # Each chart visualizes flow across multiple stages (columns).
+  # KPI names encode the flow path via __-delimited key_value segments.
+  #
+  # sankey_charts:
+  #   - title: "Decision Flow"
+  #     kpi_prefixes:                 # Prefixes to match flow KPIs
+  #       - decision_flow_engine_to_athena__
+  #       - decision_flow_athena_to_final__
+  #     columns:                      # Stages (left-to-right), min 2
+  #       - key: engine               # Matches segment key in KPI name
+  #         label: "Rules Engine"     # Display label
+  #         value_order: [approved, refer, decline]  # Optional: fix node order
+  #       - key: athena
+  #         label: "AI Recommendation"
+  #       - key: final
+  #         label: "Final Outcome"
+  #     ignore_keys:                  # Optional: collapse these dimensions
+  #       - blocked_origin
+  #     node_colors:                  # Optional: value -> hex color
+  #       approved: "#4ADE80"
+  #       refer: "#FBBF24"
+  #       decline: "#F87171"
+  #     summary_kpis:                 # Optional: KPI cards above chart
+  #       - type: column_total        # Sum of all nodes in a column
+  #         column: engine
+  #         label: "Total Cases"
+  #         unit: count
+  #       - type: node_value          # Value of a specific node
+  #         column: engine
+  #         node: approved
+  #         label: "STP Rate"
+  #         format: percent_of_column # Show as % of column total
+  #         unit: percent
+  #         color: "#4ADE80"
+
   # --- Periodic Incremental Sync ---
   # refresh_interval_minutes: how often to sync (0 = disabled, >0 = every N minutes)
   # incremental_column: column used as a watermark (must be monotonically increasing)

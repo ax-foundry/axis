@@ -4,11 +4,12 @@ import { Calendar, Layers, Loader2 } from 'lucide-react';
 import { useMemo } from 'react';
 
 import { FilterDropdown } from '@/components/ui/FilterDropdown';
-import { useKpiData, useKpiTrends } from '@/lib/hooks/useKpiData';
+import { useKpiData, useKpiSankey, useKpiTrends } from '@/lib/hooks/useKpiData';
 import { useKpiStore, useMonitoringStore } from '@/stores';
 
 import { KPICategoryStrip } from './KPICategoryStrip';
 import { KPICompositionChart } from './KPICompositionChart';
+import { KPISankeyChart } from './KPISankeyChart';
 import { KPITrendChart } from './KPITrendChart';
 
 import type { KpiCategoryItem, KpiDateRange, KpiTrendPoint } from '@/types';
@@ -41,6 +42,8 @@ export function AgentKPISection() {
   const availableSegments = useKpiStore((s) => s.availableSegments);
   const kpiOrder = useKpiStore((s) => s.kpiOrder);
   const compositionCharts = useKpiStore((s) => s.compositionCharts);
+  const hasSankeyCharts = useKpiStore((s) => s.hasSankeyCharts);
+  const cardHiddenKpiNames = useKpiStore((s) => s.cardHiddenKpiNames);
   const selectedSourceName = useMonitoringStore((s) => s.selectedSourceName);
 
   const dateLabel = useMemo(() => (dateRange ? formatDateRange(dateRange) : null), [dateRange]);
@@ -85,11 +88,20 @@ export function AgentKPISection() {
     });
   }, [categories, effectiveOrder]);
 
+  // KPIs for the card grid (excludes card-hidden ones)
+  const cardKpis = useMemo(
+    () => flatKpis.filter((k) => !cardHiddenKpiNames.has(k.kpi_name)),
+    [flatKpis, cardHiddenKpiNames]
+  );
+
   // Find the selected KPI item for the trend chart
   const selectedItem = useMemo(
     () => flatKpis.find((k) => k.kpi_name === selectedKpi) ?? null,
     [flatKpis, selectedKpi]
   );
+
+  // Sankey chart data (lazy-loaded when config enables it)
+  const { data: sankeyData, isLoading: sankeyLoading } = useKpiSankey(hasSankeyCharts);
 
   // Lazy-load trend data for the selected KPI
   const { data: trendsData, isLoading: trendsLoading } = useKpiTrends(
@@ -138,19 +150,12 @@ export function AgentKPISection() {
         </div>
       )}
 
-      {/* Flat KPI card grid */}
-      <KPICategoryStrip kpis={flatKpis} selectedKpi={selectedKpi} onSelectKpi={selectKpi} />
-
-      {/* Composition charts (optional, config-driven) */}
-      {compositionCharts.length > 0 && flatKpis.length > 0 && (
-        <div className="space-y-3">
-          {compositionCharts.map((chart) => (
-            <KPICompositionChart key={chart.title} config={chart} kpis={flatKpis} />
-          ))}
-        </div>
+      {/* Flat KPI card grid (hidden KPIs filtered out) */}
+      {cardKpis.length > 0 && (
+        <KPICategoryStrip kpis={cardKpis} selectedKpi={selectedKpi} onSelectKpi={selectKpi} />
       )}
 
-      {/* Trend chart for selected KPI */}
+      {/* Trend chart for selected KPI (above composition/sankey charts) */}
       {selectedKpi && (
         <div className="animate-in fade-in slide-in-from-top-2 duration-200">
           {trendsLoading ? (
@@ -166,6 +171,24 @@ export function AgentKPISection() {
               onClose={() => selectKpi(selectedKpi)}
             />
           )}
+        </div>
+      )}
+
+      {/* Composition charts (optional, config-driven) */}
+      {compositionCharts.length > 0 && flatKpis.length > 0 && (
+        <div className="space-y-3">
+          {compositionCharts.map((chart) => (
+            <KPICompositionChart key={chart.title} config={chart} kpis={flatKpis} />
+          ))}
+        </div>
+      )}
+
+      {/* Sankey charts (optional, config-driven) */}
+      {sankeyData?.charts && sankeyData.charts.length > 0 && (
+        <div className="space-y-3">
+          {sankeyData.charts.map((chart) => (
+            <KPISankeyChart key={chart.title} chart={chart} isLoading={sankeyLoading} />
+          ))}
         </div>
       )}
     </div>

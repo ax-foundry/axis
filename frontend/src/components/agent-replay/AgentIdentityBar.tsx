@@ -167,7 +167,7 @@ export function AgentIdentityBar({ trace, className }: AgentIdentityBarProps) {
               </span>
               <span className="flex items-center gap-1 rounded-full bg-gray-100 px-2.5 py-1 font-mono text-[10px] text-text-muted">
                 <Hash className="h-3 w-3" />
-                {trace.id.slice(0, 8)}...
+                {trace.id}
               </span>
             </div>
           </>
