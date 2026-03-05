@@ -67,7 +67,7 @@ export function FailureStepSelector({ nodes, value, onChange }: FailureStepSelec
     <select
       value={value ?? ''}
       onChange={(e) => onChange(e.target.value || null)}
-      className="w-full rounded-lg border border-border bg-white px-3 py-2 text-sm text-text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+      className="w-full rounded-lg border border-primary/15 bg-white px-3 py-2 text-sm text-text-primary shadow-sm focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/15"
     >
       <option value="">None selected</option>
       {spans.map((node) => (

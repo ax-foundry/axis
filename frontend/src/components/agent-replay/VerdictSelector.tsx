@@ -44,7 +44,9 @@ export function VerdictSelector({ value, onChange }: VerdictSelectorProps) {
             onClick={() => onChange(verdict)}
             className={cn(
               'flex flex-col items-center gap-1 rounded-lg border-2 px-2 py-2.5 text-xs font-medium transition-all',
-              isSelected ? color : 'border-border bg-white text-text-muted hover:border-gray-300'
+              isSelected
+                ? cn(color, 'shadow-sm')
+                : 'border-primary/10 bg-white text-text-muted hover:border-primary/25 hover:bg-primary/[0.02]'
             )}
           >
             <Icon className="h-4 w-4" />

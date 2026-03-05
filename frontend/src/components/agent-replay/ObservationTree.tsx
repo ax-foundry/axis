@@ -70,8 +70,10 @@ function ObservationTreeRow({
       <button
         onClick={() => onSelectNode(node.id)}
         className={cn(
-          'group flex w-full items-center gap-1.5 py-1.5 pr-2 text-left text-xs transition-colors hover:bg-gray-50',
-          isSelected && 'border-l-2 border-l-primary bg-primary/5'
+          'group flex w-full items-center gap-1.5 py-1.5 pr-2 text-left text-xs transition-colors',
+          isSelected
+            ? 'bg-primary/8 border-l-[3px] border-l-primary shadow-[inset_0_0_12px_rgba(139,159,79,0.06)]'
+            : 'hover:bg-primary/[0.03]'
         )}
         style={{ paddingLeft: `${node.depth * 16 + 8}px` }}
       >
@@ -82,12 +84,16 @@ function ObservationTreeRow({
               e.stopPropagation();
               onToggleExpand(node.id);
             }}
-            className="flex h-4 w-4 shrink-0 cursor-pointer items-center justify-center rounded hover:bg-gray-200"
+            className="flex h-4 w-4 shrink-0 cursor-pointer items-center justify-center rounded transition-colors hover:bg-primary/10"
           >
             {isExpanded ? (
-              <ChevronDown className="h-3 w-3 text-text-muted" />
+              <ChevronDown
+                className={cn('h-3 w-3', isSelected ? 'text-primary' : 'text-text-muted')}
+              />
             ) : (
-              <ChevronRight className="h-3 w-3 text-text-muted" />
+              <ChevronRight
+                className={cn('h-3 w-3', isSelected ? 'text-primary' : 'text-text-muted')}
+              />
             )}
           </span>
         ) : (
@@ -97,7 +103,7 @@ function ObservationTreeRow({
         {/* Type icon */}
         <span
           className={cn(
-            'flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded',
+            'flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded shadow-sm',
             config.bg
           )}
         >
@@ -108,14 +114,19 @@ function ObservationTreeRow({
         <span
           className={cn(
             'min-w-0 flex-1 truncate font-medium',
-            isSelected ? 'text-primary-dark' : 'text-text-primary'
+            isSelected ? 'font-semibold text-primary-dark' : 'text-text-primary'
           )}
         >
           {displayName}
         </span>
 
         {/* Compact metadata */}
-        <span className="ml-auto flex shrink-0 items-center gap-1.5 text-[10px] text-text-muted">
+        <span
+          className={cn(
+            'ml-auto flex shrink-0 items-center gap-1.5 text-[10px]',
+            isSelected ? 'text-primary/70' : 'text-text-muted'
+          )}
+        >
           {node.latency_ms != null && <span>{formatMs(node.latency_ms)}</span>}
           {node.usage && node.usage.total > 0 && <span>{formatTokens(node.usage.total)}t</span>}
         </span>
@@ -146,18 +157,18 @@ interface TreeToolbarProps {
 
 function TreeToolbar({ totalNodes, onExpandAll, onCollapseAll }: TreeToolbarProps) {
   return (
-    <div className="flex items-center justify-between border-b border-border px-3 py-2">
-      <span className="text-[11px] font-medium text-text-muted">{totalNodes} nodes</span>
+    <div className="flex items-center justify-between border-b border-primary/10 bg-gradient-to-r from-primary/[0.04] to-transparent px-3 py-2">
+      <span className="text-[11px] font-semibold text-primary-dark/60">{totalNodes} nodes</span>
       <div className="flex items-center gap-1">
         <button
           onClick={onExpandAll}
-          className="rounded px-1.5 py-0.5 text-[10px] font-medium text-text-muted transition-colors hover:bg-gray-100 hover:text-text-primary"
+          className="rounded px-1.5 py-0.5 text-[10px] font-medium text-primary/60 transition-colors hover:bg-primary/10 hover:text-primary-dark"
         >
           Expand
         </button>
         <button
           onClick={onCollapseAll}
-          className="rounded px-1.5 py-0.5 text-[10px] font-medium text-text-muted transition-colors hover:bg-gray-100 hover:text-text-primary"
+          className="rounded px-1.5 py-0.5 text-[10px] font-medium text-primary/60 transition-colors hover:bg-primary/10 hover:text-primary-dark"
         >
           Collapse
         </button>
@@ -272,11 +283,18 @@ export function ObservationTree({
           <button
             onClick={() => handleSelect(TRACE_IO_NODE_ID)}
             className={cn(
-              'group flex w-full items-center gap-1.5 py-1.5 pl-2 pr-2 text-left text-xs transition-colors hover:bg-gray-50',
-              traceIOSelected && 'border-l-2 border-l-primary bg-primary/5'
+              'group flex w-full items-center gap-1.5 py-1.5 pl-2 pr-2 text-left text-xs transition-colors',
+              traceIOSelected
+                ? 'bg-primary/8 border-l-[3px] border-l-primary shadow-[inset_0_0_12px_rgba(139,159,79,0.06)]'
+                : 'hover:bg-primary/[0.03]'
             )}
           >
-            <span className="flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded bg-primary/15">
+            <span
+              className={cn(
+                'flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded shadow-sm',
+                traceIOSelected ? 'bg-primary/20' : 'bg-primary/10'
+              )}
+            >
               <FileInput className="h-2.5 w-2.5 text-primary" />
             </span>
             <span
@@ -291,7 +309,7 @@ export function ObservationTree({
         )}
 
         {/* Divider between trace I/O and observation tree */}
-        {hasTraceIO && <div className="mx-2 my-1 border-t border-border" />}
+        {hasTraceIO && <div className="mx-2 my-1 border-t border-primary/10" />}
 
         {nodes.map((node) => (
           <ObservationTreeRow

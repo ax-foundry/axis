@@ -31,6 +31,8 @@ export function useKpiData() {
   const setAvailableSegments = useKpiStore((s) => s.setAvailableSegments);
   const setKpiOrder = useKpiStore((s) => s.setKpiOrder);
   const setCompositionCharts = useKpiStore((s) => s.setCompositionCharts);
+  const setHasSankeyCharts = useKpiStore((s) => s.setHasSankeyCharts);
+  const setCardHiddenKpiNames = useKpiStore((s) => s.setCardHiddenKpiNames);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['kpi-categories', filters],
@@ -58,12 +60,20 @@ export function useKpiData() {
     if (filtersData?.composition_charts) {
       setCompositionCharts(filtersData.composition_charts);
     }
+    if (filtersData?.has_sankey_charts !== undefined) {
+      setHasSankeyCharts(filtersData.has_sankey_charts);
+    }
+    if (filtersData?.card_hidden_kpi_names) {
+      setCardHiddenKpiNames(filtersData.card_hidden_kpi_names);
+    }
   }, [
     filtersData,
     setAvailableSourceNames,
     setAvailableSegments,
     setKpiOrder,
     setCompositionCharts,
+    setHasSankeyCharts,
+    setCardHiddenKpiNames,
   ]);
 
   return {
@@ -85,6 +95,20 @@ export function useKpiTrends(kpiName: string | null, enabled: boolean) {
     queryKey: ['kpi-trends', filters, kpiName],
     queryFn: () => api.getKpiTrends(filters, kpiNames),
     enabled: enabled && kpiName !== null,
+    staleTime: 60_000,
+  });
+}
+
+/**
+ * Sankey chart hook: fetches /sankey when config enables it.
+ */
+export function useKpiSankey(enabled: boolean) {
+  const filters = useKpiFilters();
+
+  return useQuery({
+    queryKey: ['kpi-sankey', filters],
+    queryFn: () => api.getKpiSankey(filters),
+    enabled,
     staleTime: 60_000,
   });
 }

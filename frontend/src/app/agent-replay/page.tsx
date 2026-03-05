@@ -2,6 +2,8 @@
 
 import {
   AlertCircle,
+  ArrowLeft,
+  FlaskConical,
   Loader2,
   Logs,
   MessageSquarePlus,
@@ -20,6 +22,7 @@ import {
   TRACE_IO_NODE_ID,
   TraceIOPanel,
   TracePicker,
+  WhatIfPanel,
 } from '@/components/agent-replay';
 import {
   collectAllNodeIds,
@@ -41,12 +44,15 @@ export default function AgentReplayPage() {
     sidebarCollapsed,
     selectedAgent,
     reviewPanelOpen,
+    whatIf,
     setTraceId,
     setSelectedNodeId,
     setExpandedNodeIds,
     toggleNodeExpanded,
     toggleSidebar,
     toggleReviewPanel,
+    enterWhatIf,
+    exitWhatIf,
     setAvailableAgents,
     reset,
   } = useReplayStore();
@@ -182,7 +188,7 @@ export default function AgentReplayPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex h-screen flex-col overflow-hidden">
       <PageHeader
         icon={PlayCircle}
         title="Agent Replay"
@@ -191,7 +197,7 @@ export default function AgentReplayPage() {
           traceId ? (
             <button
               onClick={reset}
-              className="rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-text-secondary transition-colors hover:bg-gray-50"
+              className="rounded-lg border border-primary/20 bg-primary/5 px-3 py-1.5 text-sm font-semibold text-primary-dark transition-all hover:border-primary/30 hover:bg-primary/10 hover:shadow-sm"
             >
               New Trace
             </button>
@@ -208,9 +214,9 @@ export default function AgentReplayPage() {
           <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col px-6 pt-12">
             {/* Not configured state */}
             {status && !status.configured && (
-              <div className="mx-auto max-w-lg rounded-2xl border border-amber-200/60 bg-amber-50/80 p-8 text-center shadow-sm backdrop-blur-sm">
-                <div className="mb-4 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-100">
-                  <Settings className="h-7 w-7 text-amber-600" />
+              <div className="mx-auto max-w-lg rounded-2xl border-2 border-primary/20 bg-white p-8 text-center shadow-lg shadow-primary/5">
+                <div className="mb-4 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5">
+                  <Settings className="h-7 w-7 text-primary" />
                 </div>
                 <h2 className="mb-2 text-lg font-semibold text-text-primary">
                   Configure Langfuse Credentials
@@ -218,8 +224,8 @@ export default function AgentReplayPage() {
                 <p className="mb-5 text-sm text-text-secondary">
                   Set the following environment variables to use Agent Replay:
                 </p>
-                <div className="mx-auto max-w-sm rounded-xl border border-amber-200/50 bg-white/80 p-4 text-left font-mono text-xs leading-relaxed text-text-secondary shadow-inner">
-                  <div className="font-semibold text-text-primary">AGENT_REPLAY_ENABLED=true</div>
+                <div className="mx-auto max-w-sm rounded-xl border border-primary/15 bg-primary/[0.02] p-4 text-left font-mono text-xs leading-relaxed text-text-secondary shadow-inner">
+                  <div className="font-semibold text-primary-dark">AGENT_REPLAY_ENABLED=true</div>
                   <div className="mt-3 text-text-muted"># Per-agent credentials:</div>
                   <div>LANGFUSE_ALPHA_BOT_PUBLIC_KEY=pk-lf-...</div>
                   <div>LANGFUSE_ALPHA_BOT_SECRET_KEY=sk-lf-...</div>
@@ -272,7 +278,7 @@ export default function AgentReplayPage() {
           {/* Left: collapsible tree sidebar */}
           <div
             className={cn(
-              'shrink-0 overflow-hidden border-r border-border bg-white transition-[width] duration-200',
+              'shrink-0 overflow-hidden border-r border-primary/10 bg-gradient-to-b from-white to-primary/[0.01] transition-[width] duration-200',
               sidebarCollapsed ? 'w-0 border-r-0' : 'w-64 overflow-y-auto'
             )}
           >
@@ -289,12 +295,12 @@ export default function AgentReplayPage() {
           </div>
 
           {/* Right: node detail */}
-          <div className="relative flex min-w-0 flex-1 flex-col">
+          <div className="relative flex min-w-0 flex-1 flex-col overflow-hidden">
             {/* Sidebar toggle strip */}
-            <div className="flex items-center gap-2 border-b border-border bg-gray-50/50 px-2 py-1">
+            <div className="flex items-center gap-2 border-b border-primary/10 bg-gradient-to-r from-primary/[0.03] via-transparent to-primary/[0.03] px-2 py-1.5">
               <button
                 onClick={toggleSidebar}
-                className="rounded-md p-1 text-text-muted transition-colors hover:bg-gray-200 hover:text-text-primary"
+                className="rounded-md p-1 text-primary/50 transition-colors hover:bg-primary/10 hover:text-primary-dark"
                 title={sidebarCollapsed ? 'Show tree' : 'Hide tree'}
               >
                 {sidebarCollapsed ? (
@@ -304,21 +310,57 @@ export default function AgentReplayPage() {
                 )}
               </button>
               {(selectedNode || isTraceIOSelected) && (
-                <span className="truncate text-[11px] font-medium text-text-muted">
+                <span className="truncate text-[11px] font-semibold text-primary-dark/50">
                   {isTraceIOSelected
                     ? 'Workflow I/O'
                     : selectedNode?.name || selectedNode?.type || 'node'}
                 </span>
               )}
-              <div className="ml-auto">
+              <div className="ml-auto flex items-center gap-1.5">
+                {/* What-If button — only for GENERATION nodes, gated by whatif_enabled + per-agent */}
+                {status?.whatif_enabled !== false &&
+                  !(
+                    selectedAgent &&
+                    status?.whatif_disabled_agents?.includes(selectedAgent.toLowerCase())
+                  ) &&
+                  selectedNode &&
+                  !isTraceIOSelected &&
+                  (whatIf.active ? (
+                    <button
+                      onClick={() => exitWhatIf()}
+                      className="flex items-center gap-1.5 rounded-md bg-gradient-to-r from-primary to-primary-dark px-2.5 py-1 text-xs font-bold text-white shadow-sm transition-all hover:shadow-md hover:brightness-110"
+                      title="Exit What-If Simulator and return to node details"
+                    >
+                      <ArrowLeft className="h-3.5 w-3.5" />
+                      Exit What-If
+                    </button>
+                  ) : selectedNode.type?.toUpperCase() === 'GENERATION' ? (
+                    <button
+                      onClick={() => enterWhatIf(selectedNode.id)}
+                      className="flex items-center gap-1.5 rounded-md bg-gradient-to-r from-primary to-primary-dark px-2.5 py-1 text-xs font-bold text-white shadow-md shadow-primary/25 transition-all hover:shadow-lg hover:shadow-primary/30 hover:brightness-110"
+                      title="Open What-If Simulator — re-run this LLM call with different inputs"
+                    >
+                      <FlaskConical className="h-3.5 w-3.5" />
+                      What-If
+                    </button>
+                  ) : (
+                    <span
+                      className="flex cursor-default items-center gap-1.5 rounded-md bg-gray-100 px-2.5 py-1 text-xs text-text-muted"
+                      title="What-If is available on LLM generation steps (look for steps marked GEN in the tree)"
+                    >
+                      <FlaskConical className="h-3.5 w-3.5" />
+                      What-If
+                    </span>
+                  ))}
                 <button
                   onClick={toggleReviewPanel}
                   className={cn(
-                    'flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors',
+                    'flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-bold transition-all',
                     reviewPanelOpen
-                      ? 'bg-primary text-white'
-                      : 'text-text-muted hover:bg-gray-200 hover:text-text-primary'
+                      ? 'bg-gradient-to-r from-primary to-primary-dark text-white shadow-sm'
+                      : 'bg-primary/10 text-primary hover:bg-primary/20 hover:shadow-sm'
                   )}
+                  title="Submit a review for this trace"
                 >
                   <MessageSquarePlus className="h-3.5 w-3.5" />
                   Review
@@ -326,8 +368,20 @@ export default function AgentReplayPage() {
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-3">
-              {isTraceIOSelected ? (
+            <div
+              className={cn(
+                'min-h-0 flex-1',
+                whatIf.active && selectedNode ? 'flex flex-col p-3' : 'overflow-y-auto p-3'
+              )}
+            >
+              {whatIf.active && selectedNode ? (
+                <WhatIfPanel
+                  traceId={trace.id}
+                  nodeId={selectedNode.id}
+                  nodeName={selectedNode.name}
+                  agent={selectedAgent}
+                />
+              ) : isTraceIOSelected ? (
                 <TraceIOPanel trace={trace} />
               ) : selectedNode ? (
                 <NodeDetailPanel node={selectedNode} traceId={trace.id} agent={selectedAgent} />
@@ -341,7 +395,7 @@ export default function AgentReplayPage() {
 
             {/* Review panel overlay */}
             {reviewPanelOpen && (
-              <div className="absolute inset-y-0 right-0 z-30 w-[380px] border-l border-border shadow-xl">
+              <div className="absolute inset-y-0 right-0 z-30 w-[380px] border-l border-primary/15 shadow-xl shadow-primary/5">
                 <ReviewPanel
                   traceId={trace.id}
                   agent={selectedAgent}

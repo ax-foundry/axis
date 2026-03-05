@@ -2,11 +2,8 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
-import json
 import logging
 import re
-import time
-from collections import OrderedDict
 from datetime import datetime
 from typing import Any
 
@@ -23,129 +20,55 @@ from app.plugins.agent_replay.models.replay_schemas import (
     TraceDetailResponse,
     TraceSummary,
 )
+from app.plugins.agent_replay.services._shared import (
+    LangfuseNotConfiguredError,
+    NodeNotFoundError,
+    ReplayServiceError,
+    StepNotFoundError,
+)
+from app.plugins.agent_replay.services._shared import (
+    cache_get as _cache_get,
+)
+from app.plugins.agent_replay.services._shared import (
+    cache_put as _cache_put,
+)
+from app.plugins.agent_replay.services._shared import (
+    compute_latency_ms as _compute_latency_ms,
+)
+from app.plugins.agent_replay.services._shared import (
+    extract_usage as _extract_usage,
+)
+from app.plugins.agent_replay.services._shared import (
+    find_tree_node as _find_tree_node,
+)
+from app.plugins.agent_replay.services._shared import (
+    get_loader as _get_loader,
+)
+from app.plugins.agent_replay.services._shared import (
+    redact_metadata as _redact_metadata,
+)
+from app.plugins.agent_replay.services._shared import (
+    to_plain_dict as _to_plain_dict,
+)
+from app.plugins.agent_replay.services._shared import (
+    truncate_content as _truncate_content,
+)
 
 logger = logging.getLogger(__name__)
 
-# ---------------------------------------------------------------------------
-# Custom exceptions
-# ---------------------------------------------------------------------------
-
-
-class LangfuseNotConfiguredError(Exception):
-    pass
-
-
-class ReplayServiceError(Exception):
-    pass
-
-
-class StepNotFoundError(Exception):
-    pass
-
-
-class NodeNotFoundError(Exception):
-    pass
-
-
-# ---------------------------------------------------------------------------
-# Metadata redaction
-# ---------------------------------------------------------------------------
-
-SENSITIVE_KEY_PATTERN = re.compile(
-    r"(?:^|[_-])(?:api[_-]?key|token|secret|password|credential|authorization|bearer)(?:$|[_-])",
-    re.IGNORECASE,
-)
+# Re-export exceptions for backward compat (router references them as replay_service.X)
+__all__ = [
+    "LangfuseNotConfiguredError",
+    "NodeNotFoundError",
+    "ReplayServiceError",
+    "StepNotFoundError",
+]
 
 # Pattern to detect trace IDs: UUIDs or long hex strings (32+ chars)
 _TRACE_ID_PATTERN = re.compile(
     r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$|^[0-9a-f]{32,}$",
     re.IGNORECASE,
 )
-
-
-def _redact_metadata(metadata: dict[str, Any] | None) -> dict[str, Any] | None:
-    if metadata is None:
-        return None
-    redacted: dict[str, Any] = {}
-    for key, value in metadata.items():
-        if SENSITIVE_KEY_PATTERN.search(key):
-            redacted[key] = "[REDACTED]"
-        elif isinstance(value, dict):
-            redacted[key] = _redact_metadata(value)
-        else:
-            redacted[key] = value
-    return redacted
-
-
-# ---------------------------------------------------------------------------
-# Content truncation
-# ---------------------------------------------------------------------------
-
-
-def _truncate_content(content: Any, max_chars: int | None) -> tuple[Any, bool]:
-    if max_chars is None or content is None:
-        return content, False
-
-    if isinstance(content, str):
-        if len(content) > max_chars:
-            return content[:max_chars] + " [...truncated]", True
-        return content, False
-
-    # For dicts/lists, serialize to check length
-    try:
-        serialized = json.dumps(content, default=str)
-        if len(serialized) > max_chars:
-            return serialized[:max_chars] + " [...truncated]", True
-        return content, False
-    except (TypeError, ValueError):
-        return content, False
-
-
-# ---------------------------------------------------------------------------
-# Shared helpers
-# ---------------------------------------------------------------------------
-
-
-def _to_plain_dict(obj: Any) -> dict[str, Any] | None:
-    if obj is None:
-        return None
-    if isinstance(obj, dict):
-        return obj
-    # SmartDict stores its data in ``_data``
-    raw = getattr(obj, "_data", None)
-    if isinstance(raw, dict):
-        return dict(raw)
-    # Last resort — JSON round-trip (handles anything serializable)
-    try:
-        return dict(json.loads(json.dumps(obj, default=str)))
-    except Exception:
-        return None
-
-
-def _extract_usage(raw_usage: Any) -> TokenUsage | None:
-    if raw_usage is None:
-        return None
-    try:
-        input_tokens = getattr(raw_usage, "input", 0) or getattr(raw_usage, "promptTokens", 0) or 0
-        output_tokens = (
-            getattr(raw_usage, "output", 0) or getattr(raw_usage, "completionTokens", 0) or 0
-        )
-        total_tokens = getattr(raw_usage, "total", 0) or getattr(raw_usage, "totalTokens", 0) or 0
-        if total_tokens == 0:
-            total_tokens = input_tokens + output_tokens
-        return TokenUsage(input=input_tokens, output=output_tokens, total=total_tokens)
-    except (AttributeError, TypeError):
-        return None
-
-
-def _compute_latency_ms(start_time: Any, end_time: Any) -> float | None:
-    if start_time and end_time:
-        try:
-            delta = end_time - start_time
-            return float(delta.total_seconds() * 1000)
-        except (TypeError, AttributeError):
-            pass
-    return None
 
 
 # ---------------------------------------------------------------------------
@@ -252,74 +175,7 @@ def _accumulate_tree_tokens(
     return total_input, total_output, total_total, total_latency
 
 
-# ---------------------------------------------------------------------------
-# In-process trace cache
-# ---------------------------------------------------------------------------
-
-_CACHE_TTL_SECONDS = 300  # 5 minutes
-_CACHE_MAX_ENTRIES = 10
-
-_trace_cache: OrderedDict[str, tuple[Any, float]] = OrderedDict()
-
-
-def _cache_get(trace_id: str) -> Any | None:
-    entry = _trace_cache.get(trace_id)
-    if entry is None:
-        return None
-    collection, ts = entry
-    if time.time() - ts > _CACHE_TTL_SECONDS:
-        _trace_cache.pop(trace_id, None)
-        return None
-    # Move to end (most recently used)
-    _trace_cache.move_to_end(trace_id)
-    return collection
-
-
-def _cache_put(trace_id: str, collection: Any) -> None:
-    _trace_cache[trace_id] = (collection, time.time())
-    _trace_cache.move_to_end(trace_id)
-    while len(_trace_cache) > _CACHE_MAX_ENTRIES:
-        _trace_cache.popitem(last=False)
-
-
-# ---------------------------------------------------------------------------
-# Loader factory
-# ---------------------------------------------------------------------------
-
-
-def _get_loader(agent_name: str | None = None) -> Any:
-    if agent_name:
-        creds = get_replay_config().langfuse_agents.get(agent_name)
-        if not creds:
-            raise LangfuseNotConfiguredError(
-                f"No Langfuse credentials configured for agent {agent_name!r}. "
-                f"Set LANGFUSE_{agent_name.upper()}_PUBLIC_KEY and "
-                f"LANGFUSE_{agent_name.upper()}_SECRET_KEY environment variables."
-            )
-        from axion.tracing import LangfuseTraceLoader
-
-        return LangfuseTraceLoader(
-            public_key=creds.public_key,
-            secret_key=creds.secret_key,
-            host=creds.host,
-        )
-
-    # Global fallback
-    public_key = settings.langfuse_public_key
-    secret_key = settings.langfuse_secret_key
-    if not public_key or not secret_key:
-        raise LangfuseNotConfiguredError(
-            "Langfuse credentials not configured. "
-            "Set LANGFUSE_PUBLIC_KEY and LANGFUSE_SECRET_KEY environment variables."
-        )
-
-    from axion.tracing import LangfuseTraceLoader
-
-    return LangfuseTraceLoader(
-        public_key=public_key,
-        secret_key=secret_key,
-        host=settings.langfuse_host,
-    )
+# Cache + loader + tree search are imported from _shared above.
 
 
 # ---------------------------------------------------------------------------
@@ -450,6 +306,8 @@ def get_status() -> ReplayStatusResponse:
         langfuse_host=settings.langfuse_host,
         default_limit=get_replay_config().default_limit,
         default_days_back=get_replay_config().default_days_back,
+        whatif_enabled=get_replay_config().whatif_enabled,
+        whatif_disabled_agents=get_replay_config().whatif_disabled_agents,
         agents=get_configured_agents(),
         search_fields=search_fields,
         agent_search_fields=agent_search_fields,
@@ -739,19 +597,6 @@ async def get_step_detail(
 
     # Soft cap at 500K chars for full content
     return _serialize_step(step, step_index, max_chars=500000)
-
-
-def _find_tree_node(roots: list[Any], node_id: str) -> Any | None:
-    for root in roots:
-        obs = getattr(root, "observation", root)
-        obs_id = str(getattr(obs, "id", "") or getattr(root, "id", ""))
-        if obs_id == node_id:
-            return root
-        children = getattr(root, "children", []) or []
-        found = _find_tree_node(children, node_id)
-        if found is not None:
-            return found
-    return None
 
 
 async def get_node_detail(

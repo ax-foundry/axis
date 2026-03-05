@@ -16,17 +16,29 @@ from .review_schemas import (
     ReviewVerdict,
     TraceReviewsResponse,
 )
+from .whatif_schemas import (
+    ChatMessage,
+    OverridableField,
+    SimulateRequest,
+    SimulateResponse,
+    StepFixture,
+)
 
 __all__ = [
+    "ChatMessage",
     "DatasetInfo",
     "DatasetListResponse",
     "ObservationSummary",
+    "OverridableField",
     "RecentTracesResponse",
     "ReplayStatusResponse",
     "ReviewCreateRequest",
     "ReviewResponse",
     "ReviewScoreItem",
     "ReviewVerdict",
+    "SimulateRequest",
+    "SimulateResponse",
+    "StepFixture",
     "StepSummary",
     "TokenUsage",
     "TraceDetailResponse",

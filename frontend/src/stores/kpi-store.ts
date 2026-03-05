@@ -20,6 +20,10 @@ interface KpiStoreState {
   kpiOrder: Record<string, string[]>;
   /** Composition chart configs from YAML */
   compositionCharts: KpiCompositionChartConfig[];
+  /** Whether the backend has sankey_charts configured */
+  hasSankeyCharts: boolean;
+  /** KPI names hidden from card grid (still used by composition/sankey charts) */
+  cardHiddenKpiNames: Set<string>;
 
   // Actions
   setDatasetReady: (ready: boolean) => void;
@@ -30,6 +34,8 @@ interface KpiStoreState {
   setAvailableSegments: (segments: string[]) => void;
   setKpiOrder: (order: Record<string, string[]>) => void;
   setCompositionCharts: (charts: KpiCompositionChartConfig[]) => void;
+  setHasSankeyCharts: (has: boolean) => void;
+  setCardHiddenKpiNames: (names: string[]) => void;
 }
 
 export const useKpiStore = create<KpiStoreState>()(
@@ -42,6 +48,8 @@ export const useKpiStore = create<KpiStoreState>()(
       availableSegments: [],
       kpiOrder: {},
       compositionCharts: [],
+      hasSankeyCharts: false,
+      cardHiddenKpiNames: new Set<string>(),
 
       setDatasetReady: (ready) => set({ datasetReady: ready }),
 
@@ -61,6 +69,10 @@ export const useKpiStore = create<KpiStoreState>()(
       setKpiOrder: (order) => set({ kpiOrder: order }),
 
       setCompositionCharts: (charts) => set({ compositionCharts: charts }),
+
+      setHasSankeyCharts: (has) => set({ hasSankeyCharts: has }),
+
+      setCardHiddenKpiNames: (names) => set({ cardHiddenKpiNames: new Set(names) }),
     }),
     {
       name: 'axis-kpi-store',

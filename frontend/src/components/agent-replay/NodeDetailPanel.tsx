@@ -85,17 +85,17 @@ export function NodeDetailPanel({ node, traceId, agent, className }: NodeDetailP
   return (
     <div
       className={cn(
-        'flex h-full flex-col overflow-hidden rounded-lg border border-border bg-white shadow-sm',
+        'flex h-full flex-col overflow-hidden rounded-xl border-2 border-primary/20 bg-white shadow-lg shadow-primary/5',
         className
       )}
     >
       {/* Header bar */}
-      <div className="bg-primary px-3 py-2">
+      <div className="bg-gradient-to-r from-primary to-primary-dark px-3 py-2.5">
         <div className="flex flex-wrap items-center gap-2">
           {/* Type badge */}
           <span
             className={cn(
-              'flex items-center gap-1 rounded px-1.5 py-px text-[10px] font-bold uppercase',
+              'flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-bold uppercase shadow-sm',
               badge.bg,
               badge.text
             )}
@@ -110,19 +110,19 @@ export function NodeDetailPanel({ node, traceId, agent, className }: NodeDetailP
           {/* Metadata chips */}
           <div className="ml-auto flex flex-wrap items-center gap-1.5">
             {activeNode.model && (
-              <span className="flex items-center gap-1 rounded-full bg-white/15 px-2 py-px text-[10px] font-medium text-white/90">
+              <span className="flex items-center gap-1 rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-semibold text-white/95 backdrop-blur-sm">
                 <Cpu className="h-2.5 w-2.5" />
                 {activeNode.model}
               </span>
             )}
             {activeNode.latency_ms != null && (
-              <span className="flex items-center gap-1 rounded-full bg-white/15 px-2 py-px text-[10px] font-medium text-white/80">
+              <span className="flex items-center gap-1 rounded-full bg-white/15 px-2 py-0.5 text-[10px] font-medium text-white/85">
                 <Clock className="h-2.5 w-2.5" />
                 {formatMs(activeNode.latency_ms)}
               </span>
             )}
             {activeNode.usage && activeNode.usage.total > 0 && (
-              <span className="rounded-full bg-accent-gold/25 px-2 py-px text-[10px] font-semibold text-white">
+              <span className="rounded-full bg-accent-gold/30 px-2 py-0.5 text-[10px] font-bold text-white backdrop-blur-sm">
                 {activeNode.usage.input.toLocaleString()} in |{' '}
                 {activeNode.usage.output.toLocaleString()} out
               </span>
@@ -131,7 +131,7 @@ export function NodeDetailPanel({ node, traceId, agent, className }: NodeDetailP
               <button
                 onClick={handleShowFull}
                 disabled={loadingFull}
-                className="bg-warning/30 hover:bg-warning/50 flex items-center gap-1 rounded-full px-2 py-px text-[10px] font-medium text-white transition-colors disabled:opacity-50"
+                className="flex items-center gap-1 rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-medium text-white transition-colors hover:bg-white/30 disabled:opacity-50"
               >
                 <Expand className="h-2.5 w-2.5" />
                 {loadingFull ? 'Loading...' : 'Show full'}
@@ -144,10 +144,10 @@ export function NodeDetailPanel({ node, traceId, agent, className }: NodeDetailP
       {/* Split pane: Input | Output */}
       <div className="replay-compact grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[35%_1fr]">
         {/* Input pane */}
-        <div className="min-w-0 border-b border-border lg:border-b-0 lg:border-r">
-          <div className="flex items-center gap-1.5 border-b border-border bg-blue-50/50 px-3 py-1">
+        <div className="min-w-0 border-b border-primary/10 lg:border-b-0 lg:border-r lg:border-r-primary/10">
+          <div className="flex items-center gap-1.5 border-b border-primary/10 bg-gradient-to-r from-blue-50/60 to-primary/[0.02] px-3 py-1.5">
             <FileInput className="h-3 w-3 text-blue-500" />
-            <h4 className="text-[10px] font-bold uppercase tracking-wide text-blue-600">Input</h4>
+            <h4 className="text-[10px] font-bold uppercase tracking-wider text-blue-600">Input</h4>
           </div>
           <div className="max-h-[calc(100vh-280px)] overflow-y-auto break-words px-3 py-2 text-xs">
             <PromptViewer content={activeNode.input} />
@@ -156,9 +156,9 @@ export function NodeDetailPanel({ node, traceId, agent, className }: NodeDetailP
 
         {/* Output pane */}
         <div className="min-w-0">
-          <div className="flex items-center gap-1.5 border-b border-border bg-emerald-50/50 px-3 py-1">
+          <div className="flex items-center gap-1.5 border-b border-primary/10 bg-gradient-to-r from-emerald-50/60 to-primary/[0.02] px-3 py-1.5">
             <FileOutput className="h-3 w-3 text-emerald-500" />
-            <h4 className="text-[10px] font-bold uppercase tracking-wide text-emerald-600">
+            <h4 className="text-[10px] font-bold uppercase tracking-wider text-emerald-600">
               Output
             </h4>
           </div>
@@ -169,28 +169,28 @@ export function NodeDetailPanel({ node, traceId, agent, className }: NodeDetailP
       </div>
 
       {/* Collapsible details drawer */}
-      <div className="border-t border-border bg-gray-50/50">
+      <div className="border-t border-primary/10 bg-gradient-to-r from-primary/[0.02] to-transparent">
         <button
           onClick={() => setDetailsOpen(!detailsOpen)}
-          className="flex w-full items-center gap-1.5 px-3 py-1.5 text-[11px] transition-colors hover:bg-gray-100"
+          className="flex w-full items-center gap-1.5 px-3 py-1.5 text-[11px] transition-colors hover:bg-primary/[0.04]"
         >
           <ChevronDown
             className={cn(
-              'h-3 w-3 text-text-muted transition-transform',
+              'h-3 w-3 text-primary/50 transition-transform',
               !detailsOpen && '-rotate-90'
             )}
           />
-          <Info className="h-3 w-3 text-primary/60" />
+          <Info className="h-3 w-3 text-primary/50" />
           <span className="font-medium text-text-secondary">Details</span>
           {activeNode.usage && activeNode.usage.total > 0 && (
-            <span className="ml-1 text-text-muted">
+            <span className="ml-1 text-primary/50">
               — {activeNode.usage.input.toLocaleString()} in /{' '}
               {activeNode.usage.output.toLocaleString()} out tokens
             </span>
           )}
         </button>
         {detailsOpen && (
-          <div className="border-t border-border bg-white px-3 py-3">
+          <div className="border-t border-primary/10 bg-white px-3 py-3">
             <NodeDetailsPane node={activeNode} />
           </div>
         )}
@@ -203,9 +203,11 @@ function NodeDetailsPane({ node }: { node: ObservationNodeData }) {
   return (
     <div className="space-y-3">
       {/* Node info */}
-      <div className="overflow-hidden rounded border border-border">
-        <div className="border-b border-border bg-primary/5 px-3 py-1.5">
-          <h4 className="text-[10px] font-bold uppercase tracking-wide text-primary">Node Info</h4>
+      <div className="overflow-hidden rounded-lg border border-primary/15 shadow-sm">
+        <div className="border-b border-primary/10 bg-gradient-to-r from-primary/[0.06] to-transparent px-3 py-1.5">
+          <h4 className="text-[10px] font-bold uppercase tracking-wider text-primary-dark/60">
+            Node Info
+          </h4>
         </div>
         <div className="grid grid-cols-3 gap-x-4 gap-y-2 px-3 py-2 text-xs sm:grid-cols-4">
           <div>
@@ -279,10 +281,13 @@ function NodeDetailsPane({ node }: { node: ObservationNodeData }) {
 
       {/* Metadata */}
       {node.metadata && Object.keys(node.metadata).length > 0 && (
-        <div className="overflow-hidden rounded border border-border">
-          <div className="border-b border-border bg-amber-50/50 px-3 py-1.5">
-            <h4 className="text-[10px] font-bold uppercase tracking-wide text-amber-700">
-              Metadata ({Object.keys(node.metadata).length})
+        <div className="overflow-hidden rounded-lg border border-primary/15 shadow-sm">
+          <div className="border-b border-primary/10 bg-gradient-to-r from-amber-50/50 to-primary/[0.02] px-3 py-1.5">
+            <h4 className="text-[10px] font-bold uppercase tracking-wider text-amber-700">
+              Metadata
+              <span className="ml-1.5 rounded-full bg-primary/10 px-1.5 py-px text-[9px] font-semibold text-primary">
+                {Object.keys(node.metadata).length}
+              </span>
             </h4>
           </div>
           <div className="max-h-[200px] overflow-y-auto">
@@ -327,31 +332,31 @@ export function TraceIOPanel({ trace, className }: TraceIOPanelProps) {
   return (
     <div
       className={cn(
-        'flex h-full flex-col overflow-hidden rounded-lg border border-border bg-white shadow-sm',
+        'flex h-full flex-col overflow-hidden rounded-xl border-2 border-primary/20 bg-white shadow-lg shadow-primary/5',
         className
       )}
     >
       {/* Header */}
-      <div className="bg-primary px-3 py-2">
+      <div className="bg-gradient-to-r from-primary to-primary-dark px-3 py-2.5">
         <div className="flex items-center gap-2">
-          <span className="flex items-center gap-1 rounded bg-white/20 px-1.5 py-px text-[10px] font-bold uppercase text-white">
+          <span className="flex items-center gap-1 rounded-md bg-white/20 px-1.5 py-0.5 text-[10px] font-bold uppercase text-white shadow-sm">
             <FileInput className="h-2.5 w-2.5" />
             TRACE
           </span>
           <h3 className="text-xs font-bold text-white">{trace.name || 'Workflow'}</h3>
           <div className="ml-auto flex items-center gap-1.5">
             {trace.total_cost != null && (
-              <span className="rounded-full bg-accent-gold/25 px-2 py-px text-[10px] font-semibold text-white">
+              <span className="rounded-full bg-accent-gold/30 px-2 py-0.5 text-[10px] font-bold text-white backdrop-blur-sm">
                 {formatCost(trace.total_cost)}
               </span>
             )}
             {trace.total_tokens.total > 0 && (
-              <span className="rounded-full bg-white/15 px-2 py-px text-[10px] font-medium text-white/90">
+              <span className="rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-semibold text-white/95 backdrop-blur-sm">
                 {trace.total_tokens.total.toLocaleString()} tokens
               </span>
             )}
             {trace.total_latency_ms != null && (
-              <span className="flex items-center gap-1 rounded-full bg-white/15 px-2 py-px text-[10px] font-medium text-white/80">
+              <span className="flex items-center gap-1 rounded-full bg-white/15 px-2 py-0.5 text-[10px] font-medium text-white/85">
                 <Clock className="h-2.5 w-2.5" />
                 {formatMs(trace.total_latency_ms)}
               </span>
@@ -362,10 +367,10 @@ export function TraceIOPanel({ trace, className }: TraceIOPanelProps) {
 
       {/* Split pane: Input | Output */}
       <div className="replay-compact grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[35%_1fr]">
-        <div className="min-w-0 border-b border-border lg:border-b-0 lg:border-r">
-          <div className="flex items-center gap-1.5 border-b border-border bg-blue-50/50 px-3 py-1">
+        <div className="min-w-0 border-b border-primary/10 lg:border-b-0 lg:border-r lg:border-r-primary/10">
+          <div className="flex items-center gap-1.5 border-b border-primary/10 bg-gradient-to-r from-blue-50/60 to-primary/[0.02] px-3 py-1.5">
             <FileInput className="h-3 w-3 text-blue-500" />
-            <h4 className="text-[10px] font-bold uppercase tracking-wide text-blue-600">Input</h4>
+            <h4 className="text-[10px] font-bold uppercase tracking-wider text-blue-600">Input</h4>
           </div>
           <div className="max-h-[calc(100vh-280px)] overflow-y-auto break-words px-3 py-2 text-xs">
             <PromptViewer content={trace.trace_input} />
@@ -373,9 +378,9 @@ export function TraceIOPanel({ trace, className }: TraceIOPanelProps) {
         </div>
 
         <div className="min-w-0">
-          <div className="flex items-center gap-1.5 border-b border-border bg-emerald-50/50 px-3 py-1">
+          <div className="flex items-center gap-1.5 border-b border-primary/10 bg-gradient-to-r from-emerald-50/60 to-primary/[0.02] px-3 py-1.5">
             <FileOutput className="h-3 w-3 text-emerald-500" />
-            <h4 className="text-[10px] font-bold uppercase tracking-wide text-emerald-600">
+            <h4 className="text-[10px] font-bold uppercase tracking-wider text-emerald-600">
               Output
             </h4>
           </div>
@@ -387,28 +392,31 @@ export function TraceIOPanel({ trace, className }: TraceIOPanelProps) {
 
       {/* Metadata drawer */}
       {trace.trace_metadata && Object.keys(trace.trace_metadata).length > 0 && (
-        <div className="border-t border-border bg-gray-50/50">
+        <div className="border-t border-primary/10 bg-gradient-to-r from-primary/[0.02] to-transparent">
           <button
             onClick={() => setDetailsOpen(!detailsOpen)}
-            className="flex w-full items-center gap-1.5 px-3 py-1.5 text-[11px] transition-colors hover:bg-gray-100"
+            className="flex w-full items-center gap-1.5 px-3 py-1.5 text-[11px] transition-colors hover:bg-primary/[0.04]"
           >
             <ChevronDown
               className={cn(
-                'h-3 w-3 text-text-muted transition-transform',
+                'h-3 w-3 text-primary/50 transition-transform',
                 !detailsOpen && '-rotate-90'
               )}
             />
-            <Info className="h-3 w-3 text-primary/60" />
+            <Info className="h-3 w-3 text-primary/50" />
             <span className="font-medium text-text-secondary">
-              Trace Metadata ({Object.keys(trace.trace_metadata).length})
+              Trace Metadata
+              <span className="ml-1.5 rounded-full bg-primary/10 px-1.5 py-px text-[9px] font-semibold text-primary">
+                {Object.keys(trace.trace_metadata).length}
+              </span>
             </span>
           </button>
           {detailsOpen && (
-            <div className="max-h-[200px] overflow-y-auto border-t border-border bg-white">
+            <div className="max-h-[200px] overflow-y-auto border-t border-primary/10 bg-white">
               <table className="w-full text-xs">
                 <tbody>
                   {Object.entries(trace.trace_metadata).map(([key, value]) => (
-                    <tr key={key} className="border-b border-border last:border-0">
+                    <tr key={key} className="border-b border-primary/5 last:border-0">
                       <td className="whitespace-nowrap px-3 py-1.5 font-mono text-[10px] font-medium text-primary">
                         {key}
                       </td>

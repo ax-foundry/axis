@@ -1,4 +1,7 @@
 import logging
+import re
+from dataclasses import dataclass
+from typing import Any
 
 from app.config.db.kpi import kpi_db_config
 from app.models.kpi_schemas import (
@@ -9,6 +12,11 @@ from app.models.kpi_schemas import (
     KpiCompositionKpiEntry,
     KpiDateRange,
     KpiFiltersResponse,
+    KpiSankeyChartData,
+    KpiSankeyLink,
+    KpiSankeyNode,
+    KpiSankeyResponse,
+    KpiSankeySummaryKpi,
     KpiSparklinePoint,
     KpiTrendPoint,
     KpiTrendsResponse,
@@ -18,6 +26,82 @@ from app.services.duckdb_store import DuckDBStore
 logger = logging.getLogger(__name__)
 
 TABLE = "kpi_data"
+
+
+# -- Prefix utilities ----------------------------------------------------------
+
+
+def _matches_prefix(kpi_name: str, prefixes: list[str]) -> bool:
+    """Check if kpi_name starts with any of the given prefixes."""
+    return any(kpi_name.startswith(p) for p in prefixes)
+
+
+def _find_longest_matching_prefix(kpi_name: str, prefix_dict: dict[str, Any]) -> str | None:
+    """Find the longest prefix key in prefix_dict that matches kpi_name."""
+    match = None
+    for prefix in prefix_dict:
+        if kpi_name.startswith(prefix) and (match is None or len(prefix) > len(match)):
+            match = prefix
+    return match
+
+
+def _parse_kpi_segments(
+    kpi_name: str,
+    prefix: str,
+    expected_keys: list[str],
+) -> dict[str, str] | None:
+    """Parse structured key-value segments from a KPI name.
+
+    Strips prefix, splits on '__', matches segments to expected_keys.
+    Returns raw values (no title-casing). Returns None on parse failure.
+    """
+    remainder = kpi_name[len(prefix) :]
+    segments = [s for s in remainder.split("__") if s]
+    values: dict[str, str] = {}
+    for seg in segments:
+        for key in expected_keys:
+            if key in values:
+                continue
+            if seg.startswith(key + "_"):
+                values[key] = seg[len(key) + 1 :]
+                break
+            elif seg == key:
+                values[key] = key
+                break
+    if not values:
+        return None
+    return values
+
+
+def _parse_dynamic_display_name(kpi_name: str) -> str | None:
+    """Try to parse a human-readable display name using label_format.
+
+    Resolution:
+    1. Find matching prefix in kpi_override_prefixes with label_format
+    2. Parse key-value segments using _parse_kpi_segments
+    3. Title-case extracted values and format
+    """
+    prefix = _find_longest_matching_prefix(kpi_name, kpi_db_config.kpi_override_prefixes)
+    if prefix is None:
+        return None
+    override = kpi_db_config.kpi_override_prefixes[prefix]
+    fmt = override.get("label_format")
+    if not fmt:
+        return None
+
+    keys = re.findall(r"\{(\w+)\}", fmt)
+    if not keys:
+        return None
+
+    raw = _parse_kpi_segments(kpi_name, prefix, keys)
+    if raw is None:
+        return None
+
+    titled = {k: v.replace("_", " ").title() for k, v in raw.items()}
+    try:
+        return str(fmt.format(**titled))
+    except KeyError:
+        return None
 
 
 # -- Display config helpers ----------------------------------------------------
@@ -40,7 +124,15 @@ def _get_card_display_value(kpi_name: str, source_name: str | None = None) -> st
         if "card_display_value" in src_cfg:
             return str(src_cfg["card_display_value"])
     global_kpi = kpi_db_config.kpi_overrides.get(kpi_name, {})
-    return str(global_kpi.get("card_display_value", kpi_db_config.card_display_value))
+    if "card_display_value" in global_kpi:
+        return str(global_kpi["card_display_value"])
+    # Prefix fallback
+    prefix = _find_longest_matching_prefix(kpi_name, kpi_db_config.kpi_override_prefixes)
+    if prefix:
+        val = kpi_db_config.kpi_override_prefixes[prefix].get("card_display_value")
+        if val is not None:
+            return str(val)
+    return kpi_db_config.card_display_value
 
 
 def _get_trend_lines(kpi_name: str, source_name: str | None = None) -> list[str]:
@@ -60,7 +152,15 @@ def _get_trend_lines(kpi_name: str, source_name: str | None = None) -> list[str]
         if "trend_lines" in src_cfg:
             return list(src_cfg["trend_lines"])
     global_kpi = kpi_db_config.kpi_overrides.get(kpi_name, {})
-    return list(global_kpi.get("trend_lines", kpi_db_config.trend_lines))
+    if "trend_lines" in global_kpi:
+        return list(global_kpi["trend_lines"])
+    # Prefix fallback
+    prefix = _find_longest_matching_prefix(kpi_name, kpi_db_config.kpi_override_prefixes)
+    if prefix:
+        val = kpi_db_config.kpi_override_prefixes[prefix].get("trend_lines")
+        if val is not None:
+            return list(val)
+    return list(kpi_db_config.trend_lines)
 
 
 def _get_unit(kpi_name: str, source_name: str | None = None) -> str:
@@ -79,6 +179,12 @@ def _get_unit(kpi_name: str, source_name: str | None = None) -> str:
     global_kpi = kpi_db_config.kpi_overrides.get(kpi_name, {})
     if "unit" in global_kpi:
         return str(global_kpi["unit"])
+    # Prefix fallback
+    prefix = _find_longest_matching_prefix(kpi_name, kpi_db_config.kpi_override_prefixes)
+    if prefix:
+        val = kpi_db_config.kpi_override_prefixes[prefix].get("unit")
+        if val is not None:
+            return str(val)
     return "score"
 
 
@@ -88,7 +194,9 @@ def _get_display_name(kpi_name: str, source_name: str | None = None) -> str:
     Resolution order:
     1. display_per_source[source].kpi_overrides[kpi].display_name
     2. kpi_overrides[kpi].display_name (global per-KPI)
-    3. Auto-generated from kpi_name
+    3. Dynamic parse from label_format (if prefix matches)
+    4. Prefix static display_name fallback
+    5. Title-case from kpi_name
     """
     if source_name:
         src_cfg = kpi_db_config.display_per_source.get(source_name, {})
@@ -98,6 +206,16 @@ def _get_display_name(kpi_name: str, source_name: str | None = None) -> str:
     global_kpi = kpi_db_config.kpi_overrides.get(kpi_name, {})
     if "display_name" in global_kpi:
         return str(global_kpi["display_name"])
+    # Dynamic parse from label_format
+    dynamic = _parse_dynamic_display_name(kpi_name)
+    if dynamic is not None:
+        return dynamic
+    # Prefix static display_name fallback
+    prefix = _find_longest_matching_prefix(kpi_name, kpi_db_config.kpi_override_prefixes)
+    if prefix:
+        val = kpi_db_config.kpi_override_prefixes[prefix].get("display_name")
+        if val is not None:
+            return str(val)
     return kpi_name.replace("_", " ").title()
 
 
@@ -117,16 +235,36 @@ def _get_polarity(kpi_name: str, source_name: str | None = None) -> str:
     global_kpi = kpi_db_config.kpi_overrides.get(kpi_name, {})
     if "polarity" in global_kpi:
         return str(global_kpi["polarity"])
+    # Prefix fallback
+    prefix = _find_longest_matching_prefix(kpi_name, kpi_db_config.kpi_override_prefixes)
+    if prefix:
+        val = kpi_db_config.kpi_override_prefixes[prefix].get("polarity")
+        if val is not None:
+            return str(val)
     return "higher_better"
 
 
 # -- SQL helpers ---------------------------------------------------------------
 
 
-def _sum_kpi_names(source_name: str | None = None) -> set[str]:
-    """Return kpi_names that should use SUM aggregation (count-type KPIs).
+@dataclass
+class SumKpiSpec:
+    """Specification for KPIs that should use SUM aggregation."""
 
-    Checks kpi_overrides and display_per_source for unit == 'count'.
+    exact_names: set[str]
+    prefixes: list[str]
+
+    @property
+    def is_empty(self) -> bool:
+        """Return True if no exact names or prefixes are configured."""
+        return not self.exact_names and not self.prefixes
+
+
+def _sum_kpi_spec(source_name: str | None = None) -> SumKpiSpec:
+    """Build a SumKpiSpec from exact names and prefix config.
+
+    Exact names come from kpi_overrides / display_per_source where unit == 'count'.
+    Prefixes come from sum_kpi_prefixes (explicit source of truth).
     """
     names: set[str] = set()
     for kpi_name, overrides in kpi_db_config.kpi_overrides.items():
@@ -137,19 +275,26 @@ def _sum_kpi_names(source_name: str | None = None) -> set[str]:
         for kpi_name, overrides in src_cfg.get("kpi_overrides", {}).items():
             if overrides.get("unit") == "count":
                 names.add(kpi_name)
-    return names
-
-
-def _daily_agg_expr(sum_kpis: set[str], params: list[object]) -> str:
-    """Build a SQL expression that uses SUM for count KPIs, AVG otherwise."""
-    if not sum_kpis:
-        return "AVG(numeric_value)"
-    placeholders = ", ".join("?" for _ in sum_kpis)
-    params.extend(sorted(sum_kpis))
-    return (
-        f"CASE WHEN kpi_name IN ({placeholders}) "
-        f"THEN SUM(numeric_value) ELSE AVG(numeric_value) END"
+    return SumKpiSpec(
+        exact_names=names,
+        prefixes=list(kpi_db_config.sum_kpi_prefixes),
     )
+
+
+def _daily_agg_expr(spec: SumKpiSpec, params: list[object]) -> str:
+    """Build a SQL expression that uses SUM for count KPIs, AVG otherwise."""
+    if spec.is_empty:
+        return "AVG(numeric_value)"
+    conditions: list[str] = []
+    if spec.exact_names:
+        placeholders = ", ".join("?" for _ in spec.exact_names)
+        params.extend(sorted(spec.exact_names))
+        conditions.append(f"kpi_name IN ({placeholders})")
+    for prefix in dict.fromkeys(spec.prefixes):  # dedupe, preserve order
+        conditions.append("kpi_name LIKE ?")
+        params.append(prefix + "%")
+    combined = " OR ".join(conditions)
+    return f"CASE WHEN ({combined}) " f"THEN SUM(numeric_value) ELSE AVG(numeric_value) END"
 
 
 def _build_where(
@@ -194,13 +339,20 @@ def _build_where(
         params.extend(kpi_names)
     else:
         # Per-source override takes precedence, then global default
-        effective = (
+        effective_exact = (
             kpi_db_config.visible_kpis_per_source.get(source_name, []) if source_name else []
         ) or kpi_db_config.visible_kpis
-        if effective:
-            placeholders = ", ".join("?" for _ in effective)
-            conditions.append(f"kpi_name IN ({placeholders})")
-            params.extend(effective)
+        effective_prefixes = list(dict.fromkeys(kpi_db_config.visible_kpi_prefixes))
+        if effective_exact or effective_prefixes:
+            parts: list[str] = []
+            if effective_exact:
+                placeholders = ", ".join("?" for _ in effective_exact)
+                parts.append(f"kpi_name IN ({placeholders})")
+                params.extend(effective_exact)
+            for prefix in effective_prefixes:
+                parts.append("kpi_name LIKE ?")
+                params.append(prefix + "%")
+            conditions.append(f"({' OR '.join(parts)})")
 
     return " AND ".join(conditions), params
 
@@ -226,7 +378,7 @@ def get_kpi_categories(
     if not store.has_table(TABLE):
         return KpiCategoriesResponse(categories=[])
 
-    sum_kpis = _sum_kpi_names(source_name)
+    sum_kpis = _sum_kpi_spec(source_name)
 
     where, params = _build_where(
         source_name=source_name,
@@ -443,7 +595,7 @@ def get_kpi_trends(
     if not store.has_table(TABLE):
         return KpiTrendsResponse(data=[], kpi_names=[])
 
-    sum_kpis = _sum_kpi_names(source_name)
+    sum_kpis = _sum_kpi_spec(source_name)
 
     where, params = _build_where(
         source_name=source_name,
@@ -531,8 +683,12 @@ def get_kpi_filters(store: DuckDBStore) -> KpiFiltersResponse:
     visible_set: set[str] = set(kpi_db_config.visible_kpis)
     for per_source_list in kpi_db_config.visible_kpis_per_source.values():
         visible_set.update(per_source_list)
-    if visible_set:
-        all_kpi_names = [n for n in all_kpi_names if n in visible_set]
+    if visible_set or kpi_db_config.visible_kpi_prefixes:
+        all_kpi_names = [
+            n
+            for n in all_kpi_names
+            if n in visible_set or _matches_prefix(n, kpi_db_config.visible_kpi_prefixes)
+        ]
 
     try:
         segments = _distinct("segment")
@@ -558,6 +714,13 @@ def get_kpi_filters(store: DuckDBStore) -> KpiFiltersResponse:
         for chart in kpi_db_config.composition_charts
     ]
 
+    # Resolve card-hidden KPI names (exact + prefix match against known names)
+    hidden_exact = set(kpi_db_config.card_hidden_kpis)
+    hidden_prefixes = kpi_db_config.card_hidden_kpi_prefixes
+    card_hidden_kpi_names = [
+        n for n in all_kpi_names if n in hidden_exact or _matches_prefix(n, hidden_prefixes)
+    ]
+
     return KpiFiltersResponse(
         source_names=_distinct("source_name"),
         environments=_distinct("environment"),
@@ -567,4 +730,237 @@ def get_kpi_filters(store: DuckDBStore) -> KpiFiltersResponse:
         segments=segments,
         kpi_order=kpi_order,
         composition_charts=composition_charts,
+        has_sankey_charts=bool(kpi_db_config.sankey_charts),
+        card_hidden_kpi_names=card_hidden_kpi_names,
     )
+
+
+def _build_sankey_chart(
+    chart_config: dict[str, Any],
+    rows: list[dict[str, Any]],
+) -> KpiSankeyChartData | None:
+    """Assemble a single Sankey chart from query results and config."""
+    columns = chart_config["columns"]
+    ignore_keys: set[str] = set(chart_config.get("ignore_keys", []))
+    node_colors: dict[str, str] = chart_config.get("node_colors", {})
+    default_color = "#94A3B8"
+
+    # For each prefix, determine which column keys it covers
+    prefixes = chart_config["kpi_prefixes"]
+    all_col_keys = [col["key"] for col in columns]
+
+    # Parse all KPI names into segment dicts, grouped by prefix
+    # Each parsed entry: {col_key: value, ...} + total
+    flows: list[tuple[dict[str, str], float]] = []
+    for row in rows:
+        kpi_name = row["kpi_name"]
+        total = float(row["total"])
+        for prefix in prefixes:
+            if not kpi_name.startswith(prefix):
+                continue
+            # Determine expected keys for this prefix from columns
+            expected = [k for k in all_col_keys if k not in ignore_keys]
+            # Also include ignore_keys for parsing (they exist in the name)
+            all_expected = expected + [k for k in ignore_keys if k in all_col_keys]
+            # Parse segments using all keys that could appear
+            parsed = _parse_kpi_segments(kpi_name, prefix, all_expected + list(ignore_keys))
+            if parsed is None:
+                continue
+            # Drop ignore_keys from the parsed result
+            for ik in ignore_keys:
+                parsed.pop(ik, None)
+            flows.append((parsed, total))
+            break
+
+    if not flows:
+        return None
+
+    # Build per-column node sets and aggregate flows between adjacent columns
+    col_nodes: dict[str, set[str]] = {col["key"]: set() for col in columns}
+    # Collect all values per column key
+    for parsed, _ in flows:
+        for key, val in parsed.items():
+            if key in col_nodes:
+                col_nodes[key].add(val)
+
+    # Build ordered node list per column
+    ordered_col_nodes: dict[str, list[str]] = {}
+    for col in columns:
+        key = col["key"]
+        value_order = col.get("value_order", [])
+        values = col_nodes.get(key, set())
+        if value_order:
+            ordered = [v for v in value_order if v in values]
+            ordered += sorted(values - set(ordered))
+        else:
+            ordered = sorted(values)
+        ordered_col_nodes[key] = ordered
+
+    # Build global node list: column-by-column, with unique labels
+    nodes: list[KpiSankeyNode] = []
+    node_index: dict[tuple[str, str], int] = {}  # (col_key, value) -> index
+    for col in columns:
+        key = col["key"]
+        for val in ordered_col_nodes[key]:
+            idx = len(nodes)
+            node_index[(key, val)] = idx
+            color = node_colors.get(val, default_color)
+            display_label = val.replace("_", " ").title()
+            nodes.append(KpiSankeyNode(label=display_label, color=color))
+
+    # Aggregate flows between adjacent column pairs
+    # First collapse: sum flows that share the same values for non-ignored keys
+    collapsed: dict[tuple[str, ...], float] = {}
+    for parsed, total in flows:
+        key_tuple = tuple(parsed.get(col["key"], "") for col in columns)
+        collapsed[key_tuple] = collapsed.get(key_tuple, 0.0) + total
+
+    # Build links between adjacent columns
+    links: list[KpiSankeyLink] = []
+    for i in range(len(columns) - 1):
+        src_key = columns[i]["key"]
+        tgt_key = columns[i + 1]["key"]
+        src_idx_in_tuple = i
+        tgt_idx_in_tuple = i + 1
+        # Aggregate per (src_val, tgt_val) pair
+        pair_totals: dict[tuple[str, str], float] = {}
+        for key_tuple, total in collapsed.items():
+            src_val = key_tuple[src_idx_in_tuple]
+            tgt_val = key_tuple[tgt_idx_in_tuple]
+            if not src_val or not tgt_val:
+                continue
+            pair = (src_val, tgt_val)
+            pair_totals[pair] = pair_totals.get(pair, 0.0) + total
+        for (src_val, tgt_val), total in pair_totals.items():
+            src_node_idx = node_index.get((src_key, src_val))
+            tgt_node_idx = node_index.get((tgt_key, tgt_val))
+            if src_node_idx is None or tgt_node_idx is None:
+                continue
+            src_color = node_colors.get(src_val, default_color)
+            link_color = src_color + "80"  # Semi-transparent
+            links.append(
+                KpiSankeyLink(
+                    source=src_node_idx,
+                    target=tgt_node_idx,
+                    value=total,
+                    color=link_color,
+                )
+            )
+
+    if not links:
+        return None
+
+    # Compute per-column totals from collapsed flows (for summary KPIs)
+    col_totals: dict[str, float] = {}
+    col_node_totals: dict[str, dict[str, float]] = {}
+    for col_i, col in enumerate(columns):
+        key = col["key"]
+        col_totals[key] = 0.0
+        col_node_totals[key] = {}
+        for key_tuple, total in collapsed.items():
+            val = key_tuple[col_i]
+            if not val:
+                continue
+            col_totals[key] += total
+            col_node_totals[key][val] = col_node_totals[key].get(val, 0.0) + total
+
+    # Build summary KPIs
+    summary_kpis: list[KpiSankeySummaryKpi] = []
+    for sk_config in chart_config.get("summary_kpis", []):
+        sk_type = sk_config.get("type")
+        sk_label = str(sk_config.get("label", ""))
+        sk_unit = str(sk_config.get("unit", "count"))
+        sk_color: str | None = sk_config.get("color")
+        sk_column: str = str(sk_config.get("column", ""))
+
+        if sk_type == "column_total":
+            col_val = col_totals.get(sk_column, 0.0)
+            summary_kpis.append(
+                KpiSankeySummaryKpi(
+                    label=sk_label,
+                    value=int(col_val),
+                    unit=sk_unit,
+                    color=sk_color,
+                )
+            )
+        elif sk_type == "node_value":
+            sk_node = sk_config.get("node", "")
+            sk_format = sk_config.get("format", "raw")
+            node_val = col_node_totals.get(sk_column, {}).get(sk_node, 0.0)
+            col_total = col_totals.get(sk_column, 0.0)
+            if sk_format == "percent_of_column" and col_total > 0:
+                pct = (node_val / col_total) * 100
+                summary_kpis.append(
+                    KpiSankeySummaryKpi(
+                        label=sk_label,
+                        value=round(pct, 1),
+                        unit=sk_unit,
+                        color=sk_color,
+                    )
+                )
+            else:
+                summary_kpis.append(
+                    KpiSankeySummaryKpi(
+                        label=sk_label,
+                        value=int(node_val),
+                        unit=sk_unit,
+                        color=sk_color,
+                    )
+                )
+
+    column_labels = [col["label"] for col in columns]
+
+    return KpiSankeyChartData(
+        title=chart_config["title"],
+        nodes=nodes,
+        links=links,
+        summary_kpis=summary_kpis,
+        column_labels=column_labels,
+    )
+
+
+def get_kpi_sankey(
+    store: DuckDBStore,
+    *,
+    source_name: str | None = None,
+    environment: str | None = None,
+    source_type: str | None = None,
+    segment: str | None = None,
+    time_start: str | None = None,
+    time_end: str | None = None,
+) -> KpiSankeyResponse:
+    """Build Sankey flow diagrams for decision flow KPIs."""
+    if not store.has_table(TABLE) or not kpi_db_config.sankey_charts:
+        return KpiSankeyResponse(charts=[])
+
+    where, params = _build_where(
+        source_name=source_name,
+        environment=environment,
+        source_type=source_type,
+        segment=segment,
+        time_start=time_start,
+        time_end=time_end,
+    )
+
+    charts: list[KpiSankeyChartData] = []
+    for chart_config in kpi_db_config.sankey_charts:
+        prefixes = chart_config["kpi_prefixes"]
+        # Build prefix LIKE conditions
+        prefix_conditions = " OR ".join("kpi_name LIKE ?" for _ in prefixes)
+        prefix_params = [p + "%" for p in prefixes]
+
+        sql = f"""
+            SELECT kpi_name, SUM(numeric_value) AS total
+            FROM {TABLE}
+            WHERE {where} AND ({prefix_conditions})
+            GROUP BY kpi_name
+        """
+        rows = store.query_list(sql, params + prefix_params)
+        if not rows:
+            continue
+
+        chart = _build_sankey_chart(chart_config, rows)
+        if chart is not None:
+            charts.append(chart)
+
+    return KpiSankeyResponse(charts=charts)

@@ -90,6 +90,8 @@ export interface ReplayStatusResponse {
   langfuse_host: string;
   default_limit: number;
   default_days_back: number;
+  whatif_enabled: boolean;
+  whatif_disabled_agents: string[];
   agents: string[];
   search_fields: SearchFieldOption[];
   agent_search_fields: Record<string, SearchFieldOption[]>;
@@ -151,4 +153,65 @@ export interface DatasetInfo {
 
 export interface DatasetListResponse {
   datasets: DatasetInfo[];
+}
+
+// ---------------------------------------------------------------------------
+// What-If types
+// ---------------------------------------------------------------------------
+
+export interface WhatIfChatMessage {
+  role: 'system' | 'user' | 'assistant' | 'tool';
+  content: string;
+  tool_call_id?: string;
+  name?: string;
+}
+
+export type FieldType = 'text' | 'number' | 'slider' | 'toggle' | 'select' | 'textarea';
+export type FieldCategory = 'variable' | 'prompt';
+
+export interface OverridableField {
+  key: string;
+  label: string;
+  field_type: FieldType;
+  current_value: unknown;
+  min?: number | null;
+  max?: number | null;
+  step?: number | null;
+  options?: string[] | null;
+  category: FieldCategory;
+}
+
+export interface StepFixture {
+  node_id: string;
+  name: string | null;
+  type: string;
+  model: string | null;
+  prompt_messages: WhatIfChatMessage[];
+  variables: Record<string, string>;
+  temperature: number | null;
+  max_tokens: number | null;
+  original_output: unknown;
+  original_usage: TokenUsage | null;
+  original_latency_ms: number | null;
+  overridable_fields: OverridableField[];
+  fixture_hash: string;
+}
+
+export interface SimulateRequest {
+  fixture_hash: string;
+  prompt_messages_override?: WhatIfChatMessage[] | null;
+  variable_overrides?: Record<string, string> | null;
+}
+
+export interface SimulateResponse {
+  original_output: unknown;
+  original_model: string | null;
+  original_usage: TokenUsage | null;
+  original_latency_ms: number | null;
+  simulated_output: unknown;
+  simulated_model: string | null;
+  simulated_usage: TokenUsage | null;
+  simulated_latency_ms: number | null;
+  output_changed: boolean;
+  token_delta: number;
 }

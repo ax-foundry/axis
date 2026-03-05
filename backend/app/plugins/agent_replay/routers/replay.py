@@ -18,10 +18,21 @@ from app.plugins.agent_replay.models.review_schemas import (
     ReviewResponse,
     TraceReviewsResponse,
 )
+from app.plugins.agent_replay.models.whatif_schemas import (
+    SimulateRequest,
+    SimulateResponse,
+    StepFixture,
+)
 from app.plugins.agent_replay.services import replay_service, review_service
 from app.plugins.agent_replay.services.search_db import (
     SearchDBNotConfiguredError,
     SearchDBQueryError,
+)
+from app.plugins.agent_replay.services.whatif_service import (
+    ConcurrencyLimitError,
+    FixtureStaleError,
+    SimulationTimeoutError,
+    WhatIfValidationError,
 )
 
 logger = logging.getLogger(__name__)
@@ -34,6 +45,25 @@ def _check_enabled() -> None:
         raise HTTPException(
             status_code=403,
             detail="Agent Replay is disabled. Set AGENT_REPLAY_ENABLED=true to enable.",
+        )
+
+
+def _check_whatif_enabled(agent: str | None = None) -> None:
+    _check_enabled()
+    from app.plugins.agent_replay.config import get_replay_config
+
+    cfg = get_replay_config()
+    if not cfg.whatif_enabled:
+        raise HTTPException(
+            status_code=403,
+            detail="What-If Simulator is disabled. Set whatif_enabled: true in agent_replay.yaml "
+            "or AGENT_REPLAY_WHATIF_ENABLED=true to enable.",
+        )
+    if agent and not cfg.is_whatif_allowed(agent):
+        raise HTTPException(
+            status_code=403,
+            detail=f"What-If Simulator is disabled for agent '{agent}'. "
+            "Remove it from whatif_disabled_agents in agent_replay.yaml to enable.",
         )
 
 
@@ -175,6 +205,83 @@ async def get_step_detail(
     except Exception as e:
         logger.exception("Error fetching step detail")
         raise HTTPException(status_code=500, detail=f"Failed to fetch step: {e}")
+
+
+# ---------------------------------------------------------------------------
+# What-If endpoints
+# ---------------------------------------------------------------------------
+
+
+@router.get(
+    "/traces/{trace_id}/nodes/{node_id}/fixture",
+    response_model=StepFixture,
+)
+async def get_step_fixture(
+    trace_id: str,
+    node_id: str,
+    agent: str | None = Query(default=None, description="Agent name for per-agent credentials"),
+) -> StepFixture:
+    """Extract a step fixture for what-if simulation (GENERATION nodes only)."""
+    _check_whatif_enabled(agent)
+    try:
+        from app.plugins.agent_replay.services import whatif_service
+
+        return await whatif_service.extract_fixture(
+            trace_id=trace_id,
+            node_id=node_id,
+            agent_name=agent,
+        )
+    except WhatIfValidationError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except replay_service.NodeNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except replay_service.LangfuseNotConfiguredError as e:
+        raise HTTPException(status_code=503, detail=str(e))
+    except replay_service.ReplayServiceError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.exception("Error extracting step fixture")
+        raise HTTPException(status_code=500, detail=f"Failed to extract fixture: {e}")
+
+
+@router.post(
+    "/traces/{trace_id}/nodes/{node_id}/simulate",
+    response_model=SimulateResponse,
+)
+async def run_simulation(
+    trace_id: str,
+    node_id: str,
+    request: SimulateRequest,
+    agent: str | None = Query(default=None, description="Agent name for per-agent credentials"),
+) -> SimulateResponse:
+    """Run a stateless what-if simulation with overrides."""
+    _check_whatif_enabled(agent)
+    try:
+        from app.plugins.agent_replay.services import whatif_service
+
+        return await whatif_service.run_simulation(
+            trace_id=trace_id,
+            node_id=node_id,
+            agent_name=agent,
+            request=request,
+        )
+    except FixtureStaleError as e:
+        raise HTTPException(status_code=409, detail=str(e))
+    except WhatIfValidationError as e:
+        raise HTTPException(status_code=422, detail=str(e))
+    except ConcurrencyLimitError as e:
+        raise HTTPException(status_code=429, detail=str(e))
+    except SimulationTimeoutError as e:
+        raise HTTPException(status_code=504, detail=str(e))
+    except replay_service.NodeNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except replay_service.LangfuseNotConfiguredError as e:
+        raise HTTPException(status_code=503, detail=str(e))
+    except replay_service.ReplayServiceError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.exception("Error running simulation")
+        raise HTTPException(status_code=500, detail=f"Failed to run simulation: {e}")
 
 
 # ---------------------------------------------------------------------------

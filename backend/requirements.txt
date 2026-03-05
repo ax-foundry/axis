@@ -37,5 +37,13 @@ falkordb>=1.0.0
 orjson>=3.10.0
 httpx>=0.28.0
 
+# OpenTelemetry + gRPC pins — prevent pip resolution-too-deep caused by
+# deepeval (otel-grpc) + langfuse (otel-http) version matrix explosion.
+grpcio>=1.67.0,<2.0.0
+opentelemetry-api>=1.28.0,<2.0.0
+opentelemetry-sdk>=1.28.0,<2.0.0
+opentelemetry-exporter-otlp-proto-grpc>=1.28.0,<2.0.0
+opentelemetry-exporter-otlp-proto-http>=1.28.0,<2.0.0
+
 # Axion (evaluation framework)
-axion[bertopic,langfuse] @ git+https://github.com/ax-foundry/axion.git
+axion[langfuse] @ git+https://github.com/ax-foundry/axion.git

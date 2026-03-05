@@ -57,7 +57,12 @@ export function AgentIdentityBar({ trace, className }: AgentIdentityBarProps) {
   if (availableAgents.length === 0) return null;
 
   return (
-    <div className={cn('border-b border-border bg-white', className)}>
+    <div
+      className={cn(
+        'border-b border-primary/10 bg-gradient-to-r from-white via-primary/[0.02] to-white',
+        className
+      )}
+    >
       <div className="mx-auto flex max-w-7xl items-center px-6">
         {/* Agent tabs */}
         <div className="flex items-stretch">
@@ -69,15 +74,15 @@ export function AgentIdentityBar({ trace, className }: AgentIdentityBarProps) {
                 key={agentName}
                 onClick={() => setSelectedAgent(agentName)}
                 className={cn(
-                  'relative flex items-center gap-2 px-5 py-2.5 transition-colors',
-                  isSelected ? '' : 'hover:text-text-primary'
+                  'relative flex items-center gap-2 px-5 py-2.5 transition-all',
+                  isSelected ? '' : 'hover:bg-primary/[0.03]'
                 )}
               >
                 {/* Bottom underline */}
                 <span
                   className={cn(
-                    'absolute inset-x-3 bottom-0 h-0.5 rounded-t transition-colors',
-                    isSelected ? 'bg-primary' : 'bg-transparent'
+                    'absolute inset-x-3 bottom-0 h-[3px] rounded-t transition-all',
+                    isSelected ? 'bg-gradient-to-r from-primary to-primary-dark' : 'bg-transparent'
                   )}
                 />
 
@@ -85,8 +90,8 @@ export function AgentIdentityBar({ trace, className }: AgentIdentityBarProps) {
                 {config?.avatar ? (
                   <div
                     className={cn(
-                      'h-[26px] w-[26px] flex-shrink-0 overflow-hidden rounded-md',
-                      isSelected ? 'bg-primary-pale' : 'bg-gray-100'
+                      'h-[26px] w-[26px] flex-shrink-0 overflow-hidden rounded-md shadow-sm transition-shadow',
+                      isSelected ? 'bg-primary-pale shadow-primary/20' : 'bg-gray-100'
                     )}
                   >
                     <Image
@@ -100,8 +105,8 @@ export function AgentIdentityBar({ trace, className }: AgentIdentityBarProps) {
                 ) : (
                   <div
                     className={cn(
-                      'flex h-[26px] w-[26px] flex-shrink-0 items-center justify-center rounded-md',
-                      isSelected ? 'bg-primary-pale' : 'bg-gray-100'
+                      'flex h-[26px] w-[26px] flex-shrink-0 items-center justify-center rounded-md shadow-sm transition-all',
+                      isSelected ? 'bg-primary/15 shadow-primary/20' : 'bg-gray-100'
                     )}
                   >
                     <Bot
@@ -118,9 +123,7 @@ export function AgentIdentityBar({ trace, className }: AgentIdentityBarProps) {
                   <span
                     className={cn(
                       'text-[13px] transition-colors',
-                      isSelected
-                        ? 'font-semibold text-primary-dark'
-                        : 'font-medium text-text-secondary'
+                      isSelected ? 'font-bold text-primary-dark' : 'font-medium text-text-secondary'
                     )}
                   >
                     {config?.label ?? agentName.charAt(0).toUpperCase() + agentName.slice(1)}
@@ -144,27 +147,27 @@ export function AgentIdentityBar({ trace, className }: AgentIdentityBarProps) {
         {/* KPI chips — shown when a trace is loaded */}
         {trace && (
           <>
-            <div className="mx-4 hidden h-6 w-px bg-border sm:block" />
-            <div className="ml-auto flex flex-wrap items-center gap-3 text-xs text-text-secondary">
-              <span className="flex items-center gap-1">
-                <Layers className="h-3.5 w-3.5 text-text-muted" />
+            <div className="mx-4 hidden h-6 w-px bg-primary/10 sm:block" />
+            <div className="ml-auto flex flex-wrap items-center gap-2 text-xs">
+              <span className="bg-primary/8 flex items-center gap-1 rounded-full px-2.5 py-1 font-medium text-primary-dark">
+                <Layers className="h-3 w-3 text-primary" />
                 {trace.tree.length > 0
                   ? `${trace.tree.reduce((sum, root) => sum + root.children.length, 0)} nodes`
                   : `${trace.steps.length} steps`}
               </span>
               {trace.total_latency_ms != null && (
-                <span className="flex items-center gap-1">
-                  <Clock className="h-3.5 w-3.5 text-text-muted" />
+                <span className="bg-primary/8 flex items-center gap-1 rounded-full px-2.5 py-1 font-medium text-primary-dark">
+                  <Clock className="h-3 w-3 text-primary" />
                   {formatMs(trace.total_latency_ms)}
                 </span>
               )}
-              <span className="flex items-center gap-1">
-                <Zap className="h-3.5 w-3.5 text-text-muted" />
+              <span className="bg-primary/8 flex items-center gap-1 rounded-full px-2.5 py-1 font-medium text-primary-dark">
+                <Zap className="h-3 w-3 text-primary" />
                 {formatTokenCount(trace.total_tokens.total)} tokens
               </span>
-              <span className="flex items-center gap-1 font-mono text-[11px]">
-                <Hash className="h-3.5 w-3.5 text-text-muted" />
-                {trace.id.slice(0, 8)}...
+              <span className="flex items-center gap-1 rounded-full bg-gray-100 px-2.5 py-1 font-mono text-[10px] text-text-muted">
+                <Hash className="h-3 w-3" />
+                {trace.id}
               </span>
             </div>
           </>

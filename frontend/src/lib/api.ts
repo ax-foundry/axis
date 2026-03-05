@@ -57,6 +57,7 @@ import type {
   KpiTrendsResponse,
   KpiFilters,
   KpiFiltersResponse,
+  KpiSankeyResponse,
 } from '@/types';
 
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8500';
@@ -1517,4 +1518,8 @@ export async function getKpiTrends(
 
 export async function getKpiFilters(): Promise<KpiFiltersResponse> {
   return fetchApi('/api/kpi/filters');
+}
+
+export async function getKpiSankey(filters?: KpiFilters): Promise<KpiSankeyResponse> {
+  return fetchApi(`/api/kpi/sankey${_kpiParams(filters)}`);
 }

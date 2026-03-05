@@ -139,6 +139,40 @@ kpi_db:
   #       - avg_7d
   #       - avg_30d
 
+  # --- Prefix-Based Visibility & Aggregation ---
+  #
+  # Match KPIs by name prefix for visibility and aggregation, useful for
+  # dynamically-generated KPI names (e.g. decision flow transitions).
+  #
+  # Global prefix visibility — any KPI whose name starts with a listed prefix
+  # is included in dashboard queries and filter dropdowns.
+  # visible_kpi_prefixes:
+  #   - decision_flow_engine_to_athena__
+  #   - decision_flow_athena_to_final__
+  #
+  # Prefix-based SUM aggregation — KPIs matching these prefixes are summed
+  # per day instead of averaged (they represent counts, not rates).
+  # sum_kpi_prefixes:
+  #   - decision_flow_engine_to_athena__
+  #   - decision_flow_athena_to_final__
+  #
+  # Prefix-scoped display overrides — same keys as kpi_overrides, applied to
+  # any KPI matching the prefix. Longest matching prefix wins.
+  # Supports label_format for dynamic display name generation:
+  #   - Placeholders like {engine} are matched against '__'-delimited segments
+  #   - Segment format: key_value (e.g. engine_approved -> key=engine, value=Approved)
+  #   - Extracted values are title-cased for display labels
+  #
+  # kpi_override_prefixes:
+  #   decision_flow_engine_to_athena__:
+  #     unit: count
+  #     polarity: higher_better
+  #     label_format: "Engine {engine} -> Athena {athena}"
+  #   decision_flow_athena_to_final__:
+  #     unit: count
+  #     polarity: higher_better
+  #     label_format: "Athena {athena} -> Final {final} (Blocked: {blocked_origin})"
+
   # --- Composition Charts ---
   # Optional stacked bar charts built from existing KPI current values.
   # Each chart shows a % breakdown using values already loaded from KPI data.
@@ -160,6 +194,54 @@ kpi_db:
   #     show_remainder: true        # Compute 1 - sum(kpis) as extra segment
   #     remainder_label: "Declined"
   #     remainder_color: "#F87171"
+
+  # --- Card Grid Hiding ---
+  # Hide specific KPIs from the card grid while keeping them queryable
+  # for composition charts, sankey charts, and trend views.
+  #
+  # card_hidden_kpis:              # Exact KPI names to hide from cards
+  #   - referral_rate
+  #   - modification_rate
+  # card_hidden_kpi_prefixes:      # Prefix-based hiding from cards
+  #   - decision_flow_engine_to_athena__
+  #   - decision_flow_athena_to_final__
+
+  # --- Sankey Charts ---
+  # Optional Sankey flow diagrams built from count-type KPIs.
+  # Each chart visualizes flow across multiple stages (columns).
+  # KPI names encode the flow path via __-delimited key_value segments.
+  #
+  # sankey_charts:
+  #   - title: "Decision Flow"
+  #     kpi_prefixes:                 # Prefixes to match flow KPIs
+  #       - decision_flow_engine_to_athena__
+  #       - decision_flow_athena_to_final__
+  #     columns:                      # Stages (left-to-right), min 2
+  #       - key: engine               # Matches segment key in KPI name
+  #         label: "Rules Engine"     # Display label
+  #         value_order: [approved, refer, decline]  # Optional: fix node order
+  #       - key: athena
+  #         label: "AI Recommendation"
+  #       - key: final
+  #         label: "Final Outcome"
+  #     ignore_keys:                  # Optional: collapse these dimensions
+  #       - blocked_origin
+  #     node_colors:                  # Optional: value -> hex color
+  #       approved: "#4ADE80"
+  #       refer: "#FBBF24"
+  #       decline: "#F87171"
+  #     summary_kpis:                 # Optional: KPI cards above chart
+  #       - type: column_total        # Sum of all nodes in a column
+  #         column: engine
+  #         label: "Total Cases"
+  #         unit: count
+  #       - type: node_value          # Value of a specific node
+  #         column: engine
+  #         node: approved
+  #         label: "STP Rate"
+  #         format: percent_of_column # Show as % of column total
+  #         unit: percent
+  #         color: "#4ADE80"
 
   # --- Periodic Incremental Sync ---
   # refresh_interval_minutes: how often to sync (0 = disabled, >0 = every N minutes)

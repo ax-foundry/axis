@@ -14,7 +14,7 @@ from app.plugins.agent_replay.models.review_schemas import (
     ReviewVerdict,
     TraceReviewsResponse,
 )
-from app.plugins.agent_replay.services.replay_service import _get_loader
+from app.plugins.agent_replay.services._shared import get_loader as _get_loader
 
 logger = logging.getLogger(__name__)
 
