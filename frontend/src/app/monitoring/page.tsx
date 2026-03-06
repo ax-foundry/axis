@@ -6,8 +6,6 @@ import {
   ArrowDown,
   ArrowUp,
   ArrowUpDown,
-  Calendar,
-  ChevronDown,
   ChevronLeft,
   ChevronRight,
   Clock,
@@ -20,7 +18,7 @@ import {
   TrendingUp,
   Upload,
 } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { FileUpload } from '@/components/file-upload';
 import {
@@ -36,6 +34,7 @@ import {
 import { FilterDropdown } from '@/components/ui/FilterDropdown';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { SourceSelector } from '@/components/ui/SourceSelector';
+import { TimeRangeSelector } from '@/components/ui/TimeRangeSelector';
 import {
   DEFAULT_ANOMALY_CONFIG,
   detectAnomalies,
@@ -52,11 +51,7 @@ import {
 } from '@/lib/hooks/useMonitoringData';
 import { useMonitoringAutoImport, useMonitoringDBConfig } from '@/lib/hooks/useMonitoringUpload';
 import { cn } from '@/lib/utils';
-import {
-  useMonitoringStore,
-  type MonitoringTimeRange,
-  type MonitoringTimeRangePreset,
-} from '@/stores';
+import { useMonitoringStore, type MonitoringTimeRangePreset } from '@/stores';
 
 import type { AnomalyDetectionConfig } from '@/lib/anomaly-detection';
 import type {
@@ -68,8 +63,7 @@ import type {
   MonitoringTrendData,
 } from '@/types';
 
-// Time range preset options
-const TIME_RANGE_OPTIONS: { value: MonitoringTimeRangePreset; label: string }[] = [
+const MONITORING_TIME_PRESETS = [
   { value: '1h', label: 'Last hour' },
   { value: '6h', label: 'Last 6 hours' },
   { value: '24h', label: 'Last 24 hours' },
@@ -351,122 +345,6 @@ function resolveThresholds(
     return dbConfig.thresholds.per_source[selectedSourceName];
   }
   return dbConfig.thresholds.default ?? fallback;
-}
-
-// Time range selector component
-function TimeRangeSelector({
-  timeRange,
-  onPresetChange,
-  onCustomChange,
-}: {
-  timeRange: MonitoringTimeRange;
-  onPresetChange: (preset: MonitoringTimeRangePreset) => void;
-  onCustomChange: (timeRange: MonitoringTimeRange) => void;
-}) {
-  const [isOpen, setIsOpen] = useState(false);
-  const [showCustom, setShowCustom] = useState(timeRange.preset === 'custom');
-  const [customStart, setCustomStart] = useState(timeRange.startDate.split('T')[0]);
-  const [customEnd, setCustomEnd] = useState(timeRange.endDate.split('T')[0]);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  const currentLabel =
-    TIME_RANGE_OPTIONS.find((o) => o.value === timeRange.preset)?.label || 'Select range';
-
-  const handlePresetSelect = (preset: MonitoringTimeRangePreset) => {
-    if (preset === 'custom') {
-      setShowCustom(true);
-    } else {
-      setShowCustom(false);
-      onPresetChange(preset);
-      setIsOpen(false);
-    }
-  };
-
-  const handleApplyCustom = () => {
-    onCustomChange({
-      preset: 'custom',
-      startDate: new Date(customStart).toISOString(),
-      endDate: new Date(customEnd).toISOString(),
-    });
-    setIsOpen(false);
-  };
-
-  return (
-    <div ref={dropdownRef} className="relative">
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="flex h-[34px] items-center gap-2 rounded-lg border border-border bg-white px-3 text-xs font-medium text-text-primary transition-colors hover:bg-gray-50"
-      >
-        <Calendar className="h-3.5 w-3.5 text-text-muted" />
-        <span>{currentLabel}</span>
-        <ChevronDown
-          className={cn('h-3.5 w-3.5 text-text-muted transition-transform', isOpen && 'rotate-180')}
-        />
-      </button>
-      {isOpen && (
-        <div className="absolute right-0 top-full z-50 mt-1 min-w-[220px] rounded-lg border border-border bg-white shadow-lg">
-          <div className="py-1">
-            {TIME_RANGE_OPTIONS.map((option) => (
-              <button
-                key={option.value}
-                onClick={() => handlePresetSelect(option.value)}
-                className={cn(
-                  'flex w-full items-center px-4 py-1.5 text-left text-xs transition-colors hover:bg-gray-50',
-                  timeRange.preset === option.value && !showCustom
-                    ? 'bg-primary/5 font-medium text-primary'
-                    : 'text-text-primary'
-                )}
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
-          {showCustom && (
-            <div className="border-t border-border p-3">
-              <div className="mb-3 space-y-2">
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-text-muted">
-                    Start Date
-                  </label>
-                  <input
-                    type="date"
-                    value={customStart}
-                    onChange={(e) => setCustomStart(e.target.value)}
-                    className="w-full rounded border border-border px-2 py-1.5 text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-text-muted">End Date</label>
-                  <input
-                    type="date"
-                    value={customEnd}
-                    onChange={(e) => setCustomEnd(e.target.value)}
-                    className="w-full rounded border border-border px-2 py-1.5 text-sm"
-                  />
-                </div>
-              </div>
-              <button
-                onClick={handleApplyCustom}
-                className="w-full rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-white hover:bg-primary-dark"
-              >
-                Apply
-              </button>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
 }
 
 // Loading state component for auto-connect
@@ -1291,9 +1169,18 @@ export default function MonitoringPage() {
           </div>
           <div className="flex items-center gap-2">
             <TimeRangeSelector
-              timeRange={timeRange}
-              onPresetChange={setTimeRangePreset}
-              onCustomChange={setTimeRange}
+              presets={MONITORING_TIME_PRESETS}
+              selectedPreset={timeRange.preset}
+              startDate={timeRange.startDate.slice(0, 10)}
+              endDate={timeRange.endDate.slice(0, 10)}
+              onPresetChange={(p) => setTimeRangePreset(p as MonitoringTimeRangePreset)}
+              onCustomChange={(start, end) =>
+                setTimeRange({
+                  preset: 'custom',
+                  startDate: new Date(start).toISOString(),
+                  endDate: new Date(end).toISOString(),
+                })
+              }
             />
             <button
               onClick={() => {

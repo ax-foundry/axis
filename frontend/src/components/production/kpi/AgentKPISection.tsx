@@ -1,10 +1,12 @@
 'use client';
 
-import { Calendar, Layers, Loader2 } from 'lucide-react';
+import { Layers, Loader2 } from 'lucide-react';
 import { useMemo } from 'react';
 
 import { FilterDropdown } from '@/components/ui/FilterDropdown';
+import { TimeRangeSelector } from '@/components/ui/TimeRangeSelector';
 import { useKpiData, useKpiSankey, useKpiTrends } from '@/lib/hooks/useKpiData';
+import { formatLocalDate } from '@/lib/utils';
 import { useKpiStore, useMonitoringStore } from '@/stores';
 
 import { KPICategoryStrip } from './KPICategoryStrip';
@@ -13,6 +15,14 @@ import { KPISankeyChart } from './KPISankeyChart';
 import { KPITrendChart } from './KPITrendChart';
 
 import type { KpiCategoryItem, KpiDateRange, KpiTrendPoint } from '@/types';
+
+const KPI_TIME_PRESETS = [
+  { value: 'all', label: 'All time' },
+  { value: '7d', label: 'Last 7 days' },
+  { value: '30d', label: 'Last 30 days' },
+  { value: '90d', label: 'Last 90 days' },
+  { value: 'custom', label: 'Custom range' },
+];
 
 function formatDateRange(range: KpiDateRange): string {
   const toDate = (s: string) => new Date(s.slice(0, 10) + 'T00:00:00');
@@ -44,6 +54,11 @@ export function AgentKPISection() {
   const compositionCharts = useKpiStore((s) => s.compositionCharts);
   const hasSankeyCharts = useKpiStore((s) => s.hasSankeyCharts);
   const cardHiddenKpiNames = useKpiStore((s) => s.cardHiddenKpiNames);
+  const kpiTimePreset = useKpiStore((s) => s.kpiTimePreset);
+  const kpiTimeStart = useKpiStore((s) => s.kpiTimeStart);
+  const kpiTimeEnd = useKpiStore((s) => s.kpiTimeEnd);
+  const setKpiTimePreset = useKpiStore((s) => s.setKpiTimePreset);
+  const setKpiTimeRange = useKpiStore((s) => s.setKpiTimeRange);
   const selectedSourceName = useMonitoringStore((s) => s.selectedSourceName);
 
   const dateLabel = useMemo(() => (dateRange ? formatDateRange(dateRange) : null), [dateRange]);
@@ -127,28 +142,29 @@ export function AgentKPISection() {
 
   return (
     <div className="space-y-3">
-      {/* Date range badge + segment filter */}
-      {(dateLabel || availableSegments.length > 1) && (
-        <div className="flex items-center justify-end gap-2">
-          {availableSegments.length > 1 && (
-            <div className="flex items-center gap-1.5">
-              <Layers className="h-3.5 w-3.5 text-text-muted" />
-              <FilterDropdown
-                value={selectedSegment}
-                onChange={setSelectedSegment}
-                options={segmentOptions}
-                placeholder="All Segments"
-              />
-            </div>
-          )}
-          {dateLabel && (
-            <span className="flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1 text-xs text-text-muted">
-              <Calendar className="h-3 w-3" />
-              {dateLabel}
-            </span>
-          )}
-        </div>
-      )}
+      {/* Time range selector + segment filter */}
+      <div className="flex items-center justify-end gap-2">
+        {availableSegments.length > 1 && (
+          <div className="flex items-center gap-1.5">
+            <Layers className="h-3.5 w-3.5 text-text-muted" />
+            <FilterDropdown
+              value={selectedSegment}
+              onChange={setSelectedSegment}
+              options={segmentOptions}
+              placeholder="All Segments"
+            />
+          </div>
+        )}
+        <TimeRangeSelector
+          presets={KPI_TIME_PRESETS}
+          selectedPreset={kpiTimePreset}
+          startDate={kpiTimeStart ?? formatLocalDate(new Date())}
+          endDate={kpiTimeEnd ?? formatLocalDate(new Date())}
+          onPresetChange={setKpiTimePreset}
+          onCustomChange={setKpiTimeRange}
+          summaryLabel={dateLabel ?? undefined}
+        />
+      </div>
 
       {/* Flat KPI card grid (hidden KPIs filtered out) */}
       {cardKpis.length > 0 && (

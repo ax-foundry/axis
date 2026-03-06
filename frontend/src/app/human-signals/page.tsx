@@ -1,7 +1,7 @@
 'use client';
 
-import { Calendar, ChevronDown, Database, Loader2, MessageSquareText, Upload } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { Database, Loader2, MessageSquareText, Upload } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { FileUpload } from '@/components/file-upload';
 import {
@@ -13,21 +13,17 @@ import {
 } from '@/components/human-signals';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { SourceSelector } from '@/components/ui/SourceSelector';
+import { TimeRangeSelector } from '@/components/ui/TimeRangeSelector';
 import {
   useHumanSignalsAutoImport,
   useHumanSignalsDBConfig,
 } from '@/lib/hooks/useHumanSignalsUpload';
 import { computeKPIs, filterSignalsCases } from '@/lib/human-signals-utils';
-import { cn } from '@/lib/utils';
 import { useHumanSignalsStore } from '@/stores';
 
-import type {
-  HumanSignalsTimeRangePreset,
-  HumanSignalsTimeRange,
-} from '@/stores/human-signals-store';
+import type { HumanSignalsTimeRangePreset } from '@/stores/human-signals-store';
 
-// Time range preset options
-const TIME_RANGE_OPTIONS: { value: string; label: string }[] = [
+const SIGNALS_TIME_PRESETS = [
   { value: '7d', label: 'Last 7 days' },
   { value: '30d', label: 'Last 30 days' },
   { value: '90d', label: 'Last 90 days' },
@@ -47,115 +43,6 @@ function HumanSignalsHeader() {
       title="Human Signals"
       subtitle="Human-in-the-loop insights and operational metrics"
     />
-  );
-}
-
-function TimeRangeSelector({
-  timeRange,
-  onPresetChange,
-  onCustomChange,
-}: {
-  timeRange: { preset: string; startDate: string; endDate: string };
-  onPresetChange: (preset: string) => void;
-  onCustomChange: (tr: { preset: string; startDate: string; endDate: string }) => void;
-}) {
-  const [isOpen, setIsOpen] = useState(false);
-  const [showCustom, setShowCustom] = useState(timeRange.preset === 'custom');
-  const [customStart, setCustomStart] = useState(timeRange.startDate);
-  const [customEnd, setCustomEnd] = useState(timeRange.endDate);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  const currentLabel =
-    timeRange.preset === 'custom'
-      ? `${timeRange.startDate} — ${timeRange.endDate}`
-      : TIME_RANGE_OPTIONS.find((o) => o.value === timeRange.preset)?.label || 'Select range';
-
-  return (
-    <div ref={dropdownRef} className="relative">
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 rounded-lg border border-border bg-white px-3 py-2 text-sm font-medium text-text-primary transition-colors hover:bg-gray-50"
-      >
-        <Calendar className="h-4 w-4 text-text-muted" />
-        <span>{currentLabel}</span>
-        <ChevronDown
-          className={cn('h-4 w-4 text-text-muted transition-transform', isOpen && 'rotate-180')}
-        />
-      </button>
-      {isOpen && (
-        <div className="absolute right-0 top-full z-50 mt-1 min-w-[220px] rounded-lg border border-border bg-white shadow-lg">
-          <div className="py-1">
-            {TIME_RANGE_OPTIONS.map((option) => (
-              <button
-                key={option.value}
-                onClick={() => {
-                  if (option.value === 'custom') {
-                    setShowCustom(true);
-                  } else {
-                    setShowCustom(false);
-                    onPresetChange(option.value);
-                    setIsOpen(false);
-                  }
-                }}
-                className={cn(
-                  'flex w-full items-center px-4 py-2 text-left text-sm transition-colors hover:bg-gray-50',
-                  timeRange.preset === option.value && !showCustom
-                    ? 'bg-primary/5 font-medium text-primary'
-                    : 'text-text-primary'
-                )}
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
-          {showCustom && (
-            <div className="border-t border-border p-3">
-              <div className="mb-3 space-y-2">
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-text-muted">
-                    Start Date
-                  </label>
-                  <input
-                    type="date"
-                    value={customStart}
-                    onChange={(e) => setCustomStart(e.target.value)}
-                    className="w-full rounded border border-border px-2 py-1.5 text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-text-muted">End Date</label>
-                  <input
-                    type="date"
-                    value={customEnd}
-                    onChange={(e) => setCustomEnd(e.target.value)}
-                    className="w-full rounded border border-border px-2 py-1.5 text-sm"
-                  />
-                </div>
-              </div>
-              <button
-                onClick={() => {
-                  onCustomChange({ preset: 'custom', startDate: customStart, endDate: customEnd });
-                  setIsOpen(false);
-                }}
-                className="w-full rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-white hover:bg-primary-dark"
-              >
-                Apply
-              </button>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
   );
 }
 
@@ -320,9 +207,15 @@ function Dashboard() {
       {/* Time range */}
       <div className="mb-5 flex items-center justify-end">
         <TimeRangeSelector
-          timeRange={timeRange}
+          presets={SIGNALS_TIME_PRESETS}
+          selectedPreset={timeRange.preset}
+          startDate={timeRange.startDate}
+          endDate={timeRange.endDate}
           onPresetChange={(p) => setTimeRangePreset(p as HumanSignalsTimeRangePreset)}
-          onCustomChange={(tr) => setTimeRange(tr as HumanSignalsTimeRange)}
+          onCustomChange={(start, end) =>
+            setTimeRange({ preset: 'custom', startDate: start, endDate: end })
+          }
+          size="md"
         />
       </div>
 

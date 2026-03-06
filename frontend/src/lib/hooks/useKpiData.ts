@@ -14,9 +14,13 @@ import type { KpiFilters } from '@/types';
 function useKpiFilters(): KpiFilters {
   const selectedSourceName = useMonitoringStore((s) => s.selectedSourceName);
   const selectedSegment = useKpiStore((s) => s.selectedSegment);
+  const kpiTimeStart = useKpiStore((s) => s.kpiTimeStart);
+  const kpiTimeEnd = useKpiStore((s) => s.kpiTimeEnd);
   return {
     source_name: selectedSourceName || undefined,
     segment: selectedSegment || undefined,
+    time_start: kpiTimeStart || undefined,
+    time_end: kpiTimeEnd || undefined,
   };
 }
 
