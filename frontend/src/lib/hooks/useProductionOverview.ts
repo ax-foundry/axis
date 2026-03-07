@@ -1,7 +1,9 @@
 'use client';
 
+import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 
+import { getStoreData } from '@/lib/api';
 import { computeKPIs } from '@/lib/human-signals-utils';
 import { useHumanSignalsStore, useMonitoringStore } from '@/stores';
 
@@ -18,16 +20,42 @@ export interface ProductionOverviewData {
   monitoringData: MonitoringRecord[];
 }
 
+/** Columns the executive summary actually needs (keeps payload small). */
+const SUMMARY_COLUMNS =
+  'source_name,source_component,metric_name,metric_score,metric_category,timestamp';
+
 export function useProductionOverview(): ProductionOverviewData {
   const monitoringStore = useMonitoringStore();
   const humanSignalsStore = useHumanSignalsStore();
   const selectedSourceName = useMonitoringStore((s) => s.selectedSourceName);
+  const datasetReady = monitoringStore.datasetReady;
 
-  // ── Filter monitoring data by selected source ────────────────────
-  const filteredMonitoringData = useMemo(() => {
+  // ── Fetch monitoring data from DuckDB when ready ─────────────────
+  const duckdbQuery = useQuery({
+    queryKey: ['production-monitoring-summary', selectedSourceName],
+    queryFn: () =>
+      getStoreData('monitoring', {
+        page_size: 10000,
+        source_name: selectedSourceName || undefined,
+        columns: SUMMARY_COLUMNS,
+      }),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    enabled: datasetReady,
+  });
+
+  const duckdbData = useMemo(
+    () => (duckdbQuery.data?.data ?? []) as unknown as MonitoringRecord[],
+    [duckdbQuery.data]
+  );
+
+  // ── Resolve monitoring data: DuckDB first, fallback to in-memory ──
+  const monitoringData = useMemo(() => {
+    // DuckDB mode: use server-fetched data
+    if (datasetReady) return duckdbData;
+    // CSV mode: filter in-memory store
     if (!selectedSourceName) return monitoringStore.data;
     return monitoringStore.data.filter((r) => r.source_name === selectedSourceName);
-  }, [monitoringStore.data, selectedSourceName]);
+  }, [datasetReady, duckdbData, monitoringStore.data, selectedSourceName]);
 
   // ── Filter signals cases by selected source ──────────────────────
   const filteredSignalsCases = useMemo(() => {
@@ -48,22 +76,23 @@ export function useProductionOverview(): ProductionOverviewData {
       alertCount: selectedSourceName
         ? (monitoringStore.alerts?.filter((a) => a.source_name === selectedSourceName).length ?? 0)
         : (monitoringStore.alerts?.length ?? 0),
-      hasMonitoringData: monitoringStore.data.length > 0 || monitoringStore.datasetReady,
+      hasMonitoringData: monitoringStore.data.length > 0 || datasetReady,
       hasSignalsData: filteredSignalsCases.length > 0,
-      isLoading: monitoringStore.isLoading || humanSignalsStore.isLoading,
-      monitoringData: filteredMonitoringData,
+      isLoading: monitoringStore.isLoading || humanSignalsStore.isLoading || duckdbQuery.isLoading,
+      monitoringData,
     }),
     [
       monitoringStore.summaryMetrics,
       monitoringStore.alerts,
       monitoringStore.data,
-      monitoringStore.datasetReady,
+      datasetReady,
       monitoringStore.isLoading,
       selectedSourceName,
       filteredSignalsCases.length,
       humanSignalsStore.isLoading,
       signalsKPIs,
-      filteredMonitoringData,
+      monitoringData,
+      duckdbQuery.isLoading,
     ]
   );
 }

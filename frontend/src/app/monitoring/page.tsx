@@ -623,6 +623,9 @@ export default function MonitoringPage() {
     [dbConfig]
   );
 
+  // Track whether the DuckDB store status check has completed
+  const [storeStatusChecked, setStoreStatusChecked] = useState(false);
+
   // Poll DuckDB store status on mount → populate filters from metadata if ready
   useEffect(() => {
     let cancelled = false;
@@ -642,6 +645,8 @@ export default function MonitoringPage() {
         }
       } catch {
         // Store not available — fallback to CSV mode
+      } finally {
+        if (!cancelled) setStoreStatusChecked(true);
       }
     };
     checkStore();
@@ -682,9 +687,13 @@ export default function MonitoringPage() {
   const [hasAttemptedAutoConnect, setHasAttemptedAutoConnect] = useState(false);
   const [autoConnectError, setAutoConnectError] = useState<string | null>(null);
 
-  // Auto-connect on mount if configured
+  // Auto-connect on mount if configured — only after DuckDB store check completes.
+  // If DuckDB already has the data (datasetReady), skip the legacy import entirely
+  // to avoid pulling the full dataset into browser memory.
   useEffect(() => {
     if (
+      storeStatusChecked &&
+      !datasetReady &&
       dbConfig &&
       (dbConfig.auto_connect || dbConfig.auto_load) &&
       !hasAttemptedAutoConnect &&
@@ -702,7 +711,15 @@ export default function MonitoringPage() {
         },
       });
     }
-  }, [dbConfig, hasAttemptedAutoConnect, data.length, autoImportMutation, isLoading]);
+  }, [
+    storeStatusChecked,
+    datasetReady,
+    dbConfig,
+    hasAttemptedAutoConnect,
+    data.length,
+    autoImportMutation,
+    isLoading,
+  ]);
 
   // Handler to retry auto-connect
   const handleRetryAutoConnect = () => {
@@ -719,8 +736,10 @@ export default function MonitoringPage() {
   // Determine if we're in auto-connecting state
   const isAutoConnecting =
     data.length === 0 &&
+    !datasetReady &&
     (autoImportMutation.isPending ||
       isLoadingConfig ||
+      !storeStatusChecked ||
       (isLoading && (dbConfig === undefined || dbConfig?.auto_connect || dbConfig?.auto_load)));
 
   // Filter data by selected filters and time range (CSV mode only)

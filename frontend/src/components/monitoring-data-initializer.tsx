@@ -1,7 +1,8 @@
 'use client';
 
-import { type ReactNode, useEffect, useRef } from 'react';
+import { type ReactNode, useEffect, useRef, useState } from 'react';
 
+import { getStoreStatus } from '@/lib/api';
 import { useMonitoringDBConfig, useMonitoringAutoImport } from '@/lib/hooks/useMonitoringUpload';
 import { useMonitoringStore } from '@/stores';
 
@@ -16,8 +17,9 @@ interface MonitoringDataInitializerProps {
  * and triggers auto-import if enabled.
  *
  * Behavior:
- * - Checks monitoring DB config on mount
- * - If auto_load is enabled and no data exists, triggers import
+ * - First checks if DuckDB already has monitoring data (from sync engine)
+ * - If DuckDB is ready, skips the legacy import entirely
+ * - If no DuckDB data and auto_load is enabled, triggers legacy import
  * - Graceful failure: logs warning and continues without data
  * - Skips if user already has data loaded
  *
@@ -31,8 +33,35 @@ export function MonitoringDataInitializer({ children }: MonitoringDataInitialize
   // Track if we've already attempted auto-import to prevent multiple attempts
   const hasAttemptedImport = useRef(false);
 
+  // Check DuckDB store status before deciding whether to legacy-import
+  const [duckdbChecked, setDuckdbChecked] = useState(false);
+  const [duckdbReady, setDuckdbReady] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    getStoreStatus()
+      .then((status) => {
+        if (cancelled) return;
+        const monStatus = status.datasets?.monitoring_data;
+        if (monStatus?.state === 'ready' && monStatus.rows > 0) {
+          setDuckdbReady(true);
+        }
+      })
+      .catch(() => {
+        // Store not available — will fall through to legacy import
+      })
+      .finally(() => {
+        if (!cancelled) setDuckdbChecked(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   useEffect(() => {
     // Skip if:
+    // - DuckDB status not checked yet
+    // - DuckDB already has the data (sync engine handled it)
     // - Config is still loading
     // - Config fetch failed (backend not available)
     // - Already attempted import
@@ -41,6 +70,8 @@ export function MonitoringDataInitializer({ children }: MonitoringDataInitialize
     // - Database is not configured
     // - Currently importing
     if (
+      !duckdbChecked ||
+      duckdbReady ||
       configLoading ||
       configError ||
       hasAttemptedImport.current ||
@@ -71,7 +102,16 @@ export function MonitoringDataInitializer({ children }: MonitoringDataInitialize
         );
       },
     });
-  }, [config, configLoading, configError, existingData.length, autoImport, isImporting]);
+  }, [
+    duckdbChecked,
+    duckdbReady,
+    config,
+    configLoading,
+    configError,
+    existingData.length,
+    autoImport,
+    isImporting,
+  ]);
 
   // Always render children - auto-import happens in background
   return <>{children}</>;
