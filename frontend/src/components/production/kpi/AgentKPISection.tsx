@@ -120,7 +120,11 @@ export function AgentKPISection() {
 
   // Auto-reset segment filter when it's no longer valid for the current source_component
   useEffect(() => {
-    if (selectedSegment && availableSegments.length > 0 && !availableSegments.includes(selectedSegment)) {
+    if (
+      selectedSegment &&
+      availableSegments.length > 0 &&
+      !availableSegments.includes(selectedSegment)
+    ) {
       setSelectedSegment('');
     }
   }, [availableSegments, selectedSegment, setSelectedSegment]);

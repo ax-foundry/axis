@@ -102,13 +102,10 @@ export function KPICategoryStrip({ kpis, selectedKpi, onSelectKpi }: KPICategory
           trend = change > 0.02 ? 'up' : change < -0.02 ? 'down' : 'flat';
         }
 
-        const isGood =
-          kpi.polarity === 'higher_better' ? trend === 'up' : trend === 'down';
-        const isBad =
-          kpi.polarity === 'higher_better' ? trend === 'down' : trend === 'up';
+        const isGood = kpi.polarity === 'higher_better' ? trend === 'up' : trend === 'down';
+        const isBad = kpi.polarity === 'higher_better' ? trend === 'down' : trend === 'up';
 
-        const TrendIcon =
-          trend === 'up' ? TrendingUp : trend === 'down' ? TrendingDown : Minus;
+        const TrendIcon = trend === 'up' ? TrendingUp : trend === 'down' ? TrendingDown : Minus;
 
         const CatIcon = ICON_MAP[kpi.categoryIcon] ?? BarChart3;
 
