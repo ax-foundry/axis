@@ -422,6 +422,7 @@ async def get_monitoring_trends(
     source_name: str | None = None,
     source_component: str | None = None,
     source_type: str | None = None,
+    metric_category: str | None = None,
     time_start: str | None = None,
     time_end: str | None = None,
 ) -> TrendResponse:
@@ -438,6 +439,7 @@ async def get_monitoring_trends(
         source_name=source_name,
         source_component=source_component,
         source_type=source_type,
+        metric_category=metric_category,
         time_start=time_start,
         time_end=time_end,
     )
@@ -556,6 +558,7 @@ async def get_latency_distribution(
     source_name: str | None = None,
     source_component: str | None = None,
     source_type: str | None = None,
+    metric_category: str | None = None,
     time_start: str | None = None,
     time_end: str | None = None,
 ) -> LatencyDistributionResponse:
@@ -584,6 +587,7 @@ async def get_latency_distribution(
         source_name=source_name,
         source_component=source_component,
         source_type=source_type,
+        metric_category=metric_category,
         time_start=time_start,
         time_end=time_end,
     )
@@ -839,6 +843,7 @@ async def get_metric_breakdown(
     source_name: str | None = None,
     source_component: str | None = None,
     source_type: str | None = None,
+    metric_category: str | None = None,
     time_start: str | None = None,
     time_end: str | None = None,
 ) -> MetricBreakdownResponse:
@@ -855,6 +860,7 @@ async def get_metric_breakdown(
         source_name=source_name,
         source_component=source_component,
         source_type=source_type,
+        metric_category=metric_category,
         time_start=time_start,
         time_end=time_end,
     )
@@ -1220,7 +1226,7 @@ async def get_classification_trends(
 async def get_analysis_insights(
     metric_name: str | None = None,
     page: int = Query(1, ge=1),
-    limit: int = Query(20, ge=1, le=100),
+    limit: int = Query(20, ge=1, le=500),
     environment: str | None = None,
     source_name: str | None = None,
     source_component: str | None = None,
