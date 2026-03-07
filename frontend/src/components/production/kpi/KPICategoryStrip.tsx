@@ -91,21 +91,24 @@ export function KPICategoryStrip({ kpis, selectedKpi, onSelectKpi }: KPICategory
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
       {kpis.map((kpi) => {
         const isSelected = selectedKpi === kpi.kpi_name;
+
+        // Derive trend from sparkline data (first vs last value)
+        const sparkVals = kpi.sparkline.map((d) => d.value).filter((v): v is number => v !== null);
+        let trend = kpi.trend_direction;
+        if (sparkVals.length >= 2) {
+          const first = sparkVals[0];
+          const last = sparkVals[sparkVals.length - 1];
+          const change = first !== 0 ? (last - first) / Math.abs(first) : last > first ? 1 : 0;
+          trend = change > 0.02 ? 'up' : change < -0.02 ? 'down' : 'flat';
+        }
+
         const isGood =
-          kpi.polarity === 'higher_better'
-            ? kpi.trend_direction === 'up'
-            : kpi.trend_direction === 'down';
+          kpi.polarity === 'higher_better' ? trend === 'up' : trend === 'down';
         const isBad =
-          kpi.polarity === 'higher_better'
-            ? kpi.trend_direction === 'down'
-            : kpi.trend_direction === 'up';
+          kpi.polarity === 'higher_better' ? trend === 'down' : trend === 'up';
 
         const TrendIcon =
-          kpi.trend_direction === 'up'
-            ? TrendingUp
-            : kpi.trend_direction === 'down'
-              ? TrendingDown
-              : Minus;
+          trend === 'up' ? TrendingUp : trend === 'down' ? TrendingDown : Minus;
 
         const CatIcon = ICON_MAP[kpi.categoryIcon] ?? BarChart3;
 
@@ -125,7 +128,7 @@ export function KPICategoryStrip({ kpis, selectedKpi, onSelectKpi }: KPICategory
               <span className="text-xl font-bold text-text-primary">
                 {formatValue(kpi.current_value, kpi.unit)}
               </span>
-              {kpi.trend_direction && kpi.trend_direction !== 'flat' && (
+              {trend && trend !== 'flat' && (
                 <TrendIcon
                   className={cn(
                     'h-4 w-4',

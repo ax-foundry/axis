@@ -35,6 +35,10 @@ interface KpiStoreState {
   hasSankeyCharts: boolean;
   /** KPI names hidden from card grid (still used by composition/sankey charts) */
   cardHiddenKpiNames: Set<string>;
+  /** Currently selected source_component filter (empty string = all) */
+  selectedSourceComponent: string;
+  /** Available source_component values from KPI data */
+  availableSourceComponents: string[];
 
   /** Time range preset: 'all' | '7d' | '30d' | '90d' | 'custom' */
   kpiTimePreset: string;
@@ -54,6 +58,8 @@ interface KpiStoreState {
   setCompositionCharts: (charts: KpiCompositionChartConfig[]) => void;
   setHasSankeyCharts: (has: boolean) => void;
   setCardHiddenKpiNames: (names: string[]) => void;
+  setSelectedSourceComponent: (component: string) => void;
+  setAvailableSourceComponents: (components: string[]) => void;
   setKpiTimePreset: (preset: string) => void;
   setKpiTimeRange: (start: string, end: string) => void;
 }
@@ -70,6 +76,8 @@ export const useKpiStore = create<KpiStoreState>()(
       compositionCharts: [],
       hasSankeyCharts: false,
       cardHiddenKpiNames: new Set<string>(),
+      selectedSourceComponent: '',
+      availableSourceComponents: [],
       kpiTimePreset: 'all',
       kpiTimeStart: null,
       kpiTimeEnd: null,
@@ -96,6 +104,10 @@ export const useKpiStore = create<KpiStoreState>()(
       setHasSankeyCharts: (has) => set({ hasSankeyCharts: has }),
 
       setCardHiddenKpiNames: (names) => set({ cardHiddenKpiNames: new Set(names) }),
+
+      setSelectedSourceComponent: (component) => set({ selectedSourceComponent: component }),
+
+      setAvailableSourceComponents: (components) => set({ availableSourceComponents: components }),
 
       setKpiTimePreset: (preset) => {
         const { start, end } = getKpiDateRange(preset);

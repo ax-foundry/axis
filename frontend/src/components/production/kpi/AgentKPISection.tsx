@@ -1,7 +1,7 @@
 'use client';
 
 import { Layers, Loader2 } from 'lucide-react';
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 
 import { FilterDropdown } from '@/components/ui/FilterDropdown';
 import { TimeRangeSelector } from '@/components/ui/TimeRangeSelector';
@@ -54,6 +54,9 @@ export function AgentKPISection() {
   const compositionCharts = useKpiStore((s) => s.compositionCharts);
   const hasSankeyCharts = useKpiStore((s) => s.hasSankeyCharts);
   const cardHiddenKpiNames = useKpiStore((s) => s.cardHiddenKpiNames);
+  const selectedSourceComponent = useKpiStore((s) => s.selectedSourceComponent);
+  const setSelectedSourceComponent = useKpiStore((s) => s.setSelectedSourceComponent);
+  const availableSourceComponents = useKpiStore((s) => s.availableSourceComponents);
   const kpiTimePreset = useKpiStore((s) => s.kpiTimePreset);
   const kpiTimeStart = useKpiStore((s) => s.kpiTimeStart);
   const kpiTimeEnd = useKpiStore((s) => s.kpiTimeEnd);
@@ -70,6 +73,18 @@ export function AgentKPISection() {
     ],
     [availableSegments]
   );
+
+  const componentOptions = useMemo(
+    () => availableSourceComponents.map((c) => ({ value: c, label: c })),
+    [availableSourceComponents]
+  );
+
+  // Auto-select first source_component when available (no "All" option)
+  useEffect(() => {
+    if (availableSourceComponents.length > 0 && !selectedSourceComponent) {
+      setSelectedSourceComponent(availableSourceComponents[0]);
+    }
+  }, [availableSourceComponents, selectedSourceComponent, setSelectedSourceComponent]);
 
   // Resolve effective KPI order: per-source list > global _default > alphabetical fallback
   const effectiveOrder = useMemo(() => {
@@ -102,6 +117,13 @@ export function AgentKPISection() {
       return a.kpi_name.localeCompare(b.kpi_name);
     });
   }, [categories, effectiveOrder]);
+
+  // Auto-reset segment filter when it's no longer valid for the current source_component
+  useEffect(() => {
+    if (selectedSegment && availableSegments.length > 0 && !availableSegments.includes(selectedSegment)) {
+      setSelectedSegment('');
+    }
+  }, [availableSegments, selectedSegment, setSelectedSegment]);
 
   // KPIs for the card grid (excludes card-hidden ones)
   const cardKpis = useMemo(
@@ -142,8 +164,16 @@ export function AgentKPISection() {
 
   return (
     <div className="space-y-3">
-      {/* Time range selector + segment filter */}
+      {/* Filters + time range selector */}
       <div className="flex items-center justify-end gap-2">
+        {availableSourceComponents.length > 1 && (
+          <FilterDropdown
+            value={selectedSourceComponent}
+            onChange={setSelectedSourceComponent}
+            options={componentOptions}
+            placeholder="All Components"
+          />
+        )}
         {availableSegments.length > 1 && (
           <div className="flex items-center gap-1.5">
             <Layers className="h-3.5 w-3.5 text-text-muted" />

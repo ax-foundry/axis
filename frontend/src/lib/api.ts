@@ -1516,8 +1516,11 @@ export async function getKpiTrends(
   return fetchApi(`/api/kpi/trends${s ? `?${s}` : ''}`);
 }
 
-export async function getKpiFilters(): Promise<KpiFiltersResponse> {
-  return fetchApi('/api/kpi/filters');
+export async function getKpiFilters(sourceComponent?: string): Promise<KpiFiltersResponse> {
+  const qs = new URLSearchParams();
+  if (sourceComponent) qs.append('source_component', sourceComponent);
+  const s = qs.toString();
+  return fetchApi(`/api/kpi/filters${s ? `?${s}` : ''}`);
 }
 
 export async function getKpiSankey(filters?: KpiFilters): Promise<KpiSankeyResponse> {
