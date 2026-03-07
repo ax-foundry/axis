@@ -21,3 +21,11 @@ export function truncateText(text: string, maxLength: number = 200): string {
 export function generateId(): string {
   return Math.random().toString(36).substring(2, 9);
 }
+
+/** Format a Date as YYYY-MM-DD in the local timezone (no UTC shift). */
+export function formatLocalDate(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}

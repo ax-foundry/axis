@@ -14,9 +14,15 @@ import type { KpiFilters } from '@/types';
 function useKpiFilters(): KpiFilters {
   const selectedSourceName = useMonitoringStore((s) => s.selectedSourceName);
   const selectedSegment = useKpiStore((s) => s.selectedSegment);
+  const selectedSourceComponent = useKpiStore((s) => s.selectedSourceComponent);
+  const kpiTimeStart = useKpiStore((s) => s.kpiTimeStart);
+  const kpiTimeEnd = useKpiStore((s) => s.kpiTimeEnd);
   return {
     source_name: selectedSourceName || undefined,
     segment: selectedSegment || undefined,
+    source_component: selectedSourceComponent || undefined,
+    time_start: kpiTimeStart || undefined,
+    time_end: kpiTimeEnd || undefined,
   };
 }
 
@@ -29,6 +35,7 @@ export function useKpiData() {
   const filters = useKpiFilters();
   const setAvailableSourceNames = useKpiStore((s) => s.setAvailableSourceNames);
   const setAvailableSegments = useKpiStore((s) => s.setAvailableSegments);
+  const setAvailableSourceComponents = useKpiStore((s) => s.setAvailableSourceComponents);
   const setKpiOrder = useKpiStore((s) => s.setKpiOrder);
   const setCompositionCharts = useKpiStore((s) => s.setCompositionCharts);
   const setHasSankeyCharts = useKpiStore((s) => s.setHasSankeyCharts);
@@ -40,11 +47,13 @@ export function useKpiData() {
     staleTime: 60_000,
   });
 
-  // Fetch filter options (source names, segments, etc.) and populate the KPI store
+  // Fetch filter options (source names, segments, etc.) and populate the KPI store.
+  // Pass source_component so segments are scoped to the selected component.
+  const selectedSourceComponent = useKpiStore((s) => s.selectedSourceComponent);
   const { data: filtersData } = useQuery({
-    queryKey: ['kpi-filters'],
-    queryFn: () => api.getKpiFilters(),
-    staleTime: 5 * 60_000,
+    queryKey: ['kpi-filters', selectedSourceComponent || ''],
+    queryFn: () => api.getKpiFilters(selectedSourceComponent || undefined),
+    staleTime: 60_000,
   });
 
   useEffect(() => {
@@ -53,6 +62,9 @@ export function useKpiData() {
     }
     if (filtersData?.segments) {
       setAvailableSegments(filtersData.segments);
+    }
+    if (filtersData?.source_components) {
+      setAvailableSourceComponents(filtersData.source_components);
     }
     if (filtersData?.kpi_order) {
       setKpiOrder(filtersData.kpi_order);
@@ -70,6 +82,7 @@ export function useKpiData() {
     filtersData,
     setAvailableSourceNames,
     setAvailableSegments,
+    setAvailableSourceComponents,
     setKpiOrder,
     setCompositionCharts,
     setHasSankeyCharts,

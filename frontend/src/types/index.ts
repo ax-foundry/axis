@@ -1701,6 +1701,7 @@ export interface KpiFilters {
   kpi_category?: string;
   environment?: string;
   source_type?: string;
+  source_component?: string;
   segment?: string;
   time_start?: string;
   time_end?: string;
@@ -1727,6 +1728,7 @@ export interface KpiFiltersResponse {
   kpi_categories: string[];
   kpi_names: string[];
   source_types: string[];
+  source_components: string[];
   segments: string[];
   kpi_order: Record<string, string[]>;
   composition_charts?: KpiCompositionChartConfig[];

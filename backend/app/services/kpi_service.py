@@ -1,6 +1,7 @@
 import logging
 import re
 from dataclasses import dataclass
+from datetime import date, timedelta
 from typing import Any
 
 from app.config.db.kpi import kpi_db_config
@@ -303,6 +304,7 @@ def _build_where(
     kpi_category: str | None = None,
     environment: str | None = None,
     source_type: str | None = None,
+    source_component: str | None = None,
     segment: str | None = None,
     time_start: str | None = None,
     time_end: str | None = None,
@@ -324,6 +326,9 @@ def _build_where(
     if source_type:
         conditions.append("source_type = ?")
         params.append(source_type)
+    if source_component:
+        conditions.append("source_component = ?")
+        params.append(source_component)
     if segment:
         conditions.append("segment = ?")
         params.append(segment)
@@ -331,8 +336,13 @@ def _build_where(
         conditions.append("created_at >= ?")
         params.append(time_start)
     if time_end:
-        conditions.append("created_at <= ?")
-        params.append(time_end)
+        conditions.append("created_at < ?")
+        # time_end is YYYY-MM-DD; use next day for inclusive end-of-day
+        try:
+            end_exclusive = str(date.fromisoformat(time_end) + timedelta(days=1))
+        except ValueError:
+            end_exclusive = time_end
+        params.append(end_exclusive)
     if kpi_names:
         placeholders = ", ".join("?" for _ in kpi_names)
         conditions.append(f"kpi_name IN ({placeholders})")
@@ -367,6 +377,7 @@ def get_kpi_categories(
     kpi_category: str | None = None,
     environment: str | None = None,
     source_type: str | None = None,
+    source_component: str | None = None,
     segment: str | None = None,
     time_start: str | None = None,
     time_end: str | None = None,
@@ -385,6 +396,7 @@ def get_kpi_categories(
         kpi_category=kpi_category,
         environment=environment,
         source_type=source_type,
+        source_component=source_component,
         segment=segment,
         time_start=time_start,
         time_end=time_end,
@@ -587,6 +599,7 @@ def get_kpi_trends(
     source_name: str | None = None,
     environment: str | None = None,
     source_type: str | None = None,
+    source_component: str | None = None,
     segment: str | None = None,
     time_start: str | None = None,
     time_end: str | None = None,
@@ -601,6 +614,7 @@ def get_kpi_trends(
         source_name=source_name,
         environment=environment,
         source_type=source_type,
+        source_component=source_component,
         segment=segment,
         time_start=time_start,
         time_end=time_end,
@@ -659,7 +673,11 @@ def get_kpi_trends(
     return KpiTrendsResponse(data=data, kpi_names=unique_names, trend_lines=trend_lines_list)
 
 
-def get_kpi_filters(store: DuckDBStore) -> KpiFiltersResponse:
+def get_kpi_filters(
+    store: DuckDBStore,
+    *,
+    source_component: str | None = None,
+) -> KpiFiltersResponse:
     """Distinct filter values for dropdowns."""
     if not store.has_table(TABLE):
         return KpiFiltersResponse(
@@ -668,6 +686,7 @@ def get_kpi_filters(store: DuckDBStore) -> KpiFiltersResponse:
             kpi_categories=[],
             kpi_names=[],
             source_types=[],
+            source_components=[],
             segments=[],
             kpi_order={},
         )
@@ -691,7 +710,16 @@ def get_kpi_filters(store: DuckDBStore) -> KpiFiltersResponse:
         ]
 
     try:
-        segments = _distinct("segment")
+        if source_component:
+            rows = store.query_list(
+                f"SELECT DISTINCT segment FROM {TABLE}"
+                " WHERE segment IS NOT NULL AND source_component = ?"
+                " ORDER BY segment",
+                [source_component],
+            )
+            segments = [r["segment"] for r in rows]
+        else:
+            segments = _distinct("segment")
     except Exception:
         segments = []
 
@@ -721,12 +749,18 @@ def get_kpi_filters(store: DuckDBStore) -> KpiFiltersResponse:
         n for n in all_kpi_names if n in hidden_exact or _matches_prefix(n, hidden_prefixes)
     ]
 
+    try:
+        source_components = _distinct("source_component")
+    except Exception:
+        source_components = []
+
     return KpiFiltersResponse(
         source_names=_distinct("source_name"),
         environments=_distinct("environment"),
         kpi_categories=_distinct("kpi_category"),
         kpi_names=all_kpi_names,
         source_types=_distinct("source_type"),
+        source_components=source_components,
         segments=segments,
         kpi_order=kpi_order,
         composition_charts=composition_charts,
@@ -925,6 +959,7 @@ def get_kpi_sankey(
     source_name: str | None = None,
     environment: str | None = None,
     source_type: str | None = None,
+    source_component: str | None = None,
     segment: str | None = None,
     time_start: str | None = None,
     time_end: str | None = None,
@@ -937,6 +972,7 @@ def get_kpi_sankey(
         source_name=source_name,
         environment=environment,
         source_type=source_type,
+        source_component=source_component,
         segment=segment,
         time_start=time_start,
         time_end=time_end,

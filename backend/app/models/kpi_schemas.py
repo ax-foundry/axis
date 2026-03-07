@@ -93,6 +93,7 @@ class KpiFiltersResponse(BaseModel):
     kpi_categories: list[str]
     kpi_names: list[str]
     source_types: list[str]
+    source_components: list[str] = []
     segments: list[str]
     kpi_order: dict[str, list[str]]
     composition_charts: list[KpiCompositionChartConfig] = []

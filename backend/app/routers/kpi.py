@@ -28,6 +28,7 @@ async def kpi_categories(
     kpi_category: str | None = None,
     environment: str | None = None,
     source_type: str | None = None,
+    source_component: str | None = None,
     segment: str | None = None,
     time_start: str | None = None,
     time_end: str | None = None,
@@ -41,6 +42,7 @@ async def kpi_categories(
             kpi_category=kpi_category,
             environment=environment,
             source_type=source_type,
+            source_component=source_component,
             segment=segment,
             time_start=time_start,
             time_end=time_end,
@@ -55,6 +57,7 @@ async def kpi_trends(
     source_name: str | None = None,
     environment: str | None = None,
     source_type: str | None = None,
+    source_component: str | None = None,
     segment: str | None = None,
     time_start: str | None = None,
     time_end: str | None = None,
@@ -69,6 +72,7 @@ async def kpi_trends(
             source_name=source_name,
             environment=environment,
             source_type=source_type,
+            source_component=source_component,
             segment=segment,
             time_start=time_start,
             time_end=time_end,
@@ -78,11 +82,13 @@ async def kpi_trends(
 
 
 @router.get("/filters", response_model=KpiFiltersResponse)
-async def kpi_filters() -> KpiFiltersResponse:
+async def kpi_filters(
+    source_component: str | None = None,
+) -> KpiFiltersResponse:
     """Available filter values for dropdowns."""
     store = get_store()
     return await anyio.to_thread.run_sync(
-        lambda: get_kpi_filters(store),
+        lambda: get_kpi_filters(store, source_component=source_component),
         limiter=store.query_limiter,
     )
 
@@ -92,6 +98,7 @@ async def kpi_sankey(
     source_name: str | None = None,
     environment: str | None = None,
     source_type: str | None = None,
+    source_component: str | None = None,
     segment: str | None = None,
     time_start: str | None = None,
     time_end: str | None = None,
@@ -104,6 +111,7 @@ async def kpi_sankey(
             source_name=source_name,
             environment=environment,
             source_type=source_type,
+            source_component=source_component,
             segment=segment,
             time_start=time_start,
             time_end=time_end,
