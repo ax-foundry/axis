@@ -12,7 +12,7 @@ const STATUS_CONFIG = {
   healthy: { color: 'bg-success', label: 'Healthy' },
   warning: { color: 'bg-warning', label: 'Warning' },
   critical: { color: 'bg-error', label: 'Critical' },
-  unknown: { color: 'bg-gray-400', label: 'Unknown' },
+  unknown: { color: 'bg-gray-400', label: 'N/A' },
 } as const;
 
 export function HealthIndicator({ status, showLabel = true, className }: HealthIndicatorProps) {

@@ -121,6 +121,9 @@ export function buildMonitoringHierarchy(records: MonitoringRecord[]): {
           ? (String(rawCategory).toUpperCase() as MetricCategory)
           : undefined;
 
+        // Only SCORE metrics get health status, trends, and roll up into parent averages
+        const isScoreMetric = !category || category === 'SCORE';
+
         nodes.set(metricId, {
           id: metricId,
           name: metricName,
@@ -129,16 +132,18 @@ export function buildMonitoringHierarchy(records: MonitoringRecord[]): {
           sourceComponent: compName,
           metricName,
           metricCategory: category,
-          avgScore,
+          avgScore: isScoreMetric ? avgScore : null,
           recordCount: metricRecords.length,
-          healthStatus: computeHealthStatus(avgScore),
-          trendPoints,
-          scoreDelta: delta,
+          healthStatus: isScoreMetric ? computeHealthStatus(avgScore) : 'unknown',
+          trendPoints: isScoreMetric ? trendPoints : [],
+          scoreDelta: isScoreMetric ? delta : null,
           childIds: [],
         });
 
         compChildIds.push(metricId);
-        compScores.push(...scores);
+        if (isScoreMetric) {
+          compScores.push(...scores);
+        }
         compRecordCount += metricRecords.length;
         compTrendRecords.push(...metricRecords);
       });

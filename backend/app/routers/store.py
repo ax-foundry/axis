@@ -194,7 +194,7 @@ ALLOWED_SORT_DIRS = {"asc", "desc"}
 async def get_dataset_data(
     dataset: str,
     page: int = Query(1, ge=1),
-    page_size: int = Query(50, ge=1, le=500),
+    page_size: int = Query(50, ge=1, le=10000),
     sort_by: str | None = None,
     sort_dir: str = Query("desc", pattern="^(asc|desc)$"),
     columns: str | None = Query(None, description="Comma-separated column names to return"),
