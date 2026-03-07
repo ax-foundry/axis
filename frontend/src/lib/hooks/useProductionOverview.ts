@@ -78,8 +78,7 @@ export function useProductionOverview(): ProductionOverviewData {
         : (monitoringStore.alerts?.length ?? 0),
       hasMonitoringData: monitoringStore.data.length > 0 || datasetReady,
       hasSignalsData: filteredSignalsCases.length > 0,
-      isLoading:
-        monitoringStore.isLoading || humanSignalsStore.isLoading || duckdbQuery.isLoading,
+      isLoading: monitoringStore.isLoading || humanSignalsStore.isLoading || duckdbQuery.isLoading,
       monitoringData,
     }),
     [

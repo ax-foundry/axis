@@ -711,7 +711,15 @@ export default function MonitoringPage() {
         },
       });
     }
-  }, [storeStatusChecked, datasetReady, dbConfig, hasAttemptedAutoConnect, data.length, autoImportMutation, isLoading]);
+  }, [
+    storeStatusChecked,
+    datasetReady,
+    dbConfig,
+    hasAttemptedAutoConnect,
+    data.length,
+    autoImportMutation,
+    isLoading,
+  ]);
 
   // Handler to retry auto-connect
   const handleRetryAutoConnect = () => {
