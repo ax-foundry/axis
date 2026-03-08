@@ -679,6 +679,7 @@ async def _sync_internal_table(
 
                     await anyio.to_thread.run_sync(_insert_from_staging)
                 else:
+                    assert full_df is not None
                     await anyio.to_thread.run_sync(lambda: store._append_chunk(table_name, full_df))
             else:
                 # Full rebuild: staging + atomic swap
@@ -705,6 +706,7 @@ async def _sync_internal_table(
 
                     await anyio.to_thread.run_sync(lambda: store._swap_staging(table_name))
                 else:
+                    assert full_df is not None
                     await anyio.to_thread.run_sync(lambda: store._init_staging(table_name))
                     await anyio.to_thread.run_sync(
                         lambda: store._write_chunk(table_name, full_df, is_first=True)
