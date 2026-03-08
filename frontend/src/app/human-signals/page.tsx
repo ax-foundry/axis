@@ -14,6 +14,7 @@ import {
 import { PageHeader } from '@/components/ui/PageHeader';
 import { SourceSelector } from '@/components/ui/SourceSelector';
 import { TimeRangeSelector } from '@/components/ui/TimeRangeSelector';
+import { getStoreStatus } from '@/lib/api';
 import {
   useHumanSignalsAutoImport,
   useHumanSignalsDBConfig,
@@ -260,10 +261,10 @@ function Dashboard() {
 // ============================
 
 export default function HumanSignalsPage() {
-  const store = useHumanSignalsStore();
-
-  const hasData = store.cases.length > 0;
-  const storeIsLoading = store.isLoading;
+  const hasData = useHumanSignalsStore((s) => s.cases.length > 0);
+  const datasetReady = useHumanSignalsStore((s) => s.datasetReady);
+  const storeIsLoading = useHumanSignalsStore((s) => s.isLoading);
+  const setSyncStatus = useHumanSignalsStore((s) => s.setSyncStatus);
 
   // Auto-connect hooks
   const { data: dbConfig, isLoading: isLoadingConfig } = useHumanSignalsDBConfig();
@@ -271,9 +272,33 @@ export default function HumanSignalsPage() {
 
   const [hasAttemptedAutoConnect, setHasAttemptedAutoConnect] = useState(false);
   const [autoConnectError, setAutoConnectError] = useState<string | null>(null);
+  const [storeStatusChecked, setStoreStatusChecked] = useState(false);
+
+  // Check DuckDB store status on mount
+  useEffect(() => {
+    let cancelled = false;
+    getStoreStatus()
+      .then((status) => {
+        if (cancelled) return;
+        const ds = status.datasets?.human_signals_raw;
+        if (ds) {
+          setSyncStatus(ds);
+        }
+        setStoreStatusChecked(true);
+      })
+      .catch(() => {
+        if (!cancelled) setStoreStatusChecked(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (
+      storeStatusChecked &&
+      !datasetReady &&
       dbConfig &&
       (dbConfig.auto_connect || dbConfig.auto_load) &&
       !hasAttemptedAutoConnect &&
@@ -291,7 +316,15 @@ export default function HumanSignalsPage() {
         },
       });
     }
-  }, [dbConfig, hasAttemptedAutoConnect, hasData, autoImportMutation, storeIsLoading]);
+  }, [
+    storeStatusChecked,
+    datasetReady,
+    dbConfig,
+    hasAttemptedAutoConnect,
+    hasData,
+    autoImportMutation,
+    storeIsLoading,
+  ]);
 
   const handleRetryAutoConnect = () => {
     setAutoConnectError(null);
@@ -306,10 +339,17 @@ export default function HumanSignalsPage() {
 
   const isAutoConnecting =
     !hasData &&
-    (autoImportMutation.isPending ||
+    (!storeStatusChecked ||
+      autoImportMutation.isPending ||
       isLoadingConfig ||
       (storeIsLoading &&
         (dbConfig === undefined || dbConfig?.auto_connect || dbConfig?.auto_load)));
+
+  // When DuckDB has data but cases aren't loaded yet, show loading
+  // Guard: only while something is actually loading — prevents infinite spinner on import failure
+  if (!hasData && datasetReady && (storeIsLoading || isLoadingConfig || !storeStatusChecked)) {
+    return <AutoConnectLoading />;
+  }
 
   if (!hasData) {
     return (

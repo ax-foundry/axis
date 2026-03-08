@@ -2,6 +2,7 @@
 
 import { type ReactNode, useEffect, useRef } from 'react';
 
+import { getStoreStatus } from '@/lib/api';
 import { useEvalDBConfig, useEvalAutoImport } from '@/lib/hooks/useEvalAutoImport';
 import { useDataStore } from '@/stores';
 
@@ -30,6 +31,23 @@ export function EvalDataInitializer({ children }: EvalDataInitializerProps) {
 
   // Track if we've already attempted auto-import to prevent multiple attempts
   const hasAttemptedImport = useRef(false);
+
+  // Check DuckDB status on mount for observability
+  const duckdbChecked = useRef(false);
+  useEffect(() => {
+    if (duckdbChecked.current) return;
+    duckdbChecked.current = true;
+    getStoreStatus()
+      .then((status) => {
+        const ds = status.datasets?.eval_data;
+        if (ds && ds.state === 'ready' && ds.rows > 0) {
+          console.log(`[EvalDataInitializer] DuckDB has ${ds.rows} rows in eval_data`);
+        }
+      })
+      .catch(() => {
+        // DuckDB status check failed — non-critical, continue
+      });
+  }, []);
 
   useEffect(() => {
     // Skip if:

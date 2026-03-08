@@ -1,7 +1,8 @@
 'use client';
 
-import { type ReactNode, useEffect, useRef } from 'react';
+import { type ReactNode, useEffect, useRef, useState } from 'react';
 
+import { getStoreStatus } from '@/lib/api';
 import {
   useHumanSignalsDBConfig,
   useHumanSignalsAutoImport,
@@ -28,14 +29,41 @@ interface HumanSignalsDataInitializerProps {
  */
 export function HumanSignalsDataInitializer({ children }: HumanSignalsDataInitializerProps) {
   const cases = useHumanSignalsStore((s) => s.cases);
+  const setSyncStatus = useHumanSignalsStore((s) => s.setSyncStatus);
   const { data: config, isLoading: configLoading, error: configError } = useHumanSignalsDBConfig();
   const { mutate: autoImport, isPending: isImporting } = useHumanSignalsAutoImport();
 
   // Track if we've already attempted auto-import to prevent multiple attempts
   const hasAttemptedImport = useRef(false);
 
+  // Check DuckDB status on mount to set datasetReady for UX
+  const [duckdbChecked, setDuckdbChecked] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    getStoreStatus()
+      .then((status) => {
+        if (cancelled) return;
+        const ds = status.datasets?.human_signals_raw;
+        if (ds && ds.state === 'ready' && ds.rows > 0) {
+          console.log(
+            `[HumanSignalsDataInitializer] DuckDB has ${ds.rows} rows in human_signals_raw`
+          );
+          setSyncStatus(ds);
+        }
+        setDuckdbChecked(true);
+      })
+      .catch(() => {
+        if (!cancelled) setDuckdbChecked(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     if (
+      !duckdbChecked ||
       configLoading ||
       configError ||
       hasAttemptedImport.current ||
@@ -64,7 +92,7 @@ export function HumanSignalsDataInitializer({ children }: HumanSignalsDataInitia
         );
       },
     });
-  }, [config, configLoading, configError, cases.length, autoImport, isImporting]);
+  }, [duckdbChecked, config, configLoading, configError, cases.length, autoImport, isImporting]);
 
   return <>{children}</>;
 }

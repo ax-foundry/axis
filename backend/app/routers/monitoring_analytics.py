@@ -186,6 +186,8 @@ class ClassDistributionResponse(BaseModel):
     data: list[ClassDistributionGroup]
     metric: str
     group_by: str
+    truncated: bool = False
+    total_values: int | None = None
 
 
 class MetricBreakdownItem(BaseModel):
@@ -211,6 +213,7 @@ class CorrelationResponse(BaseModel):
     success: bool
     matrix: list[list[float]]
     metrics: list[str]
+    sample_size: int | None = None
 
 
 class CategoryCount(BaseModel):
@@ -744,6 +747,7 @@ async def get_class_distribution(
     source_name: str | None = None,
     source_component: str | None = None,
     source_type: str | None = None,
+    metric_category: str | None = None,
     time_start: str | None = None,
     time_end: str | None = None,
 ) -> ClassDistributionResponse:
@@ -763,6 +767,7 @@ async def get_class_distribution(
         source_name=source_name,
         source_component=source_component,
         source_type=source_type,
+        metric_category=metric_category,
         time_start=time_start,
         time_end=time_end,
     )
@@ -781,25 +786,44 @@ async def get_class_distribution(
         GROUP BY grp
     """
 
-    # Also fetch raw values per group for violin/box plots
-    values_sql = f"""
-        SELECT
-            CAST({group_by} AS VARCHAR) AS grp,
-            CAST({metric} AS DOUBLE) AS val
+    # Total count for truncation detection
+    count_sql = f"""
+        SELECT COUNT(*) AS total
         FROM {TABLE}
         WHERE {where} AND {metric} IS NOT NULL
     """
 
-    def _query() -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    # Fetch raw values per group for violin/box plots — with per-group + global caps
+    values_sql = f"""
+        SELECT grp, val FROM (
+            SELECT
+                CAST({group_by} AS VARCHAR) AS grp,
+                CAST({metric} AS DOUBLE) AS val,
+                ROW_NUMBER() OVER (
+                    PARTITION BY CAST({group_by} AS VARCHAR)
+                    ORDER BY CAST({metric} AS DOUBLE)
+                ) AS rn
+            FROM {TABLE}
+            WHERE {where} AND {metric} IS NOT NULL
+        ) sub WHERE rn <= 5000
+        LIMIT 50000
+    """
+
+    def _query() -> tuple[list[dict[str, Any]], list[dict[str, Any]], int]:
         stats = store.query_list(sql, params)
         values = store.query_list(values_sql, params)
-        return stats, values
+        total = store.query_value(count_sql, params) or 0
+        return stats, values, int(total)
 
     try:
-        stats_rows, value_rows = await anyio.to_thread.run_sync(_query, limiter=store.query_limiter)
+        stats_rows, value_rows, total_values = await anyio.to_thread.run_sync(
+            _query, limiter=store.query_limiter
+        )
     except Exception as e:
         logger.exception("Class distribution error")
         raise HTTPException(500, f"Analytics error: {e!s}")
+
+    truncated = len(value_rows) >= 50000 or total_values > 50000
 
     # Group values by group name
     values_by_group: dict[str, list[float]] = {}
@@ -832,6 +856,8 @@ async def get_class_distribution(
         data=groups_data,
         metric=metric,
         group_by=group_by,
+        truncated=truncated,
+        total_values=total_values,
     )
 
 
@@ -969,6 +995,7 @@ async def get_metric_correlation(
     source_name: str | None = None,
     source_component: str | None = None,
     source_type: str | None = None,
+    metric_category: str | None = None,
     time_start: str | None = None,
     time_end: str | None = None,
 ) -> CorrelationResponse:
@@ -990,6 +1017,7 @@ async def get_metric_correlation(
         source_name=source_name,
         source_component=source_component,
         source_type=source_type,
+        metric_category=metric_category,
         time_start=time_start,
         time_end=time_end,
     )
@@ -998,12 +1026,13 @@ async def get_metric_correlation(
     n = len(valid_metrics)
     matrix = [[0.0] * n for _ in range(n)]
 
-    # Fetch all relevant data and compute correlation in DuckDB
+    # Fetch data with LIMIT to prevent unbounded queries
     select_cols = ", ".join(f"CAST({m} AS DOUBLE) AS {m}" for m in valid_metrics)
-    sql = f"SELECT {select_cols} FROM {TABLE} WHERE {where}"
+    sql = f"SELECT {select_cols} FROM {TABLE} WHERE {where} LIMIT 50000"
 
-    def _query() -> list[list[float]]:
+    def _query() -> tuple[list[list[float]], int]:
         df = store.query_df(sql, params)
+        sample_size = len(df)
         corr = df.corr()
         result = []
         for i in range(n):
@@ -1012,15 +1041,17 @@ async def get_metric_correlation(
                 val = corr.iloc[i, j]
                 row.append(_clean_value(val) or 0.0)
             result.append(row)
-        return result
+        return result, sample_size
 
     try:
-        matrix = await anyio.to_thread.run_sync(_query, limiter=store.query_limiter)
+        matrix, sample_size = await anyio.to_thread.run_sync(_query, limiter=store.query_limiter)
     except Exception as e:
         logger.exception("Correlation error")
         raise HTTPException(500, f"Analytics error: {e!s}")
 
-    return CorrelationResponse(success=True, matrix=matrix, metrics=valid_metrics)
+    return CorrelationResponse(
+        success=True, matrix=matrix, metrics=valid_metrics, sample_size=sample_size
+    )
 
 
 # ============================================
