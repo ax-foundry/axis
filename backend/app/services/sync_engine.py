@@ -425,6 +425,9 @@ async def _chunked_read(
 # ------------------------------------------------------------------
 
 
+MAX_DERIVED_TABLE_ROWS = 500_000
+
+
 async def _build_human_signals_derived_tables(store: DuckDBStore, sync_id: str) -> None:
     """Build human_signals_cases + human_signals_metric_schema from human_signals_raw.
 
@@ -438,7 +441,30 @@ async def _build_human_signals_derived_tables(store: DuckDBStore, sync_id: str) 
         detect_source_fields,
     )
 
-    df = await anyio.to_thread.run_sync(lambda: store.query_df("SELECT * FROM human_signals_raw"))
+    row_count = (
+        await anyio.to_thread.run_sync(
+            lambda: store.query_value("SELECT COUNT(*) FROM human_signals_raw")
+        )
+        or 0
+    )
+
+    truncated = False
+    if row_count > MAX_DERIVED_TABLE_ROWS:
+        logger.warning(
+            "human_signals_raw has %s rows, capping derived table build at %s",
+            f"{row_count:,}",
+            f"{MAX_DERIVED_TABLE_ROWS:,}",
+        )
+        truncated = True
+        df = await anyio.to_thread.run_sync(
+            lambda: store.query_df(
+                f"SELECT * FROM human_signals_raw LIMIT {MAX_DERIVED_TABLE_ROWS}"
+            )
+        )
+    else:
+        df = await anyio.to_thread.run_sync(
+            lambda: store.query_df("SELECT * FROM human_signals_raw")
+        )
 
     if df.empty:
         logger.info("human_signals_raw is empty, skipping derived table build")
@@ -450,8 +476,13 @@ async def _build_human_signals_derived_tables(store: DuckDBStore, sync_id: str) 
         return
 
     if not detect_source_fields(df):
-        logger.warning("human_signals_raw missing source fields, skipping derived tables")
-        return
+        cols_lower = {c.lower().strip(): c for c in df.columns}
+        if "source" in cols_lower:
+            df = df.rename(columns={cols_lower["source"]: "source_name"})
+            logger.info("source_name missing — renamed 'source' column")
+        else:
+            df["source_name"] = "default"
+            logger.info("source_name missing — added default value")
 
     metric_schema = build_metric_schema(df)
     cases = aggregate_cases(df)
@@ -482,10 +513,12 @@ async def _build_human_signals_derived_tables(store: DuckDBStore, sync_id: str) 
 
         await anyio.to_thread.run_sync(_persist_schema)
 
-    # Tag both tables with sync_id
+    # Tag both tables with sync_id + truncation flag
     def _tag_sync() -> None:
         store.set_kv("human_signals_raw_sync_id", sync_id)
         store.set_kv("human_signals_cases_sync_id", sync_id)
+        if truncated:
+            store.set_kv("human_signals_cases_truncated", "true")
 
     await anyio.to_thread.run_sync(_tag_sync)
 
@@ -608,6 +641,11 @@ async def _sync_internal_table(
         if not use_copy and not chunks:
             return SyncResult(table_name, 0, time.time() - start, "success")
 
+        # Concat chunks outside the lock (CPU-bound, no DuckDB access needed)
+        full_df: pd.DataFrame | None = None
+        if not use_copy and chunks:
+            full_df = pd.concat(chunks, ignore_index=True)
+
         # --- Phase 2: Write to DuckDB (lock held only for writes) ---
         async with store._write_lock:
             if append_mode:
@@ -641,7 +679,6 @@ async def _sync_internal_table(
 
                     await anyio.to_thread.run_sync(_insert_from_staging)
                 else:
-                    full_df = pd.concat(chunks, ignore_index=True)
                     await anyio.to_thread.run_sync(lambda: store._append_chunk(table_name, full_df))
             else:
                 # Full rebuild: staging + atomic swap
@@ -668,8 +705,6 @@ async def _sync_internal_table(
 
                     await anyio.to_thread.run_sync(lambda: store._swap_staging(table_name))
                 else:
-                    # Concat all chunks so DuckDB infers consistent column types
-                    full_df = pd.concat(chunks, ignore_index=True)
                     await anyio.to_thread.run_sync(lambda: store._init_staging(table_name))
                     await anyio.to_thread.run_sync(
                         lambda: store._write_chunk(table_name, full_df, is_first=True)

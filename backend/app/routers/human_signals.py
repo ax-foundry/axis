@@ -65,13 +65,15 @@ def process_human_signals_data(
         )
 
     if not detect_source_fields(df):
-        return (
-            [],
-            "unknown",
-            "Data is missing required source fields (source_name). "
-            "Please ensure source_name is present.",
-            None,
-            None,
+        # Auto-fill source_name from 'source' column or a default
+        cols_lower = {c.lower().strip(): c for c in df.columns}
+        if "source" in cols_lower:
+            df = df.rename(columns={cols_lower["source"]: "source_name"})
+        else:
+            df["source_name"] = "default"
+        logger.info(
+            "source_name was missing — auto-filled from '%s'",
+            "source" if "source" in cols_lower else "default",
         )
 
     metric_schema = build_metric_schema(df)
