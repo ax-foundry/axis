@@ -79,6 +79,7 @@ ignore = [
 
 [tool.ruff.lint.per-file-ignores]
 "app/plugins/**/*.py" = ["D"]
+"app/plugins/**/models/*_schemas.py" = ["TCH"]
 "tests/**/*.py" = ["D101", "D102", "D103"]
 
 [tool.ruff.lint.pydocstyle]
