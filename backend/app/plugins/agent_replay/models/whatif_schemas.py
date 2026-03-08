@@ -6,7 +6,7 @@ from typing import Any
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
-from app.plugins.agent_replay.models.replay_schemas import TokenUsage
+from app.plugins.agent_replay.models.replay_schemas import TokenUsage  # noqa: TCH001
 
 
 class ChatMessageRole(StrEnum):
