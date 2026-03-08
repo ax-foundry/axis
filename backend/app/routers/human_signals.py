@@ -246,14 +246,14 @@ async def auto_import_from_database() -> dict[str, Any]:
         from app.services.sync_engine import sync_single
 
         store = get_store()
-        status = store.get_sync_status("human_signals_raw")
+        status = store.get_sync_status("human_signals_data")
 
         # If already syncing, wait for it to finish instead of erroring
         if status.state == "syncing":
             logger.info("Human signals sync already running, waiting for completion...")
             for _ in range(120):  # Wait up to 120s
                 await asyncio.sleep(1)
-                status = store.get_sync_status("human_signals_raw")
+                status = store.get_sync_status("human_signals_data")
                 if status.state != "syncing":
                     break
             if status.state == "syncing":

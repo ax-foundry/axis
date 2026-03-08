@@ -12,15 +12,13 @@ import {
 } from 'lucide-react';
 import { useMemo, useCallback, useState, useRef, useEffect } from 'react';
 
+import { cn } from '@/lib/utils';
 import { useHumanSignalsStore } from '@/stores/human-signals-store';
 
 import type { SignalsCaseRecord, SignalsTableColumn, SignalsDisplayConfig } from '@/types';
 
 // Default columns shown when user hasn't customized yet (max 7 for readability)
 const DEFAULT_MAX_COLUMNS = 7;
-
-// Only highlight columns for the most important signals
-const HIGHLIGHTED_SIGNALS = new Set(['failed_step', 'intervention_type', 'sentiment']);
 
 interface DynamicCaseTableProps {
   cases: SignalsCaseRecord[];
@@ -213,13 +211,10 @@ export function DynamicCaseTable({
     [visibleColumns, columns, setVisibleColumns, toggleColumn]
   );
 
-  // Look up badge color for a cell value
+  // Look up badge color for a cell value — applies to any column with a color map
   const getCellColor = useCallback(
     (columnKey: string, value: unknown): string | null => {
       if (value == null || typeof value !== 'string') return null;
-      // Only apply color badges to important signals
-      const signal = columnKey.split('__')[1];
-      if (!signal || !HIGHLIGHTED_SIGNALS.has(signal)) return null;
       const map = colorMaps[columnKey];
       if (!map) return null;
       return map[value] || null;
@@ -357,7 +352,10 @@ export function DynamicCaseTable({
             {paginatedCases.map((c, i) => (
               <tr
                 key={c.Case_ID || i}
-                className="border-border/50 border-b transition-colors hover:bg-gray-50/50"
+                className={cn(
+                  'border-border/50 border-b transition-colors hover:bg-primary/5',
+                  i % 2 === 1 && 'bg-gray-50/40'
+                )}
               >
                 {visibleCols.map((col) => (
                   <td key={col.key} className="max-w-[200px] truncate whitespace-nowrap px-3 py-2">

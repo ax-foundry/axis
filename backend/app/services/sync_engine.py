@@ -119,7 +119,7 @@ def _get_normalize_fn(table_name: str) -> Callable[..., pd.DataFrame] | None:
         "eval_data": _normalize_eval,
         "eval_dataset": _normalize_eval,
         "eval_results": _normalize_eval,
-        "human_signals_raw": _normalize_human_signals,
+        "human_signals_data": _normalize_human_signals,
         "human_signals_dataset": _normalize_human_signals,
         "human_signals_results": _normalize_human_signals,
         "kpi_data": _normalize_kpi,
@@ -332,7 +332,7 @@ def _compute_csv_rename_map(
         "eval_data": "_eval",
         "eval_dataset": "_eval",
         "eval_results": "_eval",
-        "human_signals_raw": "_human_signals",
+        "human_signals_data": "_human_signals",
         "human_signals_dataset": "_human_signals",
         "human_signals_results": "_human_signals",
         "kpi_data": "_kpi",
@@ -429,7 +429,7 @@ MAX_DERIVED_TABLE_ROWS = 500_000
 
 
 async def _build_human_signals_derived_tables(store: DuckDBStore, sync_id: str) -> None:
-    """Build human_signals_cases + human_signals_metric_schema from human_signals_raw.
+    """Build human_signals_cases + human_signals_metric_schema from human_signals_data.
 
     Runs aggregation logic against DuckDB data and stores results
     as queryable tables + metadata.
@@ -443,7 +443,7 @@ async def _build_human_signals_derived_tables(store: DuckDBStore, sync_id: str) 
 
     row_count = (
         await anyio.to_thread.run_sync(
-            lambda: store.query_value("SELECT COUNT(*) FROM human_signals_raw")
+            lambda: store.query_value("SELECT COUNT(*) FROM human_signals_data")
         )
         or 0
     )
@@ -451,28 +451,28 @@ async def _build_human_signals_derived_tables(store: DuckDBStore, sync_id: str) 
     truncated = False
     if row_count > MAX_DERIVED_TABLE_ROWS:
         logger.warning(
-            "human_signals_raw has %s rows, capping derived table build at %s",
+            "human_signals_data has %s rows, capping derived table build at %s",
             f"{row_count:,}",
             f"{MAX_DERIVED_TABLE_ROWS:,}",
         )
         truncated = True
         df = await anyio.to_thread.run_sync(
             lambda: store.query_df(
-                f"SELECT * FROM human_signals_raw LIMIT {MAX_DERIVED_TABLE_ROWS}"
+                f"SELECT * FROM human_signals_data LIMIT {MAX_DERIVED_TABLE_ROWS}"
             )
         )
     else:
         df = await anyio.to_thread.run_sync(
-            lambda: store.query_df("SELECT * FROM human_signals_raw")
+            lambda: store.query_df("SELECT * FROM human_signals_data")
         )
 
     if df.empty:
-        logger.info("human_signals_raw is empty, skipping derived table build")
+        logger.info("human_signals_data is empty, skipping derived table build")
         return
 
     has_signals = detect_signals_format(df)
     if not has_signals:
-        logger.warning("human_signals_raw does not have signals format, skipping derived tables")
+        logger.warning("human_signals_data does not have signals format, skipping derived tables")
         return
 
     if not detect_source_fields(df):
@@ -515,7 +515,7 @@ async def _build_human_signals_derived_tables(store: DuckDBStore, sync_id: str) 
 
     # Tag both tables with sync_id + truncation flag
     def _tag_sync() -> None:
-        store.set_kv("human_signals_raw_sync_id", sync_id)
+        store.set_kv("human_signals_data_sync_id", sync_id)
         store.set_kv("human_signals_cases_sync_id", sync_id)
         if truncated:
             store.set_kv("human_signals_cases_truncated", "true")
@@ -531,7 +531,7 @@ async def _build_human_signals_derived_tables(store: DuckDBStore, sync_id: str) 
 _SPLIT_TABLE_MAP: dict[str, tuple[str, str]] = {
     "eval_data": ("eval_dataset", "eval_results"),
     "monitoring_data": ("monitoring_dataset", "monitoring_results"),
-    "human_signals_raw": ("human_signals_dataset", "human_signals_results"),
+    "human_signals_data": ("human_signals_dataset", "human_signals_results"),
 }
 
 
@@ -907,7 +907,7 @@ async def _sync_split(
                         )
 
         # Human signals post-processing: always rebuild derived tables
-        if table_name == "human_signals_raw" and store._has_internal_table("human_signals_raw"):
+        if table_name == "human_signals_data" and store._has_internal_table("human_signals_data"):
             sync_id = str(uuid.uuid4())
             await _build_human_signals_derived_tables(store, sync_id)
 
@@ -1062,7 +1062,7 @@ async def sync_all_for_reason(
 
     datasets: list[tuple[Any, str]] = [
         (monitoring_db_config, "monitoring_data"),
-        (human_signals_db_config, "human_signals_raw"),
+        (human_signals_db_config, "human_signals_data"),
         (eval_db_config, "eval_data"),
         (kpi_db_config, "kpi_data"),
     ]
@@ -1121,7 +1121,7 @@ async def sync_single(
 
     config_map: dict[str, tuple[Any, str]] = {
         "monitoring": (monitoring_db_config, "monitoring_data"),
-        "human_signals": (human_signals_db_config, "human_signals_raw"),
+        "human_signals": (human_signals_db_config, "human_signals_data"),
         "eval": (eval_db_config, "eval_data"),
         "kpi": (kpi_db_config, "kpi_data"),
     }
@@ -1192,7 +1192,7 @@ async def periodic_sync_loop(store: DuckDBStore) -> None:
 
     datasets: list[tuple[Any, str, str]] = [
         (monitoring_db_config, "monitoring_data", "monitoring"),
-        (human_signals_db_config, "human_signals_raw", "human_signals"),
+        (human_signals_db_config, "human_signals_data", "human_signals"),
         (eval_db_config, "eval_data", "eval"),
         (kpi_db_config, "kpi_data", "kpi"),
     ]

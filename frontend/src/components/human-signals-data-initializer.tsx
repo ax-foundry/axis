@@ -43,10 +43,10 @@ export function HumanSignalsDataInitializer({ children }: HumanSignalsDataInitia
     getStoreStatus()
       .then((status) => {
         if (cancelled) return;
-        const ds = status.datasets?.human_signals_raw;
+        const ds = status.datasets?.human_signals_data;
         if (ds && ds.state === 'ready' && ds.rows > 0) {
           console.log(
-            `[HumanSignalsDataInitializer] DuckDB has ${ds.rows} rows in human_signals_raw`
+            `[HumanSignalsDataInitializer] DuckDB has ${ds.rows} rows in human_signals_data`
           );
           setSyncStatus(ds);
         }

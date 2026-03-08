@@ -47,9 +47,11 @@ export function DynamicChartSection({ cases, displayConfig }: DynamicChartSectio
     <div className="space-y-5">
       {/* Trend chart */}
       {trendData.length > 1 && (
-        <div className="overflow-hidden rounded-lg border border-border bg-white">
-          <div className="border-b border-border px-4 py-2">
-            <h3 className="text-sm font-medium text-text-primary">Signal Trends Over Time</h3>
+        <div className="border-border/60 overflow-hidden rounded-lg border bg-white shadow-sm">
+          <div className="px-4 py-2.5">
+            <h3 className="text-xs font-semibold uppercase tracking-wide text-text-muted">
+              Signal Trends Over Time
+            </h3>
           </div>
           <div className="h-64 px-2 py-2">
             <SignalsTrendChart data={trendData} signals={trendSignals.map((s) => s.label)} />
@@ -100,7 +102,7 @@ function ChartSectionBlock({
       {collapsible ? (
         <button
           onClick={() => setIsExpanded(!isExpanded)}
-          className="mb-2 flex w-full items-center gap-2 text-left"
+          className="mb-3 flex w-full items-center gap-2 text-left"
         >
           <ChevronDown
             className={cn(
@@ -109,9 +111,13 @@ function ChartSectionBlock({
             )}
           />
           <h3 className="text-sm font-semibold text-text-primary">{section.title}</h3>
+          <div className="ml-1 h-px flex-1 bg-border" />
         </button>
       ) : (
-        <h3 className="mb-2 text-sm font-semibold text-text-primary">{section.title}</h3>
+        <div className="mb-3 flex items-center gap-2">
+          <h3 className="text-sm font-semibold text-text-primary">{section.title}</h3>
+          <div className="h-px flex-1 bg-border" />
+        </div>
       )}
       {isExpanded && (
         <div className={`grid gap-4 ${layoutClass}`}>

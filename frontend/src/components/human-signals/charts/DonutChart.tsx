@@ -41,7 +41,7 @@ export function DonutChart({ data }: DonutChartProps) {
 
   const layout = useMemo(
     () => ({
-      margin: { l: 10, r: 10, t: 5, b: 20 },
+      margin: { l: 40, r: 40, t: 30, b: 30 },
       showlegend: false,
       annotations: [
         {

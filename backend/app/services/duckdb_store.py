@@ -18,14 +18,14 @@ logger = logging.getLogger(__name__)
 
 # Tables visible to API consumers (staging/internal tables excluded)
 ALLOWED_TABLES = frozenset(
-    {"monitoring_data", "human_signals_raw", "human_signals_cases", "eval_data", "kpi_data"}
+    {"monitoring_data", "human_signals_data", "human_signals_cases", "eval_data", "kpi_data"}
 )
 
 # Dataset name → DuckDB table name mapping
 DATASET_TABLE_MAP = {
     "monitoring": "monitoring_data",
     "human_signals": "human_signals_cases",
-    "human_signals_raw": "human_signals_raw",
+    "human_signals_data": "human_signals_data",
     "eval": "eval_data",
     "kpi": "kpi_data",
 }

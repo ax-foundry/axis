@@ -277,18 +277,27 @@ def aggregate_cases(df: pd.DataFrame) -> list[dict[str, Any]]:
     cases: list[dict[str, Any]] = []
     common_metadata = _detect_common_metadata_keys(df)
 
+    # When the DuckDB split-sync view joins dataset + results tables,
+    # overlapping columns from the dataset table get a "dataset_" prefix.
+    # Helper to check original name first, then the prefixed fallback.
+    def _get_field(row: pd.Series, name: str) -> Any:
+        val = row.get(name)
+        if val is None or (isinstance(val, float) and pd.isna(val)):
+            val = row.get(f"dataset_{name}")
+        return val
+
     for dataset_id, group in df.groupby("dataset_id"):
         first_row = group.iloc[0]
         case: dict[str, Any] = {"Case_ID": str(dataset_id)}
 
         # Extract source fields
         for field in ["source_name", "source_component", "source_type", "environment"]:
-            if field in df.columns:
-                val = first_row.get(field)
+            if field in df.columns or f"dataset_{field}" in df.columns:
+                val = _get_field(first_row, field)
                 case[field] = str(val) if pd.notna(val) else None
 
         # Parse shared columns
-        additional_input = safe_json_or_literal(first_row.get("additional_input"))
+        additional_input = safe_json_or_literal(_get_field(first_row, "additional_input"))
         if isinstance(additional_input, dict):
             case["Slack_URL"] = additional_input.get("message_url")
             case["Agent_Name"] = additional_input.get("sender")
@@ -297,7 +306,7 @@ def aggregate_cases(df: pd.DataFrame) -> list[dict[str, Any]]:
             case["Agent_Name"] = case.get("source_name")  # Fallback to source_name
 
         # Parse conversation
-        conv_dict = safe_json_or_literal(first_row.get("conversation"))
+        conv_dict = safe_json_or_literal(_get_field(first_row, "conversation"))
         messages: list[dict[str, Any]] = []
         if isinstance(conv_dict, dict):
             messages = conv_dict.get("messages", [])
@@ -311,7 +320,7 @@ def aggregate_cases(df: pd.DataFrame) -> list[dict[str, Any]]:
         case["Full_Conversation"] = messages
 
         # Parse conversation stats
-        conv_stats = safe_json_or_literal(first_row.get("conversation_stats"))
+        conv_stats = safe_json_or_literal(_get_field(first_row, "conversation_stats"))
         if isinstance(conv_stats, dict):
             case["Message_Count"] = conv_stats.get(
                 "turn_count",
@@ -321,12 +330,12 @@ def aggregate_cases(df: pd.DataFrame) -> list[dict[str, Any]]:
             case["Message_Count"] = 0
 
         # Timestamp
-        case["Timestamp"] = str(first_row.get("timestamp", ""))
+        case["Timestamp"] = str(_get_field(first_row, "timestamp") or "")
 
         # Extract additional structured metadata columns
         for col in ["evaluation_metadata", "actual_reference", "additional_output"]:
-            if col in df.columns:
-                raw = first_row.get(col)
+            if col in df.columns or f"dataset_{col}" in df.columns:
+                raw = _get_field(first_row, col)
                 if pd.notna(raw):
                     parsed = safe_json_or_literal(str(raw))
                     if parsed is not None:

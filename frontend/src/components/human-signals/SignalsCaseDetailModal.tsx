@@ -753,18 +753,72 @@ function SignalValueDisplay({ value, type }: { value: unknown; type: string }) {
         </div>
       );
     }
+    // Array of primitives (strings, numbers) — render as a clean list
+    return <ParsedListDisplay items={parsed} />;
+  }
+
+  // Value is already an array (not a JSON string)
+  if (Array.isArray(value) && value.length > 0) {
+    return <ParsedListDisplay items={value} />;
   }
 
   // Simple values
   return <span>{formatSimpleValue(value, type)}</span>;
 }
 
-/** Check if a signal value is complex (dict/object/parseable string). */
+/** Strip surrounding escaped quotes from parsed JSON array items. */
+function cleanListItem(item: unknown): string {
+  const s = String(item);
+  // Remove leading/trailing escaped or literal quotes (e.g. "\"text\"" → text)
+  return s.replace(/^["']+|["']+$/g, '').trim();
+}
+
+/** Renders a parsed array of primitives as a clean bulleted list or inline chips. */
+function ParsedListDisplay({ items }: { items: unknown[] }) {
+  const cleaned = items.map(cleanListItem).filter(Boolean);
+  if (cleaned.length === 0) return <span className="text-text-muted">{'\u2014'}</span>;
+
+  // Short items (all under 60 chars) → inline chips
+  if (cleaned.every((s) => s.length < 60)) {
+    return (
+      <div className="mt-1 flex flex-wrap gap-1.5">
+        {cleaned.map((item, i) => (
+          <span
+            key={i}
+            className="inline-flex rounded-md border border-border bg-gray-50 px-2 py-0.5 text-xs text-text-primary"
+          >
+            {item}
+          </span>
+        ))}
+      </div>
+    );
+  }
+
+  // Longer items → numbered list
+  return (
+    <div className="mt-1 space-y-1.5">
+      {cleaned.map((item, i) => (
+        <div key={i} className="flex items-start gap-2">
+          <span className="mt-0.5 flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full bg-gray-100 text-[10px] font-medium text-text-muted">
+            {i + 1}
+          </span>
+          <span className="text-sm leading-relaxed text-text-primary">{item}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** Check if a signal value is complex (dict/object/array/parseable string). */
 function isComplexValue(value: unknown): boolean {
   if (value != null && typeof value === 'object' && !Array.isArray(value)) return true;
+  // Already an array with items
+  if (Array.isArray(value) && value.length > 0) return true;
   if (typeof value === 'string') {
     const trimmed = value.trim();
-    return trimmed.startsWith('{') && trimmed.length > 50;
+    if (trimmed.startsWith('{') && trimmed.length > 50) return true;
+    // JSON array strings
+    if (trimmed.startsWith('[') && trimmed.length > 20) return true;
   }
   return false;
 }

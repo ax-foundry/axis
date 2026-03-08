@@ -280,7 +280,7 @@ export default function HumanSignalsPage() {
     getStoreStatus()
       .then((status) => {
         if (cancelled) return;
-        const ds = status.datasets?.human_signals_raw;
+        const ds = status.datasets?.human_signals_data;
         if (ds) {
           setSyncStatus(ds);
         }
