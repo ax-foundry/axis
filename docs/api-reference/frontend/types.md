@@ -188,29 +188,106 @@ type MonitoringGroupBy =
 
 ### SignalsMetricSchema
 
-Describes the metrics available in a signals dataset (V2 format):
+Describes the metrics available in a signals dataset:
 
 ```typescript
+interface SignalsMetricInfo {
+  category: string;                     // 'classification' | 'score'
+  signals: string[];
+  signal_types: Record<string, string>; // signal_key → 'boolean' | 'string' | 'number' | 'array'
+  values: Record<string, string[]>;     // signal_key → unique values (for string signals)
+}
+
 interface SignalsMetricSchema {
-  [metricName: string]: {
-    signals: string[];
-    signal_types: Record<string, string>;
-  };
+  metrics: Record<string, SignalsMetricInfo>;
+  source_fields: string[];
+  has_timestamp: boolean;
+}
+```
+
+### SignalsCaseRecord
+
+A flattened case record with metric signals as `{metric_name}__{signal_key}` columns:
+
+```typescript
+interface SignalsCaseRecord {
+  Case_ID: string;
+  Timestamp: string;
+  Message_Count: number;
+  source_name?: string;
+  source_component?: string;
+  environment?: string;
+  Full_Conversation?: ConversationMessage[];
+  [key: string]: unknown; // e.g. "Outcome Mode__analysis_mode": "success"
+}
+```
+
+### SignalsKPIConfig
+
+Configuration for a single KPI in the strip:
+
+```typescript
+interface SignalsKPIConfig {
+  metric?: string;
+  signal?: string;
+  match_value?: string;   // count cases where signal equals this value
+  aggregate?: string;      // 'avg_message_count' | 'total_cases'
+  aggregation?: string;    // 'mean' | 'median' | 'sum' | 'min' | 'max' | 'count' | 'p95'
+  label: string;
+  format?: string;         // 'percent' | 'number' | 'duration' | 'compact'
+  icon: string;
+  highlight?: boolean;
 }
 ```
 
 ### SignalsDisplayConfig
 
-Display overrides from `custom/config/signals_metrics.yaml`:
+YAML-driven display layout from `custom/config/signals_metrics.yaml`:
 
 ```typescript
 interface SignalsDisplayConfig {
-  [metricName: string]: {
-    label?: string;
-    description?: string;
-    chart_type?: string;
-    signals?: Record<string, { label?: string; format?: string }>;
-  };
+  kpi_strip: SignalsKPIConfig[];
+  chart_sections: SignalsChartSection[];
+  filters: SignalsFilterConfig[];
+  table_columns: SignalsTableColumn[];
+  color_maps: Record<string, Record<string, string>>;
+  table_badge_columns?: string[]; // which table columns get colored badges (omit = all)
+}
+```
+
+### SignalsChartSection / SignalsChartConfig
+
+```typescript
+interface SignalsChartConfig {
+  metric: string;
+  signal: string;
+  type: string;   // 'bar' | 'donut' | 'horizontal_bar' | 'stacked_bar' | 'ranked_list' | 'text_list' | 'single_stat'
+  title: string;
+}
+
+interface SignalsChartSection {
+  title: string;
+  layout: string;  // 'full' | 'grid_2' | 'grid_3'
+  charts: SignalsChartConfig[];
+}
+```
+
+### SignalsFilterConfig / SignalsTableColumn
+
+```typescript
+interface SignalsFilterConfig {
+  type: string;     // 'source' | 'metric'
+  field?: string;   // for source filters
+  metric?: string;  // for metric filters
+  signal?: string;  // for metric filters
+  label: string;
+  options?: string[];
+}
+
+interface SignalsTableColumn {
+  key: string;
+  label: string;
+  sortable?: boolean;
 }
 ```
 

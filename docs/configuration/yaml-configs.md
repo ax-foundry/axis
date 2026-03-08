@@ -691,25 +691,35 @@ An optional display configuration file for the Human Signals V2 dashboard. It ov
 ```yaml title="custom/config/signals_metrics.yaml"
 signals_metrics:
   kpi_strip:
-    - metric: intervention_type
-      signal: is_stp
-      label: "STP Rate"
+    - metric: "Outcome Mode"
+      signal: analysis_mode
+      match_value: "success"   # count where signal == value (vs boolean)
+      label: "AI Success Rate"
       format: percent
-      icon: zap
+      icon: trophy
+    - aggregate: total_cases
+      label: "Total Cases"
+      icon: database
 
   chart_sections:
-    - title: "Outcome Distribution"
-      layout: full          # full | grid_2 | grid_3
+    - title: "Case Outcomes"
+      layout: grid_2           # full | grid_2 | grid_3
       charts:
-        - metric: resolution_status
+        - metric: "Resolution Status"
           signal: final_status
-          type: stacked_bar  # bar | donut | horizontal_bar | ...
+          type: stacked_bar    # bar | donut | horizontal_bar | stacked_bar | text_list | ranked_list | single_stat
           title: "Resolution Status"
 
   color_maps:
-    intervention_type__intervention_type:
-      no_intervention: "#8B9F4F"
-      tech_issue: "#C0392B"
+    "Resolution Status__final_status":
+      approved: "#22C55E"
+      declined: "#EF4444"
+      pending: "#6B7280"
+
+  # Limit which table columns show colored badges (omit = all mapped columns)
+  table_badge_columns:
+    - "Acceptance Status__status"
+    - "Resolution Status__final_status"
 
   source_filters:
     - field: source_name
@@ -720,10 +730,11 @@ signals_metrics:
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
-| `kpi_strip` | `list` | `[]` | KPI cards shown at the top of the dashboard. Each item specifies `metric`, `signal`, `label`, `format` (`percent`, `count`, `number`), and `icon` (Lucide name) |
-| `chart_sections` | `list` | `[]` | Groups of charts. Each section has `title`, `layout` (`full`, `grid_2`, `grid_3`), and a `charts` list |
-| `chart_sections[].charts[]` | `object` | -- | Chart definition: `metric`, `signal`, `type` (`bar`, `donut`, `horizontal_bar`, `stacked_bar`, `line`), `title` |
-| `color_maps` | `map` | `{}` | Custom color assignments for chart values. Key format: `<metric>__<signal>`, value: `{category_value: hex_color}` |
+| `kpi_strip` | `list` | `[]` | KPI cards shown below filters. Each item specifies `metric`, `signal`, `label`, `format` (`percent`, `number`, `duration`, `compact`), and `icon` (Lucide name). Use `match_value` to count string matches instead of boolean truthiness. Use `aggregation` (`mean`, `median`, `sum`, etc.) for numeric signals. |
+| `chart_sections` | `list` | `[]` | Groups of charts (collapsible, start collapsed). Each section has `title`, `layout` (`full`, `grid_2`, `grid_3`), and a `charts` list |
+| `chart_sections[].charts[]` | `object` | -- | Chart definition: `metric`, `signal`, `type` (`bar`, `donut`, `horizontal_bar`, `stacked_bar`, `text_list`, `ranked_list`, `single_stat`), `title` |
+| `color_maps` | `map` | `{}` | Custom color assignments for chart values and table badges. Key format: `<metric>__<signal>`, value: `{category_value: hex_color}` |
+| `table_badge_columns` | `list` | -- | Which table columns show colored badges. Omit to badge all columns with a color map. |
 | `source_filters` | `list` | `[]` | Filter dropdowns for the dashboard. Each item: `field` (column name), `label` (display text) |
 
 !!! tip "Auto-discovery vs explicit config"

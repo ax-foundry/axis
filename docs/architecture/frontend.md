@@ -100,7 +100,7 @@ src/components/
 | Components | PascalCase  | `KPICard.tsx`, `DynamicFilters.tsx` |
 | Pages      | `page.tsx`  | `app/monitoring/page.tsx`      |
 | Stores     | kebab-case  | `monitoring-store.ts`          |
-| Utilities  | camelCase   | `signals-utils.ts`, `hooks.ts` |
+| Utilities  | camelCase   | `human-signals-utils.ts`, `hooks.ts` |
 | Types      | `index.ts`  | `types/index.ts`               |
 
 ### Exports
@@ -216,7 +216,7 @@ The `src/lib/` directory contains shared logic:
 | `theme.ts`                   | Theme color resolution                     |
 | `executive-summary-utils.ts` | Monitoring hierarchy and health computation |
 | `scorecard-utils.ts`         | Production scorecard computations          |
-| `signals-utils.ts`           | Human signals KPI and chart data computation |
+| `human-signals-utils.ts`     | Human signals KPI and chart data computation |
 | `annotation-utils.ts`        | Annotation data helpers                    |
 
 ### Hooks Directory
@@ -225,7 +225,7 @@ Custom hooks in `src/lib/hooks/`:
 
 | Hook                      | Purpose                                  |
 |---------------------------|------------------------------------------|
-| `useHumanSignalsUpload.ts`| Human signals file upload with store updates |
+| `useHumanSignalsUpload.ts`| Human signals file upload, DB config, and auto-import |
 | `useProductionOverview.ts`| Aggregates data for production dashboard |
 
 ## Design System Highlights

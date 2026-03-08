@@ -789,6 +789,7 @@ export interface SignalsMetricSchema {
 export interface SignalsKPIConfig {
   metric?: string;
   signal?: string;
+  match_value?: string; // count cases where signal equals this value (instead of boolean truthiness)
   aggregate?: string; // 'avg_message_count' | 'total_cases'
   aggregation?: string; // 'mean' | 'median' | 'sum' | 'min' | 'max' | 'count' | 'p95'
   label: string;
@@ -831,6 +832,7 @@ export interface SignalsDisplayConfig {
   filters: SignalsFilterConfig[];
   table_columns: SignalsTableColumn[];
   color_maps: Record<string, Record<string, string>>;
+  table_badge_columns?: string[]; // which table columns get colored badges (omit = all)
 }
 
 // Computed KPI result (for rendering)

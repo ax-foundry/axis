@@ -29,6 +29,14 @@ import type { SignalsCaseRecord, SignalsChartSection, SignalsDisplayConfig } fro
 // Sections that render "always open" (no collapse toggle)
 const ALWAYS_OPEN_SECTIONS = new Set(['Outcome Distribution']);
 
+// Sections that start collapsed
+const START_COLLAPSED_SECTIONS = new Set([
+  'AI Performance',
+  'Human-AI Collaboration',
+  'Case Outcomes',
+  'Learnings & Feedback',
+]);
+
 interface DynamicChartSectionProps {
   cases: SignalsCaseRecord[];
   displayConfig: SignalsDisplayConfig;
@@ -36,6 +44,7 @@ interface DynamicChartSectionProps {
 
 export function DynamicChartSection({ cases, displayConfig }: DynamicChartSectionProps) {
   const { chart_sections, color_maps } = displayConfig;
+  const [trendExpanded, setTrendExpanded] = useState(false);
 
   // Trend data
   const trendSignals = useMemo(() => extractTrendSignals(displayConfig), [displayConfig]);
@@ -45,17 +54,29 @@ export function DynamicChartSection({ cases, displayConfig }: DynamicChartSectio
 
   return (
     <div className="space-y-5">
-      {/* Trend chart */}
+      {/* Trend chart — collapsible, starts collapsed */}
       {trendData.length > 1 && (
-        <div className="border-border/60 overflow-hidden rounded-lg border bg-white shadow-sm">
-          <div className="px-4 py-2.5">
-            <h3 className="text-xs font-semibold uppercase tracking-wide text-text-muted">
-              Signal Trends Over Time
-            </h3>
-          </div>
-          <div className="h-64 px-2 py-2">
-            <SignalsTrendChart data={trendData} signals={trendSignals.map((s) => s.label)} />
-          </div>
+        <div>
+          <button
+            onClick={() => setTrendExpanded(!trendExpanded)}
+            className="mb-3 flex w-full items-center gap-2 text-left"
+          >
+            <ChevronDown
+              className={cn(
+                'h-4 w-4 text-text-muted transition-transform',
+                !trendExpanded && '-rotate-90'
+              )}
+            />
+            <h3 className="text-sm font-semibold text-text-primary">Signal Trends Over Time</h3>
+            <div className="ml-1 h-px flex-1 bg-border" />
+          </button>
+          {trendExpanded && (
+            <div className="border-border/60 overflow-hidden rounded-lg border bg-white shadow-sm">
+              <div className="h-64 px-2 py-2">
+                <SignalsTrendChart data={trendData} signals={trendSignals.map((s) => s.label)} />
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -67,6 +88,7 @@ export function DynamicChartSection({ cases, displayConfig }: DynamicChartSectio
           cases={cases}
           colorMaps={color_maps || {}}
           collapsible={!ALWAYS_OPEN_SECTIONS.has(section.title)}
+          defaultExpanded={!START_COLLAPSED_SECTIONS.has(section.title)}
         />
       ))}
     </div>
@@ -78,6 +100,7 @@ interface ChartSectionBlockProps {
   cases: SignalsCaseRecord[];
   colorMaps: Record<string, Record<string, string>>;
   collapsible?: boolean;
+  defaultExpanded?: boolean;
 }
 
 function ChartSectionBlock({
@@ -85,8 +108,9 @@ function ChartSectionBlock({
   cases,
   colorMaps,
   collapsible = false,
+  defaultExpanded = true,
 }: ChartSectionBlockProps) {
-  const [isExpanded, setIsExpanded] = useState(true);
+  const [isExpanded, setIsExpanded] = useState(defaultExpanded);
   const charts = section.charts || [];
   if (charts.length === 0) return null;
 

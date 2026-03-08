@@ -401,7 +401,7 @@ def _merge_with_defaults(
     defaults = _generate_defaults(schema, visible_kpis=visible_kpis)
 
     # Override each top-level key if provided
-    for key in ["kpi_strip", "chart_sections", "filters", "table_columns"]:
+    for key in ["kpi_strip", "chart_sections", "filters", "table_columns", "table_badge_columns"]:
         if key in overrides:
             defaults[key] = overrides[key]
 

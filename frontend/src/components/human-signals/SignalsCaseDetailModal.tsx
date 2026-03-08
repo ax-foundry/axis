@@ -31,24 +31,114 @@ const METADATA_COLUMNS = [
 
 // Slack emoji shortcode → Unicode mapping
 const EMOJI_MAP: Record<string, string> = {
+  // Circles & shapes
   white_circle: '\u26AA',
-  x: '\u274C',
-  heavy_check_mark: '\u2714\uFE0F',
-  warning: '\u26A0\uFE0F',
   red_circle: '\uD83D\uDD34',
   green_circle: '\uD83D\uDFE2',
   blue_circle: '\uD83D\uDD35',
+  large_green_circle: '\uD83D\uDFE2',
+  large_yellow_circle: '\uD83D\uDFE1',
+  large_red_circle: '\uD83D\uDD34',
+  large_blue_circle: '\uD83D\uDD35',
+  large_orange_circle: '\uD83D\uDFE0',
+  large_purple_circle: '\uD83D\uDFE3',
+  large_brown_circle: '\uD83D\uDFE4',
+  yellow_circle: '\uD83D\uDFE1',
+  orange_circle: '\uD83D\uDFE0',
+  purple_circle: '\uD83D\uDFE3',
+  // Check marks & status
+  white_check_mark: '\u2705',
+  heavy_check_mark: '\u2714\uFE0F',
+  ballot_box_with_check: '\u2611\uFE0F',
+  x: '\u274C',
+  negative_squared_cross_mark: '\u274E',
+  warning: '\u26A0\uFE0F',
+  no_entry: '\u26D4',
+  no_entry_sign: '\uD83D\uDEAB',
+  exclamation: '\u2757',
+  question: '\u2753',
+  bangbang: '\u203C\uFE0F',
+  // Money & business
+  moneybag: '\uD83D\uDCB0',
+  money_with_wings: '\uD83D\uDCB8',
+  dollar: '\uD83D\uDCB5',
+  chart: '\uD83D\uDCB9',
+  chart_with_upwards_trend: '\uD83D\uDCC8',
+  chart_with_downwards_trend: '\uD83D\uDCC9',
+  bar_chart: '\uD83D\uDCCA',
+  // Objects & tools
+  clipboard: '\uD83D\uDCCB',
+  memo: '\uD83D\uDCDD',
+  receipt: '\uD83E\uDDFE',
+  page_facing_up: '\uD83D\uDCC4',
+  bookmark: '\uD83D\uDD16',
+  label: '\uD83C\uDFF7\uFE0F',
+  link: '\uD83D\uDD17',
+  paperclip: '\uD83D\uDCCE',
+  pushpin: '\uD83D\uDCCC',
+  lock: '\uD83D\uDD12',
+  unlock: '\uD83D\uDD13',
+  key: '\uD83D\uDD11',
+  shield: '\uD83D\uDEE1\uFE0F',
+  wrench: '\uD83D\uDD27',
+  gear: '\u2699\uFE0F',
+  hammer: '\uD83D\uDD28',
+  // Buildings & places
+  office: '\uD83C\uDFE2',
+  house: '\uD83C\uDFE0',
+  hospital: '\uD83C\uDFE5',
+  bank: '\uD83C\uDFE6',
+  // People & gestures
+  thumbsup: '\uD83D\uDC4D',
+  '+1': '\uD83D\uDC4D',
+  thumbsdown: '\uD83D\uDC4E',
+  '-1': '\uD83D\uDC4E',
+  point_right: '\uD83D\uDC49',
+  point_left: '\uD83D\uDC48',
+  point_up: '\u261D\uFE0F',
+  point_down: '\uD83D\uDC47',
+  wave: '\uD83D\uDC4B',
+  clap: '\uD83D\uDC4F',
+  handshake: '\uD83E\uDD1D',
+  eyes: '\uD83D\uDC40',
+  brain: '\uD83E\uDDE0',
+  // Expressions & symbols
   star: '\u2B50',
+  star2: '\uD83C\uDF1F',
+  sparkles: '\u2728',
   fire: '\uD83D\uDD25',
   rocket: '\uD83D\uDE80',
-  thumbsup: '\uD83D\uDC4D',
-  thumbsdown: '\uD83D\uDC4E',
-  eyes: '\uD83D\uDC40',
   bulb: '\uD83D\uDCA1',
-  memo: '\uD83D\uDCDD',
-  link: '\uD83D\uDD17',
+  light_bulb: '\uD83D\uDCA1',
+  zap: '\u26A1',
+  boom: '\uD83D\uDCA5',
+  collision: '\uD83D\uDCA5',
+  heart: '\u2764\uFE0F',
   rotating_light: '\uD83D\uDEA8',
-  point_right: '\uD83D\uDC49',
+  bell: '\uD83D\uDD14',
+  loudspeaker: '\uD83D\uDCE2',
+  // Arrows
+  arrow_right: '\u27A1\uFE0F',
+  arrow_left: '\u2B05\uFE0F',
+  arrow_up: '\u2B06\uFE0F',
+  arrow_down: '\u2B07\uFE0F',
+  arrow_right_hook: '\u21AA\uFE0F',
+  // Misc
+  trophy: '\uD83C\uDFC6',
+  medal: '\uD83C\uDFC5',
+  target: '\uD83C\uDFAF',
+  mag: '\uD83D\uDD0D',
+  mag_right: '\uD83D\uDD0E',
+  stopwatch: '\u23F1\uFE0F',
+  hourglass: '\u231B',
+  calendar: '\uD83D\uDCC5',
+  inbox_tray: '\uD83D\uDCE5',
+  outbox_tray: '\uD83D\uDCE4',
+  package: '\uD83D\uDCE6',
+  robot_face: '\uD83E\uDD16',
+  robot: '\uD83E\uDD16',
+  checkered_flag: '\uD83C\uDFC1',
+  triangular_flag_on_post: '\uD83D\uDEA9',
 };
 
 function parseSlackMarkdown(text: string, darkBg: boolean): React.ReactNode[] {
@@ -182,7 +272,28 @@ export function SignalsCaseDetailModal({
 
   // Collect additional metadata columns (not part of metric signals)
   const metadataEntries = useMemo(() => {
-    return METADATA_COLUMNS.filter((col) => caseRecord[col] != null).map((col) => ({
+    return METADATA_COLUMNS.filter((col) => {
+      const val = caseRecord[col];
+      if (val == null) return false;
+      if (typeof val === 'string') {
+        const t = val.trim().toLowerCase();
+        if (
+          t === '' ||
+          t === 'none' ||
+          t === 'null' ||
+          t === 'nan' ||
+          t === 'undefined' ||
+          t === '{}' ||
+          t === '[]' ||
+          t === '\u2014'
+        )
+          return false;
+      }
+      if (typeof val === 'object' && !Array.isArray(val) && Object.keys(val as object).length === 0)
+        return false;
+      if (Array.isArray(val) && val.length === 0) return false;
+      return true;
+    }).map((col) => ({
       key: col,
       label: col.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()),
       value: caseRecord[col],

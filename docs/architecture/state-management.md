@@ -156,15 +156,23 @@ Manages memory rule data for the Memory dashboard. Does **not** persist.
 
 Manages Human Signals (HITL) data. Uses `persist`.
 
-| Field                | Type                      | Description                        |
-|----------------------|---------------------------|------------------------------------|
-| `cases`              | `SignalsCaseRecord[]`     | Case records                       |
-| `format`             | `SignalsDataFormat`       | `'hitl_feedback_v2'`               |
-| `metricSchema`       | `SignalsMetricSchema`     | Auto-discovered metric schema      |
-| `displayConfig`      | `SignalsDisplayConfig`    | YAML-driven display layout         |
-| `selectedSourceName` | `string`                  | Source filter                      |
-| `selectedMetricFilters` | `Record<string, string>`| Per-metric signal filters          |
-| `timeRange`          | `SignalsTimeRange`        | Time range with presets            |
+| Field                    | Type                        | Description                        |
+|--------------------------|-----------------------------|------------------------------------|
+| `cases`                  | `SignalsCaseRecord[]`       | Flattened case records             |
+| `format`                 | `HumanSignalsDataFormat`    | `'hitl_feedback'`                  |
+| `metricSchema`           | `SignalsMetricSchema`       | Auto-discovered metric schema      |
+| `displayConfig`          | `SignalsDisplayConfig`      | YAML-driven display layout         |
+| `selectedSourceName`     | `string`                    | Source name filter                 |
+| `selectedSourceComponent`| `string`                    | Source component filter            |
+| `selectedEnvironment`    | `string`                    | Environment filter                 |
+| `metricFilters`          | `Record<string, string[]>`  | Per-metric signal filters (keyed by `metric__signal`) |
+| `timeRange`              | `HumanSignalsTimeRange`     | Time range with presets            |
+| `datasetReady`           | `boolean`                   | Whether DuckDB dataset is available |
+| `selectedCaseId`         | `string \| null`            | Case selected for detail modal     |
+| `caseDetailModalOpen`    | `boolean`                   | Detail modal open state            |
+| `selectedSignalKpi`      | `string \| null`            | KPI selected for expanded trend    |
+| `sortColumn`             | `string \| null`            | Active table sort column           |
+| `visibleColumns`         | `string[] \| null`          | Visible table columns (null = defaults) |
 
 Time range presets: `7d`, `30d`, `90d`, `6m`, `1y`, `custom`.
 

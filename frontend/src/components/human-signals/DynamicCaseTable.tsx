@@ -9,6 +9,7 @@ import {
   Columns3,
   Check,
   RotateCcw,
+  Search,
 } from 'lucide-react';
 import { useMemo, useCallback, useState, useRef, useEffect } from 'react';
 
@@ -143,7 +144,15 @@ export function DynamicCaseTable({
     toggleColumn,
   } = useHumanSignalsStore();
 
+  const [searchQuery, setSearchQuery] = useState('');
+
   const colorMaps = displayConfig.color_maps;
+  const badgeColumns = displayConfig.table_badge_columns;
+
+  // Reset page when search changes
+  useEffect(() => {
+    setPage(1);
+  }, [searchQuery, setPage]);
 
   // Resolve visible columns: user selection or sensible defaults
   const activeKeys = useMemo(() => {
@@ -156,10 +165,23 @@ export function DynamicCaseTable({
     [columns, activeKeys]
   );
 
+  // Search filter
+  const searchedCases = useMemo(() => {
+    if (!searchQuery.trim()) return cases;
+    const term = searchQuery.toLowerCase();
+    return cases.filter((c) =>
+      visibleCols.some((col) => {
+        const val = c[col.key];
+        if (val == null) return false;
+        return String(val).toLowerCase().includes(term);
+      })
+    );
+  }, [cases, searchQuery, visibleCols]);
+
   // Sort
   const sortedCases = useMemo(() => {
-    if (!sortColumn || !sortDirection) return cases;
-    return [...cases].sort((a, b) => {
+    if (!sortColumn || !sortDirection) return searchedCases;
+    return [...searchedCases].sort((a, b) => {
       const aVal = a[sortColumn];
       const bVal = b[sortColumn];
       if (aVal == null && bVal == null) return 0;
@@ -168,7 +190,7 @@ export function DynamicCaseTable({
       const cmp = String(aVal).localeCompare(String(bVal), undefined, { numeric: true });
       return sortDirection === 'desc' ? -cmp : cmp;
     });
-  }, [cases, sortColumn, sortDirection]);
+  }, [searchedCases, sortColumn, sortDirection]);
 
   // Paginate
   const totalPages = Math.max(1, Math.ceil(sortedCases.length / pageSize));
@@ -211,15 +233,16 @@ export function DynamicCaseTable({
     [visibleColumns, columns, setVisibleColumns, toggleColumn]
   );
 
-  // Look up badge color for a cell value — applies to any column with a color map
+  // Look up badge color for a cell value — only for columns in table_badge_columns (or all if omitted)
   const getCellColor = useCallback(
     (columnKey: string, value: unknown): string | null => {
       if (value == null || typeof value !== 'string') return null;
+      if (badgeColumns && !badgeColumns.includes(columnKey)) return null;
       const map = colorMaps[columnKey];
       if (!map) return null;
       return map[value] || null;
     },
-    [colorMaps]
+    [colorMaps, badgeColumns]
   );
 
   const renderCell = useCallback(
@@ -309,15 +332,30 @@ export function DynamicCaseTable({
 
   return (
     <div className="overflow-hidden rounded-xl border border-border bg-white">
-      {/* Header bar with column picker */}
+      {/* Header bar with search + column picker */}
       <div className="flex items-center justify-between border-b border-border px-4 py-2.5">
-        <span className="text-sm font-medium text-text-primary">Cases ({cases.length} total)</span>
-        <ColumnPicker
-          allColumns={columns}
-          visibleKeys={activeKeys}
-          onToggle={handleToggleColumn}
-          onReset={handleResetColumns}
-        />
+        <span className="text-sm font-medium text-text-primary">
+          Cases ({searchedCases.length}
+          {searchQuery && searchedCases.length !== cases.length ? ` of ${cases.length}` : ' total'})
+        </span>
+        <div className="flex items-center gap-2">
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-text-muted" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search cases..."
+              className="h-[30px] w-48 rounded-md border border-border bg-white pl-7 pr-2 text-xs text-text-primary placeholder:text-text-muted focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/30"
+            />
+          </div>
+          <ColumnPicker
+            allColumns={columns}
+            visibleKeys={activeKeys}
+            onToggle={handleToggleColumn}
+            onReset={handleResetColumns}
+          />
+        </div>
       </div>
 
       <div className="overflow-x-auto">

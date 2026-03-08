@@ -111,18 +111,26 @@ Manages decision memory rules, hard stops, batches, and decision quality data.
 
 ## useHumanSignalsStore
 
-Manages Human Signals data with source and metric filtering.
+Manages Human Signals (HITL) data with source and metric filtering. Uses `persist` middleware.
 
 **Key State:**
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `data` | `Record<string, unknown>[]` | Flattened signal records |
-| `metricSchema` | `SignalsMetricSchema \| null` | Schema describing available metrics |
-| `displayConfig` | `SignalsDisplayConfig \| null` | Display overrides from YAML |
-| `selectedSource` | `string \| null` | Source filter |
-| `selectedMetric` | `string \| null` | Metric filter |
-| `timeRange` | `SignalsTimeRange` | Time range filter |
+| `cases` | `SignalsCaseRecord[]` | Flattened case records |
+| `metricSchema` | `SignalsMetricSchema \| null` | Auto-discovered metric schema |
+| `displayConfig` | `SignalsDisplayConfig \| null` | YAML-driven display layout |
+| `selectedSourceName` | `string` | Source name filter |
+| `selectedSourceComponent` | `string` | Source component filter |
+| `selectedEnvironment` | `string` | Environment filter |
+| `metricFilters` | `Record<string, string[]>` | Per-metric signal filters (keyed by `metric__signal`) |
+| `timeRange` | `HumanSignalsTimeRange` | Time range with presets (`7d`, `30d`, `90d`, `6m`, `1y`, `custom`) |
+| `datasetReady` | `boolean` | Whether DuckDB dataset is available |
+| `selectedCaseId` | `string \| null` | Case selected for detail modal |
+| `caseDetailModalOpen` | `boolean` | Whether case detail modal is open |
+| `selectedSignalKpi` | `string \| null` | KPI selected for expanded trend |
+| `sortColumn` | `string \| null` | Active sort column in case table |
+| `visibleColumns` | `string[] \| null` | Visible table columns (null = defaults) |
 
 ---
 
