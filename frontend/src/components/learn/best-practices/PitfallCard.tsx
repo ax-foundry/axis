@@ -18,40 +18,42 @@ export function PitfallCard({
   solution,
 }: PitfallCardProps) {
   return (
-    <div className="card border-error/20 bg-error/5">
-      <div className="mb-4 flex items-start gap-3">
-        <div className="bg-error/10 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg">
-          <Icon className="h-4 w-4 text-error" />
+    <div className="border-error/20 rounded-xl border bg-white p-4">
+      <div className="mb-3 flex items-center gap-2">
+        <div className="bg-error/10 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg">
+          <Icon className="h-3.5 w-3.5 text-error" />
         </div>
-        <h4 className="pt-1 text-base font-semibold text-text-primary">{title}</h4>
+        <h4 className="text-xs font-semibold text-text-primary">{title}</h4>
       </div>
 
-      <div className="space-y-3">
-        <div className="rounded-lg bg-white/50 p-3">
-          <p className="mb-1 text-xs font-medium uppercase tracking-wide text-error">The Mistake</p>
-          <p className="text-sm text-text-secondary">{mistake}</p>
+      <div className="space-y-2">
+        <div className="rounded-lg bg-gray-50 p-2.5">
+          <p className="mb-0.5 text-[10px] font-semibold uppercase tracking-wide text-error">
+            The Mistake
+          </p>
+          <p className="text-xs text-text-secondary">{mistake}</p>
         </div>
 
         <div className="flex items-center justify-center">
-          <ArrowRight className="h-4 w-4 text-text-muted" />
+          <ArrowRight className="h-3 w-3 text-text-muted" />
         </div>
 
-        <div className="rounded-lg bg-white/50 p-3">
-          <p className="mb-1 text-xs font-medium uppercase tracking-wide text-warning">
+        <div className="rounded-lg bg-gray-50 p-2.5">
+          <p className="mb-0.5 text-[10px] font-semibold uppercase tracking-wide text-warning">
             The Consequence
           </p>
-          <p className="text-sm text-text-secondary">{consequence}</p>
+          <p className="text-xs text-text-secondary">{consequence}</p>
         </div>
 
         <div className="flex items-center justify-center">
-          <ArrowRight className="h-4 w-4 text-text-muted" />
+          <ArrowRight className="h-3 w-3 text-text-muted" />
         </div>
 
-        <div className="border-success/20 bg-success/10 rounded-lg border p-3">
-          <p className="mb-1 text-xs font-medium uppercase tracking-wide text-success">
+        <div className="border-success/20 bg-success/5 rounded-lg border p-2.5">
+          <p className="mb-0.5 text-[10px] font-semibold uppercase tracking-wide text-success">
             The Solution
           </p>
-          <p className="text-sm text-text-secondary">{solution}</p>
+          <p className="text-xs text-text-secondary">{solution}</p>
         </div>
       </div>
     </div>

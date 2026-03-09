@@ -454,58 +454,6 @@
    FLOW DIAGRAM ANIMATIONS (Learn Tab)
    ============================================ */
 
-@keyframes flow-pulse {
-  0%,
-  100% {
-    opacity: 0.4;
-    stroke-width: 2;
-  }
-  50% {
-    opacity: 1;
-    stroke-width: 4;
-  }
-}
-
-@keyframes node-highlight {
-  0%,
-  100% {
-    box-shadow: 0 0 0 0 rgba(139, 159, 79, 0.4);
-  }
-  50% {
-    box-shadow: 0 0 20px 10px rgba(139, 159, 79, 0.6);
-  }
-}
-
-@keyframes node-highlight-blue {
-  0%,
-  100% {
-    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4);
-  }
-  50% {
-    box-shadow: 0 0 20px 10px rgba(59, 130, 246, 0.6);
-  }
-}
-
-@keyframes node-highlight-amber {
-  0%,
-  100% {
-    box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4);
-  }
-  50% {
-    box-shadow: 0 0 20px 10px rgba(245, 158, 11, 0.6);
-  }
-}
-
-@keyframes node-highlight-purple {
-  0%,
-  100% {
-    box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.4);
-  }
-  50% {
-    box-shadow: 0 0 20px 10px rgba(139, 92, 246, 0.6);
-  }
-}
-
 @keyframes data-flow {
   0% {
     stroke-dashoffset: 100;
@@ -515,61 +463,11 @@
   }
 }
 
-@keyframes data-flow-reverse {
-  0% {
-    stroke-dashoffset: 0;
-  }
-  100% {
-    stroke-dashoffset: 100;
-  }
-}
-
-.flow-edge-active {
-  animation: flow-pulse 1.5s ease-in-out infinite;
-}
-
-.flow-node-active {
-  animation: node-highlight 1.5s ease-in-out infinite;
-}
-
-.flow-node-active-blue {
-  animation: node-highlight-blue 1.5s ease-in-out infinite;
-}
-
-.flow-node-active-amber {
-  animation: node-highlight-amber 1.5s ease-in-out infinite;
-}
-
-.flow-node-active-purple {
-  animation: node-highlight-purple 1.5s ease-in-out infinite;
-}
-
 .flow-edge-animated {
-  stroke-dasharray: 10 5;
+  stroke-dasharray: 8 4;
   animation: data-flow 1s linear infinite;
 }
 
-.flow-edge-animated-slow {
-  stroke-dasharray: 10 5;
-  animation: data-flow 2s linear infinite;
-}
-
-/* Step indicator animation */
-@keyframes step-pulse {
-  0%,
-  100% {
-    transform: scale(1);
-    opacity: 1;
-  }
-  50% {
-    transform: scale(1.1);
-    opacity: 0.8;
-  }
-}
-
-.step-indicator-active {
-  animation: step-pulse 1s ease-in-out infinite;
-}
 
 /* Progress bar animation */
 @keyframes progress-shine {

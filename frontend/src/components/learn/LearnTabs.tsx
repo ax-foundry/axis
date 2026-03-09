@@ -114,7 +114,7 @@ export function LearnTabs() {
       ) : (
         <div className="space-y-6">
           {/* Inner guide tab navigation (pill style) */}
-          <div className="flex items-center gap-2 rounded-lg bg-gray-100/80 p-1.5">
+          <div className="flex items-center gap-1 rounded-lg border border-border bg-gray-50 p-1">
             {guideTabs.map((tab) => {
               const Icon = tab.icon;
               const isActive = learnMainTab === tab.id;
@@ -123,16 +123,13 @@ export function LearnTabs() {
                 <button
                   key={tab.id}
                   onClick={() => setLearnMainTab(tab.id)}
-                  className={`
-                    flex items-center gap-2 rounded-lg px-4 py-2.5 font-medium transition-all duration-200
-                    ${
-                      isActive
-                        ? 'bg-primary text-white shadow-sm'
-                        : 'text-text-secondary hover:bg-gray-50 hover:text-text-primary'
-                    }
-                  `}
+                  className={`flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-all ${
+                    isActive
+                      ? 'bg-white text-text-primary shadow-sm'
+                      : 'text-text-muted hover:text-text-secondary'
+                  }`}
                 >
-                  <Icon className="h-4 w-4" />
+                  <Icon className="h-3.5 w-3.5" />
                   <span>{tab.label}</span>
                 </button>
               );

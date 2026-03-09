@@ -57,18 +57,20 @@ export function WalkthroughTabs() {
             key={tab.id}
             onClick={() => setLearnWalkthroughType(tab.id)}
             className={`
-              flex flex-col items-start rounded-xl border px-4 py-3 transition-all duration-200
+              flex flex-col items-start rounded-lg border px-3 py-2 transition-all duration-200
               ${
                 isActive
-                  ? 'border-primary/30 bg-primary/10 shadow-sm'
+                  ? 'border-primary/30 bg-primary/10'
                   : 'border-border bg-white hover:border-primary/20 hover:bg-gray-50'
               }
             `}
           >
-            <span className={`font-medium ${isActive ? 'text-primary' : 'text-text-primary'}`}>
+            <span
+              className={`text-xs font-semibold ${isActive ? 'text-primary' : 'text-text-primary'}`}
+            >
               {tab.label}
             </span>
-            <span className="text-xs text-text-muted">{tab.description}</span>
+            <span className="text-[10px] text-text-muted">{tab.description}</span>
           </button>
         );
       })}

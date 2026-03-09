@@ -10,18 +10,18 @@ interface ComparisonRow {
 
 const comparisonData: ComparisonRow[] = [
   {
-    attribute: 'Scalable to large datasets',
-    description: 'Can handle thousands of evaluations efficiently',
+    attribute: 'Scales to production volume',
+    description: 'Handles thousands of evaluations efficiently',
     values: {
       'llm-judge': 'yes',
       human: 'no',
       automated: 'yes',
-      hybrid: 'partial',
+      hybrid: 'yes',
     },
   },
   {
-    attribute: 'Captures nuance',
-    description: 'Can evaluate subtle quality differences',
+    attribute: 'Captures nuance & context',
+    description: 'Evaluates subtle quality differences',
     values: {
       'llm-judge': 'yes',
       human: 'yes',
@@ -30,28 +30,18 @@ const comparisonData: ComparisonRow[] = [
     },
   },
   {
-    attribute: 'Consistent results',
-    description: 'Same input produces same output',
+    attribute: 'Deterministic results',
+    description: 'Same input always produces same output',
     values: {
-      'llm-judge': 'partial',
+      'llm-judge': 'no',
       human: 'no',
       automated: 'yes',
       hybrid: 'partial',
     },
   },
   {
-    attribute: 'Low cost per evaluation',
-    description: 'Affordable for large-scale use',
-    values: {
-      'llm-judge': 'partial',
-      human: 'no',
-      automated: 'yes',
-      hybrid: 'partial',
-    },
-  },
-  {
-    attribute: 'No reference needed',
-    description: 'Can evaluate without expected output',
+    attribute: 'Actionable feedback',
+    description: 'Provides critiques that guide improvement',
     values: {
       'llm-judge': 'yes',
       human: 'yes',
@@ -60,10 +50,30 @@ const comparisonData: ComparisonRow[] = [
     },
   },
   {
-    attribute: 'Explainable scores',
-    description: 'Provides reasoning for scores',
+    attribute: 'Works without ground truth',
+    description: 'Can evaluate without reference answers',
     values: {
       'llm-judge': 'yes',
+      human: 'yes',
+      automated: 'no',
+      hybrid: 'partial',
+    },
+  },
+  {
+    attribute: 'CI/CD integration',
+    description: 'Can serve as automated release gate',
+    values: {
+      'llm-judge': 'partial',
+      human: 'no',
+      automated: 'yes',
+      hybrid: 'yes',
+    },
+  },
+  {
+    attribute: 'Catches domain-specific failures',
+    description: 'Detects subtle, domain-aware errors',
+    values: {
+      'llm-judge': 'partial',
       human: 'yes',
       automated: 'no',
       hybrid: 'yes',
@@ -103,8 +113,8 @@ function ValueIcon({ value }: { value: 'yes' | 'no' | 'partial' }) {
 
 export function MethodComparisonTable() {
   return (
-    <div className="card overflow-hidden">
-      <h3 className="mb-4 text-lg font-semibold text-text-primary">Method Comparison</h3>
+    <div className="overflow-hidden rounded-xl border border-border bg-white p-5">
+      <h3 className="mb-4 text-sm font-semibold text-text-primary">Method Comparison</h3>
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>

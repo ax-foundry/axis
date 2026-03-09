@@ -10,7 +10,7 @@ interface StepDetailsProps {
 
 export function StepDetails({ step, stepNumber, totalSteps }: StepDetailsProps) {
   return (
-    <div className="rounded-xl border border-border bg-white p-6 shadow-sm">
+    <div className="rounded-xl border border-border bg-white p-5">
       {/* Step Header */}
       <div className="mb-4 flex items-start justify-between">
         <div>
@@ -30,12 +30,12 @@ export function StepDetails({ step, stepNumber, totalSteps }: StepDetailsProps) 
               {step.animationType}
             </span>
           </div>
-          <h3 className="text-xl font-semibold text-text-primary">{step.title}</h3>
+          <h3 className="text-sm font-semibold text-text-primary">{step.title}</h3>
         </div>
       </div>
 
       {/* Step Description */}
-      <p className="mb-4 leading-relaxed text-text-secondary">{step.description}</p>
+      <p className="mb-4 text-sm leading-relaxed text-text-secondary">{step.description}</p>
 
       {/* Data State */}
       {(step.dataState.input || step.dataState.processing || step.dataState.output) && (

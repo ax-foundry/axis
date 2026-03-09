@@ -16,7 +16,7 @@ interface ExampleDataDisplayProps {
 
 export function ExampleDataDisplay({ exampleData, highlightField }: ExampleDataDisplayProps) {
   return (
-    <div className="rounded-xl border border-border bg-white p-4 shadow-sm">
+    <div className="rounded-xl border border-border bg-white p-5">
       <h4 className="mb-4 flex items-center gap-2 text-sm font-medium text-text-muted">
         <BookOpen className="h-4 w-4" />
         Example Test Case
