@@ -26,17 +26,6 @@ import { SignalsTrendChart } from './SignalsTrendChart';
 
 import type { SignalsCaseRecord, SignalsChartSection, SignalsDisplayConfig } from '@/types';
 
-// Sections that render "always open" (no collapse toggle)
-const ALWAYS_OPEN_SECTIONS = new Set(['Outcome Distribution']);
-
-// Sections that start collapsed
-const START_COLLAPSED_SECTIONS = new Set([
-  'AI Performance',
-  'Human-AI Collaboration',
-  'Case Outcomes',
-  'Learnings & Feedback',
-]);
-
 interface DynamicChartSectionProps {
   cases: SignalsCaseRecord[];
   displayConfig: SignalsDisplayConfig;
@@ -87,8 +76,6 @@ export function DynamicChartSection({ cases, displayConfig }: DynamicChartSectio
           section={section}
           cases={cases}
           colorMaps={color_maps || {}}
-          collapsible={!ALWAYS_OPEN_SECTIONS.has(section.title)}
-          defaultExpanded={!START_COLLAPSED_SECTIONS.has(section.title)}
         />
       ))}
     </div>
@@ -99,18 +86,10 @@ interface ChartSectionBlockProps {
   section: SignalsChartSection;
   cases: SignalsCaseRecord[];
   colorMaps: Record<string, Record<string, string>>;
-  collapsible?: boolean;
-  defaultExpanded?: boolean;
 }
 
-function ChartSectionBlock({
-  section,
-  cases,
-  colorMaps,
-  collapsible = false,
-  defaultExpanded = true,
-}: ChartSectionBlockProps) {
-  const [isExpanded, setIsExpanded] = useState(defaultExpanded);
+function ChartSectionBlock({ section, cases, colorMaps }: ChartSectionBlockProps) {
+  const [isExpanded, setIsExpanded] = useState(false);
   const charts = section.charts || [];
   if (charts.length === 0) return null;
 
@@ -123,26 +102,19 @@ function ChartSectionBlock({
 
   return (
     <div>
-      {collapsible ? (
-        <button
-          onClick={() => setIsExpanded(!isExpanded)}
-          className="mb-3 flex w-full items-center gap-2 text-left"
-        >
-          <ChevronDown
-            className={cn(
-              'h-4 w-4 text-text-muted transition-transform',
-              !isExpanded && '-rotate-90'
-            )}
-          />
-          <h3 className="text-sm font-semibold text-text-primary">{section.title}</h3>
-          <div className="ml-1 h-px flex-1 bg-border" />
-        </button>
-      ) : (
-        <div className="mb-3 flex items-center gap-2">
-          <h3 className="text-sm font-semibold text-text-primary">{section.title}</h3>
-          <div className="h-px flex-1 bg-border" />
-        </div>
-      )}
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="mb-3 flex w-full items-center gap-2 text-left"
+      >
+        <ChevronDown
+          className={cn(
+            'h-4 w-4 text-text-muted transition-transform',
+            !isExpanded && '-rotate-90'
+          )}
+        />
+        <h3 className="text-sm font-semibold text-text-primary">{section.title}</h3>
+        <div className="ml-1 h-px flex-1 bg-border" />
+      </button>
       {isExpanded && (
         <div className={`grid gap-4 ${layoutClass}`}>
           {charts.map((chart, cIdx) => (

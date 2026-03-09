@@ -1,19 +1,6 @@
 'use client';
 
-import {
-  AlertTriangle,
-  CheckCircle,
-  ChevronDown,
-  Clock,
-  ExternalLink,
-  Hash,
-  Lightbulb,
-  MessageSquare,
-  Shield,
-  Tag,
-  X,
-  XCircle,
-} from 'lucide-react';
+import { ChevronDown, Clock, ExternalLink, Hash, MessageSquare, Tag, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
 import { pythonToJson } from '@/components/shared';
@@ -236,8 +223,6 @@ export function SignalsCaseDetailModal({
   onClose,
 }: SignalsCaseDetailModalProps) {
   const [conversationExpanded, setConversationExpanded] = useState(false);
-  const [learningsExpanded, setLearningsExpanded] = useState(false);
-  const [featureRequestsExpanded, setFeatureRequestsExpanded] = useState(false);
 
   const colorMaps = useMemo(() => displayConfig?.color_maps || {}, [displayConfig]);
 
@@ -301,38 +286,35 @@ export function SignalsCaseDetailModal({
   }, [caseRecord]);
 
   // Extract key fields from flattened data
-  const slackUrl = caseRecord.Slack_URL as string | null;
   const messages = (caseRecord.Full_Conversation || []) as { role: string; content: string }[];
-  const learnings = (caseRecord['learnings_count__learnings'] || []) as string[];
-  const learningCategories = (caseRecord['learnings_count__categories'] || []) as string[];
-  const featureRequests = (caseRecord['feature_requests_count__requests'] || []) as string[];
-  const suggestedAction = caseRecord['has_actionable_feedback__suggested_action'] as string | null;
-  const hasActionableFeedback = Boolean(
-    caseRecord['has_actionable_feedback__has_actionable_feedback']
-  );
 
-  // Collect top-level status badges
+  // Discover URL fields dynamically (any field ending in _URL or _url)
+  const urlField = useMemo(() => {
+    for (const key of Object.keys(caseRecord)) {
+      if ((key.endsWith('_URL') || key.endsWith('_url')) && typeof caseRecord[key] === 'string') {
+        const val = String(caseRecord[key]).trim();
+        if (val.startsWith('http')) return { key, url: val };
+      }
+    }
+    return null;
+  }, [caseRecord]);
+
+  // Derive status badges from displayConfig.table_badge_columns (not hardcoded keys)
   const badges = useMemo(() => {
+    const badgeColumns = displayConfig?.table_badge_columns;
+    if (!badgeColumns || badgeColumns.length === 0) return [];
+
     const result: { label: string; color: string }[] = [];
-    const tryAdd = (mapKey: string, valueKey: string) => {
-      const val = caseRecord[valueKey];
-      if (val == null || val === '') return;
+    for (const colKey of badgeColumns) {
+      const val = caseRecord[colKey];
+      if (val == null || val === '') continue;
       const strVal = String(val);
-      const map = colorMaps[mapKey];
+      const map = colorMaps[colKey];
       const color = map?.[strVal] || '#7F8C8D';
       result.push({ label: strVal.replace(/_/g, ' '), color });
-    };
-
-    tryAdd('intervention_type__intervention_type', 'intervention_type__intervention_type');
-    tryAdd('sentiment_category__sentiment', 'sentiment_category__sentiment');
-    tryAdd('resolution_status__final_status', 'resolution_status__final_status');
-    tryAdd('priority_level__priority_level', 'priority_level__priority_level');
-    tryAdd('attribution_confidence__confidence', 'attribution_confidence__confidence');
-    tryAdd('acceptance_status__status', 'acceptance_status__status');
-    tryAdd('escalation_type__escalation_type', 'escalation_type__escalation_type');
-
+    }
     return result;
-  }, [caseRecord, colorMaps]);
+  }, [caseRecord, colorMaps, displayConfig]);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
@@ -362,19 +344,30 @@ export function SignalsCaseDetailModal({
         </div>
 
         <div className="p-6">
-          {/* Slack Link */}
-          {slackUrl && (
+          {/* External Link (auto-detected from *_URL / *_url fields) */}
+          {urlField && (
             <div className="mb-4">
               <a
-                href={slackUrl}
+                href={urlField.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 rounded-lg bg-[#4A154B] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#3e1240]"
+                className={cn(
+                  'inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors',
+                  urlField.url.includes('slack.com')
+                    ? 'bg-[#4A154B] hover:bg-[#3e1240]'
+                    : 'bg-primary hover:bg-primary-dark'
+                )}
               >
-                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M5.042 15.165a2.528 2.528 0 0 1-2.52 2.523A2.528 2.528 0 0 1 0 15.165a2.527 2.527 0 0 1 2.522-2.52h2.52v2.52zM6.313 15.165a2.527 2.527 0 0 1 2.521-2.52 2.527 2.527 0 0 1 2.521 2.52v6.313A2.528 2.528 0 0 1 8.834 24a2.528 2.528 0 0 1-2.521-2.522v-6.313zM8.834 5.042a2.528 2.528 0 0 1-2.521-2.52A2.528 2.528 0 0 1 8.834 0a2.528 2.528 0 0 1 2.521 2.522v2.52H8.834zM8.834 6.313a2.528 2.528 0 0 1 2.521 2.521 2.528 2.528 0 0 1-2.521 2.521H2.522A2.528 2.528 0 0 1 0 8.834a2.528 2.528 0 0 1 2.522-2.521h6.312zM18.956 8.834a2.528 2.528 0 0 1 2.522-2.521A2.528 2.528 0 0 1 24 8.834a2.528 2.528 0 0 1-2.522 2.521h-2.522V8.834zM17.688 8.834a2.528 2.528 0 0 1-2.523 2.521 2.527 2.527 0 0 1-2.52-2.521V2.522A2.527 2.527 0 0 1 15.165 0a2.528 2.528 0 0 1 2.523 2.522v6.312zM15.165 18.956a2.528 2.528 0 0 1 2.523 2.522A2.528 2.528 0 0 1 15.165 24a2.527 2.527 0 0 1-2.52-2.522v-2.522h2.52zM15.165 17.688a2.527 2.527 0 0 1-2.52-2.523 2.526 2.526 0 0 1 2.52-2.52h6.313A2.527 2.527 0 0 1 24 15.165a2.528 2.528 0 0 1-2.522 2.523h-6.313z" />
-                </svg>
-                View in Slack
+                {urlField.url.includes('slack.com') ? (
+                  <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M5.042 15.165a2.528 2.528 0 0 1-2.52 2.523A2.528 2.528 0 0 1 0 15.165a2.527 2.527 0 0 1 2.522-2.52h2.52v2.52zM6.313 15.165a2.527 2.527 0 0 1 2.521-2.52 2.527 2.527 0 0 1 2.521 2.52v6.313A2.528 2.528 0 0 1 8.834 24a2.528 2.528 0 0 1-2.521-2.522v-6.313zM8.834 5.042a2.528 2.528 0 0 1-2.521-2.52A2.528 2.528 0 0 1 8.834 0a2.528 2.528 0 0 1 2.521 2.522v2.52H8.834zM8.834 6.313a2.528 2.528 0 0 1 2.521 2.521 2.528 2.528 0 0 1-2.521 2.521H2.522A2.528 2.528 0 0 1 0 8.834a2.528 2.528 0 0 1 2.522-2.521h6.312zM18.956 8.834a2.528 2.528 0 0 1 2.522-2.521A2.528 2.528 0 0 1 24 8.834a2.528 2.528 0 0 1-2.522 2.521h-2.522V8.834zM17.688 8.834a2.528 2.528 0 0 1-2.523 2.521 2.527 2.527 0 0 1-2.52-2.521V2.522A2.527 2.527 0 0 1 15.165 0a2.528 2.528 0 0 1 2.523 2.522v6.312zM15.165 18.956a2.528 2.528 0 0 1 2.523 2.522A2.528 2.528 0 0 1 15.165 24a2.527 2.527 0 0 1-2.52-2.522v-2.522h2.52zM15.165 17.688a2.527 2.527 0 0 1-2.52-2.523 2.526 2.526 0 0 1 2.52-2.52h6.313A2.527 2.527 0 0 1 24 15.165a2.528 2.528 0 0 1-2.522 2.523h-6.313z" />
+                  </svg>
+                ) : (
+                  <ExternalLink className="h-4 w-4" />
+                )}
+                {urlField.url.includes('slack.com')
+                  ? 'View in Slack'
+                  : urlField.key.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
                 <ExternalLink className="h-3 w-3" />
               </a>
             </div>
@@ -432,24 +425,11 @@ export function SignalsCaseDetailModal({
           {/* Metric Sections */}
           <div className="space-y-4">
             {metricSections.map((section) => {
-              const iconMap: Record<string, React.ReactNode> = {
-                intervention_type: <AlertTriangle className="h-4 w-4" />,
-                resolution_status: <CheckCircle className="h-4 w-4" />,
-                escalation_type: <AlertTriangle className="h-4 w-4" />,
-                sentiment_category: <Shield className="h-4 w-4" />,
-                acceptance_status: <XCircle className="h-4 w-4" />,
-                override_type: <XCircle className="h-4 w-4" />,
-                failed_step: <AlertTriangle className="h-4 w-4" />,
-                has_actionable_feedback: <Lightbulb className="h-4 w-4" />,
-                learnings_count: <Lightbulb className="h-4 w-4" />,
-                feature_requests_count: <MessageSquare className="h-4 w-4" />,
-              };
-
               return (
                 <div key={section.metric} className="rounded-lg border border-border p-4">
                   <div className="mb-3 flex items-center gap-2">
                     <div className="text-primary">
-                      {iconMap[section.metric] || <Tag className="h-4 w-4" />}
+                      <Tag className="h-4 w-4" />
                     </div>
                     <h4 className="text-sm font-semibold capitalize text-text-primary">
                       {section.metric.replace(/_/g, ' ')}
@@ -504,74 +484,6 @@ export function SignalsCaseDetailModal({
                   </div>
                 </div>
               ))}
-            </div>
-          )}
-
-          {/* Suggested Action */}
-          {hasActionableFeedback && suggestedAction && (
-            <div className="mt-4 rounded-lg bg-primary/5 p-4">
-              <h4 className="mb-1 text-sm font-semibold text-primary">Suggested Action</h4>
-              <p className="text-sm text-text-primary">{suggestedAction}</p>
-            </div>
-          )}
-
-          {/* Learnings */}
-          {Array.isArray(learnings) && learnings.length > 0 && (
-            <div className="mt-4">
-              <ExpandableSection
-                title="Learnings"
-                icon={<Lightbulb className="h-4 w-4 text-primary" />}
-                expanded={learningsExpanded}
-                onToggle={() => setLearningsExpanded(!learningsExpanded)}
-                count={learnings.length}
-              >
-                <div className="space-y-2 rounded-lg border border-border p-4">
-                  {learnings.map((learning, i) => (
-                    <div key={i} className="flex items-start gap-2">
-                      <span className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
-                        {i + 1}
-                      </span>
-                      <p className="text-sm text-text-primary">{learning}</p>
-                    </div>
-                  ))}
-                  {Array.isArray(learningCategories) && learningCategories.length > 0 && (
-                    <div className="mt-2 flex flex-wrap gap-1 border-t border-border pt-2">
-                      {learningCategories.map((cat, i) => (
-                        <span
-                          key={i}
-                          className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-text-muted"
-                        >
-                          {cat}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </ExpandableSection>
-            </div>
-          )}
-
-          {/* Feature Requests */}
-          {Array.isArray(featureRequests) && featureRequests.length > 0 && (
-            <div className="mt-4">
-              <ExpandableSection
-                title="Feature Requests"
-                icon={<MessageSquare className="h-4 w-4 text-primary" />}
-                expanded={featureRequestsExpanded}
-                onToggle={() => setFeatureRequestsExpanded(!featureRequestsExpanded)}
-                count={featureRequests.length}
-              >
-                <div className="space-y-2 rounded-lg border border-border p-4">
-                  {featureRequests.map((req, i) => (
-                    <div key={i} className="flex items-start gap-2">
-                      <span className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-accent-gold/10 text-xs font-semibold text-accent-gold">
-                        {i + 1}
-                      </span>
-                      <p className="text-sm text-text-primary">{req}</p>
-                    </div>
-                  ))}
-                </div>
-              </ExpandableSection>
             </div>
           )}
 
