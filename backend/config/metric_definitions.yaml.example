@@ -1,0 +1,33 @@
+# Metric Definitions
+# ------------------
+# Centralized descriptions and documentation links for metrics across all domains.
+# Copy this file to custom/config/metric_definitions.yaml and edit as needed.
+#
+# Structure:
+#   metric_definitions:
+#     <domain>:          # monitoring | kpi | signals
+#       <metric_name>:
+#         description: "..."   # Optional — human-readable explanation
+#         link: "..."          # Optional — URL to external docs
+
+metric_definitions:
+  # Monitoring metrics (e.g., from DeepEval or custom evaluators)
+  monitoring:
+    Faithfulness:
+      description: "Measures how well the response aligns with retrieved context"
+      link: "https://docs.deepeval.com/metrics/faithfulness"
+    Relevance:
+      description: "Measures response relevance to the original query"
+      link: "https://docs.deepeval.com/metrics/relevance"
+
+  # Business KPI metrics
+  kpi:
+    auto_resolve_rate:
+      description: "Rate of automated case resolutions without human intervention"
+      link: ""
+
+  # Human signals metrics
+  signals:
+    is_compliant:
+      description: "Whether the case met compliance rules"
+      link: ""

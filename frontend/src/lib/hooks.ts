@@ -703,6 +703,18 @@ export function useReportStatus() {
   });
 }
 
+// ============================================
+// Metric Definitions Hook
+// ============================================
+
+export function useMetricDefinitions() {
+  return useQuery({
+    queryKey: ['metric-definitions'],
+    queryFn: api.getMetricDefinitions,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+}
+
 // Memory/Graph hooks — re-exported from plugin module
 export {
   useUpdateMemoryRule,
