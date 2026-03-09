@@ -105,14 +105,14 @@ async def get_store_status() -> dict[str, Any]:
     # Enrich with per-dataset config info and watermarks
     config_map = {
         "monitoring_data": (monitoring_db_config, "monitoring"),
-        "human_signals_raw": (human_signals_db_config, "human_signals"),
+        "human_signals_data": (human_signals_db_config, "human_signals"),
         "human_signals_cases": (None, None),
         "eval_data": (eval_db_config, "eval"),
         "kpi_data": (kpi_db_config, "kpi"),
     }
     split_table_map = {
         "monitoring_data": ("monitoring_dataset", "monitoring_results"),
-        "human_signals_raw": ("human_signals_dataset", "human_signals_results"),
+        "human_signals_data": ("human_signals_dataset", "human_signals_results"),
         "eval_data": ("eval_dataset", "eval_results"),
     }
 

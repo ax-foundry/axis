@@ -1,19 +1,6 @@
 'use client';
 
-import {
-  AlertTriangle,
-  CheckCircle,
-  ChevronDown,
-  Clock,
-  ExternalLink,
-  Hash,
-  Lightbulb,
-  MessageSquare,
-  Shield,
-  Tag,
-  X,
-  XCircle,
-} from 'lucide-react';
+import { ChevronDown, Clock, ExternalLink, Hash, MessageSquare, Tag, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
 import { pythonToJson } from '@/components/shared';
@@ -31,24 +18,114 @@ const METADATA_COLUMNS = [
 
 // Slack emoji shortcode → Unicode mapping
 const EMOJI_MAP: Record<string, string> = {
+  // Circles & shapes
   white_circle: '\u26AA',
-  x: '\u274C',
-  heavy_check_mark: '\u2714\uFE0F',
-  warning: '\u26A0\uFE0F',
   red_circle: '\uD83D\uDD34',
   green_circle: '\uD83D\uDFE2',
   blue_circle: '\uD83D\uDD35',
+  large_green_circle: '\uD83D\uDFE2',
+  large_yellow_circle: '\uD83D\uDFE1',
+  large_red_circle: '\uD83D\uDD34',
+  large_blue_circle: '\uD83D\uDD35',
+  large_orange_circle: '\uD83D\uDFE0',
+  large_purple_circle: '\uD83D\uDFE3',
+  large_brown_circle: '\uD83D\uDFE4',
+  yellow_circle: '\uD83D\uDFE1',
+  orange_circle: '\uD83D\uDFE0',
+  purple_circle: '\uD83D\uDFE3',
+  // Check marks & status
+  white_check_mark: '\u2705',
+  heavy_check_mark: '\u2714\uFE0F',
+  ballot_box_with_check: '\u2611\uFE0F',
+  x: '\u274C',
+  negative_squared_cross_mark: '\u274E',
+  warning: '\u26A0\uFE0F',
+  no_entry: '\u26D4',
+  no_entry_sign: '\uD83D\uDEAB',
+  exclamation: '\u2757',
+  question: '\u2753',
+  bangbang: '\u203C\uFE0F',
+  // Money & business
+  moneybag: '\uD83D\uDCB0',
+  money_with_wings: '\uD83D\uDCB8',
+  dollar: '\uD83D\uDCB5',
+  chart: '\uD83D\uDCB9',
+  chart_with_upwards_trend: '\uD83D\uDCC8',
+  chart_with_downwards_trend: '\uD83D\uDCC9',
+  bar_chart: '\uD83D\uDCCA',
+  // Objects & tools
+  clipboard: '\uD83D\uDCCB',
+  memo: '\uD83D\uDCDD',
+  receipt: '\uD83E\uDDFE',
+  page_facing_up: '\uD83D\uDCC4',
+  bookmark: '\uD83D\uDD16',
+  label: '\uD83C\uDFF7\uFE0F',
+  link: '\uD83D\uDD17',
+  paperclip: '\uD83D\uDCCE',
+  pushpin: '\uD83D\uDCCC',
+  lock: '\uD83D\uDD12',
+  unlock: '\uD83D\uDD13',
+  key: '\uD83D\uDD11',
+  shield: '\uD83D\uDEE1\uFE0F',
+  wrench: '\uD83D\uDD27',
+  gear: '\u2699\uFE0F',
+  hammer: '\uD83D\uDD28',
+  // Buildings & places
+  office: '\uD83C\uDFE2',
+  house: '\uD83C\uDFE0',
+  hospital: '\uD83C\uDFE5',
+  bank: '\uD83C\uDFE6',
+  // People & gestures
+  thumbsup: '\uD83D\uDC4D',
+  '+1': '\uD83D\uDC4D',
+  thumbsdown: '\uD83D\uDC4E',
+  '-1': '\uD83D\uDC4E',
+  point_right: '\uD83D\uDC49',
+  point_left: '\uD83D\uDC48',
+  point_up: '\u261D\uFE0F',
+  point_down: '\uD83D\uDC47',
+  wave: '\uD83D\uDC4B',
+  clap: '\uD83D\uDC4F',
+  handshake: '\uD83E\uDD1D',
+  eyes: '\uD83D\uDC40',
+  brain: '\uD83E\uDDE0',
+  // Expressions & symbols
   star: '\u2B50',
+  star2: '\uD83C\uDF1F',
+  sparkles: '\u2728',
   fire: '\uD83D\uDD25',
   rocket: '\uD83D\uDE80',
-  thumbsup: '\uD83D\uDC4D',
-  thumbsdown: '\uD83D\uDC4E',
-  eyes: '\uD83D\uDC40',
   bulb: '\uD83D\uDCA1',
-  memo: '\uD83D\uDCDD',
-  link: '\uD83D\uDD17',
+  light_bulb: '\uD83D\uDCA1',
+  zap: '\u26A1',
+  boom: '\uD83D\uDCA5',
+  collision: '\uD83D\uDCA5',
+  heart: '\u2764\uFE0F',
   rotating_light: '\uD83D\uDEA8',
-  point_right: '\uD83D\uDC49',
+  bell: '\uD83D\uDD14',
+  loudspeaker: '\uD83D\uDCE2',
+  // Arrows
+  arrow_right: '\u27A1\uFE0F',
+  arrow_left: '\u2B05\uFE0F',
+  arrow_up: '\u2B06\uFE0F',
+  arrow_down: '\u2B07\uFE0F',
+  arrow_right_hook: '\u21AA\uFE0F',
+  // Misc
+  trophy: '\uD83C\uDFC6',
+  medal: '\uD83C\uDFC5',
+  target: '\uD83C\uDFAF',
+  mag: '\uD83D\uDD0D',
+  mag_right: '\uD83D\uDD0E',
+  stopwatch: '\u23F1\uFE0F',
+  hourglass: '\u231B',
+  calendar: '\uD83D\uDCC5',
+  inbox_tray: '\uD83D\uDCE5',
+  outbox_tray: '\uD83D\uDCE4',
+  package: '\uD83D\uDCE6',
+  robot_face: '\uD83E\uDD16',
+  robot: '\uD83E\uDD16',
+  checkered_flag: '\uD83C\uDFC1',
+  triangular_flag_on_post: '\uD83D\uDEA9',
 };
 
 function parseSlackMarkdown(text: string, darkBg: boolean): React.ReactNode[] {
@@ -146,8 +223,6 @@ export function SignalsCaseDetailModal({
   onClose,
 }: SignalsCaseDetailModalProps) {
   const [conversationExpanded, setConversationExpanded] = useState(false);
-  const [learningsExpanded, setLearningsExpanded] = useState(false);
-  const [featureRequestsExpanded, setFeatureRequestsExpanded] = useState(false);
 
   const colorMaps = useMemo(() => displayConfig?.color_maps || {}, [displayConfig]);
 
@@ -182,7 +257,28 @@ export function SignalsCaseDetailModal({
 
   // Collect additional metadata columns (not part of metric signals)
   const metadataEntries = useMemo(() => {
-    return METADATA_COLUMNS.filter((col) => caseRecord[col] != null).map((col) => ({
+    return METADATA_COLUMNS.filter((col) => {
+      const val = caseRecord[col];
+      if (val == null) return false;
+      if (typeof val === 'string') {
+        const t = val.trim().toLowerCase();
+        if (
+          t === '' ||
+          t === 'none' ||
+          t === 'null' ||
+          t === 'nan' ||
+          t === 'undefined' ||
+          t === '{}' ||
+          t === '[]' ||
+          t === '\u2014'
+        )
+          return false;
+      }
+      if (typeof val === 'object' && !Array.isArray(val) && Object.keys(val as object).length === 0)
+        return false;
+      if (Array.isArray(val) && val.length === 0) return false;
+      return true;
+    }).map((col) => ({
       key: col,
       label: col.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()),
       value: caseRecord[col],
@@ -190,38 +286,35 @@ export function SignalsCaseDetailModal({
   }, [caseRecord]);
 
   // Extract key fields from flattened data
-  const slackUrl = caseRecord.Slack_URL as string | null;
   const messages = (caseRecord.Full_Conversation || []) as { role: string; content: string }[];
-  const learnings = (caseRecord['learnings_count__learnings'] || []) as string[];
-  const learningCategories = (caseRecord['learnings_count__categories'] || []) as string[];
-  const featureRequests = (caseRecord['feature_requests_count__requests'] || []) as string[];
-  const suggestedAction = caseRecord['has_actionable_feedback__suggested_action'] as string | null;
-  const hasActionableFeedback = Boolean(
-    caseRecord['has_actionable_feedback__has_actionable_feedback']
-  );
 
-  // Collect top-level status badges
+  // Discover URL fields dynamically (any field ending in _URL or _url)
+  const urlField = useMemo(() => {
+    for (const key of Object.keys(caseRecord)) {
+      if ((key.endsWith('_URL') || key.endsWith('_url')) && typeof caseRecord[key] === 'string') {
+        const val = String(caseRecord[key]).trim();
+        if (val.startsWith('http')) return { key, url: val };
+      }
+    }
+    return null;
+  }, [caseRecord]);
+
+  // Derive status badges from displayConfig.table_badge_columns (not hardcoded keys)
   const badges = useMemo(() => {
+    const badgeColumns = displayConfig?.table_badge_columns;
+    if (!badgeColumns || badgeColumns.length === 0) return [];
+
     const result: { label: string; color: string }[] = [];
-    const tryAdd = (mapKey: string, valueKey: string) => {
-      const val = caseRecord[valueKey];
-      if (val == null || val === '') return;
+    for (const colKey of badgeColumns) {
+      const val = caseRecord[colKey];
+      if (val == null || val === '') continue;
       const strVal = String(val);
-      const map = colorMaps[mapKey];
+      const map = colorMaps[colKey];
       const color = map?.[strVal] || '#7F8C8D';
       result.push({ label: strVal.replace(/_/g, ' '), color });
-    };
-
-    tryAdd('intervention_type__intervention_type', 'intervention_type__intervention_type');
-    tryAdd('sentiment_category__sentiment', 'sentiment_category__sentiment');
-    tryAdd('resolution_status__final_status', 'resolution_status__final_status');
-    tryAdd('priority_level__priority_level', 'priority_level__priority_level');
-    tryAdd('attribution_confidence__confidence', 'attribution_confidence__confidence');
-    tryAdd('acceptance_status__status', 'acceptance_status__status');
-    tryAdd('escalation_type__escalation_type', 'escalation_type__escalation_type');
-
+    }
     return result;
-  }, [caseRecord, colorMaps]);
+  }, [caseRecord, colorMaps, displayConfig]);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
@@ -251,19 +344,30 @@ export function SignalsCaseDetailModal({
         </div>
 
         <div className="p-6">
-          {/* Slack Link */}
-          {slackUrl && (
+          {/* External Link (auto-detected from *_URL / *_url fields) */}
+          {urlField && (
             <div className="mb-4">
               <a
-                href={slackUrl}
+                href={urlField.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 rounded-lg bg-[#4A154B] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#3e1240]"
+                className={cn(
+                  'inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors',
+                  urlField.url.includes('slack.com')
+                    ? 'bg-[#4A154B] hover:bg-[#3e1240]'
+                    : 'bg-primary hover:bg-primary-dark'
+                )}
               >
-                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M5.042 15.165a2.528 2.528 0 0 1-2.52 2.523A2.528 2.528 0 0 1 0 15.165a2.527 2.527 0 0 1 2.522-2.52h2.52v2.52zM6.313 15.165a2.527 2.527 0 0 1 2.521-2.52 2.527 2.527 0 0 1 2.521 2.52v6.313A2.528 2.528 0 0 1 8.834 24a2.528 2.528 0 0 1-2.521-2.522v-6.313zM8.834 5.042a2.528 2.528 0 0 1-2.521-2.52A2.528 2.528 0 0 1 8.834 0a2.528 2.528 0 0 1 2.521 2.522v2.52H8.834zM8.834 6.313a2.528 2.528 0 0 1 2.521 2.521 2.528 2.528 0 0 1-2.521 2.521H2.522A2.528 2.528 0 0 1 0 8.834a2.528 2.528 0 0 1 2.522-2.521h6.312zM18.956 8.834a2.528 2.528 0 0 1 2.522-2.521A2.528 2.528 0 0 1 24 8.834a2.528 2.528 0 0 1-2.522 2.521h-2.522V8.834zM17.688 8.834a2.528 2.528 0 0 1-2.523 2.521 2.527 2.527 0 0 1-2.52-2.521V2.522A2.527 2.527 0 0 1 15.165 0a2.528 2.528 0 0 1 2.523 2.522v6.312zM15.165 18.956a2.528 2.528 0 0 1 2.523 2.522A2.528 2.528 0 0 1 15.165 24a2.527 2.527 0 0 1-2.52-2.522v-2.522h2.52zM15.165 17.688a2.527 2.527 0 0 1-2.52-2.523 2.526 2.526 0 0 1 2.52-2.52h6.313A2.527 2.527 0 0 1 24 15.165a2.528 2.528 0 0 1-2.522 2.523h-6.313z" />
-                </svg>
-                View in Slack
+                {urlField.url.includes('slack.com') ? (
+                  <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M5.042 15.165a2.528 2.528 0 0 1-2.52 2.523A2.528 2.528 0 0 1 0 15.165a2.527 2.527 0 0 1 2.522-2.52h2.52v2.52zM6.313 15.165a2.527 2.527 0 0 1 2.521-2.52 2.527 2.527 0 0 1 2.521 2.52v6.313A2.528 2.528 0 0 1 8.834 24a2.528 2.528 0 0 1-2.521-2.522v-6.313zM8.834 5.042a2.528 2.528 0 0 1-2.521-2.52A2.528 2.528 0 0 1 8.834 0a2.528 2.528 0 0 1 2.521 2.522v2.52H8.834zM8.834 6.313a2.528 2.528 0 0 1 2.521 2.521 2.528 2.528 0 0 1-2.521 2.521H2.522A2.528 2.528 0 0 1 0 8.834a2.528 2.528 0 0 1 2.522-2.521h6.312zM18.956 8.834a2.528 2.528 0 0 1 2.522-2.521A2.528 2.528 0 0 1 24 8.834a2.528 2.528 0 0 1-2.522 2.521h-2.522V8.834zM17.688 8.834a2.528 2.528 0 0 1-2.523 2.521 2.527 2.527 0 0 1-2.52-2.521V2.522A2.527 2.527 0 0 1 15.165 0a2.528 2.528 0 0 1 2.523 2.522v6.312zM15.165 18.956a2.528 2.528 0 0 1 2.523 2.522A2.528 2.528 0 0 1 15.165 24a2.527 2.527 0 0 1-2.52-2.522v-2.522h2.52zM15.165 17.688a2.527 2.527 0 0 1-2.52-2.523 2.526 2.526 0 0 1 2.52-2.52h6.313A2.527 2.527 0 0 1 24 15.165a2.528 2.528 0 0 1-2.522 2.523h-6.313z" />
+                  </svg>
+                ) : (
+                  <ExternalLink className="h-4 w-4" />
+                )}
+                {urlField.url.includes('slack.com')
+                  ? 'View in Slack'
+                  : urlField.key.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
                 <ExternalLink className="h-3 w-3" />
               </a>
             </div>
@@ -321,24 +425,11 @@ export function SignalsCaseDetailModal({
           {/* Metric Sections */}
           <div className="space-y-4">
             {metricSections.map((section) => {
-              const iconMap: Record<string, React.ReactNode> = {
-                intervention_type: <AlertTriangle className="h-4 w-4" />,
-                resolution_status: <CheckCircle className="h-4 w-4" />,
-                escalation_type: <AlertTriangle className="h-4 w-4" />,
-                sentiment_category: <Shield className="h-4 w-4" />,
-                acceptance_status: <XCircle className="h-4 w-4" />,
-                override_type: <XCircle className="h-4 w-4" />,
-                failed_step: <AlertTriangle className="h-4 w-4" />,
-                has_actionable_feedback: <Lightbulb className="h-4 w-4" />,
-                learnings_count: <Lightbulb className="h-4 w-4" />,
-                feature_requests_count: <MessageSquare className="h-4 w-4" />,
-              };
-
               return (
                 <div key={section.metric} className="rounded-lg border border-border p-4">
                   <div className="mb-3 flex items-center gap-2">
                     <div className="text-primary">
-                      {iconMap[section.metric] || <Tag className="h-4 w-4" />}
+                      <Tag className="h-4 w-4" />
                     </div>
                     <h4 className="text-sm font-semibold capitalize text-text-primary">
                       {section.metric.replace(/_/g, ' ')}
@@ -393,74 +484,6 @@ export function SignalsCaseDetailModal({
                   </div>
                 </div>
               ))}
-            </div>
-          )}
-
-          {/* Suggested Action */}
-          {hasActionableFeedback && suggestedAction && (
-            <div className="mt-4 rounded-lg bg-primary/5 p-4">
-              <h4 className="mb-1 text-sm font-semibold text-primary">Suggested Action</h4>
-              <p className="text-sm text-text-primary">{suggestedAction}</p>
-            </div>
-          )}
-
-          {/* Learnings */}
-          {Array.isArray(learnings) && learnings.length > 0 && (
-            <div className="mt-4">
-              <ExpandableSection
-                title="Learnings"
-                icon={<Lightbulb className="h-4 w-4 text-primary" />}
-                expanded={learningsExpanded}
-                onToggle={() => setLearningsExpanded(!learningsExpanded)}
-                count={learnings.length}
-              >
-                <div className="space-y-2 rounded-lg border border-border p-4">
-                  {learnings.map((learning, i) => (
-                    <div key={i} className="flex items-start gap-2">
-                      <span className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
-                        {i + 1}
-                      </span>
-                      <p className="text-sm text-text-primary">{learning}</p>
-                    </div>
-                  ))}
-                  {Array.isArray(learningCategories) && learningCategories.length > 0 && (
-                    <div className="mt-2 flex flex-wrap gap-1 border-t border-border pt-2">
-                      {learningCategories.map((cat, i) => (
-                        <span
-                          key={i}
-                          className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-text-muted"
-                        >
-                          {cat}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </ExpandableSection>
-            </div>
-          )}
-
-          {/* Feature Requests */}
-          {Array.isArray(featureRequests) && featureRequests.length > 0 && (
-            <div className="mt-4">
-              <ExpandableSection
-                title="Feature Requests"
-                icon={<MessageSquare className="h-4 w-4 text-primary" />}
-                expanded={featureRequestsExpanded}
-                onToggle={() => setFeatureRequestsExpanded(!featureRequestsExpanded)}
-                count={featureRequests.length}
-              >
-                <div className="space-y-2 rounded-lg border border-border p-4">
-                  {featureRequests.map((req, i) => (
-                    <div key={i} className="flex items-start gap-2">
-                      <span className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-accent-gold/10 text-xs font-semibold text-accent-gold">
-                        {i + 1}
-                      </span>
-                      <p className="text-sm text-text-primary">{req}</p>
-                    </div>
-                  ))}
-                </div>
-              </ExpandableSection>
             </div>
           )}
 
@@ -753,18 +776,72 @@ function SignalValueDisplay({ value, type }: { value: unknown; type: string }) {
         </div>
       );
     }
+    // Array of primitives (strings, numbers) — render as a clean list
+    return <ParsedListDisplay items={parsed} />;
+  }
+
+  // Value is already an array (not a JSON string)
+  if (Array.isArray(value) && value.length > 0) {
+    return <ParsedListDisplay items={value} />;
   }
 
   // Simple values
   return <span>{formatSimpleValue(value, type)}</span>;
 }
 
-/** Check if a signal value is complex (dict/object/parseable string). */
+/** Strip surrounding escaped quotes from parsed JSON array items. */
+function cleanListItem(item: unknown): string {
+  const s = String(item);
+  // Remove leading/trailing escaped or literal quotes (e.g. "\"text\"" → text)
+  return s.replace(/^["']+|["']+$/g, '').trim();
+}
+
+/** Renders a parsed array of primitives as a clean bulleted list or inline chips. */
+function ParsedListDisplay({ items }: { items: unknown[] }) {
+  const cleaned = items.map(cleanListItem).filter(Boolean);
+  if (cleaned.length === 0) return <span className="text-text-muted">{'\u2014'}</span>;
+
+  // Short items (all under 60 chars) → inline chips
+  if (cleaned.every((s) => s.length < 60)) {
+    return (
+      <div className="mt-1 flex flex-wrap gap-1.5">
+        {cleaned.map((item, i) => (
+          <span
+            key={i}
+            className="inline-flex rounded-md border border-border bg-gray-50 px-2 py-0.5 text-xs text-text-primary"
+          >
+            {item}
+          </span>
+        ))}
+      </div>
+    );
+  }
+
+  // Longer items → numbered list
+  return (
+    <div className="mt-1 space-y-1.5">
+      {cleaned.map((item, i) => (
+        <div key={i} className="flex items-start gap-2">
+          <span className="mt-0.5 flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full bg-gray-100 text-[10px] font-medium text-text-muted">
+            {i + 1}
+          </span>
+          <span className="text-sm leading-relaxed text-text-primary">{item}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** Check if a signal value is complex (dict/object/array/parseable string). */
 function isComplexValue(value: unknown): boolean {
   if (value != null && typeof value === 'object' && !Array.isArray(value)) return true;
+  // Already an array with items
+  if (Array.isArray(value) && value.length > 0) return true;
   if (typeof value === 'string') {
     const trimmed = value.trim();
-    return trimmed.startsWith('{') && trimmed.length > 50;
+    if (trimmed.startsWith('{') && trimmed.length > 50) return true;
+    // JSON array strings
+    if (trimmed.startsWith('[') && trimmed.length > 20) return true;
   }
   return false;
 }

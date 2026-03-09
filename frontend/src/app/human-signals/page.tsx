@@ -205,29 +205,29 @@ function Dashboard() {
 
   return (
     <>
-      {/* Time range */}
-      <div className="mb-5 flex items-center justify-end">
-        <TimeRangeSelector
-          presets={SIGNALS_TIME_PRESETS}
-          selectedPreset={timeRange.preset}
-          startDate={timeRange.startDate}
-          endDate={timeRange.endDate}
-          onPresetChange={(p) => setTimeRangePreset(p as HumanSignalsTimeRangePreset)}
-          onCustomChange={(start, end) =>
-            setTimeRange({ preset: 'custom', startDate: start, endDate: end })
+      {/* Filters + Time range */}
+      <div className="mb-5">
+        <DynamicFilters
+          displayConfig={displayConfig}
+          rightSlot={
+            <TimeRangeSelector
+              presets={SIGNALS_TIME_PRESETS}
+              selectedPreset={timeRange.preset}
+              startDate={timeRange.startDate}
+              endDate={timeRange.endDate}
+              onPresetChange={(p) => setTimeRangePreset(p as HumanSignalsTimeRangePreset)}
+              onCustomChange={(start, end) =>
+                setTimeRange({ preset: 'custom', startDate: start, endDate: end })
+              }
+              size="sm"
+            />
           }
-          size="md"
         />
       </div>
 
       {/* KPI Strip */}
       <div className="mb-5">
         <DynamicKPIStrip kpis={kpis} />
-      </div>
-
-      {/* Filters */}
-      <div className="mb-5">
-        <DynamicFilters displayConfig={displayConfig} />
       </div>
 
       {/* Charts */}
@@ -280,7 +280,7 @@ export default function HumanSignalsPage() {
     getStoreStatus()
       .then((status) => {
         if (cancelled) return;
-        const ds = status.datasets?.human_signals_raw;
+        const ds = status.datasets?.human_signals_data;
         if (ds) {
           setSyncStatus(ds);
         }

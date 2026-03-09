@@ -121,9 +121,10 @@ function DropdownSelect({
 
 interface DynamicFiltersProps {
   displayConfig: SignalsDisplayConfig;
+  rightSlot?: React.ReactNode;
 }
 
-export function DynamicFilters({ displayConfig }: DynamicFiltersProps) {
+export function DynamicFilters({ displayConfig, rightSlot }: DynamicFiltersProps) {
   const {
     selectedSourceName,
     selectedSourceComponent,
@@ -228,6 +229,11 @@ export function DynamicFilters({ displayConfig }: DynamicFiltersProps) {
               <RotateCcw className="h-3 w-3" />
               Clear
             </button>
+          )}
+          {rightSlot && (
+            <div onClick={(e) => e.stopPropagation()} className="flex items-center">
+              {rightSlot}
+            </div>
           )}
           <ChevronDown
             className={`h-4 w-4 text-text-muted transition-transform ${isExpanded ? 'rotate-180' : ''}`}

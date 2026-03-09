@@ -30,7 +30,7 @@ graph TB
         T_MON[monitoring_data<br/>JOIN view]
         T_FB_D[human_signals_dataset]
         T_FB_R[human_signals_results]
-        T_FB_RAW[human_signals_raw<br/>JOIN view]
+        T_FB_RAW[human_signals_data<br/>JOIN view]
         T_FB_CASES[human_signals_cases<br/>derived]
         T_EVAL_D[eval_dataset]
         T_EVAL_R[eval_results]
@@ -176,7 +176,7 @@ The scheduler runs until the application shuts down (cancelled via lifespan clea
 7. **JOIN view creation**: On full sync, a DuckDB view is created joining the two sub-tables
 8. **Metadata compute**: Row count, column info, filter values, time range, and summary stats are computed and persisted to `_store_metadata`
 9. **Watermark update**: MAX value of the `incremental_column` is stored per sub-table
-10. **Derived tables** (human signals only): `human_signals_cases` and `human_signals_metric_schema` are rebuilt from `human_signals_raw`
+10. **Derived tables** (human signals only): `human_signals_cases` and `human_signals_metric_schema` are rebuilt from `human_signals_data`
 
 ### DuckDB Tables
 
@@ -187,8 +187,8 @@ The scheduler runs until the application shuts down (cancelled via lifespan clea
 | `monitoring_data` | JOIN view | Auto-generated | `monitoring_results JOIN monitoring_dataset` |
 | `human_signals_dataset` | Internal table | `human_signals_db.yaml` `dataset_query` | Human signals dataset records |
 | `human_signals_results` | Internal table | `human_signals_db.yaml` `results_query` | Human signals metric results |
-| `human_signals_raw` | JOIN view | Auto-generated | `human_signals_results JOIN human_signals_dataset` |
-| `human_signals_cases` | Derived table | Built from `human_signals_raw` | Aggregated cases with flattened signals |
+| `human_signals_data` | JOIN view | Auto-generated | `human_signals_results JOIN human_signals_dataset` |
+| `human_signals_cases` | Derived table | Built from `human_signals_data` | Aggregated cases with flattened signals |
 | `eval_dataset` | Internal table | `eval_db.yaml` `dataset_query` | Evaluation dataset records |
 | `eval_results` | Internal table | `eval_db.yaml` `results_query` | Evaluation metric results |
 | `eval_data` | JOIN view | Auto-generated | `eval_results JOIN eval_dataset` |
@@ -201,8 +201,8 @@ The scheduler runs until the application shuts down (cancelled via lifespan clea
 
 Human signals data goes through a two-stage sync:
 
-1. **Stage 1**: Raw rows are normalized and stored via the `human_signals_dataset` + `human_signals_results` split, joined as `human_signals_raw`
-2. **Stage 2**: `human_signals_service.py` functions (`build_metric_schema()`, `aggregate_cases()`) run against `human_signals_raw` to produce:
+1. **Stage 1**: Raw rows are normalized and stored via the `human_signals_dataset` + `human_signals_results` split, joined as `human_signals_data`
+2. **Stage 2**: `human_signals_service.py` functions (`build_metric_schema()`, `aggregate_cases()`) run against `human_signals_data` to produce:
     - `human_signals_cases` table (pre-aggregated, flattened signals)
     - `human_signals_metric_schema` JSON blob in `_store_metadata`
 
@@ -252,7 +252,7 @@ Staging and write methods are synchronous and designed to be called via `anyio.t
 | `_sync_split(config, table, store, force_full)` | Orchestrate split sync with incremental/full decision |
 | `_sync_internal_table(config, table, store, append_mode)` | Sync one sub-table (full or incremental) |
 | `_build_join_view(store, view, dataset_tbl, results_tbl)` | Create DuckDB JOIN view from two sub-tables |
-| `_build_human_signals_derived_tables(store, sync_id)` | Build `human_signals_cases` + metric schema from `human_signals_raw` |
+| `_build_human_signals_derived_tables(store, sync_id)` | Build `human_signals_cases` + metric schema from `human_signals_data` |
 | `_parallel_copy_read(...)` | N parallel COPY reads partitioned by column range |
 | `_chunked_read(...)` | Async generator yielding DataFrame chunks from cursor |
 

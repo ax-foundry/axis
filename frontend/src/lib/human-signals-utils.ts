@@ -7,6 +7,21 @@ import type {
 } from '@/types';
 
 // ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+/** Handle string booleans from DuckDB (which coerces Python True/False to "True"/"False"). */
+function isTruthySignal(value: unknown): boolean {
+  if (value === null || value === undefined) return false;
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'string') {
+    const lower = value.toLowerCase().trim();
+    return lower === 'true' || lower === '1';
+  }
+  return Boolean(value);
+}
+
+// ---------------------------------------------------------------------------
 // Numeric formatting helpers
 // ---------------------------------------------------------------------------
 
@@ -130,7 +145,8 @@ function buildWeeklyNumericSparkline(
 function buildWeeklySparkline(
   cases: SignalsCaseRecord[],
   fieldKey: string,
-  format?: string
+  format?: string,
+  matchValue?: string
 ): { date: string; value: number }[] {
   const weekly = new Map<string, { total: number; trueCount: number; sum: number }>();
 
@@ -145,7 +161,12 @@ function buildWeeklySparkline(
     const weekKey = ws.toISOString().split('T')[0];
     const bucket = weekly.get(weekKey) ?? { total: 0, trueCount: 0, sum: 0 };
     bucket.total++;
-    if (Boolean(c[fieldKey])) bucket.trueCount++;
+    if (
+      matchValue
+        ? String(c[fieldKey] ?? '').toLowerCase() === matchValue.toLowerCase()
+        : isTruthySignal(c[fieldKey])
+    )
+      bucket.trueCount++;
     bucket.sum += Number(c[fieldKey]) || 0;
     weekly.set(weekKey, bucket);
   });
@@ -220,12 +241,16 @@ export function computeKPIs(
       };
     }
 
-    // Metric signal KPIs (boolean rate)
+    // Metric signal KPIs (boolean rate or match_value rate)
     if (kpi.metric && kpi.signal) {
       const fieldKey = `${kpi.metric}__${kpi.signal}`;
-      const trueCount = cases.filter((c) => Boolean(c[fieldKey])).length;
+      const trueCount = kpi.match_value
+        ? cases.filter(
+            (c) => String(c[fieldKey] ?? '').toLowerCase() === kpi.match_value!.toLowerCase()
+          ).length
+        : cases.filter((c) => isTruthySignal(c[fieldKey])).length;
       const rate = total > 0 ? (trueCount / total) * 100 : 0;
-      const sparkline = buildWeeklySparkline(cases, fieldKey, kpi.format);
+      const sparkline = buildWeeklySparkline(cases, fieldKey, kpi.format, kpi.match_value);
       const metricName = kpi.metric.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 
       if (kpi.format === 'percent') {
@@ -338,7 +363,7 @@ export function computeSignalTrend(
 
     signals.forEach(({ metric, signal, label }) => {
       const key = `${metric}__${signal}`;
-      const count = weekCases.filter((c) => Boolean(c[key])).length;
+      const count = weekCases.filter((c) => isTruthySignal(c[key])).length;
       values[label] = total > 0 ? (count / total) * 100 : 0;
     });
 
@@ -446,7 +471,7 @@ export function computeBooleanStat(
   signal: string
 ): { trueCount: number; total: number; rate: number } {
   const key = `${metric}__${signal}`;
-  const trueCount = cases.filter((c) => Boolean(c[key])).length;
+  const trueCount = cases.filter((c) => isTruthySignal(c[key])).length;
   const total = cases.length;
   return {
     trueCount,

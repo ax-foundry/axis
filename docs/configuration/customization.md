@@ -280,46 +280,61 @@ The `signals_metrics.yaml` file controls how the Human Signals V2 dashboard rend
 
 ```yaml title="custom/config/signals_metrics.yaml"
 signals_metrics:
-  # KPI strip at the top of the dashboard
+  # KPI strip — shown below filters
   kpi_strip:
-    - metric: intervention_type
-      signal: is_stp
-      label: "STP Rate"
+    - metric: "Outcome Mode"
+      signal: analysis_mode
+      match_value: "success"    # count cases where signal equals this value
+      label: "AI Success Rate"
       format: percent
-      icon: zap
+      icon: trophy
       highlight: true
+    - metric: "Resolution Status"
+      signal: is_resolved
+      label: "Resolution Rate"
+      format: percent
+      icon: check-circle
     - aggregate: total_cases
       label: "Total Cases"
       icon: database
 
-  # Chart sections with layout control
+  # Chart sections with layout control (collapsible, start collapsed by default)
   chart_sections:
-    - title: "Outcome Distribution"
-      layout: full              # full | grid_2 | grid_3
+    - title: "AI Performance"
+      layout: grid_2              # full | grid_2 | grid_3
       charts:
-        - metric: resolution_status
-          signal: final_status
-          type: stacked_bar     # bar | donut | horizontal_bar | stacked_bar | ranked_list | single_stat
-          title: "Resolution Status"
+        - metric: "Success Driver"
+          signal: success_driver
+          type: bar               # bar | donut | horizontal_bar | stacked_bar | ranked_list | text_list | single_stat
+          title: "What AI Did Well"
+        - metric: "Outcome Mode"
+          signal: analysis_mode
+          type: stacked_bar
+          title: "Outcome Analysis"
 
-    - title: "Category Analysis"
+    - title: "Case Outcomes"
       layout: grid_2
       charts:
-        - metric: escalation_type
-          signal: escalation_type
-          type: donut
-          title: "Escalation Breakdown"
-        - metric: failed_step
-          signal: failed_step
-          type: horizontal_bar
-          title: "Top Failure Modes"
+        - metric: "Resolution Status"
+          signal: final_status
+          type: stacked_bar
+          title: "Resolution Status"
+        - metric: "Acceptance Status"
+          signal: status
+          type: stacked_bar
+          title: "Recommendation Acceptance"
 
-  # Map signal values to specific colors
+  # Map signal values to specific colors (keyed as <metric>__<signal>)
   color_maps:
-    resolution_status__final_status:
-      approved: "#8B9F4F"
-      declined: "#E74C3C"
-      blocked: "#C0392B"
+    "Resolution Status__final_status":
+      approved: "#22C55E"
+      declined: "#EF4444"
+      pending: "#6B7280"
+
+  # Which table columns show colored badges (omit to badge all mapped columns)
+  table_badge_columns:
+    - "Acceptance Status__status"
+    - "Resolution Status__final_status"
 
   # Source filter dropdowns
   source_filters:
@@ -335,10 +350,12 @@ signals_metrics:
 |-------|-------------|
 | `metric` | Metric name from data (paired with `signal`) |
 | `signal` | Signal key within the metric |
+| `match_value` | Count cases where signal equals this string value (instead of boolean truthiness) |
 | `aggregate` | Built-in aggregate: `avg_message_count`, `total_cases` |
+| `aggregation` | Numeric aggregation: `mean`, `median`, `sum`, `min`, `max`, `count`, `p95` |
 | `label` | Display label |
-| `format` | `percent` or `number` |
-| `icon` | Lucide icon name (e.g., `zap`, `target`, `database`) |
+| `format` | `percent`, `number`, `duration`, or `compact` |
+| `icon` | Lucide icon name (e.g., `trophy`, `target`, `database`) |
 | `highlight` | `true` to visually emphasize this KPI |
 
 ### Chart Types
@@ -346,11 +363,18 @@ signals_metrics:
 | Type | Best for |
 |------|----------|
 | `bar` | Comparing counts across categories |
-| `stacked_bar` | Showing composition over categories |
+| `stacked_bar` | Showing proportional composition as a single horizontal bar |
 | `horizontal_bar` | Ranked lists with long labels |
-| `donut` | Proportional breakdowns |
-| `ranked_list` | Top-N lists (e.g., feature requests) |
+| `donut` | Proportional breakdowns (best with 3–5 balanced segments) |
+| `text_list` | Long-form unique items shown as a numbered list |
+| `ranked_list` | Top-N lists counted by frequency |
 | `single_stat` | Single boolean/count metric |
+
+### Table Badge Columns
+
+The `table_badge_columns` list controls which columns in the cases table render colored
+badges using the `color_maps`. Omit this field to apply badges to all columns that have
+a color map. Specify an explicit list to limit badges to only the chosen columns.
 
 ---
 

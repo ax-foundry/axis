@@ -67,10 +67,10 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         # Load persisted metadata from DuckDB (fast, populates hot cache)
         duckdb_store.load_metadata_from_db()
 
-        # Always rebuild human_signals_cases from human_signals_raw on startup
+        # Always rebuild human_signals_cases from human_signals_data on startup
         # to pick up any changes to aggregation logic in human_signals_service.py.
-        raw_id = duckdb_store.get_kv("human_signals_raw_sync_id")
-        if raw_id and duckdb_store.has_table("human_signals_raw"):
+        raw_id = duckdb_store.get_kv("human_signals_data_sync_id")
+        if raw_id and duckdb_store.has_table("human_signals_data"):
             logger.info("Rebuilding human_signals_cases derived table on startup")
             task: asyncio.Task[object] = asyncio.create_task(
                 _build_human_signals_derived_tables(duckdb_store, raw_id)

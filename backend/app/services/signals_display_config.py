@@ -165,14 +165,10 @@ def _auto_chart_sections(metrics: dict[str, Any]) -> list[dict[str, Any]]:
     """Auto-generate chart sections from discovered metrics."""
     sections: list[dict[str, Any]] = []
 
-    # Signals that should appear in the Insights section rather than as classification charts.
-    # "text_list" = long-form unique items shown as a numbered list (no frequency counting).
-    # "ranked_list" = short categorical items counted by frequency.
-    insight_text_array_signals = {"requests", "learnings"}
-    insight_category_signals = {"categories"}
-    insight_text_string_signals = {"suggested_action"}
-
-    # Find the main classification string signals for bar/donut charts
+    # Auto-classify signals by type heuristics (no hardcoded signal names).
+    # - String signals with 2-20 unique values → bar chart (classification)
+    # - String signals with >20 unique values → text_list (long-form)
+    # - Array signals → ranked_list (count items by frequency)
     classification_charts: list[dict[str, Any]] = []
     insight_charts: list[dict[str, Any]] = []
 
@@ -182,18 +178,9 @@ def _auto_chart_sections(metrics: dict[str, Any]) -> list[dict[str, Any]]:
 
         for signal, sig_type in signal_types.items():
             if sig_type == "string" and signal in values:
-                if signal in insight_text_string_signals:
-                    title = signal.replace("_", " ").title()
-                    insight_charts.append(
-                        {
-                            "metric": metric_name,
-                            "signal": signal,
-                            "type": "text_list",
-                            "title": f"Top {title}s",
-                        }
-                    )
-                elif 2 <= len(values[signal]) <= 20:
-                    title = signal.replace("_", " ").title()
+                unique_count = len(values[signal])
+                title = signal.replace("_", " ").title()
+                if 2 <= unique_count <= 20:
                     classification_charts.append(
                         {
                             "metric": metric_name,
@@ -202,17 +189,16 @@ def _auto_chart_sections(metrics: dict[str, Any]) -> list[dict[str, Any]]:
                             "title": title,
                         }
                     )
-            elif sig_type == "array" and signal in insight_text_array_signals:
-                title = signal.replace("_", " ").title()
-                insight_charts.append(
-                    {
-                        "metric": metric_name,
-                        "signal": signal,
-                        "type": "text_list",
-                        "title": f"Top {title}",
-                    }
-                )
-            elif sig_type == "array" and signal in insight_category_signals:
+                elif unique_count > 20:
+                    insight_charts.append(
+                        {
+                            "metric": metric_name,
+                            "signal": signal,
+                            "type": "text_list",
+                            "title": f"Top {title}s",
+                        }
+                    )
+            elif sig_type == "array":
                 title = signal.replace("_", " ").title()
                 insight_charts.append(
                     {
@@ -223,53 +209,39 @@ def _auto_chart_sections(metrics: dict[str, Any]) -> list[dict[str, Any]]:
                     }
                 )
 
-    # Group classification charts into sections
+    # Group classification charts into sections (generic labels)
     if classification_charts:
-        # First major chart gets full width as stacked bar
+        # First chart gets full width as stacked bar
         if len(classification_charts) >= 1:
-            outcome_chart = {**classification_charts[0], "type": "stacked_bar"}
+            first_chart = {**classification_charts[0], "type": "stacked_bar"}
             sections.append(
                 {
-                    "title": "Outcome Distribution",
+                    "title": "Classification Overview",
                     "layout": "full",
-                    "charts": [outcome_chart],
+                    "charts": [first_chart],
                 }
             )
 
         # Remaining in pairs
         remaining = classification_charts[1:]
-        if len(remaining) >= 2:
+        for i in range(0, len(remaining), 2):
+            chunk = remaining[i : i + 2]
+            idx = i // 2
+            title = "Signal Breakdown" if idx == 0 else f"Additional Signals {idx + 1}"
             sections.append(
                 {
-                    "title": "Root Cause Analysis",
-                    "layout": "grid_2",
-                    "charts": remaining[:2],
-                }
-            )
-        elif len(remaining) == 1:
-            sections.append(
-                {
-                    "title": "Breakdown",
-                    "layout": "full",
-                    "charts": remaining,
+                    "title": title,
+                    "layout": "grid_2" if len(chunk) == 2 else "full",
+                    "charts": chunk,
                 }
             )
 
-        if len(remaining) > 2:
-            sections.append(
-                {
-                    "title": "Additional Metrics",
-                    "layout": "grid_2",
-                    "charts": remaining[2:4],
-                }
-            )
-
-    # Insight charts (learnings, requests, actions, categories) — max 2 columns
+    # Text / array insight charts
     if insight_charts:
         n = len(insight_charts)
         sections.append(
             {
-                "title": "Insights",
+                "title": "Text Insights",
                 "layout": "full" if n == 1 else "grid_2",
                 "charts": insight_charts,
             }
@@ -401,7 +373,7 @@ def _merge_with_defaults(
     defaults = _generate_defaults(schema, visible_kpis=visible_kpis)
 
     # Override each top-level key if provided
-    for key in ["kpi_strip", "chart_sections", "filters", "table_columns"]:
+    for key in ["kpi_strip", "chart_sections", "filters", "table_columns", "table_badge_columns"]:
         if key in overrides:
             defaults[key] = overrides[key]
 

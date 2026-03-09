@@ -168,8 +168,8 @@ Common Ruff rules you may encounter:
 | **Components** | PascalCase | `KPICard.tsx`, `CompareContent.tsx`, `SignalsTrendChart.tsx` |
 | **Pages** | `page.tsx` in directory | `app/monitoring/page.tsx` |
 | **Stores** | kebab-case + `-store` suffix | `ui-store.ts`, `monitoring-store.ts` |
-| **Hooks** | camelCase with `use` prefix | `usePlayback.ts`, `useSignalsUpload.ts` |
-| **Utilities** | kebab-case | `utils.ts`, `signals-utils.ts`, `executive-summary-utils.ts` |
+| **Hooks** | camelCase with `use` prefix | `usePlayback.ts`, `useHumanSignalsUpload.ts` |
+| **Utilities** | kebab-case | `utils.ts`, `human-signals-utils.ts`, `executive-summary-utils.ts` |
 | **Types** | All in `types/index.ts` | Single source of truth |
 | **Barrel exports** | `index.ts` | One per component folder and in `stores/` |
 

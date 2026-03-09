@@ -66,8 +66,10 @@ export function useUploadFile() {
 
 | Hook | Type | Wraps | Description |
 |------|------|-------|-------------|
-| `useUploadHumanSignalsFile()` | Mutation | `uploadHumanSignalsFile` | Upload human signals CSV |
-| `useLoadHumanSignalsExample()` | Mutation | `loadHumanSignalsExampleDataset` | Load example human signals data |
+| `useHumanSignalsUpload()` | Mutation | `uploadHumanSignalsFile` | Upload human signals CSV |
+| `useHumanSignalsExampleDataset()` | Mutation | `loadHumanSignalsExampleDataset` | Load example human signals data |
+| `useHumanSignalsDBConfig()` | Query | `getHumanSignalsDBConfig` | Fetch DB config (auto_connect/auto_load flags) |
+| `useHumanSignalsAutoImport()` | Mutation | `autoImportHumanSignalsFromDB` | Trigger auto-import from configured database |
 
 ## Memory Hooks
 
