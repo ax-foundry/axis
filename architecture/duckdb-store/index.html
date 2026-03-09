@@ -3597,7 +3597,7 @@
         T_MON[monitoring_data&lt;br/&gt;JOIN view]
         T_FB_D[human_signals_dataset]
         T_FB_R[human_signals_results]
-        T_FB_RAW[human_signals_raw&lt;br/&gt;JOIN view]
+        T_FB_RAW[human_signals_data&lt;br/&gt;JOIN view]
         T_FB_CASES[human_signals_cases&lt;br/&gt;derived]
         T_EVAL_D[eval_dataset]
         T_EVAL_R[eval_results]
@@ -3724,7 +3724,7 @@
 <li><strong>JOIN view creation</strong>: On full sync, a DuckDB view is created joining the two sub-tables</li>
 <li><strong>Metadata compute</strong>: Row count, column info, filter values, time range, and summary stats are computed and persisted to <code>_store_metadata</code></li>
 <li><strong>Watermark update</strong>: MAX value of the <code>incremental_column</code> is stored per sub-table</li>
-<li><strong>Derived tables</strong> (human signals only): <code>human_signals_cases</code> and <code>human_signals_metric_schema</code> are rebuilt from <code>human_signals_raw</code></li>
+<li><strong>Derived tables</strong> (human signals only): <code>human_signals_cases</code> and <code>human_signals_metric_schema</code> are rebuilt from <code>human_signals_data</code></li>
 </ol>
 <h3 id="duckdb-tables">DuckDB Tables<a class="headerlink" href="#duckdb-tables" title="Permanent link">&para;</a></h3>
 <table>
@@ -3768,7 +3768,7 @@
 <td>Human signals metric results</td>
 </tr>
 <tr>
-<td><code>human_signals_raw</code></td>
+<td><code>human_signals_data</code></td>
 <td>JOIN view</td>
 <td>Auto-generated</td>
 <td><code>human_signals_results JOIN human_signals_dataset</code></td>
@@ -3776,7 +3776,7 @@
 <tr>
 <td><code>human_signals_cases</code></td>
 <td>Derived table</td>
-<td>Built from <code>human_signals_raw</code></td>
+<td>Built from <code>human_signals_data</code></td>
 <td>Aggregated cases with flattened signals</td>
 </tr>
 <tr>
@@ -3812,8 +3812,8 @@
 <h3 id="human-signals-derived-tables">Human Signals Derived Tables<a class="headerlink" href="#human-signals-derived-tables" title="Permanent link">&para;</a></h3>
 <p>Human signals data goes through a two-stage sync:</p>
 <ol>
-<li><strong>Stage 1</strong>: Raw rows are normalized and stored via the <code>human_signals_dataset</code> + <code>human_signals_results</code> split, joined as <code>human_signals_raw</code></li>
-<li><strong>Stage 2</strong>: <code>human_signals_service.py</code> functions (<code>build_metric_schema()</code>, <code>aggregate_cases()</code>) run against <code>human_signals_raw</code> to produce:<ul>
+<li><strong>Stage 1</strong>: Raw rows are normalized and stored via the <code>human_signals_dataset</code> + <code>human_signals_results</code> split, joined as <code>human_signals_data</code></li>
+<li><strong>Stage 2</strong>: <code>human_signals_service.py</code> functions (<code>build_metric_schema()</code>, <code>aggregate_cases()</code>) run against <code>human_signals_data</code> to produce:<ul>
 <li><code>human_signals_cases</code> table (pre-aggregated, flattened signals)</li>
 <li><code>human_signals_metric_schema</code> JSON blob in <code>_store_metadata</code></li>
 </ul>
@@ -3959,7 +3959,7 @@
 </tr>
 <tr>
 <td><code>_build_human_signals_derived_tables(store, sync_id)</code></td>
-<td>Build <code>human_signals_cases</code> + metric schema from <code>human_signals_raw</code></td>
+<td>Build <code>human_signals_cases</code> + metric schema from <code>human_signals_data</code></td>
 </tr>
 <tr>
 <td><code>_parallel_copy_read(...)</code></td>

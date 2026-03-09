@@ -3707,12 +3707,12 @@
 <tr>
 <td><code>cases</code></td>
 <td><code>SignalsCaseRecord[]</code></td>
-<td>Case records</td>
+<td>Flattened case records</td>
 </tr>
 <tr>
 <td><code>format</code></td>
-<td><code>SignalsDataFormat</code></td>
-<td><code>'hitl_feedback_v2'</code></td>
+<td><code>HumanSignalsDataFormat</code></td>
+<td><code>'hitl_feedback'</code></td>
 </tr>
 <tr>
 <td><code>metricSchema</code></td>
@@ -3727,17 +3727,57 @@
 <tr>
 <td><code>selectedSourceName</code></td>
 <td><code>string</code></td>
-<td>Source filter</td>
+<td>Source name filter</td>
 </tr>
 <tr>
-<td><code>selectedMetricFilters</code></td>
-<td><code>Record&lt;string, string&gt;</code></td>
-<td>Per-metric signal filters</td>
+<td><code>selectedSourceComponent</code></td>
+<td><code>string</code></td>
+<td>Source component filter</td>
+</tr>
+<tr>
+<td><code>selectedEnvironment</code></td>
+<td><code>string</code></td>
+<td>Environment filter</td>
+</tr>
+<tr>
+<td><code>metricFilters</code></td>
+<td><code>Record&lt;string, string[]&gt;</code></td>
+<td>Per-metric signal filters (keyed by <code>metric__signal</code>)</td>
 </tr>
 <tr>
 <td><code>timeRange</code></td>
-<td><code>SignalsTimeRange</code></td>
+<td><code>HumanSignalsTimeRange</code></td>
 <td>Time range with presets</td>
+</tr>
+<tr>
+<td><code>datasetReady</code></td>
+<td><code>boolean</code></td>
+<td>Whether DuckDB dataset is available</td>
+</tr>
+<tr>
+<td><code>selectedCaseId</code></td>
+<td><code>string \| null</code></td>
+<td>Case selected for detail modal</td>
+</tr>
+<tr>
+<td><code>caseDetailModalOpen</code></td>
+<td><code>boolean</code></td>
+<td>Detail modal open state</td>
+</tr>
+<tr>
+<td><code>selectedSignalKpi</code></td>
+<td><code>string \| null</code></td>
+<td>KPI selected for expanded trend</td>
+</tr>
+<tr>
+<td><code>sortColumn</code></td>
+<td><code>string \| null</code></td>
+<td>Active table sort column</td>
+</tr>
+<tr>
+<td><code>visibleColumns</code></td>
+<td><code>string[] \| null</code></td>
+<td>Visible table columns (null = defaults)</td>
 </tr>
 </tbody>
 </table>

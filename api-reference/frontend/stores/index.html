@@ -3526,7 +3526,7 @@
 </table>
 <hr />
 <h2 id="usehumansignalsstore">useHumanSignalsStore<a class="headerlink" href="#usehumansignalsstore" title="Permanent link">&para;</a></h2>
-<p>Manages Human Signals data with source and metric filtering.</p>
+<p>Manages Human Signals (HITL) data with source and metric filtering. Uses <code>persist</code> middleware.</p>
 <p><strong>Key State:</strong></p>
 <table>
 <thead>
@@ -3538,34 +3538,74 @@
 </thead>
 <tbody>
 <tr>
-<td><code>data</code></td>
-<td><code>Record&lt;string, unknown&gt;[]</code></td>
-<td>Flattened signal records</td>
+<td><code>cases</code></td>
+<td><code>SignalsCaseRecord[]</code></td>
+<td>Flattened case records</td>
 </tr>
 <tr>
 <td><code>metricSchema</code></td>
 <td><code>SignalsMetricSchema \| null</code></td>
-<td>Schema describing available metrics</td>
+<td>Auto-discovered metric schema</td>
 </tr>
 <tr>
 <td><code>displayConfig</code></td>
 <td><code>SignalsDisplayConfig \| null</code></td>
-<td>Display overrides from YAML</td>
+<td>YAML-driven display layout</td>
 </tr>
 <tr>
-<td><code>selectedSource</code></td>
-<td><code>string \| null</code></td>
-<td>Source filter</td>
+<td><code>selectedSourceName</code></td>
+<td><code>string</code></td>
+<td>Source name filter</td>
 </tr>
 <tr>
-<td><code>selectedMetric</code></td>
-<td><code>string \| null</code></td>
-<td>Metric filter</td>
+<td><code>selectedSourceComponent</code></td>
+<td><code>string</code></td>
+<td>Source component filter</td>
+</tr>
+<tr>
+<td><code>selectedEnvironment</code></td>
+<td><code>string</code></td>
+<td>Environment filter</td>
+</tr>
+<tr>
+<td><code>metricFilters</code></td>
+<td><code>Record&lt;string, string[]&gt;</code></td>
+<td>Per-metric signal filters (keyed by <code>metric__signal</code>)</td>
 </tr>
 <tr>
 <td><code>timeRange</code></td>
-<td><code>SignalsTimeRange</code></td>
-<td>Time range filter</td>
+<td><code>HumanSignalsTimeRange</code></td>
+<td>Time range with presets (<code>7d</code>, <code>30d</code>, <code>90d</code>, <code>6m</code>, <code>1y</code>, <code>custom</code>)</td>
+</tr>
+<tr>
+<td><code>datasetReady</code></td>
+<td><code>boolean</code></td>
+<td>Whether DuckDB dataset is available</td>
+</tr>
+<tr>
+<td><code>selectedCaseId</code></td>
+<td><code>string \| null</code></td>
+<td>Case selected for detail modal</td>
+</tr>
+<tr>
+<td><code>caseDetailModalOpen</code></td>
+<td><code>boolean</code></td>
+<td>Whether case detail modal is open</td>
+</tr>
+<tr>
+<td><code>selectedSignalKpi</code></td>
+<td><code>string \| null</code></td>
+<td>KPI selected for expanded trend</td>
+</tr>
+<tr>
+<td><code>sortColumn</code></td>
+<td><code>string \| null</code></td>
+<td>Active sort column in case table</td>
+</tr>
+<tr>
+<td><code>visibleColumns</code></td>
+<td><code>string[] \| null</code></td>
+<td>Visible table columns (null = defaults)</td>
 </tr>
 </tbody>
 </table>

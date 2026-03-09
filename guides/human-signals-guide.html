@@ -546,64 +546,11 @@
           <h3 style="font-size:1rem;">Human Signals</h3>
           <p>Human-in-the-loop insights and operational metrics</p>
         </div>
-        <div style="margin-left:auto;">
-          <div class="sim-filter-btn active" style="font-size:0.75rem;">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px;"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/></svg>
-            Last 30 days
-          </div>
-        </div>
         <!-- Callout 1 -->
         <div style="position:absolute;top:-4px;left:40px;"><span class="callout-num">1</span></div>
-        <!-- Callout 2 -->
-        <div style="position:absolute;top:-4px;right:-4px;"><span class="callout-num">2</span></div>
       </div>
 
-      <!-- KPI Strip -->
-      <div class="sim-kpi-row five" style="position:relative;">
-        <div class="sim-kpi clickable selected">
-          <div class="sim-kpi-icon">
-            <div class="sim-kpi-icon-box highlight"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
-            <span class="sim-kpi-value" style="font-size:1.2rem;">247</span>
-          </div>
-          <svg class="sim-sparkline" width="60" height="18" viewBox="0 0 60 18"><polyline points="0,14 10,12 20,10 30,13 40,8 50,6 60,9" fill="none" stroke="#4f46e5" stroke-width="1.5" opacity="0.5"/></svg>
-          <div class="sim-kpi-label">Total Cases</div>
-        </div>
-        <div class="sim-kpi clickable">
-          <div class="sim-kpi-icon">
-            <div class="sim-kpi-icon-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg></div>
-            <span class="sim-kpi-value" style="font-size:1.2rem;">72.5%</span>
-          </div>
-          <svg class="sim-sparkline" width="60" height="18" viewBox="0 0 60 18"><polyline points="0,10 10,8 20,12 30,7 40,9 50,5 60,6" fill="none" stroke="#4f46e5" stroke-width="1.5" opacity="0.5"/></svg>
-          <div class="sim-kpi-label">Intervention Rate</div>
-        </div>
-        <div class="sim-kpi clickable">
-          <div class="sim-kpi-icon">
-            <div class="sim-kpi-icon-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg></div>
-            <span class="sim-kpi-value" style="font-size:1.2rem;">68.0%</span>
-          </div>
-          <svg class="sim-sparkline" width="60" height="18" viewBox="0 0 60 18"><polyline points="0,12 10,10 20,14 30,8 40,11 50,7 60,5" fill="none" stroke="#4f46e5" stroke-width="1.5" opacity="0.5"/></svg>
-          <div class="sim-kpi-label">Resolved Rate</div>
-        </div>
-        <div class="sim-kpi clickable">
-          <div class="sim-kpi-icon">
-            <div class="sim-kpi-icon-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
-            <span class="sim-kpi-value" style="font-size:1.2rem;">41.3%</span>
-          </div>
-          <svg class="sim-sparkline" width="60" height="18" viewBox="0 0 60 18"><polyline points="0,8 10,10 20,6 30,12 40,9 50,11 60,7" fill="none" stroke="#4f46e5" stroke-width="1.5" opacity="0.5"/></svg>
-          <div class="sim-kpi-label">Escalation Rate</div>
-        </div>
-        <div class="sim-kpi">
-          <div class="sim-kpi-icon">
-            <div class="sim-kpi-icon-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
-            <span class="sim-kpi-value" style="font-size:1.2rem;">8.4</span>
-          </div>
-          <div class="sim-kpi-label">Avg Messages</div>
-        </div>
-        <!-- Callout 3 -->
-        <div style="position:absolute;top:-8px;left:50%;transform:translateX(-50%);"><span class="callout-num">3</span></div>
-      </div>
-
-      <!-- Filters -->
+      <!-- Filters + Time range (inline) -->
       <div style="position:relative;margin-bottom:16px;">
         <div style="border:1px solid var(--gray-200);border-radius:8px;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;">
           <div style="display:flex;align-items:center;gap:8px;">
@@ -613,11 +560,60 @@
           </div>
           <div style="display:flex;align-items:center;gap:8px;">
             <span style="font-size:0.75rem;color:var(--gray-400);cursor:pointer;">Clear</span>
+            <div class="sim-filter-btn active" style="padding:3px 10px;font-size:0.7rem;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px;"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/></svg>
+              Last 30 days
+            </div>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;color:var(--gray-400);"><polyline points="6 9 12 15 18 9"/></svg>
           </div>
         </div>
-        <!-- Callout 4 -->
-        <div style="position:absolute;top:-8px;right:60px;"><span class="callout-num">4</span></div>
+        <!-- Callout 2 -->
+        <div style="position:absolute;top:-8px;right:60px;"><span class="callout-num">2</span></div>
+      </div>
+
+      <!-- KPI Strip -->
+      <div class="sim-kpi-row five" style="position:relative;">
+        <div class="sim-kpi clickable selected">
+          <div class="sim-kpi-icon">
+            <div class="sim-kpi-icon-box highlight"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/><circle cx="12" cy="12" r="10"/></svg></div>
+            <span class="sim-kpi-value" style="font-size:1.2rem;">13.6%</span>
+          </div>
+          <svg class="sim-sparkline" width="60" height="18" viewBox="0 0 60 18"><polyline points="0,14 10,12 20,10 30,13 40,8 50,6 60,9" fill="none" stroke="#4f46e5" stroke-width="1.5" opacity="0.5"/></svg>
+          <div class="sim-kpi-label">AI Success Rate</div>
+        </div>
+        <div class="sim-kpi clickable">
+          <div class="sim-kpi-icon">
+            <div class="sim-kpi-icon-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg></div>
+            <span class="sim-kpi-value" style="font-size:1.2rem;">68.0%</span>
+          </div>
+          <svg class="sim-sparkline" width="60" height="18" viewBox="0 0 60 18"><polyline points="0,10 10,8 20,12 30,7 40,9 50,5 60,6" fill="none" stroke="#4f46e5" stroke-width="1.5" opacity="0.5"/></svg>
+          <div class="sim-kpi-label">Resolution Rate</div>
+        </div>
+        <div class="sim-kpi clickable">
+          <div class="sim-kpi-icon">
+            <div class="sim-kpi-icon-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 2v6h6"/><path d="M21 12A9 9 0 0 0 6 5.3L3 8"/></svg></div>
+            <span class="sim-kpi-value" style="font-size:1.2rem;">41.3%</span>
+          </div>
+          <svg class="sim-sparkline" width="60" height="18" viewBox="0 0 60 18"><polyline points="0,12 10,10 20,14 30,8 40,11 50,7 60,5" fill="none" stroke="#4f46e5" stroke-width="1.5" opacity="0.5"/></svg>
+          <div class="sim-kpi-label">Override Rate</div>
+        </div>
+        <div class="sim-kpi clickable">
+          <div class="sim-kpi-icon">
+            <div class="sim-kpi-icon-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg></div>
+            <span class="sim-kpi-value" style="font-size:1.2rem;">18.2%</span>
+          </div>
+          <svg class="sim-sparkline" width="60" height="18" viewBox="0 0 60 18"><polyline points="0,8 10,10 20,6 30,12 40,9 50,11 60,7" fill="none" stroke="#4f46e5" stroke-width="1.5" opacity="0.5"/></svg>
+          <div class="sim-kpi-label">Escalation Rate</div>
+        </div>
+        <div class="sim-kpi">
+          <div class="sim-kpi-icon">
+            <div class="sim-kpi-icon-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg></div>
+            <span class="sim-kpi-value" style="font-size:1.2rem;">22</span>
+          </div>
+          <div class="sim-kpi-label">Extracted Slack Threads</div>
+        </div>
+        <!-- Callout 3 -->
+        <div style="position:absolute;top:-8px;left:50%;transform:translateX(-50%);"><span class="callout-num">3</span></div>
       </div>
 
       <!-- Chart section -->
@@ -653,14 +649,14 @@
             </div>
           </div>
         </div>
-        <!-- Callout 5 -->
-        <div style="position:absolute;top:-8px;left:120px;"><span class="callout-num">5</span></div>
+        <!-- Callout 4 -->
+        <div style="position:absolute;top:-8px;left:120px;"><span class="callout-num">4</span></div>
       </div>
 
       <!-- 2-col charts placeholder -->
       <div class="sim-2col" style="position:relative;">
         <div class="sim-chart-card">
-          <div class="sim-chart-header"><h4>Intervention Type</h4></div>
+          <div class="sim-chart-header"><h4>What AI Did Well</h4></div>
           <div class="sim-chart-content">
             <div class="sim-chart-placeholder" style="height:120px;">
               <svg viewBox="0 0 200 100" style="width:100%;height:100%;">
@@ -673,7 +669,7 @@
           </div>
         </div>
         <div class="sim-chart-card">
-          <div class="sim-chart-header"><h4>Sentiment Distribution</h4></div>
+          <div class="sim-chart-header"><h4>Outcome Analysis</h4></div>
           <div class="sim-chart-content">
             <div class="sim-chart-placeholder" style="height:120px;">
               <svg viewBox="0 0 300 100" style="width:100%;height:100%;">
@@ -689,8 +685,8 @@
             </div>
           </div>
         </div>
-        <!-- Callout 6 -->
-        <div style="position:absolute;top:-8px;left:50%;transform:translateX(-50%);"><span class="callout-num">6</span></div>
+        <!-- Callout 5 -->
+        <div style="position:absolute;top:-8px;left:50%;transform:translateX(-50%);"><span class="callout-num">5</span></div>
       </div>
 
       <!-- Table preview -->
@@ -724,12 +720,12 @@
             </tbody>
           </table>
         </div>
-        <!-- Callout 7 -->
-        <div style="position:absolute;top:-8px;right:40px;"><span class="callout-num">7</span></div>
+        <!-- Callout 6 -->
+        <div style="position:absolute;top:-8px;right:40px;"><span class="callout-num">6</span></div>
       </div>
     </div>
   </div>
-  <div class="screenshot-caption">The Human Signals dashboard showing the full page anatomy &mdash; header, time range, KPI strip, filters, charts, and case table.</div>
+  <div class="screenshot-caption">The Human Signals dashboard showing the full page anatomy &mdash; header, filters + time range, KPI strip, charts, and case table.</div>
 </div>
 
 <!-- Callout Legend -->
@@ -740,27 +736,23 @@
   </div>
   <div class="callout-legend-item">
     <span class="callout-num">2</span>
-    <div><strong>Time Range Selector</strong> &mdash; Dropdown with presets (7d, 30d, 90d, 6mo, 1yr) and a custom date range picker with Start/End date inputs.</div>
+    <div><strong>Filters + Time Range</strong> &mdash; Collapsible filter panel with source and metric dropdowns inline with the time range selector. Badge shows active filter count. Clear button resets all filters.</div>
   </div>
   <div class="callout-legend-item">
     <span class="callout-num">3</span>
-    <div><strong>Dynamic KPI Strip</strong> &mdash; Grid of 2&ndash;5 cards, each with an icon, value, optional sparkline, and label. Click any card with a sparkline to expand a weekly trend chart below.</div>
+    <div><strong>Dynamic KPI Strip</strong> &mdash; Grid of 2&ndash;5 cards, each with an icon, value, optional sparkline, and label. Click any card with a sparkline to expand a weekly trend chart below. Supports boolean rates, string match rates (<code>match_value</code>), numeric aggregations, and aggregates.</div>
   </div>
   <div class="callout-legend-item">
     <span class="callout-num">4</span>
-    <div><strong>Dynamic Filters</strong> &mdash; Collapsible filter panel with source and metric dropdowns. Badge shows active filter count. Clear button resets all.</div>
+    <div><strong>Signal Trend Chart</strong> &mdash; Collapsible multi-line time-series chart plotting signal rates by week. Starts collapsed.</div>
   </div>
   <div class="callout-legend-item">
     <span class="callout-num">5</span>
-    <div><strong>Signal Trend Chart</strong> &mdash; Multi-line time-series chart plotting boolean signal rates (as percentages) by week.</div>
+    <div><strong>Chart Sections</strong> &mdash; Config-driven chart grids (bar, donut, stacked bar, horizontal bar, text list, ranked list, single stat). All sections are collapsible and start collapsed by default.</div>
   </div>
   <div class="callout-legend-item">
     <span class="callout-num">6</span>
-    <div><strong>Chart Sections</strong> &mdash; Config-driven chart grids (bar, donut, stacked bar, horizontal bar, ranked list, single stat). Sections can be collapsible.</div>
-  </div>
-  <div class="callout-legend-item">
-    <span class="callout-num">7</span>
-    <div><strong>Case Table</strong> &mdash; Paginated table of individual signal records with column picker, sort, and eye icon to open the detail modal.</div>
+    <div><strong>Case Table</strong> &mdash; Paginated table with column picker, sort, and eye icon to open the detail modal. Colored badges are controlled by <code>table_badge_columns</code> in the YAML config.</div>
   </div>
 </div>
 
@@ -785,11 +777,11 @@
         </div>
         <div class="sim-kpi clickable selected">
           <div class="sim-kpi-icon">
-            <div class="sim-kpi-icon-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg></div>
-            <span class="sim-kpi-value" style="font-size:1.2rem;">72.5%</span>
+            <div class="sim-kpi-icon-box highlight"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/><circle cx="12" cy="12" r="10"/></svg></div>
+            <span class="sim-kpi-value" style="font-size:1.2rem;">13.6%</span>
           </div>
           <svg class="sim-sparkline" width="60" height="18" viewBox="0 0 60 18"><polyline points="0,10 10,8 20,12 30,7 40,9 50,5 60,6" fill="none" stroke="#4f46e5" stroke-width="1.5" opacity="0.5"/></svg>
-          <div class="sim-kpi-label">Intervention Rate</div>
+          <div class="sim-kpi-label">AI Success Rate</div>
         </div>
         <div class="sim-kpi clickable">
           <div class="sim-kpi-icon">
@@ -797,28 +789,29 @@
             <span class="sim-kpi-value" style="font-size:1.2rem;">68.0%</span>
           </div>
           <svg class="sim-sparkline" width="60" height="18" viewBox="0 0 60 18"><polyline points="0,12 10,10 20,14 30,8 40,11 50,7 60,5" fill="none" stroke="#4f46e5" stroke-width="1.5" opacity="0.5"/></svg>
-          <div class="sim-kpi-label">Resolved Rate</div>
+          <div class="sim-kpi-label">Resolution Rate</div>
         </div>
         <div class="sim-kpi clickable">
           <div class="sim-kpi-icon">
-            <div class="sim-kpi-icon-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+            <div class="sim-kpi-icon-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 2v6h6"/><path d="M21 12A9 9 0 0 0 6 5.3L3 8"/></svg></div>
             <span class="sim-kpi-value" style="font-size:1.2rem;">41.3%</span>
           </div>
           <svg class="sim-sparkline" width="60" height="18" viewBox="0 0 60 18"><polyline points="0,8 10,10 20,6 30,12 40,9 50,11 60,7" fill="none" stroke="#4f46e5" stroke-width="1.5" opacity="0.5"/></svg>
-          <div class="sim-kpi-label">Escalation Rate</div>
+          <div class="sim-kpi-label">Override Rate</div>
         </div>
-        <div class="sim-kpi">
+        <div class="sim-kpi clickable">
           <div class="sim-kpi-icon">
-            <div class="sim-kpi-icon-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
-            <span class="sim-kpi-value" style="font-size:1.2rem;">8.4</span>
+            <div class="sim-kpi-icon-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg></div>
+            <span class="sim-kpi-value" style="font-size:1.2rem;">18.2%</span>
           </div>
-          <div class="sim-kpi-label">Avg Messages</div>
+          <svg class="sim-sparkline" width="60" height="18" viewBox="0 0 60 18"><polyline points="0,14 10,12 20,10 30,13 40,8 50,6 60,9" fill="none" stroke="#4f46e5" stroke-width="1.5" opacity="0.5"/></svg>
+          <div class="sim-kpi-label">Escalation Rate</div>
         </div>
       </div>
       <!-- Expanded trend chart -->
       <div class="sim-chart-card">
         <div class="sim-chart-header">
-          <h4>Intervention Rate &mdash; Weekly Trend</h4>
+          <h4>AI Success Rate &mdash; Weekly Trend</h4>
           <span style="font-size:1rem;color:var(--gray-400);cursor:pointer;">&times;</span>
         </div>
         <div class="sim-chart-content">
@@ -845,42 +838,43 @@
 
 <p><strong>KPI card types:</strong></p>
 <ul>
-  <li><strong>Aggregate KPIs</strong> &mdash; <code>total_cases</code> (count) and <code>avg_message_count</code> (average). No sparkline.</li>
-  <li><strong>Boolean rate KPIs</strong> &mdash; percentage of cases where a signal is true (e.g., intervention rate, escalation rate). Includes a sparkline and is clickable to expand a trend chart.</li>
-  <li><strong>Count KPIs</strong> &mdash; raw count of cases where a signal is true (e.g., actionable feedback count).</li>
+  <li><strong>Aggregate KPIs</strong> &mdash; <code>total_cases</code> (count). No sparkline.</li>
+  <li><strong>Boolean rate KPIs</strong> &mdash; percentage of cases where a boolean signal is true (e.g., resolution rate, escalation rate). Includes a sparkline and is clickable to expand a trend chart.</li>
+  <li><strong>Match value KPIs</strong> &mdash; percentage of cases where a string signal equals a specific value. Set <code>match_value</code> in the config (e.g., <code>match_value: "success"</code> to count cases where <code>analysis_mode == "success"</code>).</li>
+  <li><strong>Numeric aggregation KPIs</strong> &mdash; aggregated numeric signals using <code>aggregation</code> (<code>mean</code>, <code>median</code>, <code>sum</code>, <code>min</code>, <code>max</code>, <code>p95</code>). Supports <code>duration</code> and <code>compact</code> formats.</li>
 </ul>
 
 <div class="admonition info">
   <div class="admonition-title">&#x2139;&#xFE0F; Info</div>
-  KPI cards are configured in <code>signals_metrics.yaml</code> under the <code>kpi_strip</code> key. Each entry specifies <code>label</code>, <code>icon</code>, <code>metric</code>, <code>signal</code>, <code>format</code> (percent or count), and <code>highlight</code> (fills the icon background).
+  KPI cards are configured in <code>signals_metrics.yaml</code> under the <code>kpi_strip</code> key. Each entry specifies <code>label</code>, <code>icon</code>, <code>metric</code>, <code>signal</code>, <code>format</code> (percent, number, duration, compact), and optionally <code>match_value</code>, <code>aggregation</code>, and <code>highlight</code>.
 </div>
 
 <!-- ══════════════ FILTERS ══════════════ -->
-<h2 id="filters">Filters</h2>
-<p>The filter panel is collapsible &mdash; click the header bar to expand or collapse it. When expanded, it shows a responsive grid of dropdown selectors.</p>
+<h2 id="filters">Filters &amp; Time Range</h2>
+<p>The filter bar sits at the top of the dashboard with the <strong>time range selector</strong> inline on the right. Click the bar to expand the filter panel, which shows a responsive grid of dropdown selectors.</p>
 
 <p><strong>Two filter categories:</strong></p>
 <ul>
   <li><strong>Source filters</strong> &mdash; filter by <code>source_component</code> and <code>environment</code> (single-select). Only appear if your data contains those fields.</li>
-  <li><strong>Metric filters</strong> &mdash; filter by signal values like <code>intervention_type</code>, <code>sentiment</code>, <code>failed_step</code> (multi-select with checkboxes). Only appear for signals with 8 or fewer unique values.</li>
+  <li><strong>Metric filters</strong> &mdash; filter by signal values like override type, sentiment, escalation type (multi-select with checkboxes). Only appear for signals with 8 or fewer unique values.</li>
 </ul>
 
-<p>The <strong>active filter count badge</strong> shows how many filters are currently applied. The <strong>Clear</strong> button resets all source and metric filters to their defaults.</p>
+<p>The <strong>active filter count badge</strong> shows how many filters are currently applied. The <strong>Clear</strong> button resets all source and metric filters. The time range selector offers presets (7d, 30d, 90d, 6mo, 1yr) and a custom date range picker.</p>
 
 <div class="admonition note">
   <div class="admonition-title">&#x1F4DD; Note</div>
-  Filters apply globally &mdash; KPI cards, charts, trend lines, and the case table all update together when you change any filter.
+  Filters apply globally &mdash; KPI cards, charts, trend lines, and the case table all update together when you change any filter or time range.
 </div>
 
 <!-- ══════════════ CHART SECTION ══════════════ -->
 <h2 id="chart-section">Chart Section</h2>
-<p>The chart section contains two areas: the <strong>Signal Trends</strong> time-series chart and the <strong>config-driven chart sections</strong> with various visualization types.</p>
+<p>The chart section contains two areas: the <strong>Signal Trends</strong> time-series chart and the <strong>config-driven chart sections</strong> with various visualization types. All sections are collapsible and <strong>start collapsed</strong> by default to keep the page compact.</p>
 
 <h3 id="signal-trends">Signal Trends Over Time</h3>
-<p>A multi-line chart plotting boolean signal rates as weekly percentages. Each line represents a KPI that has <code>format: percent</code> in the display config. The chart automatically extracts trend signals from your KPI configuration.</p>
+<p>A collapsible multi-line chart plotting signal rates as weekly percentages. Each line represents a KPI that has <code>format: percent</code> in the display config. The chart automatically extracts trend signals from your KPI configuration. Click the section header to expand.</p>
 
 <h3 id="chart-types">Chart Types</h3>
-<p>Below the trend chart, chart sections render in configurable grid layouts (<code>full</code>, <code>grid_2</code>, or <code>grid_3</code>). Each section has a title and can be collapsible. The available chart types are:</p>
+<p>Below the trend chart, chart sections render in configurable grid layouts (<code>full</code>, <code>grid_2</code>, or <code>grid_3</code>). Each section has a collapsible title with a chevron toggle. The available chart types are:</p>
 
 <div class="screenshot">
   <div class="screenshot-chrome">
@@ -1128,7 +1122,7 @@
 <ul>
   <li><strong>Column Picker</strong> &mdash; click the "Columns" button to show/hide columns. Defaults to 7 of the most important columns.</li>
   <li><strong>Sortable columns</strong> &mdash; click any column header with &#x2195; to sort ascending, descending, or reset. Uses lexicographic comparison with numeric awareness.</li>
-  <li><strong>Color-coded badges</strong> &mdash; important signals (<code>failed_step</code>, <code>intervention_type</code>, <code>sentiment</code>) render as colored badges using the <code>color_maps</code> from your display config.</li>
+  <li><strong>Color-coded badges</strong> &mdash; signal values render as colored badges using <code>color_maps</code> from your display config. Control which columns show badges with the <code>table_badge_columns</code> list in <code>signals_metrics.yaml</code>. Omit the list to badge all mapped columns.</li>
   <li><strong>Pagination</strong> &mdash; configurable page size (10, 25, 50, 100). Page pills with a 5-page sliding window around the current page.</li>
   <li><strong>Eye icon</strong> &mdash; click to open the <a href="#detail-modal">Case Detail Modal</a>.</li>
 </ul>

@@ -3494,16 +3494,28 @@
 </thead>
 <tbody>
 <tr>
-<td><code>useUploadHumanSignalsFile()</code></td>
+<td><code>useHumanSignalsUpload()</code></td>
 <td>Mutation</td>
 <td><code>uploadHumanSignalsFile</code></td>
 <td>Upload human signals CSV</td>
 </tr>
 <tr>
-<td><code>useLoadHumanSignalsExample()</code></td>
+<td><code>useHumanSignalsExampleDataset()</code></td>
 <td>Mutation</td>
 <td><code>loadHumanSignalsExampleDataset</code></td>
 <td>Load example human signals data</td>
+</tr>
+<tr>
+<td><code>useHumanSignalsDBConfig()</code></td>
+<td>Query</td>
+<td><code>getHumanSignalsDBConfig</code></td>
+<td>Fetch DB config (auto_connect/auto_load flags)</td>
+</tr>
+<tr>
+<td><code>useHumanSignalsAutoImport()</code></td>
+<td>Mutation</td>
+<td><code>autoImportHumanSignalsFromDB</code></td>
+<td>Trigger auto-import from configured database</td>
 </tr>
 </tbody>
 </table>
