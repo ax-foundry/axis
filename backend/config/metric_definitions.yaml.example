@@ -9,6 +9,7 @@
 #       <metric_name>:
 #         description: "..."   # Optional — human-readable explanation
 #         link: "..."          # Optional — URL to external docs
+#         agents: [...]        # Optional — list of agent source_names that use this metric
 
 metric_definitions:
   # Monitoring metrics (e.g., from DeepEval or custom evaluators)
@@ -16,6 +17,7 @@ metric_definitions:
     Faithfulness:
       description: "Measures how well the response aligns with retrieved context"
       link: "https://docs.deepeval.com/metrics/faithfulness"
+      agents: [alpha_bot]
     Relevance:
       description: "Measures response relevance to the original query"
       link: "https://docs.deepeval.com/metrics/relevance"

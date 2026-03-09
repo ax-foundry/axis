@@ -19,6 +19,7 @@ class MetricDefinition:
 
     description: str = ""
     link: str = ""
+    agents: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         """Serialize to JSON-friendly dict."""
@@ -52,6 +53,7 @@ def _parse_domain(data: dict[str, Any] | None) -> dict[str, MetricDefinition]:
             result[name] = MetricDefinition(
                 description=str(entry.get("description", "")),
                 link=str(entry.get("link", "")),
+                agents=entry.get("agents") or [],
             )
         else:
             # Bare key with no fields — just register the name

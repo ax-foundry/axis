@@ -1778,6 +1778,7 @@ export interface KpiSankeyResponse {
 export interface MetricDefinition {
   description?: string;
   link?: string;
+  agents?: string[];
 }
 
 export interface MetricDefinitionsResponse {

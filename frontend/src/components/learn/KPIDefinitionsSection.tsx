@@ -4,6 +4,8 @@ import { ArrowRight, ArrowUpRight, BarChart3, Loader2, Search } from 'lucide-rea
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 
+import { AgentAvatars } from '@/components/ui/AgentAvatars';
+import { getAgentConfig } from '@/config/agents';
 import { useMetricDefinitions } from '@/lib/hooks';
 import { cn } from '@/lib/utils';
 
@@ -19,7 +21,13 @@ export function KPIDefinitionsSection() {
     return Object.entries(data.kpi).filter(([name, def]) => {
       if (!query) return true;
       return (
-        name.toLowerCase().includes(query) || (def.description || '').toLowerCase().includes(query)
+        name.toLowerCase().includes(query) ||
+        (def.description || '').toLowerCase().includes(query) ||
+        (def.agents || []).some(
+          (a) =>
+            a.toLowerCase().includes(query) ||
+            (getAgentConfig(a)?.label ?? '').toLowerCase().includes(query)
+        )
       );
     });
   }, [data, search]);
@@ -100,7 +108,7 @@ export function KPIDefinitionsSection() {
       {kpis.length === 0 ? (
         <p className="py-8 text-center text-sm text-text-muted">No KPIs match your search.</p>
       ) : (
-        <div className="animate-fade-in-up space-y-2.5">
+        <div className="animate-fade-in-up grid gap-2.5 sm:grid-cols-2">
           {kpis.map(([name, def], index) => (
             <KPICard key={name} name={name} definition={def} index={index} />
           ))}
@@ -144,6 +152,9 @@ function KPICard({
             <code className="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium text-text-muted">
               {name}
             </code>
+            {definition.agents && definition.agents.length > 0 && (
+              <AgentAvatars agents={definition.agents} />
+            )}
           </div>
           {definition.description && (
             <p className="mt-1.5 text-sm leading-relaxed text-text-muted">

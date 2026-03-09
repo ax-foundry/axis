@@ -1,8 +1,11 @@
 'use client';
 
-import { Activity, ArrowUpRight, Loader2, MessageSquare, Search } from 'lucide-react';
+import { Activity, ArrowRight, ArrowUpRight, Loader2, MessageSquare, Search } from 'lucide-react';
+import Link from 'next/link';
 import { useMemo, useState } from 'react';
 
+import { AgentAvatars } from '@/components/ui/AgentAvatars';
+import { getAgentConfig } from '@/config/agents';
 import { useMetricDefinitions } from '@/lib/hooks';
 import { cn } from '@/lib/utils';
 
@@ -17,7 +20,13 @@ interface DomainConfig {
   accent: string;
   badgeBg: string;
   badgeText: string;
-  dotColor: string;
+  hoverBg: string;
+  bannerTitle: string;
+  bannerSubtitle: (count: number) => string;
+  bannerHref: string;
+  bannerLinkText: string;
+  bannerBorder: string;
+  bannerGradient: string;
 }
 
 const DOMAIN_CONFIG: Record<DomainKey, DomainConfig> = {
@@ -27,7 +36,13 @@ const DOMAIN_CONFIG: Record<DomainKey, DomainConfig> = {
     accent: 'bg-primary',
     badgeBg: 'bg-primary/10',
     badgeText: 'text-primary',
-    dotColor: 'bg-primary',
+    hoverBg: 'hover:bg-primary/10',
+    bannerTitle: 'Evaluation metrics tracked on the Monitoring dashboard',
+    bannerSubtitle: (n) => `${n} metrics configured for quality monitoring`,
+    bannerHref: '/monitoring',
+    bannerLinkText: 'View Monitoring',
+    bannerBorder: 'border-primary/20',
+    bannerGradient: 'from-primary/5',
   },
   signals: {
     label: 'Human Signals',
@@ -35,40 +50,48 @@ const DOMAIN_CONFIG: Record<DomainKey, DomainConfig> = {
     accent: 'bg-blue-500',
     badgeBg: 'bg-blue-50',
     badgeText: 'text-blue-600',
-    dotColor: 'bg-blue-500',
+    hoverBg: 'hover:bg-blue-50',
+    bannerTitle: 'Human review signals tracked on the Signals dashboard',
+    bannerSubtitle: (n) => `${n} signals configured for human-in-the-loop review`,
+    bannerHref: '/human-signals',
+    bannerLinkText: 'View Signals',
+    bannerBorder: 'border-blue-500/20',
+    bannerGradient: 'from-blue-500/5',
   },
 };
 
 export function MetricDefinitionsSection() {
   const { data, isLoading, error } = useMetricDefinitions();
+  const [activeTab, setActiveTab] = useState<DomainKey>('monitoring');
   const [search, setSearch] = useState('');
-  const [domainFilter, setDomainFilter] = useState<DomainKey | 'all'>('all');
 
-  const filteredDomains = useMemo(() => {
-    if (!data) return [];
-
-    const query = search.toLowerCase().trim();
-    const keys: readonly DomainKey[] = domainFilter === 'all' ? DOMAIN_KEYS : [domainFilter];
-
-    return keys
-      .map((key) => {
-        const metrics = data[key] || {};
-        const entries = Object.entries(metrics).filter(([name, def]) => {
-          if (!query) return true;
-          return (
-            name.toLowerCase().includes(query) ||
-            (def.description || '').toLowerCase().includes(query)
-          );
-        });
-        return { key, label: DOMAIN_CONFIG[key].label, entries };
-      })
-      .filter((d) => d.entries.length > 0);
-  }, [data, search, domainFilter]);
-
-  const totalCount = useMemo(() => {
-    if (!data) return 0;
-    return DOMAIN_KEYS.reduce((sum, k) => sum + Object.keys(data[k] || {}).length, 0);
+  const domainCounts = useMemo(() => {
+    if (!data) return { monitoring: 0, signals: 0 };
+    return {
+      monitoring: Object.keys(data.monitoring || {}).length,
+      signals: Object.keys(data.signals || {}).length,
+    };
   }, [data]);
+
+  const totalCount = domainCounts.monitoring + domainCounts.signals;
+
+  const filteredEntries = useMemo(() => {
+    if (!data) return [];
+    const metrics = data[activeTab] || {};
+    const query = search.toLowerCase().trim();
+    return Object.entries(metrics).filter(([name, def]) => {
+      if (!query) return true;
+      return (
+        name.toLowerCase().includes(query) ||
+        (def.description || '').toLowerCase().includes(query) ||
+        (def.agents || []).some(
+          (a) =>
+            a.toLowerCase().includes(query) ||
+            (getAgentConfig(a)?.label ?? '').toLowerCase().includes(query)
+        )
+      );
+    });
+  }, [data, activeTab, search]);
 
   if (isLoading) {
     return (
@@ -99,81 +122,109 @@ export function MetricDefinitionsSection() {
     );
   }
 
+  const config = DOMAIN_CONFIG[activeTab];
+  const Icon = config.icon;
+
   return (
     <>
-      {/* Search + domain filter */}
-      <div className="mb-6 flex items-center gap-3">
-        <div className="relative flex-1">
+      {/* Sub-tabs */}
+      <div className="mb-5 flex items-center gap-1 rounded-lg border border-border bg-gray-50 p-1">
+        {DOMAIN_KEYS.map((key) => {
+          const dc = DOMAIN_CONFIG[key];
+          const TabIcon = dc.icon;
+          const isActive = activeTab === key;
+          return (
+            <button
+              key={key}
+              onClick={() => {
+                setActiveTab(key);
+                setSearch('');
+              }}
+              className={cn(
+                'flex flex-1 items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-all',
+                isActive
+                  ? 'bg-white text-text-primary shadow-sm'
+                  : 'text-text-muted hover:text-text-secondary'
+              )}
+            >
+              <TabIcon className="h-3.5 w-3.5" />
+              {dc.label}
+              <span
+                className={cn(
+                  'rounded-full px-1.5 py-0.5 text-[10px] font-semibold',
+                  isActive ? cn(dc.badgeBg, dc.badgeText) : 'bg-gray-200 text-text-muted'
+                )}
+              >
+                {domainCounts[key]}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Banner */}
+      <div
+        className={cn(
+          'mb-5 flex items-center justify-between rounded-xl border px-5 py-3.5',
+          config.bannerBorder,
+          `bg-gradient-to-r ${config.bannerGradient} to-transparent`
+        )}
+      >
+        <div className="flex items-center gap-3">
+          <div
+            className={cn('flex h-8 w-8 items-center justify-center rounded-lg', config.badgeBg)}
+          >
+            <Icon className={cn('h-4 w-4', config.badgeText)} />
+          </div>
+          <div>
+            <p className="text-sm font-medium text-text-primary">{config.bannerTitle}</p>
+            <p className="text-xs text-text-muted">
+              {config.bannerSubtitle(domainCounts[activeTab])}
+            </p>
+          </div>
+        </div>
+        <Link
+          href={config.bannerHref}
+          className={cn(
+            'flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors',
+            config.badgeBg,
+            config.badgeText,
+            'hover:opacity-80'
+          )}
+        >
+          {config.bannerLinkText}
+          <ArrowRight className="h-3 w-3" />
+        </Link>
+      </div>
+
+      {/* Search */}
+      <div className="mb-5">
+        <div className="relative">
           <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
           <input
             type="text"
-            placeholder="Search metrics..."
+            placeholder={`Search ${config.label.toLowerCase()} metrics...`}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full rounded-xl border border-border bg-white py-2.5 pl-10 pr-4 text-sm text-text-primary shadow-sm placeholder:text-text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
           />
         </div>
-        <select
-          value={domainFilter}
-          onChange={(e) => setDomainFilter(e.target.value as DomainKey | 'all')}
-          className="rounded-xl border border-border bg-white px-4 py-2.5 text-sm text-text-primary shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-        >
-          <option value="all">All Domains</option>
-          {DOMAIN_KEYS.map((k) => (
-            <option key={k} value={k}>
-              {DOMAIN_CONFIG[k].label}
-            </option>
-          ))}
-        </select>
       </div>
 
-      {/* Domain groups */}
-      {filteredDomains.length === 0 ? (
+      {/* Metric cards grid */}
+      {filteredEntries.length === 0 ? (
         <p className="py-8 text-center text-sm text-text-muted">No metrics match your search.</p>
       ) : (
-        <div className="space-y-8">
-          {filteredDomains.map((domain) => {
-            const config = DOMAIN_CONFIG[domain.key];
-            const Icon = config.icon;
-
-            return (
-              <div key={domain.key} className="animate-fade-in-up">
-                {/* Domain header */}
-                <div className="mb-3 flex items-center gap-3">
-                  <div
-                    className={cn(
-                      'flex h-7 w-7 items-center justify-center rounded-lg',
-                      config.badgeBg
-                    )}
-                  >
-                    <Icon className={cn('h-3.5 w-3.5', config.badgeText)} />
-                  </div>
-                  <h3 className="text-sm font-semibold text-text-primary">{domain.label}</h3>
-                  <span
-                    className={cn(
-                      'rounded-full px-2 py-0.5 text-[11px] font-medium',
-                      config.badgeBg,
-                      config.badgeText
-                    )}
-                  >
-                    {domain.entries.length}
-                  </span>
-                </div>
-
-                {/* Metric cards grid */}
-                <div className="grid gap-2.5 sm:grid-cols-2">
-                  {domain.entries.map(([name, def]) => (
-                    <MetricCard
-                      key={`${domain.key}-${name}`}
-                      name={name}
-                      definition={def}
-                      config={config}
-                    />
-                  ))}
-                </div>
-              </div>
-            );
-          })}
+        <div className="animate-fade-in-up grid gap-2.5 sm:grid-cols-2">
+          {filteredEntries.map(([name, def], index) => (
+            <MetricCard
+              key={`${activeTab}-${name}`}
+              name={name}
+              definition={def}
+              config={config}
+              index={index}
+            />
+          ))}
         </div>
       )}
     </>
@@ -184,16 +235,16 @@ function MetricCard({
   name,
   definition,
   config,
+  index,
 }: {
   name: string;
   definition: MetricDefinition;
   config: DomainConfig;
+  index: number;
 }) {
-  const hasLink = !!definition.link;
-
   return (
-    <div className="group relative overflow-hidden rounded-xl border border-border bg-white p-4 transition-all duration-300 hover:shadow-md">
-      {/* Top accent bar — reveals on hover */}
+    <div className="group relative overflow-hidden rounded-xl border border-border bg-white transition-all duration-300 hover:shadow-md">
+      {/* Top accent bar */}
       <div
         className={cn(
           'absolute left-0 top-0 h-[2px] w-0 transition-all duration-300 group-hover:w-full',
@@ -201,32 +252,52 @@ function MetricCard({
         )}
       />
 
-      <div className="flex items-start gap-3">
-        {/* Color dot */}
-        <div className={cn('mt-1.5 h-2 w-2 flex-shrink-0 rounded-full', config.dotColor)} />
+      <div className="flex items-start gap-4 px-5 py-4">
+        {/* Index badge */}
+        <div
+          className={cn(
+            'flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-gray-50 text-xs font-bold text-text-muted transition-colors duration-300',
+            'group-hover:bg-primary/10 group-hover:text-primary'
+          )}
+        >
+          {String(index + 1).padStart(2, '0')}
+        </div>
 
+        {/* Content */}
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold text-text-primary transition-colors duration-300 group-hover:text-primary">
-            {name}
-          </p>
+          <div className="flex items-center gap-2">
+            <h4 className="text-sm font-semibold text-text-primary transition-colors duration-300 group-hover:text-primary">
+              {name}
+            </h4>
+            {definition.agents && definition.agents.length > 0 && (
+              <AgentAvatars agents={definition.agents} />
+            )}
+          </div>
           {definition.description && (
-            <p className="mt-1 text-xs leading-relaxed text-text-muted">{definition.description}</p>
+            <p className="mt-1.5 text-sm leading-relaxed text-text-muted">
+              {definition.description}
+            </p>
           )}
         </div>
-      </div>
 
-      {/* Doc link — slides in on hover */}
-      {hasLink && (
-        <a
-          href={definition.link}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="mt-2.5 flex -translate-x-1 items-center gap-1 text-xs font-medium text-primary opacity-0 transition-all duration-300 group-hover:translate-x-0 group-hover:opacity-100"
-        >
-          View docs
-          <ArrowUpRight className="h-3 w-3" />
-        </a>
-      )}
+        {/* Doc link */}
+        {definition.link && (
+          <a
+            href={definition.link}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={cn(
+              'flex -translate-x-1 items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium opacity-0 transition-all duration-300',
+              config.badgeText,
+              config.hoverBg,
+              'group-hover:translate-x-0 group-hover:opacity-100'
+            )}
+          >
+            Docs
+            <ArrowUpRight className="h-3 w-3" />
+          </a>
+        )}
+      </div>
     </div>
   );
 }
