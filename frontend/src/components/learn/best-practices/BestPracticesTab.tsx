@@ -7,21 +7,17 @@ import { DosDontsPanel } from './DosDontsPanel';
 import { PitfallCard } from './PitfallCard';
 
 const dosList = [
-  'Start by reviewing raw outputs before building any tooling',
-  'Use binary pass/fail judgments paired with detailed critiques',
-  'Curate golden datasets with domain-expert-verified ground truth',
-  'Calibrate LLM judges against human annotations regularly',
-  'Feed production failures back into your test sets',
+  'Review raw outputs before building any tooling',
+  'Use binary pass/fail with critiques, not Likert scales',
   'Version evaluation datasets alongside your models',
+  'Feed production failures back into golden datasets',
 ];
 
 const dontsList = [
-  'Skip raw data review and jump straight to metrics',
-  'Use Likert scales — they lack actionable guidance',
-  'Assume LLM judges are correct without human validation',
-  'Evaluate only at release time instead of continuously',
+  'Jump straight to metrics without examining examples',
   'Use generic off-the-shelf evals for domain-specific problems',
   'Let the same model family judge its own outputs unchecked',
+  'Evaluate only at release time instead of continuously',
 ];
 
 const pitfalls = [
