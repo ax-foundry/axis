@@ -1,62 +1,54 @@
 'use client';
 
-import {
-  Target,
-  Database,
-  Scale,
-  RefreshCw,
-  FileText,
-  AlertTriangle,
-  Shield,
-  Zap,
-} from 'lucide-react';
+import { AlertTriangle, Shield, Zap, ExternalLink, CheckCircle } from 'lucide-react';
 
 import { CollapsibleSection } from './CollapsibleSection';
 import { DosDontsPanel } from './DosDontsPanel';
 import { PitfallCard } from './PitfallCard';
 
 const dosList = [
-  'Use diverse test cases that cover edge cases and real-world scenarios',
-  'Document your evaluation criteria clearly and consistently',
-  'Calibrate LLM judges against human judgment regularly',
-  'Track evaluation metrics over time to identify trends',
-  'Include both positive and negative examples in your test set',
-  'Version your evaluation datasets alongside your models',
+  'Review raw outputs before building any tooling',
+  'Use binary pass/fail with critiques, not Likert scales',
+  'Version evaluation datasets alongside your models',
+  'Feed production failures back into golden datasets',
 ];
 
 const dontsList = [
-  'Rely solely on automated metrics without human review',
-  'Use the same data for training and evaluation',
-  'Ignore edge cases in favor of common scenarios',
-  'Assume LLM judges are always correct without verification',
+  'Jump straight to metrics without examining examples',
+  'Use generic off-the-shelf evals for domain-specific problems',
+  'Let the same model family judge its own outputs unchecked',
   'Evaluate only at release time instead of continuously',
-  'Discard evaluation results without analysis',
 ];
 
 const pitfalls = [
   {
-    title: 'Overfitting to Benchmarks',
-    mistake: 'Optimizing your model specifically for evaluation benchmarks',
-    consequence: 'Model performs well on benchmarks but poorly on real-world tasks',
-    solution: 'Use held-out test sets and periodically refresh your evaluation data',
+    title: 'Skipping Raw Data Review',
+    mistake: 'Jumping straight to metrics without examining actual agent outputs',
+    consequence:
+      'You build evaluators that measure the wrong things and miss real failure patterns',
+    solution:
+      'Spend time reviewing raw examples first — classify failures before you automate anything',
   },
   {
-    title: 'Position Bias in LLM Judges',
-    mistake: 'Not accounting for the tendency of LLMs to prefer responses in certain positions',
-    consequence: 'Systematic bias in comparison evaluations (e.g., always preferring response A)',
-    solution: 'Randomize response order and average scores across multiple orderings',
+    title: 'Uncalibrated LLM Judges',
+    mistake: 'Treating LLM judge outputs as definitive without human validation',
+    consequence: 'False confidence in evaluation results; biases go undetected',
+    solution: "Calibrate against human annotations monthly — measure agreement with Cohen's Kappa",
+  },
+];
+
+const DOC_LINKS = [
+  {
+    label: 'Evaluation Flywheel',
+    href: 'https://ax-foundry.github.io/axion/evaluation_flywheel/',
   },
   {
-    title: 'Verbosity Bias',
-    mistake: 'Not controlling for response length in evaluations',
-    consequence: 'LLM judges may favor longer responses regardless of quality',
-    solution: 'Normalize for length or explicitly instruct judges to ignore length',
+    label: 'Agent Evaluation Playbook',
+    href: 'https://ax-foundry.github.io/axion/agent_playbook/',
   },
   {
-    title: 'Self-Preference Bias',
-    mistake: 'Using the same model family for both generation and evaluation',
-    consequence: 'The judge may prefer outputs from models similar to itself',
-    solution: 'Use judges from different model families or calibrate against human evaluation',
+    label: 'Why Ground Truth Matters',
+    href: 'https://ax-foundry.github.io/axion/why_ground_truth_matters/',
   },
 ];
 
@@ -64,11 +56,28 @@ export function BestPracticesTab() {
   return (
     <div className="space-y-6">
       {/* Introduction */}
-      <div className="card bg-gradient-to-br from-gray-50 to-white">
-        <h2 className="mb-2 text-xl font-semibold text-text-primary">Best Practices</h2>
-        <p className="text-text-muted">
-          Follow these guidelines to build effective, reliable evaluation systems. Learn from common
-          mistakes and establish a strong evaluation foundation.
+      <div className="rounded-xl border border-border bg-white px-5 py-4">
+        <h2 className="mb-1 text-sm font-semibold text-text-primary">Best Practices</h2>
+        <p className="text-sm text-text-muted">
+          Proven guidelines for building reliable evaluation systems — drawn from the{' '}
+          <a
+            href="https://ax-foundry.github.io/axion/agent_playbook/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-medium text-primary hover:underline"
+          >
+            Agent Evaluation Playbook
+          </a>{' '}
+          and{' '}
+          <a
+            href="https://ax-foundry.github.io/axion/evaluation_flywheel/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-medium text-primary hover:underline"
+          >
+            Evaluation Flywheel
+          </a>
+          .
         </p>
       </div>
 
@@ -79,34 +88,40 @@ export function BestPracticesTab() {
       <div className="space-y-4">
         <CollapsibleSection
           id="define-criteria"
-          icon={Target}
-          iconColor="text-blue-600"
-          iconBgColor="bg-blue-100"
           title="Define Clear Criteria"
-          summary="Establish specific, measurable evaluation criteria before you begin"
+          summary="Binary pass/fail with critiques beats Likert scales every time"
         >
-          <div className="space-y-4 text-text-secondary">
+          <div className="space-y-3 text-sm text-text-secondary">
             <p>
-              Clear evaluation criteria are the foundation of any good evaluation system. Without
-              them, scores become subjective and inconsistent.
+              Before building any evaluator, define what &ldquo;good&rdquo; means in one sentence.
+              Then use binary judgments (pass/fail) paired with detailed critiques — not Likert
+              scales, which lack actionable guidance and create evaluator disagreement.
             </p>
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <div className="rounded-lg bg-gray-50 p-4">
-                <h5 className="mb-2 font-medium text-text-primary">Good Criteria</h5>
-                <ul className="space-y-1 text-sm">
-                  <li>• Response addresses all parts of the query</li>
-                  <li>• No factual errors or hallucinations</li>
-                  <li>• Tone matches the requested style</li>
-                  <li>• Response is under 200 words</li>
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+              <div className="rounded-lg border border-green-100 bg-green-50/50 p-3">
+                <h5 className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-green-700">
+                  <CheckCircle className="h-3 w-3" />
+                  Binary + Critique
+                </h5>
+                <ul className="space-y-1 text-xs">
+                  <li>• Pass/Fail: Does the response address the query?</li>
+                  <li>• Pass/Fail: Are all claims grounded in sources?</li>
+                  <li>• Critique: What specifically was wrong or missing?</li>
+                  <li>• Actionable: Directly maps to prompt/data fixes</li>
                 </ul>
               </div>
-              <div className="rounded-lg bg-gray-50 p-4">
-                <h5 className="mb-2 font-medium text-text-primary">Vague Criteria</h5>
-                <ul className="space-y-1 text-sm text-text-muted">
-                  <li className="line-through">• Response is good</li>
-                  <li className="line-through">• Answer is helpful</li>
-                  <li className="line-through">• Content is high quality</li>
-                  <li className="line-through">• Response is appropriate</li>
+              <div className="rounded-lg border border-red-100 bg-red-50/50 p-3">
+                <h5 className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-red-700">
+                  <AlertTriangle className="h-3 w-3" />
+                  Avoid: Vague Likert Scales
+                </h5>
+                <ul className="space-y-1 text-xs text-text-muted">
+                  <li className="line-through">Rate helpfulness 1-5</li>
+                  <li className="line-through">Score quality on a scale of 1-10</li>
+                  <li className="line-through">How good is this response?</li>
+                  <li className="text-xs italic text-red-500 no-underline">
+                    Scores lack actionable meaning
+                  </li>
                 </ul>
               </div>
             </div>
@@ -114,150 +129,150 @@ export function BestPracticesTab() {
         </CollapsibleSection>
 
         <CollapsibleSection
-          id="representative-data"
-          icon={Database}
-          iconColor="text-green-600"
-          iconBgColor="bg-green-100"
-          title="Use Representative Data"
-          summary="Test on diverse, real-world examples including edge cases"
+          id="ground-truth"
+          title="Invest in Ground Truth"
+          summary="Without ground truth, you're grading on vibes"
         >
-          <div className="space-y-4 text-text-secondary">
+          <div className="space-y-3 text-sm text-text-secondary">
             <p>
-              Your evaluation is only as good as your test data. Ensure your dataset covers the full
-              range of scenarios your AI will encounter.
+              Golden datasets with expert-verified expected answers are the foundation of reliable
+              evaluation. They make automated metrics deterministic, anchor LLM judges, and enable
+              fair A/B testing across model versions.
             </p>
             <div className="space-y-2">
-              <h5 className="font-medium text-text-primary">Data Coverage Checklist</h5>
-              <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+              <h5 className="text-xs font-semibold text-text-primary">Dataset Lifecycle</h5>
+              <div className="grid grid-cols-1 gap-2 md:grid-cols-3">
                 {[
-                  'Common use cases (80% of real traffic)',
-                  'Edge cases and unusual inputs',
-                  'Adversarial examples',
-                  'Different user personas/demographics',
-                  'Various input lengths and formats',
-                  'Multi-language if applicable',
-                  'Domain-specific terminology',
-                  'Ambiguous or unclear queries',
-                ].map((item, idx) => (
-                  <div key={idx} className="flex items-center gap-2 rounded bg-gray-50 p-2 text-sm">
-                    <div className="h-4 w-4 rounded border border-gray-300" />
-                    {item}
+                  {
+                    phase: 'Formation',
+                    desc: 'Curate ~30+ real-world examples validated by domain experts. Cover intent, tone, and complexity variations.',
+                  },
+                  {
+                    phase: 'Maintenance',
+                    desc: 'Establish review cycles to keep answers current. Add production failures as new test cases.',
+                  },
+                  {
+                    phase: 'Expansion',
+                    desc: 'Grow coverage through edge cases and controlled synthesis until no new failure modes emerge.',
+                  },
+                ].map((item) => (
+                  <div key={item.phase} className="rounded-lg bg-gray-50 p-2.5">
+                    <p className="text-xs font-semibold text-text-primary">{item.phase}</p>
+                    <p className="mt-0.5 text-[11px] leading-relaxed text-text-muted">
+                      {item.desc}
+                    </p>
                   </div>
                 ))}
               </div>
             </div>
+            <p className="text-xs text-text-muted">
+              <a
+                href="https://ax-foundry.github.io/axion/why_ground_truth_matters/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 font-medium text-primary hover:underline"
+              >
+                Read more: Why Ground Truth Matters
+                <ExternalLink className="h-3 w-3" />
+              </a>
+            </p>
           </div>
         </CollapsibleSection>
 
         <CollapsibleSection
           id="calibrate-judges"
-          icon={Scale}
-          iconColor="text-purple-600"
-          iconBgColor="bg-purple-100"
-          title="Calibrate Judges Regularly"
-          summary="Validate LLM judges against human judgment to maintain accuracy"
+          title="Calibrate LLM Judges"
+          summary="The teacher must be smarter than the student"
         >
-          <div className="space-y-4 text-text-secondary">
+          <div className="space-y-3 text-sm text-text-secondary">
             <p>
-              LLM judges can drift or have systematic biases. Regular calibration ensures your
-              automated evaluations stay aligned with human expectations.
+              LLM judges have systematic biases and can drift over time. Regular calibration against
+              human annotations keeps automated evaluations trustworthy. Use a judge model at least
+              as capable as the agent being evaluated.
             </p>
-            <div className="rounded-lg border border-purple-100 bg-purple-50 p-4">
-              <h5 className="mb-3 font-medium text-purple-700">Calibration Process</h5>
-              <ol className="space-y-2 text-sm">
-                <li className="flex gap-2">
-                  <span className="font-semibold text-purple-600">1.</span>
-                  Have humans annotate a sample of 50-100 examples
-                </li>
-                <li className="flex gap-2">
-                  <span className="font-semibold text-purple-600">2.</span>
-                  Run your LLM judge on the same examples
-                </li>
-                <li className="flex gap-2">
-                  <span className="font-semibold text-purple-600">3.</span>
-                  Calculate agreement metrics (Cohen&apos;s Kappa, correlation)
-                </li>
-                <li className="flex gap-2">
-                  <span className="font-semibold text-purple-600">4.</span>
-                  Investigate disagreements and adjust prompts if needed
-                </li>
-                <li className="flex gap-2">
-                  <span className="font-semibold text-purple-600">5.</span>
-                  Repeat monthly or after significant model changes
-                </li>
-              </ol>
-            </div>
-          </div>
-        </CollapsibleSection>
-
-        <CollapsibleSection
-          id="iterate-continuously"
-          icon={RefreshCw}
-          iconColor="text-amber-600"
-          iconBgColor="bg-amber-100"
-          title="Iterate Continuously"
-          summary="Evaluation is an ongoing process, not a one-time event"
-        >
-          <div className="space-y-4 text-text-secondary">
-            <p>
-              Your AI system, user needs, and understanding of quality all evolve. Your evaluation
-              system should evolve with them.
-            </p>
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-              <div className="rounded-lg bg-amber-50 p-4 text-center">
-                <Zap className="mx-auto mb-2 h-8 w-8 text-amber-600" />
-                <p className="font-medium text-amber-700">Weekly</p>
-                <p className="text-sm text-amber-600">Review metrics trends</p>
-              </div>
-              <div className="rounded-lg bg-amber-50 p-4 text-center">
-                <Scale className="mx-auto mb-2 h-8 w-8 text-amber-600" />
-                <p className="font-medium text-amber-700">Monthly</p>
-                <p className="text-sm text-amber-600">Calibrate judges</p>
-              </div>
-              <div className="rounded-lg bg-amber-50 p-4 text-center">
-                <Database className="mx-auto mb-2 h-8 w-8 text-amber-600" />
-                <p className="font-medium text-amber-700">Quarterly</p>
-                <p className="text-sm text-amber-600">Refresh test data</p>
-              </div>
-            </div>
-          </div>
-        </CollapsibleSection>
-
-        <CollapsibleSection
-          id="document-everything"
-          icon={FileText}
-          iconColor="text-cyan-600"
-          iconBgColor="bg-cyan-100"
-          title="Document Everything"
-          summary="Keep records of methodology, results, and changes for reproducibility"
-        >
-          <div className="space-y-4 text-text-secondary">
-            <p>
-              Good documentation enables reproducibility, helps new team members onboard, and
-              provides an audit trail for decisions.
-            </p>
-            <div className="space-y-2">
-              <h5 className="font-medium text-text-primary">What to Document</h5>
-              <ul className="space-y-2">
+            <div className="rounded-lg border border-purple-100 bg-purple-50 p-3">
+              <h5 className="mb-2 text-xs font-semibold text-purple-700">Calibration Process</h5>
+              <ol className="space-y-1.5 text-xs">
                 {[
-                  { title: 'Evaluation criteria', desc: 'What you measure and why' },
-                  { title: 'Dataset composition', desc: 'Source, size, and selection criteria' },
-                  { title: 'Judge configuration', desc: 'Prompts, models, and parameters' },
-                  { title: 'Results and analysis', desc: 'Scores, trends, and interpretations' },
-                  { title: 'Decision rationale', desc: 'Why changes were made' },
-                ].map((item, idx) => (
-                  <li key={idx} className="flex items-start gap-3 rounded-lg bg-gray-50 p-3">
-                    <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded bg-cyan-100">
-                      <span className="text-xs font-bold text-cyan-600">{idx + 1}</span>
-                    </div>
-                    <div>
-                      <p className="font-medium text-text-primary">{item.title}</p>
-                      <p className="text-sm text-text-muted">{item.desc}</p>
-                    </div>
+                  'Have domain experts annotate 50-100 examples with binary pass/fail + critiques',
+                  'Run your LLM judge on the same examples with identical criteria',
+                  "Measure agreement (Cohen's Kappa) — investigate all disagreements",
+                  'Refine judge prompts: separate extraction (parse facts) from verification (check correctness)',
+                  'Repeat monthly or whenever you change the judge model',
+                ].map((step, idx) => (
+                  <li key={idx} className="flex gap-2">
+                    <span className="font-semibold text-purple-600">{idx + 1}.</span>
+                    {step}
                   </li>
                 ))}
-              </ul>
+              </ol>
             </div>
+            <p className="text-xs text-text-muted">
+              <a
+                href="https://ax-foundry.github.io/axion/agent_playbook/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 font-medium text-primary hover:underline"
+              >
+                Read more: Agent Evaluation Playbook
+                <ExternalLink className="h-3 w-3" />
+              </a>
+            </p>
+          </div>
+        </CollapsibleSection>
+
+        <CollapsibleSection
+          id="evaluation-flywheel"
+          title="Run the Evaluation Flywheel"
+          summary="Build → Test → Deploy → Learn → Repeat"
+        >
+          <div className="space-y-3 text-sm text-text-secondary">
+            <p>
+              Evaluation is a continuous cycle, not a one-time gate. The flywheel has two loops that
+              feed each other — pre-production experiments and post-production monitoring.
+            </p>
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+              <div className="rounded-lg bg-gray-50 p-3">
+                <h5 className="mb-1.5 text-xs font-semibold text-text-primary">
+                  Pre-Production (The Lab)
+                </h5>
+                <ul className="space-y-1 text-[11px] leading-relaxed text-text-muted">
+                  <li>Run challenger vs. baseline experiments</li>
+                  <li>Measure against golden datasets</li>
+                  <li>Gate on: safety, accuracy, zero regressions</li>
+                </ul>
+              </div>
+              <div className="rounded-lg bg-gray-50 p-3">
+                <h5 className="mb-1.5 text-xs font-semibold text-text-primary">
+                  Post-Production (The Real World)
+                </h5>
+                <ul className="space-y-1 text-[11px] leading-relaxed text-text-muted">
+                  <li>Monitor business KPIs and user feedback</li>
+                  <li>Check prod-test parity (lab vs. real performance)</li>
+                  <li>Feed failures back into golden datasets</li>
+                </ul>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 rounded-lg bg-amber-50 p-3">
+              <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-amber-100">
+                <Zap className="h-4 w-4 text-amber-600" />
+              </div>
+              <p className="text-xs text-amber-700">
+                <strong>Key insight:</strong> Every production failure gets added to your golden
+                datasets, preventing repeated mistakes and building momentum.
+              </p>
+            </div>
+            <p className="text-xs text-text-muted">
+              <a
+                href="https://ax-foundry.github.io/axion/evaluation_flywheel/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 font-medium text-primary hover:underline"
+              >
+                Read more: Evaluation Flywheel
+                <ExternalLink className="h-3 w-3" />
+              </a>
+            </p>
           </div>
         </CollapsibleSection>
       </div>
@@ -265,11 +280,11 @@ export function BestPracticesTab() {
       {/* Common Pitfalls */}
       <div className="space-y-4">
         <div className="flex items-center gap-2">
-          <AlertTriangle className="h-5 w-5 text-error" />
-          <h3 className="text-lg font-semibold text-text-primary">Common Pitfalls</h3>
+          <AlertTriangle className="h-4 w-4 text-error" />
+          <h3 className="text-sm font-semibold text-text-primary">Common Pitfalls</h3>
         </div>
-        <p className="text-text-muted">
-          Avoid these common mistakes that can undermine your evaluation efforts.
+        <p className="text-sm text-text-muted">
+          Four critical mistakes that undermine evaluation efforts.
         </p>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           {pitfalls.map((pitfall, idx) => (
@@ -279,19 +294,50 @@ export function BestPracticesTab() {
       </div>
 
       {/* Summary Card */}
-      <div className="card bg-gradient-to-r from-primary to-primary-light text-white">
-        <div className="flex items-start gap-4">
-          <Shield className="h-8 w-8 flex-shrink-0" />
+      <div className="rounded-xl border border-primary/20 bg-primary/5 px-5 py-4">
+        <div className="flex items-start gap-3">
+          <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-primary/10">
+            <Shield className="h-[18px] w-[18px] text-primary" />
+          </div>
           <div>
-            <h3 className="mb-2 text-lg font-semibold">Key Takeaways</h3>
-            <ul className="space-y-1 text-sm text-white/90">
-              <li>• Start with clear, measurable criteria</li>
-              <li>• Use diverse, representative test data</li>
-              <li>• Calibrate automated judges against humans</li>
-              <li>• Treat evaluation as an ongoing process</li>
-              <li>• Document everything for reproducibility</li>
+            <h3 className="mb-2 text-sm font-semibold text-text-primary">Key Takeaways</h3>
+            <ul className="space-y-1 text-xs text-text-secondary">
+              <li>
+                • <strong>Analyze first</strong> — review raw outputs before building tooling
+              </li>
+              <li>
+                • <strong>Binary + critique</strong> — ditch Likert scales for actionable judgments
+              </li>
+              <li>
+                • <strong>Ground truth matters</strong> — curate golden datasets with domain experts
+              </li>
+              <li>
+                • <strong>Calibrate monthly</strong> — validate LLM judges against human annotations
+              </li>
+              <li>
+                • <strong>Close the loop</strong> — feed production failures back into test sets
+              </li>
             </ul>
           </div>
+        </div>
+      </div>
+
+      {/* Documentation Links */}
+      <div className="rounded-xl border border-border bg-white px-5 py-4">
+        <h3 className="mb-3 text-sm font-semibold text-text-primary">Further Reading</h3>
+        <div className="flex flex-wrap gap-2">
+          {DOC_LINKS.map((link) => (
+            <a
+              key={link.href}
+              href={link.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-gray-50 px-3 py-1.5 text-xs font-medium text-text-secondary transition-colors hover:border-primary/30 hover:bg-primary/5 hover:text-primary"
+            >
+              {link.label}
+              <ExternalLink className="h-3 w-3" />
+            </a>
+          ))}
         </div>
       </div>
     </div>

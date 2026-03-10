@@ -4,6 +4,7 @@ import { persist } from 'zustand/middleware';
 import { DEFAULT_ANNOTATION_TAGS } from '@/types';
 
 import type {
+  LearnTopTab,
   LearnMainTab,
   WalkthroughType,
   PlaybackSpeed,
@@ -121,6 +122,7 @@ interface UIState {
   analyticsPassRateThreshold: number;
 
   // Learn tab state
+  learnTopTab: LearnTopTab;
   learnMainTab: LearnMainTab;
   learnWalkthroughType: WalkthroughType;
   learnPlaybackState: PlaybackState;
@@ -220,6 +222,7 @@ interface UIState {
   setAnalyticsPassRateThreshold: (threshold: number) => void;
 
   // Learn actions
+  setLearnTopTab: (tab: LearnTopTab) => void;
   setLearnMainTab: (tab: LearnMainTab) => void;
   setLearnWalkthroughType: (type: WalkthroughType) => void;
   setLearnPlaybackState: (state: PlaybackState) => void;
@@ -326,6 +329,7 @@ export const useUIStore = create<UIState>()(
       analyticsPassRateThreshold: 0.5,
 
       // Learn tab state
+      learnTopTab: 'metric-definitions',
       learnMainTab: 'overview',
       learnWalkthroughType: 'single-turn',
       learnPlaybackState: 'stopped',
@@ -501,6 +505,7 @@ export const useUIStore = create<UIState>()(
         set({ analyticsPassRateThreshold }),
 
       // Learn actions
+      setLearnTopTab: (learnTopTab) => set({ learnTopTab }),
       setLearnMainTab: (learnMainTab) => set({ learnMainTab }),
 
       setLearnWalkthroughType: (learnWalkthroughType) =>
@@ -642,6 +647,7 @@ export const useUIStore = create<UIState>()(
         compareDistributionChartType: state.compareDistributionChartType,
         compareVisibleFields: state.compareVisibleFields,
         analyticsPassRateThreshold: state.analyticsPassRateThreshold,
+        learnTopTab: state.learnTopTab,
         learnMainTab: state.learnMainTab,
         learnPlaybackSpeed: state.learnPlaybackSpeed,
         // Annotation tab persistence

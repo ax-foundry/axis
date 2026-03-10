@@ -12,6 +12,7 @@ from app.config.db.human_signals import human_signals_db_config
 from app.config.db.kpi import kpi_db_config
 from app.config.db.monitoring import monitoring_db_config
 from app.config.env import settings
+from app.config.metric_definitions import metric_definitions_config
 from app.config.paths import get_custom_dir
 from app.config.theme import theme_config
 from app.plugins import discover_plugins
@@ -156,6 +157,16 @@ async def get_plugins() -> dict[str, Any]:
             for e in discover_plugins()
         ]
     }
+
+
+@router.get("/metric-definitions")
+async def get_metric_definitions() -> dict[str, Any]:
+    """Get centralized metric definitions for all domains.
+
+    Returns descriptions and documentation links for monitoring,
+    KPI, and human signals metrics.
+    """
+    return metric_definitions_config.to_dict()
 
 
 _ASSET_TYPES = {"branding", "agents"}

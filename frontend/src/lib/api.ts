@@ -7,6 +7,7 @@ import type {
   TableInfo,
 } from '@/stores/database-store';
 import type {
+  MetricDefinitionsResponse,
   ThemeConfigResponse,
   AlignConfigsResponse,
   AlignDefaultsResponse,
@@ -358,6 +359,13 @@ export interface FeaturesConfigResponse {
  */
 export async function getFeaturesConfig(): Promise<FeaturesConfigResponse> {
   return fetchApi('/api/config/features');
+}
+
+/**
+ * Get centralized metric definitions (descriptions + doc links)
+ */
+export async function getMetricDefinitions(): Promise<MetricDefinitionsResponse> {
+  return fetchApi('/api/config/metric-definitions');
 }
 
 // ============================================

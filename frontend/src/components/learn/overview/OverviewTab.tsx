@@ -1,205 +1,88 @@
 'use client';
 
-import { Target, Workflow, ArrowRight, CheckCircle, AlertTriangle, Lightbulb } from 'lucide-react';
+import { ArrowRight, PlayCircle, Layers, Shield } from 'lucide-react';
 
-import { ConceptCard } from './ConceptCard';
-import { DatasetItemModel } from './DatasetItemModel';
+import { useUIStore } from '@/stores/ui-store';
+
+import type { LearnMainTab } from '@/types';
+
+interface GuideCardConfig {
+  id: LearnMainTab;
+  title: string;
+  description: string;
+  icon: React.ComponentType<{ className?: string }>;
+  color: string;
+  bg: string;
+}
+
+const guideCards: GuideCardConfig[] = [
+  {
+    id: 'walkthrough',
+    title: 'Interactive Walkthrough',
+    description:
+      'Step through evaluation scenarios — see how data flows from test input to scored output.',
+    icon: PlayCircle,
+    color: 'text-blue-600',
+    bg: 'bg-blue-50',
+  },
+  {
+    id: 'methods',
+    title: 'Evaluation Methods',
+    description:
+      'LLM-as-Judge, human evaluation, automated metrics, and the hybrid flywheel approach.',
+    icon: Layers,
+    color: 'text-green-600',
+    bg: 'bg-green-50',
+  },
+  {
+    id: 'best-practices',
+    title: 'Best Practices',
+    description: 'Ground truth, binary criteria, judge calibration, and the evaluation flywheel.',
+    icon: Shield,
+    color: 'text-purple-600',
+    bg: 'bg-purple-50',
+  },
+];
 
 export function OverviewTab() {
+  const { setLearnMainTab } = useUIStore();
+
   return (
-    <div className="space-y-8">
-      {/* Hero Section */}
-      <div className="card border-primary/10 bg-gradient-to-br from-primary/5 to-primary-pale/30">
-        <div className="flex flex-col items-start gap-6 md:flex-row md:items-center">
-          <div className="flex-1">
-            <h2 className="mb-3 text-2xl font-bold text-text-primary">Welcome to AI Evaluation</h2>
-            <p className="leading-relaxed text-text-secondary">
-              Learn how to systematically assess and improve your AI systems. This guide covers the
-              fundamentals of evaluation, from understanding data structures to implementing best
-              practices.
-            </p>
-          </div>
-          <div className="flex-shrink-0">
-            <div className="flex h-24 w-24 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-primary-light shadow-lg shadow-primary/20">
-              <Target className="h-12 w-12 text-white" />
-            </div>
-          </div>
-        </div>
+    <div className="space-y-5">
+      {/* Intro */}
+      <div className="rounded-xl border border-border bg-white px-5 py-4">
+        <h2 className="mb-1 text-sm font-semibold text-text-primary">Getting Started</h2>
+        <p className="text-xs text-text-muted">
+          AI evaluation is the systematic process of assessing agent quality, safety, and alignment.
+          These guides cover the core concepts — from choosing the right evaluation method to
+          building a continuous feedback loop.
+        </p>
       </div>
 
-      {/* Quick Tips Row */}
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        <div className="card border-success/20 bg-success/5">
-          <div className="flex items-start gap-3">
-            <CheckCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-success" />
-            <div>
-              <p className="font-medium text-text-primary">Do</p>
-              <p className="text-sm text-text-muted">
-                Use diverse test cases that cover edge cases and real-world scenarios
-              </p>
-            </div>
-          </div>
-        </div>
-        <div className="card border-error/20 bg-error/5">
-          <div className="flex items-start gap-3">
-            <AlertTriangle className="mt-0.5 h-5 w-5 flex-shrink-0 text-error" />
-            <div>
-              <p className="font-medium text-text-primary">Don&apos;t</p>
-              <p className="text-sm text-text-muted">
-                Rely solely on automated metrics without human review
-              </p>
-            </div>
-          </div>
-        </div>
-        <div className="card border-accent-gold/20 bg-accent-gold/5">
-          <div className="flex items-start gap-3">
-            <Lightbulb className="mt-0.5 h-5 w-5 flex-shrink-0 text-accent-gold" />
-            <div>
-              <p className="font-medium text-text-primary">Tip</p>
-              <p className="text-sm text-text-muted">
-                Calibrate LLM judges monthly against fresh human annotations
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* What is Evaluation */}
-      <ConceptCard
-        icon={Target}
-        title="What is AI Evaluation?"
-        description="Understanding the purpose and importance of systematic AI assessment"
-      >
-        <div className="space-y-4 text-text-secondary">
-          <p>
-            AI evaluation is the systematic process of assessing an AI system&apos;s performance,
-            safety, and alignment with intended goals. It helps teams understand how well their
-            models perform across various dimensions.
-          </p>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="rounded-lg bg-gray-50 p-3">
-              <p className="mb-1 font-medium text-text-primary">Accuracy</p>
-              <p className="text-sm text-text-muted">Does the model produce correct outputs?</p>
-            </div>
-            <div className="rounded-lg bg-gray-50 p-3">
-              <p className="mb-1 font-medium text-text-primary">Consistency</p>
-              <p className="text-sm text-text-muted">Are outputs reliable across similar inputs?</p>
-            </div>
-            <div className="rounded-lg bg-gray-50 p-3">
-              <p className="mb-1 font-medium text-text-primary">Safety</p>
-              <p className="text-sm text-text-muted">Does the model avoid harmful outputs?</p>
-            </div>
-            <div className="rounded-lg bg-gray-50 p-3">
-              <p className="mb-1 font-medium text-text-primary">Alignment</p>
-              <p className="text-sm text-text-muted">Does the model behave as intended?</p>
-            </div>
-          </div>
-        </div>
-      </ConceptCard>
-
-      {/* Data Structure */}
-      <DatasetItemModel />
-
-      {/* Evaluation Flow */}
-      <ConceptCard
-        icon={Workflow}
-        iconColor="text-blue-600"
-        iconBgColor="bg-blue-100"
-        title="The Evaluation Pipeline"
-        description="Understanding how data flows through the evaluation process"
-      >
-        <div className="space-y-4">
-          {/* Flow Diagram */}
-          <div className="flex items-center justify-between overflow-x-auto rounded-xl bg-gray-50 p-4">
-            <div className="flex min-w-max items-center gap-2 md:gap-4">
-              {/* Input */}
-              <div className="flex flex-col items-center">
-                <div className="mb-2 flex h-16 w-16 items-center justify-center rounded-xl bg-blue-100">
-                  <span className="font-mono text-xs text-blue-600">Input</span>
-                </div>
-                <span className="text-xs text-text-muted">Test Data</span>
+      {/* Navigation cards */}
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+        {guideCards.map((card) => {
+          const Icon = card.icon;
+          return (
+            <button
+              key={card.id}
+              onClick={() => setLearnMainTab(card.id)}
+              className="group flex flex-col rounded-xl border border-border bg-white p-4 text-left transition-all hover:border-primary/30 hover:shadow-md"
+            >
+              <div
+                className={`mb-3 flex h-9 w-9 items-center justify-center rounded-lg ${card.bg}`}
+              >
+                <Icon className={`h-[18px] w-[18px] ${card.color}`} />
               </div>
-
-              <ArrowRight className="h-6 w-6 flex-shrink-0 text-gray-300" />
-
-              {/* Process */}
-              <div className="flex flex-col items-center">
-                <div className="mb-2 flex h-16 w-16 items-center justify-center rounded-xl bg-green-100">
-                  <span className="font-mono text-xs text-green-600">AI</span>
-                </div>
-                <span className="text-xs text-text-muted">Model</span>
+              <h3 className="text-sm font-semibold text-text-primary">{card.title}</h3>
+              <p className="mt-1 flex-1 text-xs text-text-muted">{card.description}</p>
+              <div className="mt-3 flex items-center gap-1 text-xs font-medium text-primary opacity-0 transition-opacity group-hover:opacity-100">
+                Explore
+                <ArrowRight className="h-3 w-3" />
               </div>
-
-              <ArrowRight className="h-6 w-6 flex-shrink-0 text-gray-300" />
-
-              {/* Judge */}
-              <div className="flex flex-col items-center">
-                <div className="mb-2 flex h-16 w-16 items-center justify-center rounded-xl bg-amber-100">
-                  <span className="font-mono text-xs text-amber-600">Judge</span>
-                </div>
-                <span className="text-xs text-text-muted">Evaluator</span>
-              </div>
-
-              <ArrowRight className="h-6 w-6 flex-shrink-0 text-gray-300" />
-
-              {/* Output */}
-              <div className="flex flex-col items-center">
-                <div className="mb-2 flex h-16 w-16 items-center justify-center rounded-xl bg-purple-100">
-                  <span className="font-mono text-xs text-purple-600">Score</span>
-                </div>
-                <span className="text-xs text-text-muted">Results</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <div className="rounded-lg bg-gray-50 p-3">
-              <p className="mb-1 font-medium text-text-primary">1. Prepare Test Data</p>
-              <p className="text-sm text-text-muted">
-                Structure your queries and expected outputs into a dataset
-              </p>
-            </div>
-            <div className="rounded-lg bg-gray-50 p-3">
-              <p className="mb-1 font-medium text-text-primary">2. Generate Responses</p>
-              <p className="text-sm text-text-muted">Run your AI model against the test queries</p>
-            </div>
-            <div className="rounded-lg bg-gray-50 p-3">
-              <p className="mb-1 font-medium text-text-primary">3. Evaluate Quality</p>
-              <p className="text-sm text-text-muted">
-                Use judges (LLM, human, or automated) to score responses
-              </p>
-            </div>
-            <div className="rounded-lg bg-gray-50 p-3">
-              <p className="mb-1 font-medium text-text-primary">4. Analyze Results</p>
-              <p className="text-sm text-text-muted">
-                Review metrics, identify patterns, and iterate on improvements
-              </p>
-            </div>
-          </div>
-        </div>
-      </ConceptCard>
-
-      {/* Next Steps */}
-      <div className="card bg-gradient-to-r from-primary to-primary-light text-white">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="mb-1 text-xl font-semibold">Ready to dive deeper?</h3>
-            <p className="text-white/80">
-              Try the Interactive Walkthrough to see evaluation in action.
-            </p>
-          </div>
-          <button
-            onClick={() => {
-              // This will be connected to the tab navigation
-              const store = window.document.querySelector('[data-walkthrough-btn]');
-              store?.dispatchEvent(new Event('click'));
-            }}
-            className="flex items-center gap-2 rounded-lg bg-white px-4 py-2 font-medium text-primary transition-colors hover:bg-white/90"
-          >
-            Start Walkthrough
-            <ArrowRight className="h-4 w-4" />
-          </button>
-        </div>
+            </button>
+          );
+        })}
       </div>
     </div>
   );

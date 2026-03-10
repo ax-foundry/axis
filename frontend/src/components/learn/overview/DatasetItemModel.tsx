@@ -62,22 +62,34 @@ const datasetFields: FieldInfo[] = [
   },
 ];
 
+const FIELD_ICONS: Record<string, { icon: React.ElementType; color: string }> = {
+  id: { icon: Database, color: 'text-gray-500' },
+  query: { icon: MessageSquare, color: 'text-blue-500' },
+  actual_output: { icon: FileText, color: 'text-green-500' },
+  expected_output: { icon: FileCheck, color: 'text-purple-500' },
+  conversation: { icon: MessageSquare, color: 'text-orange-500' },
+  retrieved_content: { icon: FileText, color: 'text-cyan-500' },
+  metadata: { icon: BarChart3, color: 'text-indigo-500' },
+};
+
 export function DatasetItemModel() {
   return (
-    <div className="card">
-      <div className="mb-6 flex items-start gap-4">
-        <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-blue-100">
-          <Database className="h-6 w-6 text-blue-600" />
+    <div className="rounded-xl border border-border bg-white p-5">
+      <div className="mb-4 flex items-center gap-3">
+        <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-blue-50">
+          <Database className="h-[18px] w-[18px] text-blue-600" />
         </div>
         <div>
-          <h3 className="mb-1 text-lg font-semibold text-text-primary">DatasetItem Structure</h3>
-          <p className="text-text-muted">Understanding the data structure that powers evaluation</p>
+          <h3 className="text-sm font-semibold text-text-primary">DatasetItem Structure</h3>
+          <p className="text-xs text-text-muted">
+            Understanding the data structure that powers evaluation
+          </p>
         </div>
       </div>
 
       {/* Visual Schema Representation */}
-      <div className="mb-6 rounded-xl border border-border bg-gray-50 p-4">
-        <div className="font-mono text-sm">
+      <div className="mb-4 rounded-lg border border-border bg-gray-50 p-4">
+        <div className="font-mono text-xs">
           <div className="mb-2 text-text-muted">{`// Evaluation Data Structure`}</div>
           <div className="text-purple-600">interface</div>{' '}
           <span className="text-blue-600">DatasetItem</span> {'{'}
@@ -90,7 +102,7 @@ export function DatasetItemModel() {
                 {!field.required && <span className="text-text-muted">?</span>}
                 <span className="text-text-muted">;</span>
                 {field.required && (
-                  <span className="ml-2 rounded bg-primary/10 px-1.5 py-0.5 text-xs text-primary">
+                  <span className="ml-2 rounded bg-primary/10 px-1.5 py-0.5 text-[10px] text-primary">
                     required
                   </span>
                 )}
@@ -102,40 +114,36 @@ export function DatasetItemModel() {
       </div>
 
       {/* Field Details */}
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        {datasetFields.map((field) => (
-          <div
-            key={field.name}
-            className={`rounded-lg border p-3 ${
-              field.required ? 'border-primary/20 bg-primary-pale/30' : 'border-border bg-gray-50'
-            }`}
-          >
-            <div className="mb-1 flex items-center gap-2">
-              {field.name === 'query' && <MessageSquare className="h-4 w-4 text-blue-500" />}
-              {field.name === 'actual_output' && <FileText className="h-4 w-4 text-green-500" />}
-              {field.name === 'expected_output' && (
-                <FileCheck className="h-4 w-4 text-purple-500" />
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+        {datasetFields.map((field) => {
+          const fi = FIELD_ICONS[field.name];
+          const FieldIcon = fi?.icon ?? Database;
+          const iconColor = fi?.color ?? 'text-gray-500';
+
+          return (
+            <div
+              key={field.name}
+              className={`rounded-lg border p-3 ${
+                field.required ? 'border-primary/20 bg-primary/5' : 'border-border bg-gray-50'
+              }`}
+            >
+              <div className="mb-1 flex items-center gap-2">
+                <FieldIcon className={`h-3.5 w-3.5 ${iconColor}`} />
+                <code className="text-xs font-semibold text-text-primary">{field.name}</code>
+                <span className="text-[10px] text-text-muted">({field.type})</span>
+              </div>
+              <p className="text-xs text-text-muted">{field.description}</p>
+              {field.example && (
+                <code className="mt-1 block text-[10px] text-primary-dark">{field.example}</code>
               )}
-              {field.name === 'id' && <Database className="h-4 w-4 text-gray-500" />}
-              {field.name === 'conversation' && (
-                <MessageSquare className="h-4 w-4 text-orange-500" />
-              )}
-              {field.name === 'retrieved_content' && <FileText className="h-4 w-4 text-cyan-500" />}
-              {field.name === 'metadata' && <BarChart3 className="h-4 w-4 text-indigo-500" />}
-              <code className="font-semibold text-text-primary">{field.name}</code>
-              <span className="text-xs text-text-muted">({field.type})</span>
             </div>
-            <p className="text-sm text-text-muted">{field.description}</p>
-            {field.example && (
-              <code className="mt-1 block text-xs text-primary-dark">{field.example}</code>
-            )}
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Usage Note */}
-      <div className="mt-6 rounded-lg border border-accent-gold/20 bg-accent-gold/10 p-4">
-        <p className="text-sm text-text-secondary">
+      <div className="mt-4 rounded-lg border border-accent-gold/20 bg-accent-gold/5 px-4 py-3">
+        <p className="text-xs text-text-secondary">
           <strong>Tip:</strong> At minimum, you need{' '}
           <code className="rounded bg-white px-1">id</code>,{' '}
           <code className="rounded bg-white px-1">query</code>, and{' '}

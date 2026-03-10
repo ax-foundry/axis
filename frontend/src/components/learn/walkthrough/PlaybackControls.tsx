@@ -96,10 +96,10 @@ export function PlaybackControls({
           {/* Play/Pause */}
           <button
             onClick={isPlaying ? onPause : onPlay}
-            className="rounded-xl bg-gradient-to-r from-primary to-primary-light p-4 text-white shadow-md shadow-primary/20 transition-all duration-200 hover:shadow-lg hover:shadow-primary/30"
+            className="rounded-lg bg-primary p-3 text-white shadow-sm transition-all duration-200 hover:bg-primary-dark hover:shadow-md"
             title={isPlaying ? 'Pause' : 'Play'}
           >
-            {isPlaying ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6" />}
+            {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
           </button>
 
           {/* Step Forward */}

@@ -634,6 +634,7 @@ declare module 'plotly.js' {
 // Learn Tab Types
 // ============================================
 
+export type LearnTopTab = 'metric-definitions' | 'kpi-definitions' | 'guides';
 export type LearnMainTab = 'overview' | 'walkthrough' | 'methods' | 'best-practices';
 export type WalkthroughType = 'single-turn' | 'expected-output' | 'multi-turn' | 'rag' | 'workflow';
 export type PlaybackSpeed = 0.5 | 1 | 1.5 | 2;
@@ -1768,4 +1769,20 @@ export interface KpiSankeyChartData {
 export interface KpiSankeyResponse {
   success: boolean;
   charts: KpiSankeyChartData[];
+}
+
+// ============================================
+// Metric Definitions
+// ============================================
+
+export interface MetricDefinition {
+  description?: string;
+  link?: string;
+  agents?: string[];
+}
+
+export interface MetricDefinitionsResponse {
+  monitoring: Record<string, MetricDefinition>;
+  kpi: Record<string, MetricDefinition>;
+  signals: Record<string, MetricDefinition>;
 }
