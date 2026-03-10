@@ -298,7 +298,6 @@ export function FlowDiagram({ nodes, edges, activeNodeIds, activeEdgeIds }: Flow
               >
                 {node.label}
               </text>
-
             </g>
           );
         })}

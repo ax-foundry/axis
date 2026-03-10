@@ -19,7 +19,6 @@ export default function LearnPage() {
       <div className="mx-auto max-w-6xl px-6 py-8">
         {/* Main Content with Tabs */}
         <LearnTabs />
-
       </div>
     </div>
   );
