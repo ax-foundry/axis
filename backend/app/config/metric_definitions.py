@@ -1,5 +1,3 @@
-"""Metric definitions config — centralized descriptions and doc links."""
-
 import logging
 from dataclasses import asdict, dataclass, field
 from typing import Any
