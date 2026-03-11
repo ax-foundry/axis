@@ -227,7 +227,7 @@ def _sql_literal(val: Any) -> str:
 def _wrap_query_incremental(query: str, column: str, watermark: str) -> str:
     """Wrap a query to only return rows newer than the watermark."""
     escaped_wm = watermark.replace("'", "''")
-    return f"SELECT * FROM ({query}) AS _inc " f"WHERE _inc.\"{column}\" > '{escaped_wm}'"
+    return f"SELECT * FROM ({query}) AS _inc WHERE _inc.\"{column}\" > '{escaped_wm}'"
 
 
 async def _get_partition_bounds(
@@ -241,7 +241,7 @@ async def _get_partition_bounds(
     """Query MIN/MAX of partition_column. Returns (min, max) or None if empty."""
     effective_ssl = ssl_mode if ssl_mode not in ("disable", None) else None
     bounds_query = (
-        f'SELECT MIN("{partition_column}"), MAX("{partition_column}") ' f"FROM ({query}) AS _bounds"
+        f'SELECT MIN("{partition_column}"), MAX("{partition_column}") FROM ({query}) AS _bounds'
     )
     async with backend.connect(
         pg_url, ssl_mode=effective_ssl, statement_timeout_ms=statement_timeout_ms
@@ -903,7 +903,7 @@ async def _sync_split(
                         old_wm = store.get_watermark(sub_table)
                         store.set_watermark(sub_table, str(max_val))
                         logger.info(
-                            f"[{table_name}] Watermark saved: " f"{sub_table}={old_wm} → {max_val}"
+                            f"[{table_name}] Watermark saved: {sub_table}={old_wm} → {max_val}"
                         )
 
         # Human signals post-processing: always rebuild derived tables
@@ -930,9 +930,7 @@ async def _sync_split(
                 f"+{incremental_rows} new rows, {rows} total, {duration:.1f}s"
             )
         else:
-            logger.info(
-                f"[{table_name}] FULL sync complete: " f"{rows} total rows, {duration:.1f}s"
-            )
+            logger.info(f"[{table_name}] FULL sync complete: {rows} total rows, {duration:.1f}s")
         return SyncResult(
             table_name,
             rows,

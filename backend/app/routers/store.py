@@ -300,9 +300,7 @@ async def get_dataset_data(
         order = "ORDER BY timestamp DESC NULLS LAST"
 
     offset = (page - 1) * page_size
-    data_sql = (
-        f"SELECT {select_clause} FROM {table} " f"WHERE {where_clause} {order} LIMIT ? OFFSET ?"
-    )
+    data_sql = f"SELECT {select_clause} FROM {table} WHERE {where_clause} {order} LIMIT ? OFFSET ?"
     data_params = [*params, page_size, offset]
 
     def _run_query() -> tuple[int, list[dict[str, Any]]]:

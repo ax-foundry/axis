@@ -84,7 +84,7 @@ class AnalyzerNode(BaseNode[CopilotState, GraphDeps, str]):
 
             system_prompt = f"""You are an AI assistant analyzing user requests about evaluation data.
 
-Available skills you can use: {', '.join(skill_names)}
+Available skills you can use: {", ".join(skill_names)}
 
 Analyze the user's request and determine:
 1. What is their intent?
@@ -432,8 +432,7 @@ Provide a quality score (0-1) and feedback."""
             state.quality_feedback = reflection.feedback
 
             await deps.thought_stream.emit_reflection(
-                f"Quality score: {reflection.quality_score:.2f}\n"
-                f"Feedback: {reflection.feedback}",
+                f"Quality score: {reflection.quality_score:.2f}\nFeedback: {reflection.feedback}",
                 node_name="Reflector",
             )
 

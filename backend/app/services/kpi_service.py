@@ -295,7 +295,7 @@ def _daily_agg_expr(spec: SumKpiSpec, params: list[object]) -> str:
         conditions.append("kpi_name LIKE ?")
         params.append(prefix + "%")
     combined = " OR ".join(conditions)
-    return f"CASE WHEN ({combined}) " f"THEN SUM(numeric_value) ELSE AVG(numeric_value) END"
+    return f"CASE WHEN ({combined}) THEN SUM(numeric_value) ELSE AVG(numeric_value) END"
 
 
 def _build_where(

@@ -92,7 +92,7 @@ def _build_where(
             if has_col:
                 # SCORE is the default bucket: match explicit SCORE or NULL/missing
                 conds.append(
-                    "(UPPER(CAST(metric_category AS VARCHAR)) = ? " "OR metric_category IS NULL)"
+                    "(UPPER(CAST(metric_category AS VARCHAR)) = ? OR metric_category IS NULL)"
                 )
                 vals.append(cat_upper)
             # If column doesn't exist, all rows are implicitly SCORE — no filter needed

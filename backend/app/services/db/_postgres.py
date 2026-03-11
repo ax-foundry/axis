@@ -275,7 +275,7 @@ class PostgresBackend(DatabaseBackend):
             await pool.open()
             self._pools[conninfo] = pool
             logger.info(
-                f"Created connection pool (min={min_size}, max={max_size}) " f"for {url[:40]}..."
+                f"Created connection pool (min={min_size}, max={max_size}) for {url[:40]}..."
             )
 
         return self._pools[conninfo]
