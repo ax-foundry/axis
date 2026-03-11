@@ -195,7 +195,7 @@ def get_full_graph(
 
     if risk_factor:
         # Match subgraph connected to the given risk factor
-        query = "MATCH (rf:RiskFactor {name: $rf})-[r]-(m) " "RETURN rf, r, m LIMIT $limit"
+        query = "MATCH (rf:RiskFactor {name: $rf})-[r]-(m) RETURN rf, r, m LIMIT $limit"
         params = {"rf": risk_factor, "limit": limit}
     elif action or product_type or node_type:
         # Filter based on properties
@@ -208,8 +208,7 @@ def get_full_graph(
             params["action"] = action
         if product_type:
             where_clauses.append(
-                "(n:Rule AND n.product_type = $product) OR "
-                "(m:Rule AND m.product_type = $product)"
+                "(n:Rule AND n.product_type = $product) OR (m:Rule AND m.product_type = $product)"
             )
             params["product"] = product_type
         if node_type:
@@ -333,7 +332,7 @@ def get_neighborhood(node_id: str, depth: int = 1) -> dict[str, Any]:
 
     # First find the focal node by matching slug against name
     focal_result = graph.query(
-        f"MATCH (n:{node_label}) " "RETURN n " "LIMIT 50",
+        f"MATCH (n:{node_label}) RETURN n LIMIT 50",
     )
 
     focal_node: GraphNode | None = None

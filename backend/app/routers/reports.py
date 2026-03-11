@@ -170,7 +170,7 @@ async def generate_report_stream(request: dict[str, Any]) -> EventSourceResponse
                 return
 
             # Emit: Starting extraction
-            config_summary = f"threshold={extraction_config.score_threshold}, sample={extraction_config.sample_rate*100:.0f}%"
+            config_summary = f"threshold={extraction_config.score_threshold}, sample={extraction_config.sample_rate * 100:.0f}%"
             if extraction_config.metric_filters:
                 config_summary += f", metrics={extraction_config.metric_filters}"
             thought_data = json.dumps(

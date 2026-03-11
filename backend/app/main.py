@@ -1,11 +1,16 @@
 import asyncio
 import logging
+import secrets
 import sys
+import typing
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request
+from starlette.responses import JSONResponse
 
 from app.config.env import settings
 from app.plugins import get_all_tags_metadata, register_all
@@ -26,6 +31,35 @@ from app.routers import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+class ApiKeyMiddleware(BaseHTTPMiddleware):
+    """Validate X-Api-Key header on all /api/* requests when API_GATEWAY_KEY is configured."""
+
+    async def dispatch(
+        self, request: Request, call_next: typing.Callable[..., typing.Any]
+    ) -> typing.Any:
+        """Pass through or reject requests based on API key presence and validity."""
+        # Always pass OPTIONS through (CORS preflight must not be blocked)
+        if request.method == "OPTIONS":
+            return await call_next(request)
+
+        # Only gate /api/* routes
+        if not request.url.path.startswith("/api/"):
+            return await call_next(request)
+
+        expected_key = settings.API_GATEWAY_KEY
+        if expected_key:
+            provided_key = request.headers.get("x-api-key", "")
+            if not secrets.compare_digest(provided_key, expected_key):
+                return JSONResponse(
+                    {"detail": "Invalid or missing API key"},
+                    status_code=401,
+                    headers={"WWW-Authenticate": "ApiKey"},
+                )
+
+        return await call_next(request)
+
 
 # Configure logging
 logging.basicConfig(
@@ -158,6 +192,9 @@ cors_origins = {"http://localhost:3500", "http://127.0.0.1:3500", settings.FRONT
 if settings.FRONTEND_URLS:
     extra_origins = [origin.strip() for origin in settings.FRONTEND_URLS.split(",")]
     cors_origins.update(origin for origin in extra_origins if origin)
+
+# API key auth (added first so CORS middleware executes first in the stack)
+app.add_middleware(ApiKeyMiddleware)
 
 # CORS configuration
 app.add_middleware(

@@ -61,7 +61,7 @@ import type {
   KpiSankeyResponse,
 } from '@/types';
 
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8500';
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? '';
 
 export async function fetchApi<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`;
@@ -84,7 +84,7 @@ export async function fetchApi<T>(endpoint: string, options: RequestInit = {}): 
   } catch (error) {
     if (error instanceof TypeError && error.message === 'Failed to fetch') {
       throw new Error(
-        `Cannot connect to backend at ${API_BASE_URL}. Please ensure the backend server is running (cd backend && uvicorn app.main:app --reload --port 8500)`
+        `Cannot connect to backend. Please ensure the backend server is running (cd backend && uvicorn app.main:app --reload --port 8500)`
       );
     }
     throw error;

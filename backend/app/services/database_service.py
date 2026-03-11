@@ -88,10 +88,7 @@ async def connect(conn: DatabaseConnectionRequest) -> tuple[str, str | None]:
     backend = get_backend(conn.db_type)
 
     encoded_password = quote_plus(conn.password.get_secret_value())
-    url = (
-        f"postgresql://{conn.username}:{encoded_password}"
-        f"@{conn.host}:{conn.port}/{conn.database}"
-    )
+    url = f"postgresql://{conn.username}:{encoded_password}@{conn.host}:{conn.port}/{conn.database}"
     ssl_mode = conn.ssl_mode.value if conn.ssl_mode.value != "disable" else None
 
     try:
