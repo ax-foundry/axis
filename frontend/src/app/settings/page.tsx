@@ -7,7 +7,7 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { useDataStore } from '@/stores';
 import { useThemeStore } from '@/stores/theme-store';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8500';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8500';
 
 function ConnectionStatus() {
   const [status, setStatus] = useState<'checking' | 'connected' | 'error'>('checking');
