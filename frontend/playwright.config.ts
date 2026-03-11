@@ -13,7 +13,7 @@ export default defineConfig({
     trace: 'on-first-retry',
   },
   webServer: {
-    command: process.env.CI ? 'npm run build && PORT=3500 node .next/standalone/server.js' : 'npm run dev',
+    command: process.env.CI ? 'PORT=3500 node .next/standalone/server.js' : 'npm run dev',
     url: 'http://localhost:3500',
     reuseExistingServer: !process.env.CI,
     timeout: 120000,
