@@ -33,13 +33,16 @@ logger = logging.getLogger(__name__)
 
 
 class ApiKeyMiddleware(BaseHTTPMiddleware):
+    """Validate X-Api-Key header on all /api/* requests when API_GATEWAY_KEY is configured."""
+
     async def dispatch(self, request: Request, call_next):
+        """Pass through or reject requests based on API key presence and validity."""
         # Always pass OPTIONS through (CORS preflight must not be blocked)
         if request.method == "OPTIONS":
             return await call_next(request)
 
-        # Skip auth for health/root endpoints
-        if request.url.path in ("/", "/health"):
+        # Only gate /api/* routes
+        if not request.url.path.startswith("/api/"):
             return await call_next(request)
 
         expected_key = settings.API_GATEWAY_KEY
