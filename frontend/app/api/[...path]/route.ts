@@ -6,7 +6,7 @@
  * The API_GATEWAY_KEY is injected server-side; any client-supplied x-api-key
  * is stripped to prevent spoofing.
  */
-import { NextRequest, NextResponse } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
 
 const BACKEND_URL =
   process.env.INTERNAL_API_URL ??
@@ -28,13 +28,14 @@ async function proxy(request: NextRequest): Promise<NextResponse> {
 
   const hasBody = request.method !== 'GET' && request.method !== 'HEAD';
 
-  const upstreamResponse = await fetch(upstream, {
+  const fetchInit: RequestInit & { duplex?: string } = {
     method: request.method,
     headers,
     body: hasBody ? request.body : undefined,
-    // @ts-expect-error — Node.js fetch supports duplex for streaming
     duplex: hasBody ? 'half' : undefined,
-  });
+  };
+
+  const upstreamResponse = await fetch(upstream, fetchInit);
 
   const responseHeaders = new Headers(upstreamResponse.headers);
   // Remove hop-by-hop headers
