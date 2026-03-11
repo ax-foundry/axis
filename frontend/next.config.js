@@ -39,7 +39,7 @@ const nextConfig = {
     // INTERNAL_API_URL is for server-side rewrites (e.g. Docker where
     // the backend service name differs from the browser-reachable URL).
     const apiUrl =
-      process.env.INTERNAL_API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8500';
+      process.env.INTERNAL_API_URL ?? process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8500';
     return [
       {
         source: '/api/:path*',
