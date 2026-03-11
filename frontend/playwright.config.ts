@@ -9,15 +9,13 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   reporter: 'html',
   use: {
-    baseURL: process.env.CI ? 'http://127.0.0.1:3500' : 'http://localhost:3500',
+    baseURL: 'http://localhost:3500',
     trace: 'on-first-retry',
   },
   webServer: {
-    command: process.env.CI ? 'HOSTNAME=127.0.0.1 PORT=3500 node .next/standalone/server.js 2>&1' : 'npm run dev',
-    url: process.env.CI ? 'http://127.0.0.1:3500' : 'http://localhost:3500',
+    command: 'npm run dev',
+    url: 'http://localhost:3500',
     reuseExistingServer: !process.env.CI,
-    timeout: 120000,
-    stdout: 'pipe',
-    stderr: 'pipe',
+    timeout: 60000,
   },
 });
