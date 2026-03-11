@@ -56,6 +56,12 @@ class Settings(BaseSettings):
         description="Comma-separated list of additional frontend origins for CORS.",
     )
 
+    # API gateway key — if set, all /api/* requests must include X-Api-Key header
+    API_GATEWAY_KEY: str | None = Field(
+        default=None,
+        description="If set, all /api/* requests must include a matching X-Api-Key header.",
+    )
+
     # AI Configuration
     openai_api_base: str | None = Field(
         default=None, description="Optional base URL for OpenAI-compatible APIs."
