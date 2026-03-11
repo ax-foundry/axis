@@ -9,9 +9,7 @@
 import { type NextRequest, NextResponse } from 'next/server';
 
 const BACKEND_URL =
-  process.env.INTERNAL_API_URL ??
-  process.env.NEXT_PUBLIC_API_URL ??
-  'http://localhost:8500';
+  process.env.INTERNAL_API_URL ?? process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8500';
 
 const API_KEY = process.env.API_GATEWAY_KEY;
 
