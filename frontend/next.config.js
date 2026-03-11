@@ -32,21 +32,6 @@ const nextConfig = {
     formats: ['image/avif', 'image/webp'],
     minimumCacheTTL: 60 * 60 * 24 * 365,
   },
-  async rewrites() {
-    // Proxy /api/* to the backend so that asset paths like
-    // /api/config/assets/branding/hero.jpg work from <img src> tags
-    // in both local dev and production (Vercel).
-    // INTERNAL_API_URL is for server-side rewrites (e.g. Docker where
-    // the backend service name differs from the browser-reachable URL).
-    const apiUrl =
-      process.env.INTERNAL_API_URL ?? process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8500';
-    return [
-      {
-        source: '/api/:path*',
-        destination: `${apiUrl}/api/:path*`,
-      },
-    ];
-  },
   async headers() {
     return [
       {
