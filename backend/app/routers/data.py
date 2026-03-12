@@ -4,7 +4,7 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
-from fastapi import APIRouter, File, HTTPException, UploadFile
+from fastapi import APIRouter, File, HTTPException, Request, UploadFile
 
 from app.models.schemas import (
     DataFormatResponse,
@@ -232,11 +232,19 @@ async def get_eval_db_config() -> dict[str, Any]:
 
 
 @router.post("/eval-db-import", response_model=UploadResponse)
-async def auto_import_eval_from_database() -> UploadResponse:
+async def auto_import_eval_from_database(request: Request) -> UploadResponse:
     """Auto-import evaluation data from the configured database.
 
     Executes the pre-configured SQL query and returns processed data.
     """
+    startup_task = getattr(request.app.state, "startup_sync_task", None)
+    if startup_task and not startup_task.done():
+        raise HTTPException(
+            status_code=503,
+            detail="Startup sync in progress, please retry in a moment.",
+            headers={"Retry-After": "5"},
+        )
+
     from app.config.db.eval_db import eval_db_config
     from app.services.db import get_backend
 

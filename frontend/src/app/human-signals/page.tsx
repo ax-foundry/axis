@@ -274,21 +274,30 @@ export default function HumanSignalsPage() {
   const [autoConnectError, setAutoConnectError] = useState<string | null>(null);
   const [storeStatusChecked, setStoreStatusChecked] = useState(false);
 
-  // Check DuckDB store status on mount
+  // Check DuckDB store status on mount — wait for startup sync if needed
   useEffect(() => {
     let cancelled = false;
-    getStoreStatus()
-      .then((status) => {
+    const checkStore = async () => {
+      try {
+        let status = await getStoreStatus();
         if (cancelled) return;
-        const ds = status.datasets?.human_signals_data;
-        if (ds) {
-          setSyncStatus(ds);
+        let ds = status.datasets?.human_signals_data;
+
+        while (!cancelled && ds?.state === 'syncing') {
+          await new Promise((resolve) => setTimeout(resolve, 2000));
+          if (cancelled) return;
+          status = await getStoreStatus();
+          ds = status.datasets?.human_signals_data;
         }
-        setStoreStatusChecked(true);
-      })
-      .catch(() => {
+
+        if (!cancelled && ds) setSyncStatus(ds);
+      } catch {
+        // Store not available — fallback
+      } finally {
         if (!cancelled) setStoreStatusChecked(true);
-      });
+      }
+    };
+    checkStore();
     return () => {
       cancelled = true;
     };

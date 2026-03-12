@@ -626,14 +626,24 @@ export default function MonitoringPage() {
   // Track whether the DuckDB store status check has completed
   const [storeStatusChecked, setStoreStatusChecked] = useState(false);
 
-  // Poll DuckDB store status on mount → populate filters from metadata if ready
+  // Poll DuckDB store status on mount → wait for startup sync if needed
   useEffect(() => {
     let cancelled = false;
     const checkStore = async () => {
       try {
-        const status = await getStoreStatus();
+        let status = await getStoreStatus();
         if (cancelled) return;
-        const monStatus = status.datasets?.monitoring_data;
+        let monStatus = status.datasets?.monitoring_data;
+
+        // If startup sync is still running, poll until it completes
+        while (!cancelled && monStatus?.state === 'syncing') {
+          await new Promise((resolve) => setTimeout(resolve, 2000));
+          if (cancelled) return;
+          status = await getStoreStatus();
+          monStatus = status.datasets?.monitoring_data;
+        }
+
+        if (cancelled) return;
         if (monStatus) {
           setSyncStatus(monStatus);
           if (monStatus.state === 'ready') {
