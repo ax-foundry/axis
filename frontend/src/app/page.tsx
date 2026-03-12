@@ -1208,11 +1208,7 @@ function BiographyModal({ agent, onClose }: { agent: AgentConfig; onClose: () =>
             <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-full border-4 border-white bg-gray-100 shadow-md">
               {agent.avatar ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={agent.avatar}
-                  alt={agent.label}
-                  className="h-16 w-16 object-cover"
-                />
+                <img src={agent.avatar} alt={agent.label} className="h-16 w-16 object-cover" />
               ) : (
                 <Bot className="h-8 w-8 text-text-muted" />
               )}
