@@ -1207,8 +1207,13 @@ function BiographyModal({ agent, onClose }: { agent: AgentConfig; onClose: () =>
           <div className="absolute -bottom-8 left-8">
             <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-full border-4 border-white bg-gray-100 shadow-md">
               {agent.avatar ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={agent.avatar} alt={agent.label} className="h-16 w-16 object-cover" />
+                <Image
+                  src={agent.avatar}
+                  alt={agent.label}
+                  width={64}
+                  height={64}
+                  className="h-16 w-16 object-cover"
+                />
               ) : (
                 <Bot className="h-8 w-8 text-text-muted" />
               )}
@@ -1370,10 +1375,11 @@ function MeetTheTeam({ isLight }: { isLight: boolean }) {
                         }}
                       >
                         {agent.avatar ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
+                          <Image
                             src={agent.avatar}
                             alt={agent.label}
+                            width={56}
+                            height={56}
                             className="h-14 w-14 object-cover"
                           />
                         ) : (

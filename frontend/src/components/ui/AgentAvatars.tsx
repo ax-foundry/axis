@@ -1,6 +1,7 @@
 'use client';
 
 import { Bot } from 'lucide-react';
+import Image from 'next/image';
 
 import { getAgentConfig } from '@/config/agents';
 import { cn } from '@/lib/utils';
@@ -31,8 +32,13 @@ export function AgentAvatars({ agents, max = 4, className }: AgentAvatarsProps) 
             className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border border-white bg-gray-100 ring-1 ring-border"
           >
             {avatar ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={avatar} alt={label} className="h-5 w-5 rounded-full object-cover" />
+              <Image
+                src={avatar}
+                alt={label}
+                width={20}
+                height={20}
+                className="h-5 w-5 rounded-full object-cover"
+              />
             ) : (
               <Bot className="h-3 w-3 text-text-muted" />
             )}
