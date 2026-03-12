@@ -182,17 +182,18 @@ class PostgresBackend(DatabaseBackend):
     ) -> AsyncIterator[tuple[pd.DataFrame, bool]]:
         conninfo = _build_conninfo(url, ssl_mode, connect_timeout)
 
-        # autocommit=False required for server-side cursors
+        # Use autocommit=True with a plain (client-side) cursor so this works
+        # through PgBouncer/Neon poolers, which reject named server-side cursors.
         conn = await psycopg.AsyncConnection.connect(
             conninfo,
             row_factory=dict_row,
-            autocommit=False,
+            autocommit=True,
         )
         total_rows = 0
         try:
             await _set_statement_timeout(conn, statement_timeout_ms)
 
-            async with conn.cursor(name="axis_sync_cursor") as cur:
+            async with conn.cursor() as cur:
                 await cur.execute(query)
                 while True:
                     rows = await cur.fetchmany(chunk_size)
