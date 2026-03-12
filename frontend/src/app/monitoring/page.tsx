@@ -835,8 +835,9 @@ export default function MonitoringPage() {
     };
   }, [filteredData, datasetReady, storeMetadata]);
 
-  // Auto-switch tab if the active tab's category has no data
+  // Auto-switch tab if the active tab's category has no data (only after data has loaded)
   useEffect(() => {
+    if (!datasetReady) return;
     const tabAvailable: Record<string, boolean> = {
       score: hasScoreMetrics,
       classification: hasClassificationMetrics,
@@ -851,6 +852,7 @@ export default function MonitoringPage() {
       setActiveMetricCategoryTab(fallback);
     }
   }, [
+    datasetReady,
     hasScoreMetrics,
     hasClassificationMetrics,
     hasAnalysisMetrics,
