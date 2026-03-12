@@ -5,7 +5,7 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
-from fastapi import APIRouter, File, HTTPException, UploadFile
+from fastapi import APIRouter, File, HTTPException, Request, UploadFile
 
 logger = logging.getLogger(__name__)
 
@@ -407,12 +407,20 @@ async def get_monitoring_db_config() -> dict[str, Any]:
 
 
 @router.post("/db-import")
-async def auto_import_from_database() -> dict[str, Any]:
+async def auto_import_from_database(request: Request) -> dict[str, Any]:
     """Auto-import monitoring data from the configured database.
 
     Supports custom SQL queries or table-based import.
     Uses the connection settings from YAML config or environment variables.
     """
+    startup_task = getattr(request.app.state, "startup_sync_task", None)
+    if startup_task and not startup_task.done():
+        raise HTTPException(
+            status_code=503,
+            detail="Startup sync in progress, please retry in a moment.",
+            headers={"Retry-After": "5"},
+        )
+
     from app.config.db.monitoring import monitoring_db_config
 
     if not monitoring_db_config.is_configured:

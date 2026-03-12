@@ -12,10 +12,29 @@ import type { Metadata } from 'next';
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
 const jetbrainsMono = JetBrains_Mono({ subsets: ['latin'], variable: '--font-mono' });
 
-export const metadata: Metadata = {
-  title: 'AXIS - AI Evaluation Platform',
-  description: 'Comprehensive AI evaluation, analytics, and testing platform',
-};
+const BACKEND_URL =
+  process.env.INTERNAL_API_URL ?? process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8500';
+
+export async function generateMetadata(): Promise<Metadata> {
+  try {
+    const res = await fetch(`${BACKEND_URL}/api/config/theme`, {
+      headers: { 'x-api-key': process.env.API_GATEWAY_KEY ?? '' },
+      next: { revalidate: 3600 },
+    });
+    const data = await res.json();
+    const { app_name, tagline } = data?.branding ?? {};
+    const title = [app_name?.trim(), tagline?.trim()].filter(Boolean).join(' — ');
+    return {
+      title: title || 'AXIS - AI Evaluation Platform',
+      description: tagline ?? 'Comprehensive AI evaluation, analytics, and testing platform',
+    };
+  } catch {
+    return {
+      title: 'AXIS - AI Evaluation Platform',
+      description: 'Comprehensive AI evaluation, analytics, and testing platform',
+    };
+  }
+}
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

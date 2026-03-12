@@ -120,6 +120,8 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
             startup_sync_task.add_done_callback(background_tasks.discard)
             logger.info("DuckDB background sync started")
 
+        app.state.startup_sync_task = startup_sync_task
+
         # Periodic incremental sync scheduler — starts after startup sync completes
         _captured_startup_task = startup_sync_task
 
