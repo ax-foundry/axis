@@ -1,7 +1,6 @@
 'use client';
 
 import { Bot } from 'lucide-react';
-import Image from 'next/image';
 import { useCallback, useEffect, useMemo } from 'react';
 
 import { getAgentConfig, getAgentRegistry } from '@/config/agents';
@@ -118,7 +117,8 @@ function AgentTab({
             isSelected ? 'bg-primary-pale' : 'bg-gray-100'
           )}
         >
-          <Image src={avatar} alt={label} width={26} height={26} className="object-cover" />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={avatar} alt={label} className="h-[26px] w-[26px] object-cover" />
         </div>
       ) : (
         <div
