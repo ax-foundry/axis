@@ -1,7 +1,6 @@
 'use client';
 
 import { AlertCircle, Bot, Clock, Search, Sparkles, Tag } from 'lucide-react';
-import Image from 'next/image';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { getAgentConfig } from '@/config/agents';
@@ -220,13 +219,8 @@ export function TracePicker({ onSelect, agent, className }: TracePickerProps) {
                   {/* Agent avatar */}
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary/15 to-primary/5 transition-colors group-hover:from-primary/25 group-hover:to-primary/10">
                     {agentConfig?.avatar ? (
-                      <Image
-                        src={agentConfig.avatar}
-                        alt={agentConfig.label}
-                        width={24}
-                        height={24}
-                        className="rounded-lg"
-                      />
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={agentConfig.avatar} alt={agentConfig.label} className="rounded-lg h-6 w-6" />
                     ) : (
                       <Bot className="h-5 w-5 text-primary" />
                     )}

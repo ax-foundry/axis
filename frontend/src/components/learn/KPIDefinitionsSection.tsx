@@ -1,7 +1,6 @@
 'use client';
 
 import { ArrowRight, ArrowUpRight, BarChart3, Bot, Loader2, Search, X } from 'lucide-react';
-import Image from 'next/image';
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 
@@ -127,13 +126,8 @@ export function KPIDefinitionsSection() {
               >
                 <div className="flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full bg-gray-100">
                   {avatar ? (
-                    <Image
-                      src={avatar}
-                      alt={label}
-                      width={16}
-                      height={16}
-                      className="h-4 w-4 rounded-full object-cover"
-                    />
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={avatar} alt={label} className="h-4 w-4 rounded-full object-cover" />
                   ) : (
                     <Bot className="h-2.5 w-2.5 text-text-muted" />
                   )}
