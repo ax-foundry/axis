@@ -1,8 +1,10 @@
+import asyncio
 import io
 import logging
 from pathlib import Path
 from typing import Any
 
+import anyio
 import numpy as np
 import pandas as pd
 from fastapi import APIRouter, File, HTTPException, UploadFile
@@ -413,6 +415,7 @@ async def auto_import_from_database() -> dict[str, Any]:
     Supports custom SQL queries or table-based import.
     Uses the connection settings from YAML config or environment variables.
     """
+    from app.config.db.duckdb import duckdb_config
     from app.config.db.monitoring import monitoring_db_config
 
     if not monitoring_db_config.is_configured:
@@ -420,6 +423,33 @@ async def auto_import_from_database() -> dict[str, Any]:
             status_code=400,
             detail="Database not configured. Set up config/monitoring_db.yaml or environment variables.",
         )
+
+    # DuckDB sync path: read from pre-synced local store when available.
+    if duckdb_config.enabled and monitoring_db_config.has_query:
+        from app.services.duckdb_store import get_store
+        from app.services.sync_engine import sync_single
+
+        store = get_store()
+        status = store.get_sync_status("monitoring_data")
+
+        # If already syncing, wait for it to complete instead of opening a fresh DB connection.
+        if status.state == "syncing":
+            logger.info("Monitoring sync already running, waiting for completion...")
+            for _ in range(120):  # Wait up to 120s
+                await asyncio.sleep(1)
+                status = store.get_sync_status("monitoring_data")
+                if status.state != "syncing":
+                    break
+            if status.state == "syncing":
+                raise HTTPException(408, "Monitoring sync timed out")
+        elif not store.has_table("monitoring_data"):
+            # No cached data yet - trigger sync and wait.
+            logger.info("Triggering monitoring DuckDB sync...")
+            result = await sync_single("monitoring", store)
+            if result.status == "error":
+                raise HTTPException(500, f"Sync failed: {result.error}")
+
+        return await _read_monitoring_from_duckdb(store)
 
     # If split queries are configured, use direct database connection
     if monitoring_db_config.has_query:
@@ -433,6 +463,34 @@ async def auto_import_from_database() -> dict[str, Any]:
         )
 
     return await _import_from_table(monitoring_db_config)
+
+
+async def _read_monitoring_from_duckdb(store: Any) -> dict[str, Any]:
+    """Read monitoring_data from DuckDB and return response shape used by db-import."""
+    if not store.has_table("monitoring_data"):
+        raise HTTPException(
+            status_code=404,
+            detail="Sync completed but no monitoring data was loaded.",
+        )
+
+    def _query() -> list[dict[str, Any]]:
+        rows: list[dict[str, Any]] = store.query_list("SELECT * FROM monitoring_data")
+        return [{k: store.clean_value(v) for k, v in row.items()} for row in rows]
+
+    rows = await anyio.to_thread.run_sync(_query, limiter=store.query_limiter)
+
+    columns = list(rows[0].keys()) if rows else []
+    metric_columns = detect_metric_columns(pd.DataFrame(rows)) if rows else []
+    return {
+        "success": True,
+        "format": "monitoring",
+        "row_count": len(rows),
+        "columns": columns,
+        "metric_columns": metric_columns,
+        "data": rows,
+        "message": f"Loaded {len(rows)} records from database",
+        "source": "duckdb",
+    }
 
 
 async def _import_with_custom_query(config: Any) -> dict[str, Any]:

@@ -9,7 +9,9 @@
 import { type NextRequest, NextResponse } from 'next/server';
 
 const BACKEND_URL =
-  process.env.INTERNAL_API_URL ?? process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8500';
+  process.env.NODE_ENV === 'development'
+    ? (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8500')
+    : (process.env.INTERNAL_API_URL ?? process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8500');
 
 const API_KEY = process.env.API_GATEWAY_KEY;
 
@@ -33,7 +35,19 @@ async function proxy(request: NextRequest): Promise<NextResponse> {
     duplex: hasBody ? 'half' : undefined,
   };
 
-  const upstreamResponse = await fetch(upstream, fetchInit);
+  let upstreamResponse: Response;
+  try {
+    upstreamResponse = await fetch(upstream, fetchInit);
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : 'Unknown upstream error';
+    return NextResponse.json(
+      {
+        detail: `API proxy request failed for ${request.method} ${pathname}: ${detail}`,
+        upstream,
+      },
+      { status: 502 }
+    );
+  }
 
   const responseHeaders = new Headers(upstreamResponse.headers);
   // Remove hop-by-hop headers
