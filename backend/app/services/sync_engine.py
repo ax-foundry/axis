@@ -157,7 +157,13 @@ async def _copy_read(
     dest_dir: Path,
     file_name: str,
 ) -> Path | None:
-    """Run COPY export writing to dest_dir/file_name. Returns path or None if unsupported."""
+    """Run COPY export writing to dest_dir/file_name. Returns path or None if unsupported.
+
+    Returns None (falls through to chunked read) if the backend doesn't support COPY
+    or if the server drops the connection (e.g. Neon pooler rejects COPY in transaction mode).
+    """
+    import psycopg
+
     dest_path = dest_dir / file_name
     effective_ssl = ssl_mode if ssl_mode not in ("disable", None) else None
     try:
@@ -170,6 +176,13 @@ async def _copy_read(
         )
         return dest_path
     except (NotImplementedError, AttributeError):
+        return None
+    except (psycopg.OperationalError, psycopg.DatabaseError, OSError) as e:
+        logger.warning(
+            "COPY read failed (%s: %s), falling back to chunked read",
+            type(e).__name__,
+            e,
+        )
         return None
 
 
