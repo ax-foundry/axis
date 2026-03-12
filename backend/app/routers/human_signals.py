@@ -8,7 +8,7 @@ from typing import Any
 import anyio
 import numpy as np
 import pandas as pd
-from fastapi import APIRouter, File, HTTPException, UploadFile
+from fastapi import APIRouter, File, HTTPException, Request, UploadFile
 
 from app.services.duckdb_store import get_store
 from app.services.human_signals_service import (
@@ -225,13 +225,21 @@ async def get_human_signals_db_config() -> dict[str, Any]:
 
 
 @router.post("/db-import")
-async def auto_import_from_database() -> dict[str, Any]:
+async def auto_import_from_database(request: Request) -> dict[str, Any]:
     """Auto-import human signals data from the configured database.
 
     When DuckDB is enabled and the database has a query configured, triggers
     a DuckDB sync (Postgres → DuckDB staging → atomic swap → derived tables).
     Falls back to legacy one-shot import otherwise.
     """
+    startup_task = getattr(request.app.state, "startup_sync_task", None)
+    if startup_task and not startup_task.done():
+        raise HTTPException(
+            status_code=503,
+            detail="Startup sync in progress, please retry in a moment.",
+            headers={"Retry-After": "5"},
+        )
+
     from app.config.db.duckdb import duckdb_config
     from app.config.db.human_signals import human_signals_db_config
 
