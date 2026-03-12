@@ -8,7 +8,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  const token = await getToken({ req: request });
+  const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
   if (!token) {
     const signIn = new URL('/auth/signin', request.url);
     signIn.searchParams.set('callbackUrl', request.url);
@@ -19,5 +19,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!api/auth|_next/static|_next/image|favicon\\.ico).*)'],
+  matcher: ['/((?!auth/|api/auth|_next/static|_next/image|favicon\\.ico).*)'],
 };
