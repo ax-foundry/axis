@@ -31,16 +31,16 @@ export function Providers({ children }: { children: ReactNode }) {
 
   return (
     <SessionProvider>
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider>
-        <FaviconManager />
-        <EvalDataInitializer>
-          <MonitoringDataInitializer>
-            <HumanSignalsDataInitializer>{children}</HumanSignalsDataInitializer>
-          </MonitoringDataInitializer>
-        </EvalDataInitializer>
-      </ThemeProvider>
-    </QueryClientProvider>
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider>
+          <FaviconManager />
+          <EvalDataInitializer>
+            <MonitoringDataInitializer>
+              <HumanSignalsDataInitializer>{children}</HumanSignalsDataInitializer>
+            </MonitoringDataInitializer>
+          </EvalDataInitializer>
+        </ThemeProvider>
+      </QueryClientProvider>
     </SessionProvider>
   );
 }

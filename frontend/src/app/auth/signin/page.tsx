@@ -5,16 +5,18 @@ import { signIn } from 'next-auth/react';
 export default function SignInPage() {
   return (
     <div className="flex h-screen items-center justify-center bg-background">
-      <div className="flex flex-col items-center gap-6 rounded-xl border bg-card p-10 shadow-sm">
+      <div className="bg-card flex flex-col items-center gap-6 rounded-xl border p-10 shadow-sm">
         <div className="flex flex-col items-center gap-2 text-center">
           <h1 className="text-2xl font-semibold">Sign in</h1>
-          <p className="text-sm text-muted-foreground">
-            Use your @mgtinsurance.com Google account
-          </p>
+          {process.env.NEXT_PUBLIC_AUTH_DOMAIN && (
+            <p className="text-muted-foreground text-sm">
+              Use your @{process.env.NEXT_PUBLIC_AUTH_DOMAIN} Google account
+            </p>
+          )}
         </div>
         <button
           onClick={() => signIn('google', { callbackUrl: '/' })}
-          className="flex items-center gap-3 rounded-lg border bg-background px-6 py-3 text-sm font-medium shadow-sm transition-colors hover:bg-accent"
+          className="hover:bg-accent flex items-center gap-3 rounded-lg border bg-background px-6 py-3 text-sm font-medium shadow-sm transition-colors"
         >
           <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
             <path

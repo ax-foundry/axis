@@ -10,7 +10,9 @@ const handler = NextAuth({
   ],
   callbacks: {
     signIn({ user }) {
-      return user.email?.endsWith('@mgtinsurance.com') ?? false;
+      const domain = process.env.AUTH_DOMAIN;
+      if (!domain) return true; // no restriction if unset
+      return user.email?.endsWith(`@${domain}`) ?? false;
     },
   },
   pages: {
