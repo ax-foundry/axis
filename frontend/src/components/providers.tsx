@@ -1,6 +1,7 @@
 'use client';
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { SessionProvider } from 'next-auth/react';
 import { type ReactNode, useState } from 'react';
 
 import { EvalDataInitializer } from '@/components/eval-data-initializer';
@@ -29,15 +30,17 @@ export function Providers({ children }: { children: ReactNode }) {
   });
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider>
-        <FaviconManager />
-        <EvalDataInitializer>
-          <MonitoringDataInitializer>
-            <HumanSignalsDataInitializer>{children}</HumanSignalsDataInitializer>
-          </MonitoringDataInitializer>
-        </EvalDataInitializer>
-      </ThemeProvider>
-    </QueryClientProvider>
+    <SessionProvider>
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider>
+          <FaviconManager />
+          <EvalDataInitializer>
+            <MonitoringDataInitializer>
+              <HumanSignalsDataInitializer>{children}</HumanSignalsDataInitializer>
+            </MonitoringDataInitializer>
+          </EvalDataInitializer>
+        </ThemeProvider>
+      </QueryClientProvider>
+    </SessionProvider>
   );
 }
