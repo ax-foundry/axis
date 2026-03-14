@@ -1,7 +1,7 @@
 'use client';
 
-import { signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import { signOut } from 'next-auth/react';
 
 import { useAppIconUrl, useBranding } from '@/lib/theme';
 import { useThemeStore } from '@/stores/theme-store';
