@@ -2,7 +2,7 @@
 
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 
-import { getStoreStatus } from '@/lib/api';
+import { getStoreStatus, getDatasetMetadata } from '@/lib/api';
 import { useMonitoringDBConfig, useMonitoringAutoImport } from '@/lib/hooks/useMonitoringUpload';
 import { useMonitoringStore } from '@/stores';
 
@@ -26,7 +26,7 @@ interface MonitoringDataInitializerProps {
  * Wrap your app with this provider to enable auto-loading monitoring data.
  */
 export function MonitoringDataInitializer({ children }: MonitoringDataInitializerProps) {
-  const { data: existingData } = useMonitoringStore();
+  const { data: existingData, populateFiltersFromMetadata } = useMonitoringStore();
   const { data: config, isLoading: configLoading, error: configError } = useMonitoringDBConfig();
   const { mutate: autoImport, isPending: isImporting } = useMonitoringAutoImport();
 
@@ -40,11 +40,21 @@ export function MonitoringDataInitializer({ children }: MonitoringDataInitialize
   useEffect(() => {
     let cancelled = false;
     getStoreStatus()
-      .then((status) => {
+      .then(async (status) => {
         if (cancelled) return;
         const monStatus = status.datasets?.monitoring_data;
         if (monStatus?.state === 'ready' && monStatus.rows > 0) {
           setDuckdbReady(true);
+          // Populate store metadata so datasetReady=true is set globally,
+          // allowing pages like /production to show data without visiting /monitoring first.
+          try {
+            const meta = await getDatasetMetadata('monitoring');
+            if (!cancelled && meta.metadata) {
+              populateFiltersFromMetadata(meta.metadata);
+            }
+          } catch {
+            // Non-fatal: metadata population is best-effort
+          }
         }
       })
       .catch(() => {
@@ -56,7 +66,7 @@ export function MonitoringDataInitializer({ children }: MonitoringDataInitialize
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [populateFiltersFromMetadata]);
 
   useEffect(() => {
     // Skip if:
