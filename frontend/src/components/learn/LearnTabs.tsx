@@ -114,7 +114,7 @@ export function LearnTabs() {
       ) : (
         <div className="space-y-6">
           {/* Inner guide tab navigation (pill style) */}
-          <div className="flex items-center gap-1 rounded-lg border border-border bg-gray-50 dark:bg-gray-900 p-1">
+          <div className="flex items-center gap-1 rounded-lg border border-border bg-gray-50 p-1 dark:bg-gray-900">
             {guideTabs.map((tab) => {
               const Icon = tab.icon;
               const isActive = learnMainTab === tab.id;

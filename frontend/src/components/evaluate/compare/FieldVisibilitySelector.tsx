@@ -64,7 +64,7 @@ export function FieldVisibilitySelector() {
               <button
                 key={field.id}
                 onClick={() => toggleCompareVisibleField(field.id)}
-                className="flex w-full items-center gap-2 px-3 py-2 text-sm transition-colors hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-900"
+                className="flex w-full items-center gap-2 px-3 py-2 text-sm transition-colors hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-800"
               >
                 <div
                   className={cn(

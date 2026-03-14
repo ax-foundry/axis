@@ -139,19 +139,19 @@ export function AnnotationProgress({
               Done
             </div>
           </div>
-          <div className="border-l border-gray-100 dark:border-gray-800 py-2.5 text-center">
+          <div className="border-l border-gray-100 py-2.5 text-center dark:border-gray-800">
             <div className="text-base font-bold text-text-muted">{stats.pending}</div>
             <div className="text-[9px] font-semibold uppercase tracking-wider text-text-muted">
               Pending
             </div>
           </div>
-          <div className="border-l border-gray-100 dark:border-gray-800 py-2.5 text-center">
+          <div className="border-l border-gray-100 py-2.5 text-center dark:border-gray-800">
             <div className="text-base font-bold text-orange-500">{stats.flagged}</div>
             <div className="text-[9px] font-semibold uppercase tracking-wider text-text-muted">
               Flagged
             </div>
           </div>
-          <div className="border-l border-gray-100 dark:border-gray-800 py-2.5 text-center">
+          <div className="border-l border-gray-100 py-2.5 text-center dark:border-gray-800">
             <div className="text-base font-bold text-text-primary">{stats.total}</div>
             <div className="text-[9px] font-semibold uppercase tracking-wider text-text-muted">
               Total
@@ -163,7 +163,7 @@ export function AnnotationProgress({
       {/* Card 2: Record List */}
       <div className="overflow-hidden rounded-xl border border-border bg-surface shadow-sm">
         {/* Filter Tabs */}
-        <div className="mx-3 mt-2 flex gap-0 rounded-md bg-gray-50 dark:bg-gray-900 p-[3px]">
+        <div className="mx-3 mt-2 flex gap-0 rounded-md bg-gray-50 p-[3px] dark:bg-gray-900">
           {filterOptions.map((opt) => (
             <button
               key={opt.value}
@@ -181,7 +181,7 @@ export function AnnotationProgress({
           ))}
         </div>
 
-        <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 px-4 py-2.5">
+        <div className="flex items-center justify-between border-b border-gray-100 px-4 py-2.5 dark:border-gray-800">
           <span className="text-xs font-semibold text-text-primary">Records</span>
           <span className="text-[10px] text-text-muted">{filteredRecords.length} shown</span>
         </div>
@@ -229,7 +229,7 @@ export function AnnotationProgress({
 
       {/* Card 3: Keyboard Shortcuts (always visible) */}
       <div className="overflow-hidden rounded-xl border border-border bg-surface shadow-sm">
-        <div className="border-b border-gray-100 dark:border-gray-800 px-4 py-2.5 text-[9px] font-semibold uppercase tracking-[0.08em] text-text-muted">
+        <div className="border-b border-gray-100 px-4 py-2.5 text-[9px] font-semibold uppercase tracking-[0.08em] text-text-muted dark:border-gray-800">
           Keyboard Shortcuts
         </div>
         <div className="px-4 py-2">
@@ -242,7 +242,7 @@ export function AnnotationProgress({
               )}
             >
               <span className="text-[11px] text-text-secondary">{shortcut.description}</span>
-              <kbd className="min-w-[24px] rounded border border-border bg-gray-50 dark:bg-gray-900 px-1.5 py-0.5 text-center font-mono text-[10px] font-medium text-text-primary">
+              <kbd className="min-w-[24px] rounded border border-border bg-gray-50 px-1.5 py-0.5 text-center font-mono text-[10px] font-medium text-text-primary dark:bg-gray-900">
                 {shortcut.key}
               </kbd>
             </div>

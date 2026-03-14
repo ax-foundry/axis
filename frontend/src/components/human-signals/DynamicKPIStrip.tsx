@@ -145,7 +145,7 @@ function KPISparklineTrendChart({ kpi, onClose }: { kpi: SignalsKPIResult; onClo
         <h3 className="text-sm font-medium text-text-primary">{kpi.label} — Weekly Trend</h3>
         <button
           onClick={onClose}
-          className="rounded p-1 text-text-muted transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-800 hover:text-text-primary"
+          className="rounded p-1 text-text-muted transition-colors hover:bg-gray-100 hover:text-text-primary dark:bg-gray-800 dark:hover:bg-gray-700"
         >
           <X className="h-4 w-4" />
         </button>
@@ -233,7 +233,7 @@ export function DynamicKPIStrip({ kpis }: DynamicKPIStripProps) {
               <div className="flex items-center gap-1.5">
                 <span className="text-xs text-text-muted">{kpi.label}</span>
                 {kpi.totalCases != null && (
-                  <span className="rounded bg-gray-100 dark:bg-gray-800 px-1 py-0.5 text-[10px] text-text-muted">
+                  <span className="rounded bg-gray-100 px-1 py-0.5 text-[10px] text-text-muted dark:bg-gray-800">
                     {kpi.totalCases.toLocaleString()}
                   </span>
                 )}

@@ -151,7 +151,7 @@ export function KPITrendChart({ displayName, unit, data, onClose }: KPITrendChar
         {onClose && (
           <button
             onClick={onClose}
-            className="rounded p-1 text-text-muted transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-800 hover:text-text-primary"
+            className="rounded p-1 text-text-muted transition-colors hover:bg-gray-100 hover:text-text-primary dark:bg-gray-800 dark:hover:bg-gray-700"
           >
             <X className="h-4 w-4" />
           </button>

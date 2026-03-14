@@ -36,7 +36,7 @@ export function FewShotExampleCard({ example, index, onEdit, onDelete }: FewShot
           {onEdit && (
             <button
               onClick={() => onEdit(index)}
-              className="rounded p-1.5 text-text-muted transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-800 hover:text-text-primary"
+              className="rounded p-1.5 text-text-muted transition-colors hover:bg-gray-100 hover:text-text-primary dark:bg-gray-800 dark:hover:bg-gray-700"
             >
               <Edit2 className="h-4 w-4" />
             </button>

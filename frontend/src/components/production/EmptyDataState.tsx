@@ -20,7 +20,7 @@ export function EmptyDataState({
   linkText,
 }: EmptyDataStateProps) {
   return (
-    <div className="border-border/50 flex flex-col items-center justify-center rounded-lg border border-dashed bg-gray-50 dark:bg-gray-900/50 p-8 text-center">
+    <div className="border-border/50 flex flex-col items-center justify-center rounded-lg border border-dashed bg-gray-50 p-8 text-center dark:bg-gray-900/50">
       <div className="bg-muted/50 mb-4 flex h-12 w-12 items-center justify-center rounded-full">
         <Icon className="h-6 w-6 text-text-muted" />
       </div>

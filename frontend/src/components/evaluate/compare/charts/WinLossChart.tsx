@@ -352,7 +352,8 @@ function DivergentCaseItem({
         'w-full rounded-lg border p-2 text-left transition-all hover:shadow-sm',
         variant === 'challenger' && 'border-green-200 bg-green-50/50 hover:bg-green-50',
         variant === 'baseline' && 'border-amber-200 bg-amber-50/50 hover:bg-amber-50',
-        variant === 'tie' && 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-900'
+        variant === 'tie' &&
+          'border-gray-200 bg-gray-50 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:bg-gray-900/50 dark:hover:bg-gray-800'
       )}
     >
       <div className="flex items-center justify-between">

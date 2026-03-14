@@ -21,7 +21,7 @@ export function TechnicalKPISection({ alertCount }: TechnicalKPISectionProps) {
         'flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors',
         alertCount > 0
           ? 'border-error/30 bg-error/5 hover:bg-error/10 text-error'
-          : 'border-border bg-surface text-text-muted hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-900'
+          : 'border-border bg-surface text-text-muted hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-800'
       )}
     >
       <Bell className="h-4 w-4" />

@@ -235,7 +235,7 @@ export function Sidebar() {
           ) : (
             <div
               className={cn(
-                'group relative flex w-full cursor-not-allowed items-center gap-2.5 rounded-lg bg-gray-50 dark:bg-gray-900 px-3 py-[10px] text-[13px] font-medium opacity-50 dark:bg-gray-800',
+                'group relative flex w-full cursor-not-allowed items-center gap-2.5 rounded-lg bg-gray-50 px-3 py-[10px] text-[13px] font-medium opacity-50 dark:bg-gray-800 dark:bg-gray-900',
                 collapsed && 'justify-center px-2'
               )}
             >

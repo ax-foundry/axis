@@ -144,7 +144,10 @@ export function CopilotSidebar({ isOpen, onClose }: CopilotSidebarProps) {
             {aiStatus?.configured && <p className="text-xs text-text-muted">{aiStatus.model}</p>}
           </div>
         </div>
-        <button onClick={onClose} className="rounded-lg p-2 transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-800">
+        <button
+          onClick={onClose}
+          className="rounded-lg p-2 transition-colors hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700"
+        >
           <X className="h-5 w-5 text-text-muted" />
         </button>
       </div>
@@ -180,7 +183,7 @@ export function CopilotSidebar({ isOpen, onClose }: CopilotSidebarProps) {
                 </p>
               </div>
             ) : (
-              <div className="mb-4 rounded-lg bg-gray-100 dark:bg-gray-800 p-3 text-left">
+              <div className="mb-4 rounded-lg bg-gray-100 p-3 text-left dark:bg-gray-800">
                 <p className="text-sm text-text-muted">
                   No data loaded. Upload data for contextual insights.
                 </p>
@@ -194,8 +197,8 @@ export function CopilotSidebar({ isOpen, onClose }: CopilotSidebarProps) {
                 <button
                   key={index}
                   onClick={() => setInput(query)}
-                  className="w-full rounded-lg bg-gray-50 dark:bg-gray-900 px-3 py-2 text-left text-sm
-                           text-text-secondary transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-800"
+                  className="w-full rounded-lg bg-gray-50 px-3 py-2 text-left text-sm text-text-secondary
+                           transition-colors hover:bg-gray-100 dark:bg-gray-800 dark:bg-gray-900 dark:hover:bg-gray-700"
                 >
                   {query}
                 </button>
@@ -221,7 +224,7 @@ export function CopilotSidebar({ isOpen, onClose }: CopilotSidebarProps) {
                   'max-w-[85%] rounded-lg px-4 py-2',
                   message.role === 'user'
                     ? 'bg-primary text-white'
-                    : 'bg-gray-100 dark:bg-gray-800 text-text-primary'
+                    : 'bg-gray-100 text-text-primary dark:bg-gray-800'
                 )}
               >
                 {message.role === 'assistant' ? (
@@ -252,7 +255,7 @@ export function CopilotSidebar({ isOpen, onClose }: CopilotSidebarProps) {
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent-gold/20">
               <Loader2 className="h-4 w-4 animate-spin text-accent-gold" />
             </div>
-            <div className="rounded-lg bg-gray-100 dark:bg-gray-800 px-4 py-2">
+            <div className="rounded-lg bg-gray-100 px-4 py-2 dark:bg-gray-800">
               <p className="text-sm text-text-muted">
                 {thoughts.length > 0
                   ? `Processing (${thoughts.length} thoughts)...`
@@ -276,7 +279,7 @@ export function CopilotSidebar({ isOpen, onClose }: CopilotSidebarProps) {
                 'flex items-center gap-1.5 rounded-md px-2 py-1 text-xs transition-colors',
                 includeData
                   ? 'bg-primary/10 text-primary'
-                  : 'bg-gray-100 dark:bg-gray-800 text-text-muted hover:bg-gray-200'
+                  : 'bg-gray-100 text-text-muted hover:bg-gray-200 dark:bg-gray-800'
               )}
             >
               <Database className="h-3 w-3" />

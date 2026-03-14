@@ -78,11 +78,11 @@ function ColumnPicker({
     <div ref={ref} className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-xs font-medium text-text-muted transition-colors hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-900 hover:text-text-primary"
+        className="flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-xs font-medium text-text-muted transition-colors hover:bg-gray-50 hover:text-text-primary dark:bg-gray-900 dark:hover:bg-gray-800"
       >
         <Columns3 className="h-3.5 w-3.5" />
         Columns
-        <span className="rounded-full bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 text-[10px] font-semibold text-text-muted">
+        <span className="rounded-full bg-gray-100 px-1.5 py-0.5 text-[10px] font-semibold text-text-muted dark:bg-gray-800">
           {visibleKeys.length}/{allColumns.length}
         </span>
       </button>
@@ -105,7 +105,7 @@ function ColumnPicker({
                 <button
                   key={col.key}
                   onClick={() => onToggle(col.key)}
-                  className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-900"
+                  className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-800"
                 >
                   <div
                     className={`flex h-3.5 w-3.5 flex-shrink-0 items-center justify-center rounded border ${
@@ -252,7 +252,7 @@ export function DynamicCaseTable({
         return (
           <span
             className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium ${
-              value ? 'bg-green-50 text-green-700' : 'bg-gray-100 dark:bg-gray-800 text-text-muted'
+              value ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-text-muted dark:bg-gray-800'
             }`}
           >
             {value ? 'Yes' : 'No'}
@@ -263,7 +263,7 @@ export function DynamicCaseTable({
         // Array of objects: show count
         if (typeof value[0] === 'object' && value[0] !== null) {
           return (
-            <span className="inline-flex items-center rounded-full bg-gray-100 dark:bg-gray-800 px-2 py-0.5 text-[10px] font-medium text-text-muted">
+            <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-medium text-text-muted dark:bg-gray-800">
               {value.length} items
             </span>
           );
@@ -404,7 +404,7 @@ export function DynamicCaseTable({
                   <td className="px-3 py-2">
                     <button
                       onClick={() => onViewCase(c.Case_ID || '')}
-                      className="rounded p-1 text-text-muted hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-800 hover:text-text-primary"
+                      className="rounded p-1 text-text-muted hover:bg-gray-100 hover:text-text-primary dark:bg-gray-800 dark:hover:bg-gray-700"
                     >
                       <Eye className="h-3.5 w-3.5" />
                     </button>
@@ -440,7 +440,7 @@ export function DynamicCaseTable({
             <button
               onClick={() => setPage(currentPage - 1)}
               disabled={currentPage <= 1}
-              className="rounded p-1 text-text-muted hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-800 disabled:opacity-30"
+              className="rounded p-1 text-text-muted hover:bg-gray-100 disabled:opacity-30 dark:bg-gray-800 dark:hover:bg-gray-700"
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
@@ -449,7 +449,9 @@ export function DynamicCaseTable({
                 key={p}
                 onClick={() => setPage(p)}
                 className={`h-7 w-7 rounded text-xs ${
-                  p === currentPage ? 'bg-primary text-white' : 'text-text-muted hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-800'
+                  p === currentPage
+                    ? 'bg-primary text-white'
+                    : 'text-text-muted hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700'
                 }`}
               >
                 {p}
@@ -458,7 +460,7 @@ export function DynamicCaseTable({
             <button
               onClick={() => setPage(currentPage + 1)}
               disabled={currentPage >= totalPages}
-              className="rounded p-1 text-text-muted hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-800 disabled:opacity-30"
+              className="rounded p-1 text-text-muted hover:bg-gray-100 disabled:opacity-30 dark:bg-gray-800 dark:hover:bg-gray-700"
             >
               <ChevronRight className="h-4 w-4" />
             </button>

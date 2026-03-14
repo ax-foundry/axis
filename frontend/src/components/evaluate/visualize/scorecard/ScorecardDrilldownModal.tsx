@@ -56,7 +56,10 @@ export function ScorecardDrilldownModal({
               {testCases.length} test case{testCases.length !== 1 ? 's' : ''} with this metric
             </p>
           </div>
-          <button onClick={onClose} className="rounded-lg p-2 transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-800">
+          <button
+            onClick={onClose}
+            className="rounded-lg p-2 transition-colors hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700"
+          >
             <X className="h-5 w-5 text-text-muted" />
           </button>
         </div>
@@ -90,7 +93,10 @@ export function ScorecardDrilldownModal({
               </thead>
               <tbody className="divide-border/30 divide-y">
                 {paginatedTestCases.map((tc) => (
-                  <tr key={tc.id} className="transition-colors hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-900/50">
+                  <tr
+                    key={tc.id}
+                    className="transition-colors hover:bg-gray-50 dark:bg-gray-900/50 dark:hover:bg-gray-800"
+                  >
                     <td className="px-6 py-4">
                       <span className="font-mono text-sm text-text-secondary">
                         {tc.id.slice(0, 8)}...
@@ -130,7 +136,7 @@ export function ScorecardDrilldownModal({
 
         {/* Footer with pagination */}
         {totalPages > 1 && (
-          <div className="border-border/50 flex items-center justify-between border-t bg-gray-50 dark:bg-gray-900/50 px-6 py-3">
+          <div className="border-border/50 flex items-center justify-between border-t bg-gray-50 px-6 py-3 dark:bg-gray-900/50">
             <span className="text-sm text-text-muted">
               Showing {currentPage * PAGE_SIZE + 1}-
               {Math.min((currentPage + 1) * PAGE_SIZE, testCases.length)} of {testCases.length}
@@ -143,7 +149,7 @@ export function ScorecardDrilldownModal({
                   'rounded-lg p-2 transition-colors',
                   currentPage === 0
                     ? 'text-text-muted/50 cursor-not-allowed'
-                    : 'text-text-muted hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-800'
+                    : 'text-text-muted hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700'
                 )}
               >
                 <ChevronLeft className="h-4 w-4" />
@@ -158,7 +164,7 @@ export function ScorecardDrilldownModal({
                   'rounded-lg p-2 transition-colors',
                   currentPage >= totalPages - 1
                     ? 'text-text-muted/50 cursor-not-allowed'
-                    : 'text-text-muted hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-800'
+                    : 'text-text-muted hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700'
                 )}
               >
                 <ChevronRight className="h-4 w-4" />

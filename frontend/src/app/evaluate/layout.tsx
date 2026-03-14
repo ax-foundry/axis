@@ -93,7 +93,7 @@ export default function EvaluateLayout({ children }: { children: React.ReactNode
               if (isDisabled) {
                 return (
                   <div key={step.id} className="flex flex-1 items-center">
-                    <div className="group relative flex h-[72px] w-full cursor-not-allowed items-center gap-3 rounded-lg bg-gray-50 dark:bg-gray-900 px-4 opacity-50">
+                    <div className="group relative flex h-[72px] w-full cursor-not-allowed items-center gap-3 rounded-lg bg-gray-50 px-4 opacity-50 dark:bg-gray-900">
                       <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md bg-gray-200 dark:bg-gray-700">
                         <Lock className="h-3.5 w-3.5 text-text-muted" />
                       </div>
@@ -126,7 +126,7 @@ export default function EvaluateLayout({ children }: { children: React.ReactNode
                         ? 'bg-primary text-white'
                         : isPast
                           ? 'bg-primary-pale/50 text-primary hover:bg-primary-pale'
-                          : 'bg-gray-100 dark:bg-gray-800 text-text-muted hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-text-primary'
+                          : 'bg-gray-100 text-text-muted hover:bg-gray-200 hover:text-text-primary dark:bg-gray-800 dark:hover:bg-gray-700'
                     )}
                   >
                     <div

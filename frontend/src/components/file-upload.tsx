@@ -132,7 +132,7 @@ export function FileUpload({ targetStore = 'data' }: FileUploadProps) {
     <div className="space-y-4">
       {/* Import Mode Tabs */}
       {showDatabaseOption && !isSuccess && (
-        <div className="flex rounded-lg border border-border bg-gray-50 dark:bg-gray-900 p-1">
+        <div className="flex rounded-lg border border-border bg-gray-50 p-1 dark:bg-gray-900">
           <button
             onClick={() => setImportMode('file')}
             disabled={isLoading}
@@ -172,7 +172,7 @@ export function FileUpload({ targetStore = 'data' }: FileUploadProps) {
               'relative cursor-pointer rounded-lg border-2 border-dashed p-8 text-center transition-colors duration-150',
               isDragActive
                 ? 'border-primary bg-primary/5'
-                : 'border-border bg-gray-50 dark:bg-gray-900/50 hover:border-primary/50 hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-900',
+                : 'border-border bg-gray-50 hover:border-primary/50 hover:bg-gray-50 dark:bg-gray-900 dark:bg-gray-900/50 dark:hover:bg-gray-800',
               isLoading && 'pointer-events-none',
               isSuccess && 'bg-success/5 border-success'
             )}
@@ -273,7 +273,7 @@ export function FileUpload({ targetStore = 'data' }: FileUploadProps) {
                   className={cn(
                     'inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors',
                     'border-border bg-surface text-text-primary',
-                    'hover:border-primary/30 hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-900 hover:text-primary',
+                    'hover:border-primary/30 hover:bg-gray-50 hover:text-primary dark:bg-gray-900 dark:hover:bg-gray-800',
                     'disabled:cursor-not-allowed disabled:opacity-50'
                   )}
                 >
@@ -288,7 +288,7 @@ export function FileUpload({ targetStore = 'data' }: FileUploadProps) {
 
       {/* Database Mode */}
       {importMode === 'database' && showDatabaseOption && (
-        <div className="rounded-lg border border-border bg-gray-50 dark:bg-gray-900 p-8 text-center">
+        <div className="rounded-lg border border-border bg-gray-50 p-8 text-center dark:bg-gray-900">
           <div className="flex flex-col items-center gap-4">
             <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary">
               <Database className="h-6 w-6 text-white" />

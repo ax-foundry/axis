@@ -88,7 +88,7 @@ export function PerformanceSummary({ rows }: PerformanceSummaryProps) {
       {/* Header - toggle button */}
       <button
         onClick={toggleComparePerformanceSummary}
-        className="flex w-full items-center justify-between px-4 py-3 transition-colors hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-900"
+        className="flex w-full items-center justify-between px-4 py-3 transition-colors hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-800"
       >
         <div className="flex items-center gap-2">
           <BarChart3 className="h-4 w-4 text-primary" />
@@ -122,7 +122,7 @@ export function PerformanceSummary({ rows }: PerformanceSummaryProps) {
                 {/* Experiment row */}
                 <button
                   onClick={() => setExpandedExperiment(isExpanded ? null : summary.experimentName)}
-                  className="flex w-full items-center justify-between px-4 py-3 transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-800/50"
+                  className="flex w-full items-center justify-between px-4 py-3 transition-colors hover:bg-gray-100 dark:bg-gray-800/50 dark:hover:bg-gray-700"
                 >
                   <div className="flex items-center gap-3">
                     {isExpanded ? (

@@ -176,7 +176,7 @@ export function MethodsTab() {
               href={link.href}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-gray-50 dark:bg-gray-900 px-3 py-1.5 text-xs font-medium text-text-secondary transition-colors hover:border-primary/30 hover:bg-primary/5 hover:text-primary"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-gray-50 px-3 py-1.5 text-xs font-medium text-text-secondary transition-colors hover:border-primary/30 hover:bg-primary/5 hover:text-primary dark:bg-gray-900"
             >
               {link.label}
               <ExternalLink className="h-3 w-3" />

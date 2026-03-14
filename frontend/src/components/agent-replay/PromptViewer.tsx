@@ -70,10 +70,10 @@ function SystemMessage({ text }: { text: string }) {
   const [expanded, setExpanded] = useState(false);
 
   return (
-    <div className="overflow-hidden rounded border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
+    <div className="overflow-hidden rounded border border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-900">
       <button
         onClick={() => setExpanded(!expanded)}
-        className="flex w-full items-center gap-1.5 px-2.5 py-1.5 text-left text-[11px] transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-800"
+        className="flex w-full items-center gap-1.5 px-2.5 py-1.5 text-left text-[11px] transition-colors hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700"
       >
         {expanded ? (
           <ChevronDown className="h-3 w-3 shrink-0 text-gray-400" />
@@ -90,7 +90,7 @@ function SystemMessage({ text }: { text: string }) {
         </span>
       </button>
       {expanded && (
-        <div className="border-t border-gray-200 dark:border-gray-700 bg-surface px-3 py-2 text-xs">
+        <div className="border-t border-gray-200 bg-surface px-3 py-2 text-xs dark:border-gray-700">
           <SmartContent text={text} />
         </div>
       )}

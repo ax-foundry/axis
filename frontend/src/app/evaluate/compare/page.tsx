@@ -328,7 +328,7 @@ export default function ComparePage() {
         </div>
 
         {/* View Mode Toggle */}
-        <div className="flex items-center gap-1 rounded-lg bg-gray-100 dark:bg-gray-800 p-1">
+        <div className="flex items-center gap-1 rounded-lg bg-gray-100 p-1 dark:bg-gray-800">
           <button
             onClick={() => setViewMode('testcases')}
             className={cn(
@@ -363,7 +363,7 @@ export default function ComparePage() {
       {viewMode === 'experiments' && (
         <>
           {experiments.length < 2 ? (
-            <div className="border-border/50 rounded-lg border bg-gray-50 dark:bg-gray-900 py-12 text-center">
+            <div className="border-border/50 rounded-lg border bg-gray-50 py-12 text-center dark:bg-gray-900">
               <div className="mx-auto mb-6 flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
                 <Layers className="h-6 w-6 text-primary/50" />
               </div>
@@ -393,7 +393,7 @@ export default function ComparePage() {
                 <div className="border-border/50 overflow-hidden rounded-lg border bg-gray-50 dark:bg-gray-900">
                   <button
                     onClick={() => setShowCharts(!showCharts)}
-                    className="flex w-full items-center justify-between px-5 py-4 transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-800"
+                    className="flex w-full items-center justify-between px-5 py-4 transition-colors hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700"
                   >
                     <div className="flex items-center gap-3">
                       <BarChart2 className="h-5 w-5 text-primary" />
@@ -432,7 +432,7 @@ export default function ComparePage() {
                               'whitespace-nowrap rounded-lg px-4 py-2 text-sm font-medium transition-all',
                               activeChart === tab.id
                                 ? 'bg-primary text-white shadow-sm'
-                                : 'text-text-muted hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-900 hover:text-text-primary'
+                                : 'text-text-muted hover:bg-gray-50 hover:text-text-primary dark:bg-gray-900 dark:hover:bg-gray-800'
                             )}
                           >
                             {tab.label}
@@ -477,7 +477,7 @@ export default function ComparePage() {
 
               {/* Prompt to select experiments */}
               {!isComparisonReady && (
-                <div className="border-border/50 rounded-lg border bg-gray-50 dark:bg-gray-900 py-8 text-center">
+                <div className="border-border/50 rounded-lg border bg-gray-50 py-8 text-center dark:bg-gray-900">
                   <GitCompare className="mx-auto mb-3 h-10 w-10 text-text-muted opacity-50" />
                   <p className="text-text-muted">
                     Select both a baseline and challenger experiment above to see the comparison

@@ -46,7 +46,7 @@ function typeBadge(type: string | null) {
     <span
       className={cn(
         'mr-1.5 inline-block rounded px-1 py-0.5 text-[9px] font-bold leading-none',
-        colors[upper] || 'bg-gray-100 dark:bg-gray-800 text-gray-500'
+        colors[upper] || 'bg-gray-100 text-gray-500 dark:bg-gray-800'
       )}
     >
       {abbr[upper] || upper.slice(0, 4)}

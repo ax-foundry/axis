@@ -75,7 +75,7 @@ function LearningCard({ artifact }: LearningCardProps) {
           {artifact.tags.map((tag) => (
             <span
               key={tag}
-              className="rounded-full bg-gray-100 dark:bg-gray-800 px-2 py-0.5 text-[10px] font-medium text-text-muted"
+              className="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-medium text-text-muted dark:bg-gray-800"
             >
               {tag}
             </span>
@@ -191,7 +191,7 @@ function PipelineMetadataStrip({ metadata }: PipelineMetadataStripProps) {
         return (
           <div
             key={kpi.label}
-            className="flex items-center gap-1.5 rounded-md border border-border bg-gray-50 dark:bg-gray-900 px-2.5 py-1 text-xs"
+            className="flex items-center gap-1.5 rounded-md border border-border bg-gray-50 px-2.5 py-1 text-xs dark:bg-gray-900"
           >
             <Icon className="h-3 w-3 text-text-muted" />
             <span className="font-semibold text-text-primary">{kpi.value}</span>
@@ -227,7 +227,7 @@ export function LearningInsightsPanel({ learnings, metadata }: LearningInsightsP
         <Lightbulb className="h-4 w-4 text-accent-gold" />
         <h3 className="text-sm font-bold text-text-primary">
           Learning Insights
-          <span className="ml-1.5 rounded-full bg-gray-100 dark:bg-gray-800 px-2 py-0.5 text-xs font-semibold text-text-muted">
+          <span className="ml-1.5 rounded-full bg-gray-100 px-2 py-0.5 text-xs font-semibold text-text-muted dark:bg-gray-800">
             {learnings.length}
           </span>
         </h3>

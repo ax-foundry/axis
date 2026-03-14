@@ -86,7 +86,7 @@ export function AnnotationConfigModal({ isOpen, onClose }: AnnotationConfigModal
             </div>
             <button
               onClick={onClose}
-              className="rounded-lg p-2 transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-800"
+              className="rounded-lg p-2 transition-colors hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700"
             >
               <X className="h-5 w-5 text-text-muted" />
             </button>
@@ -149,7 +149,7 @@ export function AnnotationConfigModal({ isOpen, onClose }: AnnotationConfigModal
                   return (
                     <label
                       key={col}
-                      className="flex cursor-pointer items-center gap-2 rounded p-2 hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-900"
+                      className="flex cursor-pointer items-center gap-2 rounded p-2 hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-800"
                     >
                       <input
                         type="checkbox"
@@ -202,7 +202,7 @@ export function AnnotationConfigModal({ isOpen, onClose }: AnnotationConfigModal
                       'flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition-colors',
                       annotateScoreMode === mode.value
                         ? 'border-primary bg-primary/5'
-                        : 'hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-900'
+                        : 'hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-800'
                     )}
                   >
                     <input
@@ -270,7 +270,7 @@ export function AnnotationConfigModal({ isOpen, onClose }: AnnotationConfigModal
                 {annotateCustomTags.map((tag) => (
                   <span
                     key={tag}
-                    className="rounded-full bg-gray-100 dark:bg-gray-800 px-3 py-1 text-sm text-text-secondary"
+                    className="rounded-full bg-gray-100 px-3 py-1 text-sm text-text-secondary dark:bg-gray-800"
                   >
                     {tag}
                   </span>
@@ -280,7 +280,7 @@ export function AnnotationConfigModal({ isOpen, onClose }: AnnotationConfigModal
           </div>
 
           {/* Footer */}
-          <div className="border-t bg-gray-50 dark:bg-gray-900 px-6 py-4">
+          <div className="border-t bg-gray-50 px-6 py-4 dark:bg-gray-900">
             <button onClick={onClose} className="btn-primary flex items-center gap-2">
               <Check className="h-4 w-4" />
               Done

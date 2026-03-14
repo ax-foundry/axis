@@ -167,7 +167,7 @@ export function TimeRangeSelector({
         )}
       </div>
       {summaryLabel && (
-        <span className="flex items-center gap-1.5 rounded-full bg-gray-100 dark:bg-gray-800 px-3 py-1 text-xs text-text-muted dark:bg-gray-800">
+        <span className="flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1 text-xs text-text-muted dark:bg-gray-800 dark:bg-gray-800">
           <Calendar className="h-3 w-3" />
           {summaryLabel}
         </span>

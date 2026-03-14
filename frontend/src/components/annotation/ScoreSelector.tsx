@@ -48,7 +48,7 @@ export function ScoreSelector({
               'ml-auto rounded border px-1.5 py-0.5 font-mono text-[11px] transition-all',
               value === 'accept'
                 ? 'border-success/20 bg-success/10 text-success'
-                : 'border-border bg-gray-50 dark:bg-gray-900 text-text-muted'
+                : 'border-border bg-gray-50 text-text-muted dark:bg-gray-900'
             )}
           >
             A
@@ -80,7 +80,7 @@ export function ScoreSelector({
               'ml-auto rounded border px-1.5 py-0.5 font-mono text-[11px] transition-all',
               value === 'reject'
                 ? 'border-error/20 bg-error/10 text-error'
-                : 'border-border bg-gray-50 dark:bg-gray-900 text-text-muted'
+                : 'border-border bg-gray-50 text-text-muted dark:bg-gray-900'
             )}
           >
             R

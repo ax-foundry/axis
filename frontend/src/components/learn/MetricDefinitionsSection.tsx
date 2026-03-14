@@ -138,7 +138,7 @@ export function MetricDefinitionsSection() {
     return (
       <p className="py-12 text-sm text-text-muted">
         No metric definitions configured. Add them to{' '}
-        <code className="rounded bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5">
+        <code className="rounded bg-gray-100 px-1.5 py-0.5 dark:bg-gray-800">
           custom/config/metric_definitions.yaml
         </code>
         .
@@ -152,7 +152,7 @@ export function MetricDefinitionsSection() {
   return (
     <>
       {/* Sub-tabs */}
-      <div className="mb-5 flex items-center gap-1 rounded-lg border border-border bg-gray-50 dark:bg-gray-900 p-1">
+      <div className="mb-5 flex items-center gap-1 rounded-lg border border-border bg-gray-50 p-1 dark:bg-gray-900">
         {DOMAIN_KEYS.map((key) => {
           const dc = DOMAIN_CONFIG[key];
           const TabIcon = dc.icon;
@@ -239,7 +239,7 @@ export function MetricDefinitionsSection() {
                   'flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-all',
                   isSelected
                     ? 'border-primary bg-primary/10 text-primary'
-                    : 'border-border bg-surface text-text-secondary hover:border-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-900'
+                    : 'border-border bg-surface text-text-secondary hover:border-gray-300 hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-800'
                 )}
               >
                 <div className="flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800">
@@ -320,7 +320,7 @@ function MetricCard({
         {/* Index badge */}
         <div
           className={cn(
-            'flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-gray-50 dark:bg-gray-900 text-xs font-bold text-text-muted transition-colors duration-300',
+            'flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-gray-50 text-xs font-bold text-text-muted transition-colors duration-300 dark:bg-gray-900',
             'group-hover:bg-primary/10 group-hover:text-primary'
           )}
         >

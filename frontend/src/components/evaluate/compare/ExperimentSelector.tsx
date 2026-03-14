@@ -131,7 +131,7 @@ export function ExperimentSelector({ rows, className }: ExperimentSelectorProps)
               className={cn(
                 'rounded-lg border border-border p-2.5 transition-all',
                 compareBaselineExperiment && compareChallengerExperiment
-                  ? 'cursor-pointer text-text-secondary hover:border-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-800'
+                  ? 'cursor-pointer text-text-secondary hover:border-gray-300 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700'
                   : 'cursor-not-allowed text-text-muted opacity-40'
               )}
             >

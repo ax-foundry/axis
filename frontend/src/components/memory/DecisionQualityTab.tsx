@@ -38,7 +38,10 @@ function QualityColumn({
         {rules.map((rule) => {
           const action = getField(rule, 'action');
           return (
-            <div key={rule.id} className="rounded-lg border border-border bg-gray-50 dark:bg-gray-900/50 p-3">
+            <div
+              key={rule.id}
+              className="rounded-lg border border-border bg-gray-50 p-3 dark:bg-gray-900/50"
+            >
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0 flex-1">
                   <div className="truncate text-sm font-medium text-text-primary">
@@ -140,13 +143,16 @@ export function DecisionQualityTab() {
           <div className="mb-3 flex items-center gap-2">
             <Minus className="h-4 w-4 text-text-muted" />
             <h3 className="text-sm font-semibold text-text-primary">Partial</h3>
-            <span className="ml-2 rounded-full bg-gray-100 dark:bg-gray-800 px-2.5 py-0.5 text-xs font-semibold text-text-muted">
+            <span className="ml-2 rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-semibold text-text-muted dark:bg-gray-800">
               {partial.length}
             </span>
           </div>
           <div className="grid max-h-[500px] grid-cols-2 gap-2 overflow-y-auto">
             {partial.map((rule) => (
-              <div key={rule.id} className="rounded-lg border border-border bg-gray-50 dark:bg-gray-900/50 p-3">
+              <div
+                key={rule.id}
+                className="rounded-lg border border-border bg-gray-50 p-3 dark:bg-gray-900/50"
+              >
                 <div className="truncate text-sm font-medium text-text-primary">
                   {getField(rule, 'name')}
                 </div>

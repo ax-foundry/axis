@@ -69,8 +69,8 @@ export function KPIDefinitionsSection() {
     return (
       <p className="py-12 text-sm text-text-muted">
         No KPI definitions configured. Add them under the{' '}
-        <code className="rounded bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5">kpi:</code> section in{' '}
-        <code className="rounded bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5">
+        <code className="rounded bg-gray-100 px-1.5 py-0.5 dark:bg-gray-800">kpi:</code> section in{' '}
+        <code className="rounded bg-gray-100 px-1.5 py-0.5 dark:bg-gray-800">
           custom/config/metric_definitions.yaml
         </code>
         .
@@ -121,7 +121,7 @@ export function KPIDefinitionsSection() {
                   'flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-all',
                   isSelected
                     ? 'border-accent-gold bg-accent-gold/10 text-accent-gold'
-                    : 'border-border bg-surface text-text-secondary hover:border-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-900'
+                    : 'border-border bg-surface text-text-secondary hover:border-gray-300 hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-800'
                 )}
               >
                 <div className="flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800">
@@ -187,7 +187,7 @@ function KPICard({
 
       <div className="flex items-start gap-4 px-5 py-4">
         {/* Index badge */}
-        <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-gray-50 dark:bg-gray-900 text-xs font-bold text-text-muted transition-colors duration-300 group-hover:bg-accent-gold/10 group-hover:text-accent-gold">
+        <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-gray-50 text-xs font-bold text-text-muted transition-colors duration-300 group-hover:bg-accent-gold/10 group-hover:text-accent-gold dark:bg-gray-900">
           {String(index + 1).padStart(2, '0')}
         </div>
 
@@ -202,7 +202,7 @@ function KPICard({
             >
               {name.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
             </h4>
-            <code className="rounded bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 text-[10px] font-medium text-text-muted">
+            <code className="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium text-text-muted dark:bg-gray-800">
               {name}
             </code>
             {definition.agents && definition.agents.length > 0 && (

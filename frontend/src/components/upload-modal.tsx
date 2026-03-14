@@ -72,7 +72,7 @@ export function UploadModal() {
           </div>
           <button
             onClick={handleClose}
-            className="rounded-xl p-2 transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-800"
+            className="rounded-xl p-2 transition-colors hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700"
           >
             <X className="h-5 w-5 text-text-muted" />
           </button>

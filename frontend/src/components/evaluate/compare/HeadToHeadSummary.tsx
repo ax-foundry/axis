@@ -107,7 +107,9 @@ export function HeadToHeadSummary({ rows, className }: HeadToHeadSummaryProps) {
 
   if (baselineRows.length === 0 || challengerRows.length === 0) {
     return (
-      <div className={cn('border-border/50 rounded-xl border bg-surface p-6 text-center', className)}>
+      <div
+        className={cn('border-border/50 rounded-xl border bg-surface p-6 text-center', className)}
+      >
         <BarChart3 className="mx-auto mb-2 h-8 w-8 text-text-muted opacity-50" />
         <p className="text-text-muted">No data available for the selected experiments</p>
       </div>
@@ -122,7 +124,7 @@ export function HeadToHeadSummary({ rows, className }: HeadToHeadSummaryProps) {
       )}
     >
       {/* Header */}
-      <div className="border-b border-border bg-gray-50 dark:bg-gray-900 px-5 py-4">
+      <div className="border-b border-border bg-gray-50 px-5 py-4 dark:bg-gray-900">
         <h3 className="flex items-center gap-2 font-semibold text-text-primary">
           <Trophy className="h-5 w-5 text-accent-gold" />
           Head-to-Head Comparison
@@ -135,7 +137,7 @@ export function HeadToHeadSummary({ rows, className }: HeadToHeadSummaryProps) {
           {/* Baseline */}
           <div className="text-center">
             <div className="mb-1 text-sm text-text-muted">Baseline</div>
-            <div className="rounded-lg bg-gray-100 dark:bg-gray-800 px-4 py-2 text-lg font-semibold text-text-primary">
+            <div className="rounded-lg bg-gray-100 px-4 py-2 text-lg font-semibold text-text-primary dark:bg-gray-800">
               {compareBaselineExperiment}
             </div>
           </div>
@@ -166,7 +168,7 @@ export function HeadToHeadSummary({ rows, className }: HeadToHeadSummaryProps) {
                 ? 'border-green-200 bg-green-50'
                 : summary.overallWinner === 'baseline'
                   ? 'border-amber-200 bg-amber-50'
-                  : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900'
+                  : 'border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-900'
             )}
           >
             <div className="mb-2 flex items-center justify-center gap-2">
@@ -201,7 +203,7 @@ export function HeadToHeadSummary({ rows, className }: HeadToHeadSummaryProps) {
           </div>
 
           {/* Improvement Card */}
-          <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 p-4 text-center">
+          <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 text-center dark:border-gray-700 dark:bg-gray-900">
             <div className="mb-2 flex items-center justify-center gap-2">
               {summary.avgImprovement >= 0 ? (
                 <TrendingUp className="h-5 w-5 text-green-600" />
@@ -222,7 +224,7 @@ export function HeadToHeadSummary({ rows, className }: HeadToHeadSummaryProps) {
           </div>
 
           {/* Metrics Won Card */}
-          <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 p-4 text-center">
+          <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 text-center dark:border-gray-700 dark:bg-gray-900">
             <div className="mb-2 flex items-center justify-center gap-2">
               <BarChart3 className="h-5 w-5 text-primary" />
               <span className="text-sm font-medium text-text-secondary">Metrics Won</span>

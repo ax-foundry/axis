@@ -32,7 +32,7 @@ export function PromptEditor({
         {!isDefault && (
           <button
             onClick={onReset}
-            className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm text-text-muted transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-800 hover:text-text-primary"
+            className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm text-text-muted transition-colors hover:bg-gray-100 hover:text-text-primary dark:bg-gray-800 dark:hover:bg-gray-700"
           >
             <RotateCcw className="h-4 w-4" />
             Reset to Default
@@ -84,7 +84,7 @@ export function PromptEditor({
       </div>
 
       {/* Temperature */}
-      <div className="rounded-lg border border-border bg-gray-50 dark:bg-gray-900 p-4">
+      <div className="rounded-lg border border-border bg-gray-50 p-4 dark:bg-gray-900">
         <div className="flex items-center justify-between">
           <div>
             <label className="block text-sm font-medium text-text-primary">Temperature</label>

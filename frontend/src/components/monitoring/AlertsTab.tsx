@@ -125,7 +125,7 @@ function MethodPill({ method }: { method?: string }) {
 
 function ValueBlock({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-md bg-gray-50 dark:bg-gray-900 px-3 py-2">
+    <div className="rounded-md bg-gray-50 px-3 py-2 dark:bg-gray-900">
       <div className="text-xs text-text-muted">{label}</div>
       <div className="font-mono text-sm font-semibold text-text-primary">{value}</div>
     </div>
@@ -205,7 +205,7 @@ function AlertGroup({
         <span className="text-xs font-semibold uppercase tracking-wide text-text-muted">
           {title}
         </span>
-        <span className="rounded-full bg-gray-100 dark:bg-gray-800 px-2 py-0.5 text-[10px] font-semibold text-text-muted">
+        <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-semibold text-text-muted dark:bg-gray-800">
           {alerts.length}
         </span>
       </button>

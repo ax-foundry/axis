@@ -224,7 +224,7 @@ export function DynamicFilters({ displayConfig, rightSlot }: DynamicFiltersProps
                 e.stopPropagation();
                 clearFilters();
               }}
-              className="flex items-center gap-1 rounded px-2 py-0.5 text-xs text-text-muted hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-800 hover:text-text-primary"
+              className="flex items-center gap-1 rounded px-2 py-0.5 text-xs text-text-muted hover:bg-gray-100 hover:text-text-primary dark:bg-gray-800 dark:hover:bg-gray-700"
             >
               <RotateCcw className="h-3 w-3" />
               Clear

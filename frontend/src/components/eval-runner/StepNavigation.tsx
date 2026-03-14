@@ -44,8 +44,8 @@ export function StepNavigation() {
                   : isPast
                     ? 'cursor-pointer bg-primary-pale text-primary hover:bg-primary-soft'
                     : canNavigate
-                      ? 'cursor-pointer bg-gray-100 dark:bg-gray-800 text-text-secondary hover:bg-gray-200'
-                      : 'cursor-not-allowed bg-gray-100 dark:bg-gray-800 text-text-muted'
+                      ? 'cursor-pointer bg-gray-100 text-text-secondary hover:bg-gray-200 dark:bg-gray-800'
+                      : 'cursor-not-allowed bg-gray-100 text-text-muted dark:bg-gray-800'
               )}
             >
               {isPast ? <Check className="h-5 w-5" /> : <Icon className="h-5 w-5" />}

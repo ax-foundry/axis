@@ -137,7 +137,7 @@ export function TracePicker({ onSelect, agent, className }: TracePickerProps) {
               'mr-2 flex items-center gap-1.5 rounded-xl px-5 py-2.5 text-sm font-semibold transition-all duration-200',
               inputValue.trim()
                 ? 'bg-primary text-white shadow-sm hover:bg-primary-dark hover:shadow-md active:scale-[0.97]'
-                : 'cursor-not-allowed bg-gray-100 dark:bg-gray-800 text-text-muted'
+                : 'cursor-not-allowed bg-gray-100 text-text-muted dark:bg-gray-800'
             )}
           >
             Search
@@ -255,7 +255,7 @@ export function TracePicker({ onSelect, agent, className }: TracePickerProps) {
                       {trace.tags.slice(0, 3).map((tag) => (
                         <span
                           key={tag}
-                          className="flex items-center gap-1 rounded-full bg-gray-100 dark:bg-gray-800 px-2.5 py-1 text-[10px] font-medium text-text-muted transition-colors group-hover:bg-primary/10 group-hover:text-primary"
+                          className="flex items-center gap-1 rounded-full bg-gray-100 px-2.5 py-1 text-[10px] font-medium text-text-muted transition-colors group-hover:bg-primary/10 group-hover:text-primary dark:bg-gray-800"
                         >
                           <Tag className="h-2.5 w-2.5" />
                           {tag}

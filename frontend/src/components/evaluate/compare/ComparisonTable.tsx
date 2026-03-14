@@ -207,7 +207,7 @@ export function ComparisonTable({ rows, metrics }: ComparisonTableProps) {
               <tr
                 key={`${row.id}-${row.experimentName || idx}`}
                 className={cn(
-                  'border-border/30 border-b transition-colors hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-900/50',
+                  'border-border/30 border-b transition-colors hover:bg-gray-50 dark:bg-gray-900/50 dark:hover:bg-gray-800',
                   idx % 2 === 0 ? 'bg-surface' : 'bg-gray-50 dark:bg-gray-900/30'
                 )}
               >
@@ -259,7 +259,7 @@ export function ComparisonTable({ rows, metrics }: ComparisonTableProps) {
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="border-border/50 flex items-center justify-between border-t bg-gray-50 dark:bg-gray-900/50 px-4 py-3">
+        <div className="border-border/50 flex items-center justify-between border-t bg-gray-50 px-4 py-3 dark:bg-gray-900/50">
           <span className="text-sm text-text-muted">
             Page {currentPage} of {totalPages}
           </span>

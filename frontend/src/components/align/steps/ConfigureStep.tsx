@@ -91,7 +91,7 @@ export function ConfigureStep() {
                 'flex items-center gap-2 rounded-t-lg px-4 py-2 text-sm font-medium transition-colors',
                 activeTab === tab.id
                   ? 'bg-primary/10 text-primary'
-                  : 'text-text-muted hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-800 hover:text-text-primary'
+                  : 'text-text-muted hover:bg-gray-100 hover:text-text-primary dark:bg-gray-800 dark:hover:bg-gray-700'
               )}
             >
               <Icon className="h-4 w-4" />
@@ -137,7 +137,7 @@ export function ConfigureStep() {
       </div>
 
       {/* Evaluation Summary */}
-      <div className="rounded-lg border border-border bg-gray-50 dark:bg-gray-900 p-4">
+      <div className="rounded-lg border border-border bg-gray-50 p-4 dark:bg-gray-900">
         <h4 className="mb-3 font-medium text-text-primary">Evaluation Summary</h4>
         <div className="grid grid-cols-2 gap-4 text-sm md:grid-cols-4">
           <div>
@@ -204,7 +204,7 @@ export function ConfigureStep() {
       <div className="flex items-center justify-between border-t border-border pt-6">
         <button
           onClick={() => setCurrentStep('review')}
-          className="flex items-center gap-2 rounded-lg bg-gray-100 dark:bg-gray-800 px-4 py-2 font-medium text-text-secondary transition-colors hover:bg-gray-200"
+          className="flex items-center gap-2 rounded-lg bg-gray-100 px-4 py-2 font-medium text-text-secondary transition-colors hover:bg-gray-200 dark:bg-gray-800"
         >
           <ArrowLeft className="h-4 w-4" />
           Back to Annotate

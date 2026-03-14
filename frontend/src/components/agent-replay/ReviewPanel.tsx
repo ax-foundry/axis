@@ -257,7 +257,7 @@ export function ReviewPanel({ traceId, agent, traceName, tree, traceInput }: Rev
             'flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-bold transition-all',
             canSave
               ? 'bg-gradient-to-r from-primary to-primary-dark text-white shadow-md shadow-primary/25 hover:shadow-lg hover:shadow-primary/30 hover:brightness-110'
-              : 'cursor-not-allowed bg-gray-100 dark:bg-gray-800 text-gray-400'
+              : 'cursor-not-allowed bg-gray-100 text-gray-400 dark:bg-gray-800'
           )}
         >
           {isPending ? (

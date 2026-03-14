@@ -116,7 +116,7 @@ export function AlignAnnotationCard({
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <span className="rounded bg-gray-50 dark:bg-gray-900 px-2 py-0.5 font-mono text-[11px] text-text-muted">
+          <span className="rounded bg-gray-50 px-2 py-0.5 font-mono text-[11px] text-text-muted dark:bg-gray-900">
             {record[Columns.DATASET_ID]}
           </span>
           {onConfigure && (
@@ -174,7 +174,7 @@ export function AlignAnnotationCard({
                     'max-h-80 overflow-y-auto rounded-lg border p-3.5 text-[13px] leading-[1.7] text-text-secondary',
                     isActualOutput
                       ? 'border-l-[3px] border-b-gray-100 border-l-primary border-r-gray-100 border-t-gray-100 bg-gradient-to-r from-primary/[0.02] to-gray-50 dark:border-b-gray-700 dark:border-r-gray-700 dark:border-t-gray-700 dark:to-gray-900'
-                      : 'border-gray-100 dark:border-gray-800 bg-gray-50 dark:border-gray-700 dark:bg-gray-900'
+                      : 'border-gray-100 bg-gray-50 dark:border-gray-700 dark:border-gray-800 dark:bg-gray-900'
                   )}
                 >
                   <p className="whitespace-pre-wrap">{formatValue(value)}</p>
@@ -232,7 +232,7 @@ export function AlignAnnotationCard({
                 'ml-auto rounded border px-1.5 py-0.5 font-mono text-[11px] transition-all',
                 currentScore === 1
                   ? 'border-success/20 bg-success/10 text-success'
-                  : 'border-border bg-gray-50 dark:bg-gray-900 text-text-muted'
+                  : 'border-border bg-gray-50 text-text-muted dark:bg-gray-900'
               )}
             >
               A
@@ -264,7 +264,7 @@ export function AlignAnnotationCard({
                 'ml-auto rounded border px-1.5 py-0.5 font-mono text-[11px] transition-all',
                 currentScore === 0
                   ? 'border-error/20 bg-error/10 text-error'
-                  : 'border-border bg-gray-50 dark:bg-gray-900 text-text-muted'
+                  : 'border-border bg-gray-50 text-text-muted dark:bg-gray-900'
               )}
             >
               R

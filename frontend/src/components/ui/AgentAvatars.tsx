@@ -28,7 +28,7 @@ export function AgentAvatars({ agents, max = 4, className }: AgentAvatarsProps) 
           <div
             key={name}
             title={label}
-            className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border border-white bg-gray-100 dark:bg-gray-800 ring-1 ring-border dark:border-gray-600 dark:bg-gray-700"
+            className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border border-white bg-gray-100 ring-1 ring-border dark:border-gray-600 dark:bg-gray-700 dark:bg-gray-800"
           >
             {avatar ? (
               // eslint-disable-next-line @next/next/no-img-element

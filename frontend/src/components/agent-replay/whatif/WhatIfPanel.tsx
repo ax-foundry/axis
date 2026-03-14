@@ -180,7 +180,7 @@ export function WhatIfPanel({ traceId, nodeId, nodeName, agent }: WhatIfPanelPro
           )}
           <button
             onClick={handleExit}
-            className="rounded-lg bg-gray-100 dark:bg-gray-800 px-4 py-1.5 text-xs font-medium text-text-secondary hover:bg-gray-200"
+            className="rounded-lg bg-gray-100 px-4 py-1.5 text-xs font-medium text-text-secondary hover:bg-gray-200 dark:bg-gray-800"
           >
             Go Back
           </button>

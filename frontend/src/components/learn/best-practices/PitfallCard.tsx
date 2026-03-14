@@ -27,7 +27,7 @@ export function PitfallCard({
       </div>
 
       <div className="space-y-2">
-        <div className="rounded-lg bg-gray-50 dark:bg-gray-900 p-2.5">
+        <div className="rounded-lg bg-gray-50 p-2.5 dark:bg-gray-900">
           <p className="mb-0.5 text-[10px] font-semibold uppercase tracking-wide text-error">
             The Mistake
           </p>
@@ -38,7 +38,7 @@ export function PitfallCard({
           <ArrowRight className="h-3 w-3 text-text-muted" />
         </div>
 
-        <div className="rounded-lg bg-gray-50 dark:bg-gray-900 p-2.5">
+        <div className="rounded-lg bg-gray-50 p-2.5 dark:bg-gray-900">
           <p className="mb-0.5 text-[10px] font-semibold uppercase tracking-wide text-warning">
             The Consequence
           </p>

@@ -88,7 +88,7 @@ export function DatasetItemModel() {
       </div>
 
       {/* Visual Schema Representation */}
-      <div className="mb-4 rounded-lg border border-border bg-gray-50 dark:bg-gray-900 p-4">
+      <div className="mb-4 rounded-lg border border-border bg-gray-50 p-4 dark:bg-gray-900">
         <div className="font-mono text-xs">
           <div className="mb-2 text-text-muted">{`// Evaluation Data Structure`}</div>
           <div className="text-purple-600">interface</div>{' '}
@@ -124,7 +124,9 @@ export function DatasetItemModel() {
             <div
               key={field.name}
               className={`rounded-lg border p-3 ${
-                field.required ? 'border-primary/20 bg-primary/5' : 'border-border bg-gray-50 dark:bg-gray-900'
+                field.required
+                  ? 'border-primary/20 bg-primary/5'
+                  : 'border-border bg-gray-50 dark:bg-gray-900'
               }`}
             >
               <div className="mb-1 flex items-center gap-2">

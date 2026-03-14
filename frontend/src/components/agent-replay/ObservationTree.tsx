@@ -17,7 +17,12 @@ const TYPE_CONFIG: Record<
   SPAN: { color: 'text-indigo-600', bg: 'bg-indigo-100', Icon: Layers, label: 'SPAN' },
   GENERATION: { color: 'text-emerald-600', bg: 'bg-emerald-100', Icon: Cpu, label: 'GEN' },
   TOOL: { color: 'text-amber-600', bg: 'bg-amber-100', Icon: Wrench, label: 'TOOL' },
-  EVENT: { color: 'text-gray-500', bg: 'bg-gray-100 dark:bg-gray-800', Icon: Activity, label: 'EVT' },
+  EVENT: {
+    color: 'text-gray-500',
+    bg: 'bg-gray-100 dark:bg-gray-800',
+    Icon: Activity,
+    label: 'EVT',
+  },
 };
 
 function getTypeConfig(type: string | null) {

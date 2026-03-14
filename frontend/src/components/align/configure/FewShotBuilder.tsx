@@ -179,7 +179,7 @@ export function FewShotBuilder({ examples, onAddExample, onRemoveExample }: FewS
             <div className="flex justify-end gap-2">
               <button
                 onClick={() => setIsAdding(false)}
-                className="rounded-lg px-4 py-2 text-sm font-medium text-text-muted hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-800"
+                className="rounded-lg px-4 py-2 text-sm font-medium text-text-muted hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700"
               >
                 Cancel
               </button>
@@ -216,7 +216,7 @@ export function FewShotBuilder({ examples, onAddExample, onRemoveExample }: FewS
           ))}
         </div>
       ) : (
-        <div className="rounded-lg border border-border bg-gray-50 dark:bg-gray-900 py-8 text-center">
+        <div className="rounded-lg border border-border bg-gray-50 py-8 text-center dark:bg-gray-900">
           <BookOpen className="mx-auto mb-2 h-8 w-8 text-text-muted" />
           <p className="text-text-muted">No few-shot examples added yet</p>
           <p className="mt-1 text-sm text-text-muted">Add examples to improve judge consistency</p>

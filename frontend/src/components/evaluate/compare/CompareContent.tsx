@@ -457,7 +457,7 @@ export function CompareContent() {
         {/* Charts Header with Toggle */}
         <button
           onClick={toggleCompareShowCharts}
-          className="flex w-full items-center justify-between px-5 py-4 transition-colors hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-900"
+          className="flex w-full items-center justify-between px-5 py-4 transition-colors hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-800"
         >
           <div className="flex items-center gap-3">
             <BarChart2 className="h-5 w-5 text-primary" />
@@ -477,7 +477,7 @@ export function CompareContent() {
         {compareShowCharts && (
           <div className="space-y-4 px-5 pb-5">
             {/* Chart Type Tabs */}
-            <div className="flex items-center gap-1 overflow-x-auto rounded-xl bg-gray-100 dark:bg-gray-800 p-1">
+            <div className="flex items-center gap-1 overflow-x-auto rounded-xl bg-gray-100 p-1 dark:bg-gray-800">
               {CHART_TABS.map((tab) => (
                 <button
                   key={tab.id}
@@ -567,7 +567,7 @@ export function CompareContent() {
         {/* Right side: Controls */}
         <div className="flex flex-wrap items-center gap-3">
           {/* View Mode Toggle */}
-          <div className="flex items-center gap-1 rounded-lg bg-gray-100 dark:bg-gray-800 p-0.5">
+          <div className="flex items-center gap-1 rounded-lg bg-gray-100 p-0.5 dark:bg-gray-800">
             <button
               onClick={() => setViewMode('side-by-side')}
               title="Side-by-side comparison view"

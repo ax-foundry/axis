@@ -64,7 +64,7 @@ export function RuleFilters() {
       {hasActiveFilters && (
         <button
           onClick={resetFilters}
-          className="rounded-lg px-3 py-1.5 text-sm text-text-muted hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-800 hover:text-text-primary"
+          className="rounded-lg px-3 py-1.5 text-sm text-text-muted hover:bg-gray-100 hover:text-text-primary dark:bg-gray-800 dark:hover:bg-gray-700"
         >
           Clear
         </button>

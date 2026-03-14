@@ -132,7 +132,7 @@ function ClassificationDetail({ records }: { records: MonitoringRecord[] }) {
               {categories.items.map((cat, i) => (
                 <tr
                   key={cat.value}
-                  className="border-b border-border last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-900"
+                  className="border-b border-border last:border-0 hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-800"
                 >
                   <td className="px-3 py-1.5">
                     <div className="flex items-center gap-2">
@@ -301,7 +301,7 @@ function ScoreDetail({
                     </td>
                     <td className="px-3 py-1.5">
                       {r.trace_id ? (
-                        <code className="rounded bg-gray-100 dark:bg-gray-800 px-1 font-mono text-primary">
+                        <code className="rounded bg-gray-100 px-1 font-mono text-primary dark:bg-gray-800">
                           {r.trace_id.slice(0, 8)}...
                         </code>
                       ) : (
@@ -353,7 +353,10 @@ export function MetricDetailPanel({
                 : ''}
             </p>
           </div>
-          <button onClick={onClose} className="rounded p-1 hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-800">
+          <button
+            onClick={onClose}
+            className="rounded p-1 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700"
+          >
             <X className="h-5 w-5" />
           </button>
         </div>

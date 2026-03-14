@@ -78,7 +78,7 @@ export function CaliberConfigModal({ isOpen, onClose }: CaliberConfigModalProps)
             </div>
             <button
               onClick={onClose}
-              className="rounded-lg p-2 transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-800"
+              className="rounded-lg p-2 transition-colors hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700"
             >
               <X className="h-5 w-5 text-text-muted" />
             </button>
@@ -141,7 +141,7 @@ export function CaliberConfigModal({ isOpen, onClose }: CaliberConfigModalProps)
                   return (
                     <label
                       key={col}
-                      className="flex cursor-pointer items-center gap-2 rounded p-2 hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-900"
+                      className="flex cursor-pointer items-center gap-2 rounded p-2 hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-800"
                     >
                       <input
                         type="checkbox"
@@ -183,7 +183,7 @@ export function CaliberConfigModal({ isOpen, onClose }: CaliberConfigModalProps)
                   return (
                     <label
                       key={col}
-                      className="flex cursor-pointer items-center gap-2 rounded p-2 hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-900"
+                      className="flex cursor-pointer items-center gap-2 rounded p-2 hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-800"
                     >
                       <input
                         type="checkbox"
@@ -211,7 +211,7 @@ export function CaliberConfigModal({ isOpen, onClose }: CaliberConfigModalProps)
           </div>
 
           {/* Footer */}
-          <div className="border-t bg-gray-50 dark:bg-gray-900 px-6 py-4">
+          <div className="border-t bg-gray-50 px-6 py-4 dark:bg-gray-900">
             <button onClick={onClose} className="btn-primary flex items-center gap-2">
               <Check className="h-4 w-4" />
               Done

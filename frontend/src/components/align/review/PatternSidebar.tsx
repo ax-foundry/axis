@@ -21,7 +21,7 @@ function PatternCard({ pattern, onSelectRecords }: PatternCardProps) {
     <div className="rounded-lg border border-border bg-surface">
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="flex w-full items-center justify-between px-3 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-900"
+        className="flex w-full items-center justify-between px-3 py-2 text-left hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-800"
       >
         <div className="flex-1">
           <div className="flex items-center gap-2">
@@ -121,7 +121,7 @@ export function PatternSidebar({ onSelectRecordIds }: PatternSidebarProps) {
             className={cn(
               'flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium transition-colors',
               isClusteringPatterns
-                ? 'bg-gray-100 dark:bg-gray-800 text-text-muted'
+                ? 'bg-gray-100 text-text-muted dark:bg-gray-800'
                 : 'bg-primary/10 text-primary hover:bg-primary/20'
             )}
           >
@@ -137,7 +137,7 @@ export function PatternSidebar({ onSelectRecordIds }: PatternSidebarProps) {
 
       {/* Clustering Method Selector */}
       {notesCount > 0 && (
-        <div className="rounded-lg border border-border bg-gray-50 dark:bg-gray-900 p-3">
+        <div className="rounded-lg border border-border bg-gray-50 p-3 dark:bg-gray-900">
           <p className="mb-2 text-xs font-medium text-text-muted">Clustering Method</p>
           <div className="flex gap-1">
             {CLUSTERING_METHODS.map((method) => {
@@ -151,7 +151,7 @@ export function PatternSidebar({ onSelectRecordIds }: PatternSidebarProps) {
                     'flex-1 rounded-md px-2 py-1.5 text-xs font-medium transition-colors',
                     selectedMethod === method.value
                       ? 'bg-primary text-white'
-                      : 'bg-surface text-text-secondary hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-800',
+                      : 'bg-surface text-text-secondary hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700',
                     isDisabled && 'cursor-not-allowed opacity-50'
                   )}
                   title={method.description}
@@ -175,7 +175,7 @@ export function PatternSidebar({ onSelectRecordIds }: PatternSidebarProps) {
       )}
 
       {notesCount === 0 ? (
-        <div className="rounded-lg border border-dashed border-border bg-gray-50 dark:bg-gray-900 p-4 text-center">
+        <div className="rounded-lg border border-dashed border-border bg-gray-50 p-4 text-center dark:bg-gray-900">
           <Sparkles className="mx-auto mb-2 h-8 w-8 text-text-muted" />
           <p className="text-sm text-text-muted">
             Add notes to your annotations to discover patterns.

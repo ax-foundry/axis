@@ -120,8 +120,7 @@ function applyCSSVariables(palette: ThemePalette): void {
   // Toggle dark mode class and structural CSS vars
   // Explicit heroMode wins; null/undefined falls back to OS preference
   const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-  const isDark =
-    palette.heroMode === 'dark' || (palette.heroMode !== 'light' && prefersDark);
+  const isDark = palette.heroMode === 'dark' || (palette.heroMode !== 'light' && prefersDark);
   document.documentElement.classList.toggle('dark', isDark);
 
   if (isDark) {

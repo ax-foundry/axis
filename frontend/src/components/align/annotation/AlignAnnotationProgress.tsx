@@ -96,7 +96,7 @@ export function AlignAnnotationProgress({
                 key={recordId}
                 onClick={() => onSelectRecord(index)}
                 className={cn(
-                  'flex w-full items-center gap-2 border-b border-gray-100 dark:border-gray-800 px-3.5 py-2 text-left text-xs transition-colors last:border-b-0 hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-900',
+                  'flex w-full items-center gap-2 border-b border-gray-100 px-3.5 py-2 text-left text-xs transition-colors last:border-b-0 hover:bg-gray-50 dark:border-gray-800 dark:bg-gray-900 dark:hover:bg-gray-800',
                   isCurrent && 'border-l-[3px] border-l-primary bg-primary/5'
                 )}
               >
@@ -141,14 +141,14 @@ export function AlignAnnotationProgress({
                   {shortcut.keys.map((k) => (
                     <kbd
                       key={k}
-                      className="min-w-[26px] rounded border border-border bg-gray-50 dark:bg-gray-900 px-2 py-0.5 text-center font-mono text-xs text-text-primary"
+                      className="min-w-[26px] rounded border border-border bg-gray-50 px-2 py-0.5 text-center font-mono text-xs text-text-primary dark:bg-gray-900"
                     >
                       {k}
                     </kbd>
                   ))}
                 </div>
               ) : (
-                <kbd className="min-w-[26px] rounded border border-border bg-gray-50 dark:bg-gray-900 px-2 py-0.5 text-center font-mono text-xs text-text-primary">
+                <kbd className="min-w-[26px] rounded border border-border bg-gray-50 px-2 py-0.5 text-center font-mono text-xs text-text-primary dark:bg-gray-900">
                   {shortcut.key}
                 </kbd>
               )}

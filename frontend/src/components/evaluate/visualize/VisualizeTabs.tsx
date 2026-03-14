@@ -67,7 +67,7 @@ export function VisualizeTabs() {
   return (
     <div className="space-y-6">
       {/* Sub-tab Navigation */}
-      <div className="flex items-center gap-2 rounded-xl bg-gray-100 dark:bg-gray-800/80 p-1">
+      <div className="flex items-center gap-2 rounded-xl bg-gray-100 p-1 dark:bg-gray-800/80">
         {subTabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = tab.id === visualizeSubTab;

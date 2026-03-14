@@ -447,7 +447,7 @@ function EmptyState({
             <FileUpload targetStore="monitoring" />
 
             {/* Expected columns hint */}
-            <div className="mt-6 rounded-lg border border-border bg-gray-50 dark:bg-gray-900 p-4">
+            <div className="mt-6 rounded-lg border border-border bg-gray-50 p-4 dark:bg-gray-900">
               <p className="mb-2 text-xs font-medium text-text-muted">Expected columns:</p>
               <div className="flex flex-wrap gap-2">
                 {['dataset_id', 'timestamp', 'model_name', 'latency', '*_score'].map((col) => (
@@ -1221,7 +1221,7 @@ export default function MonitoringPage() {
                 setSelectedSourceType('');
                 setTimeRangePreset('24h');
               }}
-              className="flex h-[34px] items-center gap-1.5 rounded-lg border border-border px-3 text-xs font-medium text-text-muted transition-colors hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-900 hover:text-text-primary"
+              className="flex h-[34px] items-center gap-1.5 rounded-lg border border-border px-3 text-xs font-medium text-text-muted transition-colors hover:bg-gray-50 hover:text-text-primary dark:bg-gray-900 dark:hover:bg-gray-800"
             >
               <RotateCcw className="h-3.5 w-3.5" />
               Reset
@@ -1495,7 +1495,7 @@ export default function MonitoringPage() {
                               {topFailing.map((item, idx) => (
                                 <tr
                                   key={`${item.record.dataset_id}-${item.metricColumn}-${idx}`}
-                                  className="border-b border-border last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-900"
+                                  className="border-b border-border last:border-0 hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-800"
                                 >
                                   <td className="px-3 py-2 align-top">
                                     <div className="flex items-center gap-2">
@@ -1515,7 +1515,7 @@ export default function MonitoringPage() {
                                   </td>
                                   <td className="px-3 py-2 align-top">
                                     {item.record.trace_id ? (
-                                      <code className="rounded bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 font-mono text-xs text-primary">
+                                      <code className="rounded bg-gray-100 px-1.5 py-0.5 font-mono text-xs text-primary dark:bg-gray-800">
                                         {item.record.trace_id.slice(0, 8)}...
                                       </code>
                                     ) : (
@@ -1546,7 +1546,7 @@ export default function MonitoringPage() {
                                           score: item.score,
                                         })
                                       }
-                                      className="rounded p-1.5 text-text-muted hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-800 hover:text-text-primary"
+                                      className="rounded p-1.5 text-text-muted hover:bg-gray-100 hover:text-text-primary dark:bg-gray-800 dark:hover:bg-gray-700"
                                       title="View details"
                                     >
                                       <Eye className="h-4 w-4" />
@@ -1616,7 +1616,7 @@ export default function MonitoringPage() {
                             setTraceSortField((f) => (f === 'timestamp' ? 'score' : 'timestamp'))
                           }
                           className={cn(
-                            'flex h-[30px] items-center gap-1 rounded-md border border-border px-2 text-xs font-medium transition-colors hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-900',
+                            'flex h-[30px] items-center gap-1 rounded-md border border-border px-2 text-xs font-medium transition-colors hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-800',
                             'text-text-secondary'
                           )}
                           title={`Sort by ${traceSortField === 'timestamp' ? 'Score' : 'Timestamp'}`}
@@ -1629,7 +1629,7 @@ export default function MonitoringPage() {
                           onClick={() =>
                             setTraceSortDirection((d) => (d === 'asc' ? 'desc' : 'asc'))
                           }
-                          className="flex h-[30px] w-[30px] items-center justify-center rounded-md border border-border text-text-muted transition-colors hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-900 hover:text-text-primary"
+                          className="flex h-[30px] w-[30px] items-center justify-center rounded-md border border-border text-text-muted transition-colors hover:bg-gray-50 hover:text-text-primary dark:bg-gray-900 dark:hover:bg-gray-800"
                           title={traceSortDirection === 'asc' ? 'Ascending' : 'Descending'}
                         >
                           {traceSortDirection === 'asc' ? (
@@ -1652,14 +1652,14 @@ export default function MonitoringPage() {
                               <button
                                 onClick={() => setTablePage((p) => Math.max(1, p - 1))}
                                 disabled={tablePage <= 1}
-                                className="rounded p-1 hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-800 disabled:opacity-30"
+                                className="rounded p-1 hover:bg-gray-100 disabled:opacity-30 dark:bg-gray-800 dark:hover:bg-gray-700"
                               >
                                 <ChevronLeft className="h-4 w-4" />
                               </button>
                               <button
                                 onClick={() => setTablePage((p) => Math.min(totalPages, p + 1))}
                                 disabled={tablePage >= totalPages}
-                                className="rounded p-1 hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-800 disabled:opacity-30"
+                                className="rounded p-1 hover:bg-gray-100 disabled:opacity-30 dark:bg-gray-800 dark:hover:bg-gray-700"
                               >
                                 <ChevronRight className="h-4 w-4" />
                               </button>
@@ -1671,7 +1671,7 @@ export default function MonitoringPage() {
                     <div className="overflow-x-auto">
                       <table className="w-full text-sm">
                         <thead>
-                          <tr className="border-b border-border bg-gray-50 dark:bg-gray-900/50 text-left text-[11px] font-medium uppercase tracking-wider text-text-muted">
+                          <tr className="border-b border-border bg-gray-50 text-left text-[11px] font-medium uppercase tracking-wider text-text-muted dark:bg-gray-900/50">
                             <th className="px-3 py-2">Trace ID</th>
                             <th
                               className="cursor-pointer select-none px-3 py-2 hover:text-text-primary"
@@ -1771,11 +1771,11 @@ export default function MonitoringPage() {
                           ).map((record, idx) => (
                             <tr
                               key={`${record.dataset_id}-${idx}`}
-                              className="border-b border-border last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-900"
+                              className="border-b border-border last:border-0 hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-800"
                             >
                               <td className="px-3 py-2">
                                 {record.trace_id ? (
-                                  <code className="rounded bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 font-mono text-xs text-primary">
+                                  <code className="rounded bg-gray-100 px-1.5 py-0.5 font-mono text-xs text-primary dark:bg-gray-800">
                                     {record.trace_id.slice(0, 8)}...
                                   </code>
                                 ) : (
@@ -1789,7 +1789,7 @@ export default function MonitoringPage() {
                               </td>
                               <td className="px-3 py-2">{record.model_name || '-'}</td>
                               <td className="px-3 py-2">
-                                <span className="rounded bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 text-xs">
+                                <span className="rounded bg-gray-100 px-1.5 py-0.5 text-xs dark:bg-gray-800">
                                   {record.environment || '-'}
                                 </span>
                               </td>
@@ -1799,7 +1799,7 @@ export default function MonitoringPage() {
                               {metricColumns.includes('metric_score') ? (
                                 <>
                                   <td className="px-3 py-2">
-                                    <span className="rounded bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 text-xs font-medium text-text-secondary">
+                                    <span className="rounded bg-gray-100 px-1.5 py-0.5 text-xs font-medium text-text-secondary dark:bg-gray-800">
                                       {String(record.metric_name || '-')}
                                     </span>
                                   </td>
@@ -1851,7 +1851,7 @@ export default function MonitoringPage() {
                               <td className="px-3 py-2 text-center">
                                 <button
                                   onClick={() => setSelectedRecord(record)}
-                                  className="rounded p-1 text-text-muted hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-800 hover:text-text-primary"
+                                  className="rounded p-1 text-text-muted hover:bg-gray-100 hover:text-text-primary dark:bg-gray-800 dark:hover:bg-gray-700"
                                 >
                                   <Eye className="h-4 w-4" />
                                 </button>

@@ -97,7 +97,7 @@ export function ModelSelector({
         {/* Model Dropdown */}
         <div className="relative flex-1">
           {modelsLoading ? (
-            <div className="rounded-lg border border-border bg-gray-50 dark:bg-gray-900 px-3 py-2 text-sm text-text-muted">
+            <div className="rounded-lg border border-border bg-gray-50 px-3 py-2 text-sm text-text-muted dark:bg-gray-900">
               Loading models...
             </div>
           ) : (
@@ -111,7 +111,7 @@ export function ModelSelector({
                   'focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary',
                   statusData?.providers[selectedProvider]
                     ? 'border-border text-text-primary'
-                    : 'cursor-not-allowed border-border bg-gray-50 dark:bg-gray-900 text-text-muted'
+                    : 'cursor-not-allowed border-border bg-gray-50 text-text-muted dark:bg-gray-900'
                 )}
               >
                 {modelsByProvider[selectedProvider].map((model) => (

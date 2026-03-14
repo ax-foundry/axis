@@ -276,7 +276,7 @@ export function BuildEvalStep() {
                         <span className="text-[13px] font-bold text-text-primary">
                           {pattern.category}
                         </span>
-                        <span className="rounded-full bg-gray-100 dark:bg-gray-800 px-2 py-0.5 text-xs font-semibold text-text-muted">
+                        <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-semibold text-text-muted dark:bg-gray-800">
                           {pattern.count}
                         </span>
                         <span className="ml-auto text-xs text-text-muted">
@@ -293,7 +293,7 @@ export function BuildEvalStep() {
                           {pattern.examples.map((example, exIdx) => (
                             <div
                               key={exIdx}
-                              className="rounded-md border-l-[3px] border-l-border bg-gray-50 dark:bg-gray-900 px-3 py-2.5 text-xs leading-relaxed text-text-secondary"
+                              className="rounded-md border-l-[3px] border-l-border bg-gray-50 px-3 py-2.5 text-xs leading-relaxed text-text-secondary dark:bg-gray-900"
                             >
                               &ldquo;{example}&rdquo;
                             </div>
@@ -322,7 +322,7 @@ export function BuildEvalStep() {
                 })}
               </div>
             ) : notesCount > 0 ? (
-              <div className="flex items-center justify-center gap-4 rounded-lg border border-dashed border-border bg-gray-50 dark:bg-gray-900 p-6">
+              <div className="flex items-center justify-center gap-4 rounded-lg border border-dashed border-border bg-gray-50 p-6 dark:bg-gray-900">
                 <div className="text-center">
                   <p className="mb-2 text-sm text-text-muted">
                     {notesCount} annotations with notes ready for analysis
@@ -337,7 +337,7 @@ export function BuildEvalStep() {
                 </div>
               </div>
             ) : (
-              <div className="rounded-lg border border-dashed border-border bg-gray-50 dark:bg-gray-900 p-6 text-center">
+              <div className="rounded-lg border border-dashed border-border bg-gray-50 p-6 text-center dark:bg-gray-900">
                 <Sparkles className="mx-auto mb-2 h-8 w-8 text-text-muted" />
                 <p className="text-sm text-text-muted">
                   Add notes during review to discover patterns that inform your evaluation criteria.
@@ -391,7 +391,7 @@ export function BuildEvalStep() {
               >
                 {tab.label}
                 {tab.id === 'examples' && judgeConfig.few_shot_examples.length > 0 && (
-                  <span className="ml-1.5 rounded-full bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 text-xs font-semibold">
+                  <span className="ml-1.5 rounded-full bg-gray-100 px-1.5 py-0.5 text-xs font-semibold dark:bg-gray-800">
                     {judgeConfig.few_shot_examples.length}
                   </span>
                 )}
@@ -444,16 +444,16 @@ export function BuildEvalStep() {
         </div>
         <div className="flex items-center justify-between p-4">
           <div className="flex gap-3">
-            <div className="flex items-center gap-1.5 rounded-md border border-border bg-gray-50 dark:bg-gray-900 px-3 py-1.5 text-xs text-text-muted">
+            <div className="flex items-center gap-1.5 rounded-md border border-border bg-gray-50 px-3 py-1.5 text-xs text-text-muted dark:bg-gray-900">
               Model:{' '}
               <strong className="font-semibold text-text-primary">{judgeConfig.model}</strong>
             </div>
-            <div className="flex items-center gap-1.5 rounded-md border border-border bg-gray-50 dark:bg-gray-900 px-3 py-1.5 text-xs text-text-muted">
+            <div className="flex items-center gap-1.5 rounded-md border border-border bg-gray-50 px-3 py-1.5 text-xs text-text-muted dark:bg-gray-900">
               Records:{' '}
               <strong className="font-semibold text-text-primary">{annotationCount}</strong>
             </div>
             {judgeConfig.few_shot_examples.length > 0 && (
-              <div className="flex items-center gap-1.5 rounded-md border border-border bg-gray-50 dark:bg-gray-900 px-3 py-1.5 text-xs text-text-muted">
+              <div className="flex items-center gap-1.5 rounded-md border border-border bg-gray-50 px-3 py-1.5 text-xs text-text-muted dark:bg-gray-900">
                 Few-shot:{' '}
                 <strong className="font-semibold text-text-primary">
                   {judgeConfig.few_shot_examples.length} examples
@@ -583,7 +583,7 @@ export function BuildEvalStep() {
           <button
             onClick={handleRunEvaluation}
             disabled={isEvaluating}
-            className="flex items-center gap-2 rounded-md border border-border px-4 py-2 text-sm font-medium text-text-secondary transition-colors hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-900 disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex items-center gap-2 rounded-md border border-border px-4 py-2 text-sm font-medium text-text-secondary transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-gray-900 dark:hover:bg-gray-800"
           >
             <RefreshCw className="h-4 w-4" />
             Re-run Evaluation

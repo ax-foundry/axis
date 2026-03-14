@@ -121,7 +121,7 @@ function ExpandedRow({
   return (
     <tr>
       <td colSpan={experimentNames.length + 2} className="p-0">
-        <div className="border-border/50 border-b border-t bg-gray-50 dark:bg-gray-900 p-6">
+        <div className="border-border/50 border-b border-t bg-gray-50 p-6 dark:bg-gray-900">
           <div className="space-y-6">
             {/* Additional Input if present and visible */}
             {visibleFields.includes('additional_input') && testCase.additionalInput && (
@@ -158,7 +158,7 @@ function ExpandedRow({
                       key={expName}
                       className="border-border/50 overflow-hidden rounded-lg border bg-surface"
                     >
-                      <div className="border-border/30 border-b bg-gray-100 dark:bg-gray-800 px-4 py-2">
+                      <div className="border-border/30 border-b bg-gray-100 px-4 py-2 dark:bg-gray-800">
                         <div className="flex items-center justify-between">
                           <span className="text-sm font-semibold text-text-primary">{expName}</span>
                           <ScoreBadge score={row.overallScore} />
@@ -429,7 +429,7 @@ export function SideBySideTable({ rows, metrics }: SideBySideTableProps) {
                   <tr
                     key={testCase.id}
                     className={cn(
-                      'border-border/30 cursor-pointer border-b transition-colors hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-900/50',
+                      'border-border/30 cursor-pointer border-b transition-colors hover:bg-gray-50 dark:bg-gray-900/50 dark:hover:bg-gray-800',
                       idx % 2 === 0 ? 'bg-surface' : 'bg-gray-50 dark:bg-gray-900/30',
                       isExpanded && 'bg-primary/5'
                     )}
@@ -504,7 +504,7 @@ export function SideBySideTable({ rows, metrics }: SideBySideTableProps) {
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="border-border/50 flex items-center justify-between border-t bg-gray-50 dark:bg-gray-900/50 px-4 py-3">
+        <div className="border-border/50 flex items-center justify-between border-t bg-gray-50 px-4 py-3 dark:bg-gray-900/50">
           <span className="text-sm text-text-muted">
             Showing {(currentPage - 1) * comparePageSize + 1} to{' '}
             {Math.min(currentPage * comparePageSize, sortedTestCases.length)} of{' '}

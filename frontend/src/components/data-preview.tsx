@@ -39,7 +39,7 @@ export function DataPreview() {
         <div className="relative">
           <button
             onClick={() => setShowColumnSelector(!showColumnSelector)}
-            className="flex items-center gap-2 rounded-lg bg-gray-100 dark:bg-gray-800 px-3 py-1.5 text-sm hover:bg-gray-200"
+            className="flex items-center gap-2 rounded-lg bg-gray-100 px-3 py-1.5 text-sm hover:bg-gray-200 dark:bg-gray-800"
           >
             <Columns3 className="h-4 w-4" />
             Columns ({visibleColumns.length})
@@ -79,7 +79,10 @@ export function DataPreview() {
           </thead>
           <tbody className="divide-y divide-border">
             {pageData.map((row, rowIndex) => (
-              <tr key={rowIndex} className="hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-900">
+              <tr
+                key={rowIndex}
+                className="hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-800"
+              >
                 {visibleColumns.map((column) => {
                   const value = row[column];
                   const displayValue =
@@ -107,7 +110,7 @@ export function DataPreview() {
           <button
             onClick={() => setPage(Math.max(0, page - 1))}
             disabled={page === 0}
-            className="rounded-lg p-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-lg p-2 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-gray-800 dark:hover:bg-gray-700"
           >
             <ChevronLeft className="h-5 w-5" />
           </button>
@@ -132,7 +135,7 @@ export function DataPreview() {
                     'h-8 w-8 rounded-lg text-sm font-medium',
                     page === pageNum
                       ? 'bg-primary text-white'
-                      : 'text-text-secondary hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-800'
+                      : 'text-text-secondary hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700'
                   )}
                 >
                   {pageNum + 1}
@@ -143,7 +146,7 @@ export function DataPreview() {
           <button
             onClick={() => setPage(Math.min(totalPages - 1, page + 1))}
             disabled={page === totalPages - 1}
-            className="rounded-lg p-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-lg p-2 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-gray-800 dark:hover:bg-gray-700"
           >
             <ChevronRight className="h-5 w-5" />
           </button>

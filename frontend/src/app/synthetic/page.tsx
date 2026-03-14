@@ -103,7 +103,7 @@ export default function SyntheticPage() {
                     {source.tags.map((tag) => (
                       <span
                         key={tag}
-                        className="rounded-full bg-gray-100 dark:bg-gray-800 px-2.5 py-0.5 text-[11px] font-medium text-text-muted"
+                        className="rounded-full bg-gray-100 px-2.5 py-0.5 text-[11px] font-medium text-text-muted dark:bg-gray-800"
                       >
                         {tag}
                       </span>

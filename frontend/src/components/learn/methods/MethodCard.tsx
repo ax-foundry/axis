@@ -48,7 +48,7 @@ export function MethodCard({ method }: MethodCardProps) {
             </span>
           </div>
         </div>
-        <button className="rounded p-1 hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-800">
+        <button className="rounded p-1 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700">
           {isExpanded ? (
             <ChevronUp className="h-4 w-4 text-text-muted" />
           ) : (

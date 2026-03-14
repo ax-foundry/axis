@@ -100,7 +100,7 @@ export function ModelDistributionChart({
         {/* Chart Type Toggle */}
         <div className="flex items-center gap-2">
           <span className="text-sm text-text-muted">Type:</span>
-          <div className="flex items-center rounded-lg bg-gray-100 dark:bg-gray-800 p-1">
+          <div className="flex items-center rounded-lg bg-gray-100 p-1 dark:bg-gray-800">
             <button
               onClick={() => onChartTypeChange('violin')}
               className={cn(

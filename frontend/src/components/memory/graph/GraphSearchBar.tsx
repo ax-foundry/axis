@@ -83,7 +83,7 @@ export function GraphSearchBar() {
                   setIsOpen(false);
                 }}
                 className={cn(
-                  'flex w-full items-center gap-3 px-3 py-2 text-left text-sm hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-900'
+                  'flex w-full items-center gap-3 px-3 py-2 text-left text-sm hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-800'
                 )}
               >
                 <span

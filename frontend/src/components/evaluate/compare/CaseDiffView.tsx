@@ -65,13 +65,15 @@ function MarkdownContent({ content, className }: { content: string; className?: 
                 {children}
               </code>
             ) : (
-              <code className="block overflow-x-auto rounded-lg bg-gray-100 dark:bg-gray-800 p-3 font-mono text-xs">
+              <code className="block overflow-x-auto rounded-lg bg-gray-100 p-3 font-mono text-xs dark:bg-gray-800">
                 {children}
               </code>
             );
           },
           pre: ({ children }) => (
-            <pre className="my-2 overflow-x-auto rounded-lg bg-gray-100 dark:bg-gray-800 p-3">{children}</pre>
+            <pre className="my-2 overflow-x-auto rounded-lg bg-gray-100 p-3 dark:bg-gray-800">
+              {children}
+            </pre>
           ),
           h1: ({ children }) => (
             <h1 className="mb-2 mt-4 text-lg font-bold text-text-primary">{children}</h1>
@@ -125,7 +127,7 @@ function ResponsePanel({
         </div>
         <button
           onClick={onToggleExpand}
-          className="rounded p-1 text-text-muted transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-800 hover:text-text-secondary"
+          className="rounded p-1 text-text-muted transition-colors hover:bg-gray-100 hover:text-text-secondary dark:bg-gray-800 dark:hover:bg-gray-700"
           title={isExpanded ? 'Collapse' : 'Expand'}
         >
           {isExpanded ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
@@ -134,7 +136,9 @@ function ResponsePanel({
       <div
         className={cn(
           'flex-1 overflow-y-auto rounded-lg border p-4',
-          isBaseline ? 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900' : 'border-primary/20 bg-primary-pale/20',
+          isBaseline
+            ? 'border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-900'
+            : 'border-primary/20 bg-primary-pale/20',
           isExpanded ? 'max-h-[500px]' : 'max-h-[250px]'
         )}
       >
@@ -333,7 +337,9 @@ export function CaseDiffView({ rows, className }: CaseDiffViewProps) {
 
   if (!compareBaselineExperiment || !compareChallengerExperiment) {
     return (
-      <div className={cn('border-border/50 rounded-xl border bg-surface p-6 text-center', className)}>
+      <div
+        className={cn('border-border/50 rounded-xl border bg-surface p-6 text-center', className)}
+      >
         <p className="text-text-muted">
           Select baseline and challenger experiments to compare cases
         </p>
@@ -343,7 +349,9 @@ export function CaseDiffView({ rows, className }: CaseDiffViewProps) {
 
   if (sortedCases.length === 0) {
     return (
-      <div className={cn('border-border/50 rounded-xl border bg-surface p-6 text-center', className)}>
+      <div
+        className={cn('border-border/50 rounded-xl border bg-surface p-6 text-center', className)}
+      >
         <p className="text-text-muted">
           No comparable test cases found
           {compareCaseDiffFilter !== 'all' && ' with the current filter'}
@@ -368,7 +376,7 @@ export function CaseDiffView({ rows, className }: CaseDiffViewProps) {
       )}
     >
       {/* Header with Navigation */}
-      <div className="border-border/50 border-b bg-gray-50 dark:bg-gray-900 px-5 py-4">
+      <div className="border-border/50 border-b bg-gray-50 px-5 py-4 dark:bg-gray-900">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <h3 className="font-semibold text-text-primary">Case-Level Comparison</h3>
@@ -401,8 +409,8 @@ export function CaseDiffView({ rows, className }: CaseDiffViewProps) {
                 className={cn(
                   'rounded-lg border p-1.5 transition-all',
                   currentIndex === 0
-                    ? 'cursor-not-allowed border-gray-200 dark:border-gray-700 text-gray-300'
-                    : 'border-border text-text-secondary hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-800'
+                    ? 'cursor-not-allowed border-gray-200 text-gray-300 dark:border-gray-700'
+                    : 'border-border text-text-secondary hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700'
                 )}
               >
                 <ChevronLeft className="h-4 w-4" />
@@ -413,8 +421,8 @@ export function CaseDiffView({ rows, className }: CaseDiffViewProps) {
                 className={cn(
                   'rounded-lg border p-1.5 transition-all',
                   currentIndex >= sortedCases.length - 1
-                    ? 'cursor-not-allowed border-gray-200 dark:border-gray-700 text-gray-300'
-                    : 'border-border text-text-secondary hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-800'
+                    ? 'cursor-not-allowed border-gray-200 text-gray-300 dark:border-gray-700'
+                    : 'border-border text-text-secondary hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700'
                 )}
               >
                 <ChevronRight className="h-4 w-4" />
@@ -443,7 +451,7 @@ export function CaseDiffView({ rows, className }: CaseDiffViewProps) {
           {/* Query Section */}
           <div className="mb-4">
             <div className="mb-1 text-sm font-medium text-text-secondary">Query</div>
-            <div className="border-border/30 rounded-lg border bg-gray-50 dark:bg-gray-900 p-3">
+            <div className="border-border/30 rounded-lg border bg-gray-50 p-3 dark:bg-gray-900">
               <MarkdownContent
                 content={currentCase.baseline.query || 'No query available'}
                 className="text-sm text-text-primary"
@@ -526,7 +534,7 @@ export function CaseDiffView({ rows, className }: CaseDiffViewProps) {
                     );
                   })}
                   {/* Overall Score Row */}
-                  <tr className="bg-gray-50 dark:bg-gray-900 font-medium">
+                  <tr className="bg-gray-50 font-medium dark:bg-gray-900">
                     <td className="px-4 py-2 text-text-primary">Overall Score</td>
                     <td className="px-4 py-2 text-center text-text-secondary">
                       {currentCase.baseline.overallScore.toFixed(3)}
@@ -571,7 +579,7 @@ export function CaseDiffView({ rows, className }: CaseDiffViewProps) {
                   ? 'bg-green-100 text-green-700'
                   : currentCase.winner === 'baseline'
                     ? 'bg-amber-100 text-amber-700'
-                    : 'bg-gray-100 dark:bg-gray-800 text-gray-600'
+                    : 'bg-gray-100 text-gray-600 dark:bg-gray-800'
               )}
             >
               {currentCase.winner === 'tie'

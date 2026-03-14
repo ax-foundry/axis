@@ -77,7 +77,7 @@ export function PlaybackControls({
           {/* Restart */}
           <button
             onClick={onStop}
-            className="rounded-lg p-2 text-text-muted transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-800 hover:text-text-primary"
+            className="rounded-lg p-2 text-text-muted transition-colors hover:bg-gray-100 hover:text-text-primary dark:bg-gray-800 dark:hover:bg-gray-700"
             title="Restart"
           >
             <RotateCcw className="h-5 w-5" />
@@ -87,7 +87,7 @@ export function PlaybackControls({
           <button
             onClick={onStepBackward}
             disabled={learnCurrentStep === 0}
-            className="rounded-lg p-2 text-text-muted transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-800 hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-lg p-2 text-text-muted transition-colors hover:bg-gray-100 hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-50 dark:bg-gray-800 dark:hover:bg-gray-700"
             title="Previous step"
           >
             <SkipBack className="h-5 w-5" />
@@ -106,7 +106,7 @@ export function PlaybackControls({
           <button
             onClick={onStepForward}
             disabled={learnCurrentStep === totalSteps - 1}
-            className="rounded-lg p-2 text-text-muted transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-800 hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-lg p-2 text-text-muted transition-colors hover:bg-gray-100 hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-50 dark:bg-gray-800 dark:hover:bg-gray-700"
             title="Next step"
           >
             <SkipForward className="h-5 w-5" />
@@ -122,7 +122,7 @@ export function PlaybackControls({
                 className={`rounded px-2 py-1 text-xs font-medium transition-colors ${
                   learnPlaybackSpeed === speed
                     ? 'bg-primary text-white'
-                    : 'bg-gray-100 dark:bg-gray-800 text-text-muted hover:bg-gray-200'
+                    : 'bg-gray-100 text-text-muted hover:bg-gray-200 dark:bg-gray-800'
                 }`}
               >
                 {speed}x

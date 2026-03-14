@@ -105,7 +105,7 @@ export function BusinessKPISection({ signalsKPIs, totalCases }: BusinessKPISecti
               <div className="flex items-center gap-1.5">
                 <span className="text-xs text-text-muted">{kpi.label}</span>
                 {totalCases != null && (
-                  <span className="rounded bg-gray-100 dark:bg-gray-800 px-1 py-0.5 text-[10px] text-text-muted">
+                  <span className="rounded bg-gray-100 px-1 py-0.5 text-[10px] text-text-muted dark:bg-gray-800">
                     {totalCases.toLocaleString()}
                   </span>
                 )}

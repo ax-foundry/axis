@@ -213,7 +213,7 @@ export function AgentConnectStep() {
                   'w-full rounded-lg border p-4 text-left transition-colors',
                   isSelected
                     ? 'border-primary bg-primary-pale'
-                    : 'border-border hover:border-primary hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-900'
+                    : 'border-border hover:border-primary hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-800'
                 )}
               >
                 <div className="flex items-center gap-3">
@@ -407,7 +407,7 @@ export function AgentConnectStep() {
       <div className="flex justify-between">
         <button
           onClick={() => setCurrentStep('upload')}
-          className="flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium text-text-secondary transition-colors hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-900"
+          className="flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium text-text-secondary transition-colors hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-800"
         >
           <ChevronLeft className="h-4 w-4" />
           Back

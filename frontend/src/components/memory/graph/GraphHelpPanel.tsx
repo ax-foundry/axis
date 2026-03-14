@@ -20,7 +20,7 @@ function Section({ title, children, defaultOpen = false }: SectionProps) {
     <div className="border-b border-border last:border-b-0">
       <button
         onClick={() => setOpen(!open)}
-        className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm font-medium text-text-primary hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-900"
+        className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm font-medium text-text-primary hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-800"
       >
         {open ? (
           <ChevronDown className="h-3.5 w-3.5 flex-shrink-0 text-text-muted" />
@@ -98,7 +98,7 @@ export function GraphHelpPanel() {
     <div className="rounded-lg border border-border bg-surface">
       <button
         onClick={() => setExpanded(!expanded)}
-        className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm font-medium text-text-primary hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-900"
+        className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm font-medium text-text-primary hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-800"
       >
         <HelpCircle className="h-4 w-4 text-primary" />
         <span>Understanding the Knowledge Graph</span>
@@ -158,7 +158,7 @@ export function GraphHelpPanel() {
                     />
                   </div>
                   <div>
-                    <code className="rounded bg-gray-100 dark:bg-gray-800 px-1 py-0.5 text-[10px] font-semibold text-text-primary">
+                    <code className="rounded bg-gray-100 px-1 py-0.5 text-[10px] font-semibold text-text-primary dark:bg-gray-800">
                       {label}
                     </code>{' '}
                     <span>{description}</span>

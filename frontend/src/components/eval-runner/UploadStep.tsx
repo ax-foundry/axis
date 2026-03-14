@@ -179,7 +179,7 @@ export function UploadStep() {
         {uploadedData && (
           <button
             onClick={clearData}
-            className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm text-text-muted transition-colors hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-900 hover:text-text-primary"
+            className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm text-text-muted transition-colors hover:bg-gray-50 hover:text-text-primary dark:bg-gray-900 dark:hover:bg-gray-800"
           >
             <X className="h-4 w-4" />
             Clear
@@ -198,7 +198,7 @@ export function UploadStep() {
               'relative overflow-hidden rounded-2xl border-2 border-dashed transition-all',
               isDragActive
                 ? 'border-primary bg-gradient-to-br from-primary/10 to-primary/5'
-                : 'border-border bg-gradient-to-br from-gray-50 dark:from-gray-900 to-surface dark:from-gray-900 dark:to-gray-800',
+                : 'border-border bg-gradient-to-br from-gray-50 to-surface dark:from-gray-900 dark:from-gray-900 dark:to-gray-800',
               isUploading && 'pointer-events-none opacity-60'
             )}
           >
@@ -226,7 +226,7 @@ export function UploadStep() {
                 </div>
                 <h3 className="mb-1 font-semibold text-text-primary">Upload CSV</h3>
                 <p className="mb-3 text-sm text-text-muted">Drop a file or click to browse</p>
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 dark:bg-gray-800 px-3 py-1 text-xs text-text-muted">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1 text-xs text-text-muted dark:bg-gray-800">
                   <FileText className="h-3 w-3" />
                   Max 10MB, 10K rows
                 </span>
@@ -309,7 +309,7 @@ export function UploadStep() {
       {uploadedData && uploadedData.length > 0 && (
         <>
           {/* File Info Card */}
-          <div className="rounded-xl border border-border bg-gradient-to-r from-gray-50 dark:from-gray-900 to-surface dark:from-gray-900 dark:to-gray-800 p-4">
+          <div className="rounded-xl border border-border bg-gradient-to-r from-gray-50 to-surface p-4 dark:from-gray-900 dark:from-gray-900 dark:to-gray-800">
             <div className="flex items-center gap-4">
               <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
                 <FileSpreadsheet className="h-6 w-6 text-primary" />
@@ -328,7 +328,7 @@ export function UploadStep() {
 
           {/* Data Preview Table */}
           <div className="overflow-hidden rounded-xl border border-border">
-            <div className="border-b border-border bg-gray-50 dark:bg-gray-900 px-4 py-3">
+            <div className="border-b border-border bg-gray-50 px-4 py-3 dark:bg-gray-900">
               <h3 className="font-medium text-text-primary">Data Preview</h3>
               <p className="text-xs text-text-muted">Showing first 3 rows</p>
             </div>
@@ -353,7 +353,10 @@ export function UploadStep() {
                 </thead>
                 <tbody>
                   {uploadedData.slice(0, 3).map((row, i) => (
-                    <tr key={i} className="hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-900/50">
+                    <tr
+                      key={i}
+                      className="hover:bg-gray-50 dark:bg-gray-900/50 dark:hover:bg-gray-800"
+                    >
                       {columns.slice(0, 5).map((col) => (
                         <td
                           key={col}
@@ -377,7 +380,7 @@ export function UploadStep() {
 
           {/* Column Mapping */}
           <div className="overflow-hidden rounded-xl border border-border">
-            <div className="border-b border-border bg-gray-50 dark:bg-gray-900 px-4 py-3">
+            <div className="border-b border-border bg-gray-50 px-4 py-3 dark:bg-gray-900">
               <h3 className="font-medium text-text-primary">Column Mapping</h3>
               <p className="text-xs text-text-muted">Map your columns to evaluation fields</p>
             </div>
@@ -428,7 +431,7 @@ export function UploadStep() {
               <div>
                 <div className="mb-3 flex items-center gap-2">
                   <span className="text-sm font-medium text-text-secondary">Optional Fields</span>
-                  <span className="rounded-full bg-gray-100 dark:bg-gray-800 px-2 py-0.5 text-xs font-medium text-text-muted">
+                  <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-text-muted dark:bg-gray-800">
                     Optional
                   </span>
                 </div>
@@ -477,7 +480,7 @@ export function UploadStep() {
                 'flex items-center gap-2 rounded-xl px-6 py-2.5 text-sm font-medium transition-all',
                 canContinue
                   ? 'bg-gradient-to-r from-primary to-primary-dark text-white shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30'
-                  : 'cursor-not-allowed bg-gray-100 dark:bg-gray-800 text-gray-400'
+                  : 'cursor-not-allowed bg-gray-100 text-gray-400 dark:bg-gray-800'
               )}
             >
               Continue to Agent

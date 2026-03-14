@@ -68,7 +68,7 @@ function MessageBubble({ role, content }: { role: 'user' | 'assistant'; content:
           'max-w-[85%] px-4 py-3',
           isUser
             ? 'rounded-2xl rounded-br-md bg-primary text-white'
-            : 'rounded-2xl rounded-bl-md bg-gray-100 dark:bg-gray-800 text-text-primary'
+            : 'rounded-2xl rounded-bl-md bg-gray-100 text-text-primary dark:bg-gray-800'
         )}
       >
         {isUser ? (
@@ -365,7 +365,7 @@ function CollapsibleSection({
     <div className="border-border/50 border-t">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex w-full items-center gap-2 px-4 py-3 text-left transition-colors hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-900"
+        className="flex w-full items-center gap-2 px-4 py-3 text-left transition-colors hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-800"
       >
         {isOpen ? (
           <ChevronDown className="h-4 w-4 flex-shrink-0 text-text-muted" />
@@ -375,7 +375,7 @@ function CollapsibleSection({
         <span className="text-text-muted">{icon}</span>
         <span className="text-sm font-medium text-text-primary">{title}</span>
         {badge && (
-          <span className="ml-auto rounded-full bg-gray-100 dark:bg-gray-800 px-2 py-0.5 text-xs text-text-muted">
+          <span className="ml-auto rounded-full bg-gray-100 px-2 py-0.5 text-xs text-text-muted dark:bg-gray-800">
             {badge}
           </span>
         )}
@@ -594,7 +594,7 @@ function ChunkCard({ chunk, index }: { chunk: RetrievedChunk; index: number; tot
   return (
     <div className="border-border/60 overflow-hidden rounded-lg border bg-surface transition-colors hover:border-primary/30">
       {/* Chunk Header */}
-      <div className="border-border/40 flex items-center justify-between border-b bg-gradient-to-r from-gray-50 dark:from-gray-900 to-transparent px-3 py-2">
+      <div className="border-border/40 flex items-center justify-between border-b bg-gradient-to-r from-gray-50 to-transparent px-3 py-2 dark:from-gray-900">
         <div className="flex min-w-0 flex-1 items-center gap-2">
           <div className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded bg-primary/10 text-xs font-medium text-primary">
             {index + 1}
@@ -627,7 +627,7 @@ function ChunkCard({ chunk, index }: { chunk: RetrievedChunk; index: number; tot
                 ? 'bg-success/10 text-success'
                 : chunk.score >= 0.5
                   ? 'bg-warning/10 text-warning'
-                  : 'bg-gray-100 dark:bg-gray-800 text-text-muted'
+                  : 'bg-gray-100 text-text-muted dark:bg-gray-800'
             )}
           >
             {(chunk.score * 100).toFixed(0)}% match
@@ -662,7 +662,7 @@ function ChunkCard({ chunk, index }: { chunk: RetrievedChunk; index: number; tot
               ),
               li: ({ children }) => <li className="text-sm">{children}</li>,
               code: ({ children }) => (
-                <code className="rounded bg-gray-100 dark:bg-gray-800 px-1 py-0.5 font-mono text-xs">
+                <code className="rounded bg-gray-100 px-1 py-0.5 font-mono text-xs dark:bg-gray-800">
                   {children}
                 </code>
               ),
@@ -845,7 +845,7 @@ function formatValue(value: unknown): React.ReactNode {
       );
     }
     return (
-      <pre className="max-h-32 overflow-y-auto whitespace-pre-wrap rounded-md border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 px-2 py-1.5 font-mono text-xs">
+      <pre className="max-h-32 overflow-y-auto whitespace-pre-wrap rounded-md border border-gray-200 bg-gray-50 px-2 py-1.5 font-mono text-xs dark:border-gray-700 dark:bg-gray-900">
         {JSON.stringify(value, null, 2)}
       </pre>
     );
@@ -853,7 +853,7 @@ function formatValue(value: unknown): React.ReactNode {
 
   if (typeof value === 'object') {
     return (
-      <pre className="max-h-32 overflow-y-auto whitespace-pre-wrap rounded-md border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 px-2 py-1.5 font-mono text-xs">
+      <pre className="max-h-32 overflow-y-auto whitespace-pre-wrap rounded-md border border-gray-200 bg-gray-50 px-2 py-1.5 font-mono text-xs dark:border-gray-700 dark:bg-gray-900">
         {JSON.stringify(value, null, 2)}
       </pre>
     );
@@ -962,7 +962,7 @@ function KeyValueCard({ title, icon, data, accentColor, defaultOpen = false }: K
           {entries.map(([key, value]) => (
             <div
               key={key}
-              className="flex items-start gap-3 px-3 py-2.5 transition-colors hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-900/50"
+              className="flex items-start gap-3 px-3 py-2.5 transition-colors hover:bg-gray-50 dark:bg-gray-900/50 dark:hover:bg-gray-800"
             >
               <div className="flex min-w-[140px] flex-shrink-0 items-center gap-2">
                 {getValueIcon(value)}
@@ -1097,7 +1097,7 @@ function TextContentCard({
                 ),
                 li: ({ children }) => <li className="text-sm">{children}</li>,
                 code: ({ children }) => (
-                  <code className="rounded bg-gray-100 dark:bg-gray-800 px-1 py-0.5 font-mono text-xs">
+                  <code className="rounded bg-gray-100 px-1 py-0.5 font-mono text-xs dark:bg-gray-800">
                     {children}
                   </code>
                 ),
@@ -1301,7 +1301,7 @@ export function InputContextPanel({ testCaseData }: InputContextPanelProps) {
       {/* Header */}
       <button
         onClick={() => setIsPanelOpen(!isPanelOpen)}
-        className="border-border/50 flex w-full items-center justify-between border-b bg-gray-50 dark:bg-gray-900 px-4 py-3 transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-800"
+        className="border-border/50 flex w-full items-center justify-between border-b bg-gray-50 px-4 py-3 transition-colors hover:bg-gray-100 dark:bg-gray-800 dark:bg-gray-900 dark:hover:bg-gray-700"
       >
         <h3 className="text-sm font-semibold text-text-primary">Test Case Context</h3>
         {isPanelOpen ? (

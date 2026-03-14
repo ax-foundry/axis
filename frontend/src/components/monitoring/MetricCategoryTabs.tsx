@@ -80,7 +80,7 @@ export function MetricCategoryTabs({
                 'relative flex items-center gap-2 border-b-2 px-4 py-2.5 text-sm font-medium transition-colors',
                 isActive
                   ? 'border-primary text-primary'
-                  : 'border-transparent text-text-muted hover:border-gray-200 dark:border-gray-700 hover:text-text-primary'
+                  : 'border-transparent text-text-muted hover:border-gray-200 hover:text-text-primary dark:border-gray-700'
               )}
               title={tab.description}
             >

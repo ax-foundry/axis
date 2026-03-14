@@ -124,7 +124,7 @@ export function ComparisonTable({ results, filter, onFilterChange }: ComparisonT
                   <tr
                     key={result.record_id}
                     className={cn(
-                      'transition-colors hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-900',
+                      'transition-colors hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-800',
                       !result.is_aligned && 'bg-error/5',
                       isExpanded && 'bg-gray-50 dark:bg-gray-900'
                     )}
@@ -175,7 +175,7 @@ export function ComparisonTable({ results, filter, onFilterChange }: ComparisonT
                     <td className="px-3 py-2.5 text-center">
                       <button
                         onClick={() => setExpandedRow(isExpanded ? null : result.record_id)}
-                        className="rounded p-1 text-text-muted hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-800 hover:text-text-primary"
+                        className="rounded p-1 text-text-muted hover:bg-gray-100 hover:text-text-primary dark:bg-gray-800 dark:hover:bg-gray-700"
                       >
                         {isExpanded ? (
                           <ChevronUp className="h-4 w-4" />
@@ -187,7 +187,7 @@ export function ComparisonTable({ results, filter, onFilterChange }: ComparisonT
                   </tr>
                   {isExpanded && (
                     <tr key={`${result.record_id}-expanded`}>
-                      <td colSpan={6} className="border-t bg-gray-50 dark:bg-gray-900 px-4 py-4">
+                      <td colSpan={6} className="border-t bg-gray-50 px-4 py-4 dark:bg-gray-900">
                         <div className="grid gap-4 md:grid-cols-2">
                           <div>
                             <div className="mb-1 text-xs font-medium text-text-muted">Response</div>
@@ -225,14 +225,14 @@ export function ComparisonTable({ results, filter, onFilterChange }: ComparisonT
             <button
               onClick={() => setPage((p) => Math.max(0, p - 1))}
               disabled={page === 0}
-              className="rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-text-secondary transition-colors hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-900 disabled:cursor-not-allowed disabled:opacity-50"
+              className="rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-text-secondary transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-gray-900 dark:hover:bg-gray-800"
             >
               Previous
             </button>
             <button
               onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
               disabled={page >= totalPages - 1}
-              className="rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-text-secondary transition-colors hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-900 disabled:cursor-not-allowed disabled:opacity-50"
+              className="rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-text-secondary transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-gray-900 dark:hover:bg-gray-800"
             >
               Next
             </button>

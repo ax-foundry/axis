@@ -165,7 +165,7 @@ export function DataSelector() {
         <button
           onClick={goBack}
           disabled={isLoading}
-          className="rounded-lg p-1.5 text-text-muted transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-800 hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-50"
+          className="rounded-lg p-1.5 text-text-muted transition-colors hover:bg-gray-100 hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-50 dark:bg-gray-800 dark:hover:bg-gray-700"
         >
           <ArrowLeft className="h-5 w-5" />
         </button>
@@ -292,7 +292,7 @@ export function DataSelector() {
                           'flex w-full items-center gap-3 rounded-lg border p-3 text-left transition-all',
                           isSelected
                             ? 'border-primary bg-primary/5'
-                            : 'border-transparent hover:border-border hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-900',
+                            : 'border-transparent hover:border-border hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-800',
                           isLoading && 'cursor-wait opacity-70'
                         )}
                       >
@@ -301,7 +301,7 @@ export function DataSelector() {
                             'flex h-9 w-9 items-center justify-center rounded-lg',
                             isSelected
                               ? 'bg-primary/10 text-primary'
-                              : 'bg-gray-100 dark:bg-gray-800 text-text-muted'
+                              : 'bg-gray-100 text-text-muted dark:bg-gray-800'
                           )}
                         >
                           <TableIcon className="h-4 w-4" />

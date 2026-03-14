@@ -22,7 +22,7 @@ export function TextModeToggle() {
   const { compareTextMode, setCompareTextMode } = useUIStore();
 
   return (
-    <div className="flex items-center gap-1 rounded-lg bg-gray-100 dark:bg-gray-800 p-0.5">
+    <div className="flex items-center gap-1 rounded-lg bg-gray-100 p-0.5 dark:bg-gray-800">
       {TEXT_MODES.map((mode) => {
         const Icon = mode.icon;
         const isActive = mode.id === compareTextMode;

@@ -154,7 +154,7 @@ export function UploadStep() {
                 </button>
                 <button
                   onClick={() => setCurrentStep('review')}
-                  className="rounded-lg border border-border bg-surface px-4 py-2 text-sm font-medium text-text-secondary transition-colors hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-900"
+                  className="rounded-lg border border-border bg-surface px-4 py-2 text-sm font-medium text-text-secondary transition-colors hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-800"
                 >
                   Re-annotate from Scratch
                 </button>
@@ -194,7 +194,7 @@ export function UploadStep() {
               className={cn(
                 'flex items-center gap-2 rounded-lg px-6 py-2.5 font-medium transition-all',
                 hasImportedLabels
-                  ? 'border border-border bg-surface text-text-secondary hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-900'
+                  ? 'border border-border bg-surface text-text-secondary hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-800'
                   : 'bg-primary text-white hover:bg-primary-dark hover:shadow-lg hover:shadow-primary/20'
               )}
             >

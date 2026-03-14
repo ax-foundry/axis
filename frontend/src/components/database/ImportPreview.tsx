@@ -245,7 +245,7 @@ export function ImportPreview() {
         <button
           onClick={goBack}
           disabled={isLoading || isImporting}
-          className="rounded-lg p-1.5 text-text-muted transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-800 hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-50"
+          className="rounded-lg p-1.5 text-text-muted transition-colors hover:bg-gray-100 hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-50 dark:bg-gray-800 dark:hover:bg-gray-700"
         >
           <ArrowLeft className="h-5 w-5" />
         </button>
@@ -330,7 +330,10 @@ export function ImportPreview() {
               </thead>
               <tbody>
                 {previewData.map((row, rowIdx) => (
-                  <tr key={rowIdx} className="hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-900">
+                  <tr
+                    key={rowIdx}
+                    className="hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-800"
+                  >
                     {displayColumns.map((col) => (
                       <td
                         key={col}

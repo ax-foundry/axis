@@ -69,7 +69,7 @@ export default function EvalRunnerPage() {
         {(uploadedData !== null || results !== null) && (
           <button
             onClick={reset}
-            className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm font-medium text-text-muted transition-colors hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-900 hover:text-text-primary"
+            className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm font-medium text-text-muted transition-colors hover:bg-gray-50 hover:text-text-primary dark:bg-gray-900 dark:hover:bg-gray-800"
           >
             <RotateCcw className="h-4 w-4" />
             Start Over

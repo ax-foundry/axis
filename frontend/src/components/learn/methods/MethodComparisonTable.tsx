@@ -132,7 +132,10 @@ export function MethodComparisonTable() {
           </thead>
           <tbody>
             {comparisonData.map((row, idx) => (
-              <tr key={row.attribute} className={idx % 2 === 0 ? 'bg-gray-50 dark:bg-gray-900' : 'bg-surface'}>
+              <tr
+                key={row.attribute}
+                className={idx % 2 === 0 ? 'bg-gray-50 dark:bg-gray-900' : 'bg-surface'}
+              >
                 <td className="px-4 py-3">
                   <p className="text-sm font-medium text-text-primary">{row.attribute}</p>
                   <p className="text-xs text-text-muted">{row.description}</p>

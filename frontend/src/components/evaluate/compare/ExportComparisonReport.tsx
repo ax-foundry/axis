@@ -349,7 +349,7 @@ export function ExportComparisonReport({ rows, className }: ExportComparisonRepo
         disabled={isExporting}
         className={cn(
           'flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-all',
-          'border-border bg-surface text-text-secondary hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-900',
+          'border-border bg-surface text-text-secondary hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-800',
           isExporting && 'cursor-not-allowed opacity-50'
         )}
       >
@@ -366,7 +366,7 @@ export function ExportComparisonReport({ rows, className }: ExportComparisonRepo
             <div className="py-1">
               <button
                 onClick={() => handleExport('json')}
-                className="flex w-full items-center gap-3 px-4 py-2 text-sm text-text-secondary hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-900"
+                className="flex w-full items-center gap-3 px-4 py-2 text-sm text-text-secondary hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-800"
               >
                 <FileJson className="h-4 w-4 text-blue-500" />
                 <div className="text-left">
@@ -376,7 +376,7 @@ export function ExportComparisonReport({ rows, className }: ExportComparisonRepo
               </button>
               <button
                 onClick={() => handleExport('csv')}
-                className="flex w-full items-center gap-3 px-4 py-2 text-sm text-text-secondary hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-900"
+                className="flex w-full items-center gap-3 px-4 py-2 text-sm text-text-secondary hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-800"
               >
                 <Table className="h-4 w-4 text-green-500" />
                 <div className="text-left">
@@ -386,7 +386,7 @@ export function ExportComparisonReport({ rows, className }: ExportComparisonRepo
               </button>
               <button
                 onClick={() => handleExport('markdown')}
-                className="flex w-full items-center gap-3 px-4 py-2 text-sm text-text-secondary hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-900"
+                className="flex w-full items-center gap-3 px-4 py-2 text-sm text-text-secondary hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-800"
               >
                 <FileText className="h-4 w-4 text-purple-500" />
                 <div className="text-left">

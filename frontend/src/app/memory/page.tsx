@@ -91,7 +91,7 @@ export default function MemoryPage() {
           hasData ? (
             <button
               onClick={clearData}
-              className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm font-medium text-text-muted transition-colors hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-900 hover:text-text-primary"
+              className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm font-medium text-text-muted transition-colors hover:bg-gray-50 hover:text-text-primary dark:bg-gray-900 dark:hover:bg-gray-800"
             >
               <RotateCcw className="h-4 w-4" />
               Start Over
@@ -154,7 +154,7 @@ export default function MemoryPage() {
                   'relative cursor-pointer rounded-lg border-2 border-dashed p-8 text-center transition-colors duration-150',
                   isDragActive
                     ? 'border-primary bg-primary/5'
-                    : 'border-border bg-gray-50 dark:bg-gray-900/50 hover:border-primary/50 hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-900',
+                    : 'border-border bg-gray-50 hover:border-primary/50 hover:bg-gray-50 dark:bg-gray-900 dark:bg-gray-900/50 dark:hover:bg-gray-800',
                   uploadMutation.isPending && 'pointer-events-none',
                   uploadMutation.isSuccess && 'bg-success/5 border-success'
                 )}
@@ -243,7 +243,7 @@ export default function MemoryPage() {
               )}
 
               {/* Expected columns hint */}
-              <div className="mt-6 rounded-lg border border-border bg-gray-50 dark:bg-gray-900 p-4">
+              <div className="mt-6 rounded-lg border border-border bg-gray-50 p-4 dark:bg-gray-900">
                 <p className="mb-2 text-xs font-medium text-text-muted">Expected columns:</p>
                 <div className="flex flex-wrap gap-2">
                   {expectedColumns.map((col) => (

@@ -615,7 +615,7 @@ function ScorecardSlide() {
                     className={`inline-block rounded px-1.5 py-0.5 text-[8px] font-semibold uppercase ${
                       row.type === 'COMPONENT'
                         ? 'bg-blue-50 text-blue-600'
-                        : 'bg-gray-100 dark:bg-gray-800 text-text-muted'
+                        : 'bg-gray-100 text-text-muted dark:bg-gray-800'
                     }`}
                   >
                     {row.type}
@@ -781,7 +781,7 @@ function TreeViewSlide() {
             </div>
 
             {/* OVERALL row */}
-            <div className="mb-2 rounded-md bg-gray-50 dark:bg-gray-900 px-3 py-2">
+            <div className="mb-2 rounded-md bg-gray-50 px-3 py-2 dark:bg-gray-900">
               <div className="flex items-center justify-between">
                 <span className="text-[10px] font-medium text-text-primary">
                   OVERALL <span className="text-text-muted">(1 signal)</span>
@@ -803,7 +803,9 @@ function TreeViewSlide() {
                 <div key={s.id}>
                   <div
                     className={`flex items-center gap-1.5 rounded px-2 py-1.5 ${
-                      s.expanded ? 'border border-blue-300 bg-blue-50/50' : 'hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-900'
+                      s.expanded
+                        ? 'border border-blue-300 bg-blue-50/50'
+                        : 'hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-800'
                     }`}
                   >
                     <ChevronRight
@@ -892,7 +894,7 @@ function CaliberHQSlide() {
             <div className="flex items-center gap-2">
               <Sparkles className="h-3.5 w-3.5 text-accent-gold" />
               <span className="text-[11px] font-semibold text-text-primary">Pattern Insights</span>
-              <span className="rounded-full bg-gray-100 dark:bg-gray-800 px-2 py-0.5 text-[9px] text-text-muted">
+              <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[9px] text-text-muted dark:bg-gray-800">
                 2 patterns &middot; 5 notes
               </span>
             </div>
@@ -905,7 +907,9 @@ function CaliberHQSlide() {
                 <span
                   key={m}
                   className={`rounded-md px-2.5 py-1 text-[9px] font-medium ${
-                    m === 'LLM' ? 'bg-[#334155] text-white' : 'bg-gray-50 dark:bg-gray-900 text-text-muted'
+                    m === 'LLM'
+                      ? 'bg-[#334155] text-white'
+                      : 'bg-gray-50 text-text-muted dark:bg-gray-900'
                   }`}
                 >
                   {m}
@@ -976,12 +980,16 @@ function CaliberHQSlide() {
                 <span
                   key={tab.label}
                   className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-[9px] font-medium ${
-                    tab.active ? 'bg-primary/10 text-primary' : 'text-text-muted hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-900'
+                    tab.active
+                      ? 'bg-primary/10 text-primary'
+                      : 'text-text-muted hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-800'
                   }`}
                 >
                   {tab.label}
                   {tab.badge && (
-                    <span className="rounded-full bg-gray-100 dark:bg-gray-800 px-1.5 text-[8px]">{tab.badge}</span>
+                    <span className="rounded-full bg-gray-100 px-1.5 text-[8px] dark:bg-gray-800">
+                      {tab.badge}
+                    </span>
                   )}
                 </span>
               ))}
@@ -1011,7 +1019,7 @@ function CaliberHQSlide() {
               <span className="mb-1 block text-[9px] font-medium text-text-primary">
                 System Prompt
               </span>
-              <div className="rounded-md border border-border bg-gray-50 dark:bg-gray-900 p-2.5">
+              <div className="rounded-md border border-border bg-gray-50 p-2.5 dark:bg-gray-900">
                 <pre className="whitespace-pre-wrap font-mono text-[8px] leading-relaxed text-text-secondary">
                   {`You are an expert evaluator assessing the quality of AI-generated responses.
 
@@ -1163,7 +1171,7 @@ function ProductPreviewCarousel({ isLight }: { isLight: boolean }) {
               className={`rounded-full px-3 py-1 text-[11px] font-medium transition-all duration-300 ${
                 i === activeSlide
                   ? 'bg-primary text-white'
-                  : 'text-text-muted hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-800 hover:text-text-primary'
+                  : 'text-text-muted hover:bg-gray-100 hover:text-text-primary dark:bg-gray-800 dark:hover:bg-gray-700'
               }`}
             >
               {s.label}
@@ -1205,7 +1213,7 @@ function BiographyModal({ agent, onClose }: { agent: AgentConfig; onClose: () =>
 
           {/* Avatar overlapping the band */}
           <div className="absolute -bottom-8 left-8">
-            <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-full border-4 border-white bg-gray-100 dark:bg-gray-800 shadow-md">
+            <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-full border-4 border-white bg-gray-100 shadow-md dark:bg-gray-800">
               {agent.avatar ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={agent.avatar} alt={agent.label} className="h-16 w-16 object-cover" />
@@ -1676,14 +1684,14 @@ export default function Home() {
                 <Link
                   key={f.title}
                   href={f.href}
-                  className={`bento-card group relative flex flex-col overflow-hidden bg-[#fafbfc] dark:bg-[#1a1d27] p-9 transition-colors duration-300 hover:bg-[#f3f4f6] dark:hover:bg-[#1e2130] ${f.cols}`}
+                  className={`bento-card group relative flex flex-col overflow-hidden bg-[#fafbfc] p-9 transition-colors duration-300 hover:bg-[#f3f4f6] dark:bg-[#1a1d27] dark:hover:bg-[#1e2130] ${f.cols}`}
                 >
                   {/* Accent line */}
                   <div
                     className={`absolute left-0 top-0 h-[2px] w-12 opacity-0 transition-all duration-300 group-hover:w-16 group-hover:opacity-100 ${f.accent}`}
                   />
                   {f.badge && (
-                    <span className="absolute right-4 top-4 rounded-full bg-primary/10 dark:bg-primary/20 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-primary">
+                    <span className="absolute right-4 top-4 rounded-full bg-primary/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-primary dark:bg-primary/20">
                       {f.badge}
                     </span>
                   )}

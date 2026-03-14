@@ -38,12 +38,15 @@ export function ThoughtPanel({ className }: ThoughtPanelProps) {
 
   return (
     <div
-      className={cn('border-b border-border bg-gray-50 dark:bg-gray-900/50 transition-all duration-300', className)}
+      className={cn(
+        'border-b border-border bg-gray-50 transition-all duration-300 dark:bg-gray-900/50',
+        className
+      )}
     >
       {/* Header */}
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="flex w-full items-center justify-between px-4 py-2 text-left transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-800"
+        className="flex w-full items-center justify-between px-4 py-2 text-left transition-colors hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700"
       >
         <div className="flex items-center gap-2">
           {isStreaming ? (

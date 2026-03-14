@@ -127,7 +127,7 @@ function EmptyState({
               </p>
             </div>
             <FileUpload targetStore="human_signals" />
-            <div className="mt-6 rounded-lg border border-border bg-gray-50 dark:bg-gray-900 p-4">
+            <div className="mt-6 rounded-lg border border-border bg-gray-50 p-4 dark:bg-gray-900">
               <p className="mb-2 text-xs font-medium text-text-muted">Expected format columns:</p>
               <div className="flex flex-wrap gap-2">
                 {['metric_name', 'dataset_id', 'signals', 'conversation', 'timestamp'].map(

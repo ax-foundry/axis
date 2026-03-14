@@ -98,7 +98,7 @@ function PaginationControls({
         <button
           onClick={() => onPageChange(currentPage - 1)}
           disabled={currentPage === 1}
-          className="flex h-7 w-7 items-center justify-center rounded text-text-muted transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-800 hover:text-text-primary disabled:opacity-40"
+          className="flex h-7 w-7 items-center justify-center rounded text-text-muted transition-colors hover:bg-gray-100 hover:text-text-primary disabled:opacity-40 dark:bg-gray-800 dark:hover:bg-gray-700"
         >
           <ChevronLeft className="h-4 w-4" />
         </button>
@@ -110,7 +110,7 @@ function PaginationControls({
               'flex h-7 min-w-[28px] items-center justify-center rounded px-1.5 text-xs font-medium transition-colors',
               p === currentPage
                 ? 'bg-primary text-white'
-                : 'text-text-muted hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-800 hover:text-text-primary'
+                : 'text-text-muted hover:bg-gray-100 hover:text-text-primary dark:bg-gray-800 dark:hover:bg-gray-700'
             )}
           >
             {p}
@@ -119,7 +119,7 @@ function PaginationControls({
         <button
           onClick={() => onPageChange(currentPage + 1)}
           disabled={currentPage === totalPages}
-          className="flex h-7 w-7 items-center justify-center rounded text-text-muted transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-800 hover:text-text-primary disabled:opacity-40"
+          className="flex h-7 w-7 items-center justify-center rounded text-text-muted transition-colors hover:bg-gray-100 hover:text-text-primary disabled:opacity-40 dark:bg-gray-800 dark:hover:bg-gray-700"
         >
           <ChevronRight className="h-4 w-4" />
         </button>
@@ -177,7 +177,7 @@ function RuleCreateForm({ onClose }: { onClose: () => void }) {
           <button
             onClick={onClose}
             disabled={isPending}
-            className="flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-medium text-text-muted transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-800 hover:text-text-primary disabled:opacity-50"
+            className="flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-medium text-text-muted transition-colors hover:bg-gray-100 hover:text-text-primary disabled:opacity-50 dark:bg-gray-800 dark:hover:bg-gray-700"
           >
             <X className="h-3.5 w-3.5" />
             Cancel
@@ -443,7 +443,7 @@ function RuleEditForm({ rule, onClose }: { rule: MemoryRuleRecord; onClose: () =
           <button
             onClick={onClose}
             disabled={isPending}
-            className="flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-medium text-text-muted transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-800 hover:text-text-primary disabled:opacity-50"
+            className="flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-medium text-text-muted transition-colors hover:bg-gray-100 hover:text-text-primary disabled:opacity-50 dark:bg-gray-800 dark:hover:bg-gray-700"
           >
             <X className="h-3.5 w-3.5" />
             Cancel
@@ -580,7 +580,7 @@ function RuleRow({
     <>
       <tr
         className={cn(
-          'cursor-pointer border-b transition-colors hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-900',
+          'cursor-pointer border-b transition-colors hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-800',
           isExpanded && 'bg-primary/5'
         )}
         onClick={onToggle}
