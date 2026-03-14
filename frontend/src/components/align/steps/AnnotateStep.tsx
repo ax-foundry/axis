@@ -97,9 +97,7 @@ export function AnnotateStep() {
 
   const handleNotesChange = (notes: string) => {
     if (currentRecordId) {
-      if (currentAnnotation) {
-        setAnnotationNotes(currentRecordId, notes);
-      }
+      setAnnotationNotes(currentRecordId, notes);
     }
   };
 

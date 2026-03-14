@@ -22,9 +22,9 @@ export function AlignAnnotationProgress({
 }: AlignAnnotationProgressProps) {
   const stats = useMemo(() => {
     const total = records.length;
-    const annotated = Object.keys(annotations).length;
     const accepted = Object.values(annotations).filter((v) => v.score === 1).length;
     const rejected = Object.values(annotations).filter((v) => v.score === 0).length;
+    const annotated = accepted + rejected;
     const pending = total - annotated;
     const percentage = total > 0 ? Math.round((annotated / total) * 100) : 0;
 

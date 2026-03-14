@@ -220,7 +220,11 @@ export function TracePicker({ onSelect, agent, className }: TracePickerProps) {
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary/15 to-primary/5 transition-colors group-hover:from-primary/25 group-hover:to-primary/10">
                     {agentConfig?.avatar ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={agentConfig.avatar} alt={agentConfig.label} className="rounded-lg h-6 w-6" />
+                      <img
+                        src={agentConfig.avatar}
+                        alt={agentConfig.label}
+                        className="h-6 w-6 rounded-lg"
+                      />
                     ) : (
                       <Bot className="h-5 w-5 text-primary" />
                     )}
