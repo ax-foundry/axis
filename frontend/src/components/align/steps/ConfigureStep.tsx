@@ -54,7 +54,9 @@ export function ConfigureStep() {
     // Convert AnnotationWithNotes to simple scores for API
     const annotationsForApi: Record<string, number> = {};
     for (const [id, ann] of Object.entries(humanAnnotations)) {
-      annotationsForApi[id] = ann.score;
+      if (ann.score !== undefined) {
+        annotationsForApi[id] = ann.score;
+      }
     }
 
     evaluateMutation.mutate({

@@ -184,6 +184,22 @@
   opacity: 0;
 }
 
+/* Sign-in panel entrance — subtle, spring easing */
+@keyframes signin-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-signin-up {
+  animation: signin-up 0.5s cubic-bezier(0.19, 1, 0.22, 1) both;
+}
+
 /* Scale In */
 @keyframes scale-in {
   from {

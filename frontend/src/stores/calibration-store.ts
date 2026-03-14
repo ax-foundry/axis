@@ -214,7 +214,7 @@ export const useCalibrationStore = create<CalibrationState>()(
           case 'review':
             return state.data.length > 0;
           case 'build':
-            return Object.keys(state.humanAnnotations).length > 0;
+            return Object.values(state.humanAnnotations).some((a) => a.score !== undefined);
           default:
             return false;
         }
@@ -269,19 +269,15 @@ export const useCalibrationStore = create<CalibrationState>()(
         })),
 
       setAnnotationNotes: (recordId, notes) =>
-        set((state) => {
-          const existing = state.humanAnnotations[recordId];
-          if (!existing) return state;
-          return {
-            humanAnnotations: {
-              ...state.humanAnnotations,
-              [recordId]: {
-                ...existing,
-                notes,
-              },
+        set((state) => ({
+          humanAnnotations: {
+            ...state.humanAnnotations,
+            [recordId]: {
+              ...state.humanAnnotations[recordId],
+              notes,
             },
-          };
-        }),
+          },
+        })),
 
       removeAnnotation: (recordId) =>
         set((state) => {
@@ -295,7 +291,9 @@ export const useCalibrationStore = create<CalibrationState>()(
       getAnnotationProgress: () => {
         const state = get();
         const total = state.data.length;
-        const annotated = Object.keys(state.humanAnnotations).length;
+        const annotated = Object.values(state.humanAnnotations).filter(
+          (a) => a.score !== undefined
+        ).length;
         const percentage = total > 0 ? Math.round((annotated / total) * 100) : 0;
         return { total, annotated, percentage };
       },

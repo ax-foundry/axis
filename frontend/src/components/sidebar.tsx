@@ -18,11 +18,13 @@ import {
   LayoutDashboard,
   LayoutGrid,
   Lock,
+  LogOut,
   Sparkles,
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import { useEffect, useMemo, useState } from 'react';
 
 import { getFeaturesConfig } from '@/lib/api';
@@ -95,6 +97,7 @@ export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const [copilotOpen, setCopilotOpen] = useState(false);
   const [copilotEnabled, setCopilotEnabled] = useState(true);
+  const { status } = useSession();
   const appIconUrl = useAppIconUrl();
   const branding = useBranding();
   const { data: pluginData } = usePluginNav();
@@ -258,6 +261,21 @@ export function Sidebar() {
             <Settings className="h-[18px] w-[18px] flex-shrink-0" />
             {!collapsed && <span>Settings</span>}
           </Link>
+
+          {/* Sign out — only when authenticated */}
+          {status === 'authenticated' && (
+            <Link
+              href="/auth/signout"
+              className={cn(
+                'flex items-center gap-2.5 rounded-lg px-3 py-[9px] text-[13px] font-medium text-text-muted transition-colors duration-150 hover:bg-red-50 hover:text-red-500',
+                collapsed && 'justify-center px-2'
+              )}
+              title={collapsed ? 'Sign out' : undefined}
+            >
+              <LogOut className="h-[18px] w-[18px] flex-shrink-0" />
+              {!collapsed && <span>Sign out</span>}
+            </Link>
+          )}
 
           {/* Collapse toggle */}
           <button

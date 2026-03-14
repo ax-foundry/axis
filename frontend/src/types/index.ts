@@ -309,7 +309,7 @@ export type AlignStep = 'upload' | 'review' | 'build';
 
 // Annotation with optional notes for Truesight feature
 export interface AnnotationWithNotes {
-  score: 0 | 1;
+  score?: 0 | 1;
   notes?: string;
   timestamp?: string;
 }
