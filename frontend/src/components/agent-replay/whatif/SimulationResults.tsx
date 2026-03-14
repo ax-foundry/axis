@@ -33,7 +33,7 @@ export function SimulationResults({ result }: SimulationResultsProps) {
       {/* Two output panes sharing available height */}
       <div className="flex min-h-0 flex-1 flex-col gap-3">
         {/* Original output (frozen) */}
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-border bg-gray-50/60">
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-border bg-gray-50 dark:bg-gray-900/60">
           <div className="flex shrink-0 items-center gap-2 border-b border-border px-3 py-2">
             <span className="text-[10px] font-bold uppercase tracking-wider text-text-muted">
               Original
@@ -63,7 +63,7 @@ export function SimulationResults({ result }: SimulationResultsProps) {
         </div>
 
         {/* Simulated output */}
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border-2 border-primary/20 bg-white shadow-sm shadow-primary/5">
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border-2 border-primary/20 bg-surface shadow-sm shadow-primary/5">
           <div className="flex shrink-0 items-center gap-2 border-b border-primary/10 bg-primary/[0.03] px-3 py-2">
             <div className="flex items-center gap-1">
               <Sparkles className="h-3 w-3 text-primary" />

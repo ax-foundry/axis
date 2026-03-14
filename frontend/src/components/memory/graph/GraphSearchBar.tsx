@@ -55,7 +55,7 @@ export function GraphSearchBar() {
             setIsOpen(true);
           }}
           onFocus={() => setIsOpen(true)}
-          className="w-full rounded-lg border border-border bg-white py-2 pl-10 pr-8 text-sm text-text-primary placeholder:text-text-muted focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+          className="w-full rounded-lg border border-border bg-surface py-2 pl-10 pr-8 text-sm text-text-primary placeholder:text-text-muted focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
         />
         {localQuery && (
           <button
@@ -72,7 +72,7 @@ export function GraphSearchBar() {
       </div>
 
       {showDropdown && (
-        <div className="absolute z-50 mt-1 w-full rounded-lg border border-border bg-white shadow-lg">
+        <div className="absolute z-50 mt-1 w-full rounded-lg border border-border bg-surface shadow-lg">
           <div className="max-h-64 overflow-y-auto py-1">
             {results.map((result) => (
               <button
@@ -83,7 +83,7 @@ export function GraphSearchBar() {
                   setIsOpen(false);
                 }}
                 className={cn(
-                  'flex w-full items-center gap-3 px-3 py-2 text-left text-sm hover:bg-gray-50'
+                  'flex w-full items-center gap-3 px-3 py-2 text-left text-sm hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-800'
                 )}
               >
                 <span

@@ -120,7 +120,7 @@ export function EffectSizeBadge({ effectSize, cohenD, className }: EffectSizeBad
       case 'small':
         return { bg: 'bg-blue-100', text: 'text-blue-700', label: 'Small' };
       default:
-        return { bg: 'bg-gray-100', text: 'text-gray-600', label: 'Negligible' };
+        return { bg: 'bg-gray-100 dark:bg-gray-800', text: 'text-gray-600', label: 'Negligible' };
     }
   };
 

@@ -34,7 +34,7 @@ export function AlignAnnotationProgress({
   return (
     <div className="flex flex-col gap-4">
       {/* Card 1: Progress */}
-      <div className="overflow-hidden rounded-lg border border-border bg-white">
+      <div className="overflow-hidden rounded-lg border border-border bg-surface">
         {/* Header: percentage + label */}
         <div className="flex items-center justify-between px-4 py-3">
           <div>
@@ -46,7 +46,7 @@ export function AlignAnnotationProgress({
         </div>
 
         {/* Thin progress bar */}
-        <div className="mx-4 h-[3px] overflow-hidden rounded-full bg-gray-100">
+        <div className="mx-4 h-[3px] overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800">
           <div
             className="h-full rounded-full bg-primary transition-all duration-300"
             style={{ width: `${stats.percentage}%` }}
@@ -79,7 +79,7 @@ export function AlignAnnotationProgress({
       </div>
 
       {/* Card 2: Record List */}
-      <div className="overflow-hidden rounded-lg border border-border bg-white">
+      <div className="overflow-hidden rounded-lg border border-border bg-surface">
         <div className="flex items-center justify-between border-b border-border px-3.5 py-2.5 text-xs font-semibold text-text-primary">
           Records
           <span className="font-normal text-text-muted">{stats.total} total</span>
@@ -96,7 +96,7 @@ export function AlignAnnotationProgress({
                 key={recordId}
                 onClick={() => onSelectRecord(index)}
                 className={cn(
-                  'flex w-full items-center gap-2 border-b border-gray-100 px-3.5 py-2 text-left text-xs transition-colors last:border-b-0 hover:bg-gray-50',
+                  'flex w-full items-center gap-2 border-b border-gray-100 px-3.5 py-2 text-left text-xs transition-colors last:border-b-0 hover:bg-gray-50 dark:border-gray-800 dark:bg-gray-900 dark:hover:bg-gray-800',
                   isCurrent && 'border-l-[3px] border-l-primary bg-primary/5'
                 )}
               >
@@ -117,7 +117,7 @@ export function AlignAnnotationProgress({
       </div>
 
       {/* Card 3: Keyboard Shortcuts (always visible) */}
-      <div className="overflow-hidden rounded-lg border border-border bg-white">
+      <div className="overflow-hidden rounded-lg border border-border bg-surface">
         <div className="border-b border-border px-3.5 py-2.5 text-xs font-semibold uppercase tracking-wide text-text-muted">
           Keyboard Shortcuts
         </div>
@@ -132,7 +132,7 @@ export function AlignAnnotationProgress({
               key={shortcut.label}
               className={cn(
                 'flex items-center justify-between py-1.5',
-                idx > 0 && 'border-t border-gray-100'
+                idx > 0 && 'border-t border-gray-100 dark:border-gray-800'
               )}
             >
               <span className="text-xs text-text-secondary">{shortcut.label}</span>
@@ -141,14 +141,14 @@ export function AlignAnnotationProgress({
                   {shortcut.keys.map((k) => (
                     <kbd
                       key={k}
-                      className="min-w-[26px] rounded border border-border bg-gray-50 px-2 py-0.5 text-center font-mono text-xs text-text-primary"
+                      className="min-w-[26px] rounded border border-border bg-gray-50 px-2 py-0.5 text-center font-mono text-xs text-text-primary dark:bg-gray-900"
                     >
                       {k}
                     </kbd>
                   ))}
                 </div>
               ) : (
-                <kbd className="min-w-[26px] rounded border border-border bg-gray-50 px-2 py-0.5 text-center font-mono text-xs text-text-primary">
+                <kbd className="min-w-[26px] rounded border border-border bg-gray-50 px-2 py-0.5 text-center font-mono text-xs text-text-primary dark:bg-gray-900">
                   {shortcut.key}
                 </kbd>
               )}

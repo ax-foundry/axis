@@ -22,7 +22,7 @@ const OPTIONS: { verdict: ReviewVerdict; label: string; icon: typeof ThumbsUp; c
     verdict: 'neutral',
     label: 'Neutral',
     icon: Minus,
-    color: 'border-gray-400 bg-gray-50 text-gray-600',
+    color: 'border-gray-400 bg-gray-50 dark:bg-gray-900 text-gray-600',
   },
   {
     verdict: 'negative',
@@ -46,7 +46,7 @@ export function VerdictSelector({ value, onChange }: VerdictSelectorProps) {
               'flex flex-col items-center gap-1 rounded-lg border-2 px-2 py-2.5 text-xs font-medium transition-all',
               isSelected
                 ? cn(color, 'shadow-sm')
-                : 'border-primary/10 bg-white text-text-muted hover:border-primary/25 hover:bg-primary/[0.02]'
+                : 'border-primary/10 bg-surface text-text-muted hover:border-primary/25 hover:bg-primary/[0.02]'
             )}
           >
             <Icon className="h-4 w-4" />

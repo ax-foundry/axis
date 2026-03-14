@@ -56,12 +56,12 @@ export function UploadModal() {
       <div
         className={cn(
           'relative mx-4 max-h-[90vh] w-full max-w-3xl overflow-auto',
-          'rounded-3xl bg-white shadow-2xl',
+          'rounded-3xl bg-surface shadow-2xl',
           'animate-scale-in'
         )}
       >
         {/* Header */}
-        <div className="border-border/50 sticky top-0 z-10 flex items-center justify-between rounded-t-3xl border-b bg-white px-6 py-4">
+        <div className="border-border/50 sticky top-0 z-10 flex items-center justify-between rounded-t-3xl border-b bg-surface px-6 py-4">
           <div>
             <h2 className="text-xl font-bold text-text-primary">
               {hasExistingData ? 'Replace Evaluation Data' : 'Upload Evaluation Data'}
@@ -72,7 +72,7 @@ export function UploadModal() {
           </div>
           <button
             onClick={handleClose}
-            className="rounded-xl p-2 transition-colors hover:bg-gray-100"
+            className="rounded-xl p-2 transition-colors hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700"
           >
             <X className="h-5 w-5 text-text-muted" />
           </button>

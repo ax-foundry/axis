@@ -48,7 +48,7 @@ export function QuickFilters() {
               'flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-all',
               isActive
                 ? 'border-primary bg-primary text-white'
-                : 'border-border bg-white text-text-secondary hover:border-primary hover:text-primary'
+                : 'border-border bg-surface text-text-secondary hover:border-primary hover:text-primary'
             )}
           >
             <Icon className="h-4 w-4" />

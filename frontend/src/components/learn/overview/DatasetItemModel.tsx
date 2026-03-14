@@ -74,7 +74,7 @@ const FIELD_ICONS: Record<string, { icon: React.ElementType; color: string }> = 
 
 export function DatasetItemModel() {
   return (
-    <div className="rounded-xl border border-border bg-white p-5">
+    <div className="rounded-xl border border-border bg-surface p-5">
       <div className="mb-4 flex items-center gap-3">
         <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-blue-50">
           <Database className="h-[18px] w-[18px] text-blue-600" />
@@ -88,7 +88,7 @@ export function DatasetItemModel() {
       </div>
 
       {/* Visual Schema Representation */}
-      <div className="mb-4 rounded-lg border border-border bg-gray-50 p-4">
+      <div className="mb-4 rounded-lg border border-border bg-gray-50 p-4 dark:bg-gray-900">
         <div className="font-mono text-xs">
           <div className="mb-2 text-text-muted">{`// Evaluation Data Structure`}</div>
           <div className="text-purple-600">interface</div>{' '}
@@ -124,7 +124,9 @@ export function DatasetItemModel() {
             <div
               key={field.name}
               className={`rounded-lg border p-3 ${
-                field.required ? 'border-primary/20 bg-primary/5' : 'border-border bg-gray-50'
+                field.required
+                  ? 'border-primary/20 bg-primary/5'
+                  : 'border-border bg-gray-50 dark:bg-gray-900'
               }`}
             >
               <div className="mb-1 flex items-center gap-2">
@@ -145,11 +147,11 @@ export function DatasetItemModel() {
       <div className="mt-4 rounded-lg border border-accent-gold/20 bg-accent-gold/5 px-4 py-3">
         <p className="text-xs text-text-secondary">
           <strong>Tip:</strong> At minimum, you need{' '}
-          <code className="rounded bg-white px-1">id</code>,{' '}
-          <code className="rounded bg-white px-1">query</code>, and{' '}
-          <code className="rounded bg-white px-1">actual_output</code> fields. Add optional fields
+          <code className="rounded bg-surface px-1">id</code>,{' '}
+          <code className="rounded bg-surface px-1">query</code>, and{' '}
+          <code className="rounded bg-surface px-1">actual_output</code> fields. Add optional fields
           based on your evaluation type (e.g.,{' '}
-          <code className="rounded bg-white px-1">expected_output</code> for comparison-based
+          <code className="rounded bg-surface px-1">expected_output</code> for comparison-based
           evaluation).
         </p>
       </div>

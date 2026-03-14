@@ -158,7 +158,7 @@ export function WinLossChart({ rows, onCaseClick }: WinLossChartProps) {
     <div className="space-y-6">
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* Pie Chart */}
-        <div className="border-border/50 rounded-xl border bg-white p-4">
+        <div className="border-border/50 rounded-xl border bg-surface p-4">
           <h4 className="mb-3 text-sm font-medium text-text-primary">Win Distribution</h4>
           <div className="h-[300px]">
             <PlotlyChart
@@ -178,7 +178,7 @@ export function WinLossChart({ rows, onCaseClick }: WinLossChartProps) {
         </div>
 
         {/* Bar Chart */}
-        <div className="border-border/50 rounded-xl border bg-white p-4">
+        <div className="border-border/50 rounded-xl border bg-surface p-4">
           <h4 className="mb-3 text-sm font-medium text-text-primary">Win Counts</h4>
           <div className="h-[300px]">
             <PlotlyChart
@@ -195,7 +195,7 @@ export function WinLossChart({ rows, onCaseClick }: WinLossChartProps) {
       </div>
 
       {/* Summary Table */}
-      <div className="border-border/50 rounded-xl border bg-white p-4">
+      <div className="border-border/50 rounded-xl border bg-surface p-4">
         <h4 className="mb-3 text-sm font-medium text-text-primary">Win/Loss Summary</h4>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -238,7 +238,7 @@ export function WinLossChart({ rows, onCaseClick }: WinLossChartProps) {
       </div>
       {/* Baseline vs Challenger: Divergent Cases */}
       {isBaselineChallengerMode && categorizedCases && (
-        <div className="border-border/50 rounded-xl border bg-white p-4">
+        <div className="border-border/50 rounded-xl border bg-surface p-4">
           <h4 className="mb-3 text-sm font-medium text-text-primary">Most Divergent Test Cases</h4>
           <p className="mb-4 text-xs text-text-muted">
             Click on a test case to view details in the Case Diff View
@@ -352,7 +352,8 @@ function DivergentCaseItem({
         'w-full rounded-lg border p-2 text-left transition-all hover:shadow-sm',
         variant === 'challenger' && 'border-green-200 bg-green-50/50 hover:bg-green-50',
         variant === 'baseline' && 'border-amber-200 bg-amber-50/50 hover:bg-amber-50',
-        variant === 'tie' && 'border-gray-200 bg-gray-50/50 hover:bg-gray-50'
+        variant === 'tie' &&
+          'border-gray-200 bg-gray-50 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:bg-gray-900/50 dark:hover:bg-gray-800'
       )}
     >
       <div className="flex items-center justify-between">

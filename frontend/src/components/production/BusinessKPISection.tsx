@@ -80,7 +80,7 @@ export function BusinessKPISection({ signalsKPIs, totalCases }: BusinessKPISecti
 
         return (
           <Link key={kpi.key} href="/human-signals">
-            <div className="flex flex-col gap-1.5 rounded-lg border border-border bg-white px-4 py-3 transition-all hover:border-primary/40 hover:shadow-sm">
+            <div className="flex flex-col gap-1.5 rounded-lg border border-border bg-surface px-4 py-3 transition-all hover:border-primary/40 hover:shadow-sm">
               {/* Value + trend icon */}
               <div className="flex items-center gap-1.5">
                 <span className="text-xl font-bold text-text-primary">{kpi.value}</span>
@@ -105,7 +105,7 @@ export function BusinessKPISection({ signalsKPIs, totalCases }: BusinessKPISecti
               <div className="flex items-center gap-1.5">
                 <span className="text-xs text-text-muted">{kpi.label}</span>
                 {totalCases != null && (
-                  <span className="rounded bg-gray-100 px-1 py-0.5 text-[10px] text-text-muted">
+                  <span className="rounded bg-gray-100 px-1 py-0.5 text-[10px] text-text-muted dark:bg-gray-800">
                     {totalCases.toLocaleString()}
                   </span>
                 )}

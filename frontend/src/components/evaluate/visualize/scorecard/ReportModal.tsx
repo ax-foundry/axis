@@ -192,7 +192,7 @@ export function ReportModal({ isOpen, onClose }: ReportModalProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="flex h-[90vh] w-full max-w-4xl flex-col rounded-2xl bg-white shadow-2xl">
+      <div className="flex h-[90vh] w-full max-w-4xl flex-col rounded-2xl bg-surface shadow-2xl">
         {/* Header */}
         <div className="border-border/50 flex items-center justify-between border-b px-6 py-4">
           <div className="flex items-center gap-3">
@@ -216,7 +216,7 @@ export function ReportModal({ isOpen, onClose }: ReportModalProps) {
           </div>
           <button
             onClick={onClose}
-            className="rounded-lg p-2 text-text-muted transition-colors hover:bg-gray-100 hover:text-text-primary"
+            className="rounded-lg p-2 text-text-muted transition-colors hover:bg-gray-100 hover:text-text-primary dark:bg-gray-800 dark:hover:bg-gray-700"
           >
             <X className="h-5 w-5" />
           </button>
@@ -270,7 +270,7 @@ export function ReportModal({ isOpen, onClose }: ReportModalProps) {
                 className={cn(
                   'flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors',
                   data.length === 0
-                    ? 'cursor-not-allowed bg-gray-100 text-gray-400'
+                    ? 'cursor-not-allowed bg-gray-100 text-gray-400 dark:bg-gray-800'
                     : 'bg-primary text-white hover:bg-primary-dark'
                 )}
               >
@@ -284,7 +284,7 @@ export function ReportModal({ isOpen, onClose }: ReportModalProps) {
             <>
               <button
                 onClick={cancel}
-                className="rounded-lg border border-border px-3 py-2 text-sm text-text-secondary transition-colors hover:bg-gray-50"
+                className="rounded-lg border border-border px-3 py-2 text-sm text-text-secondary transition-colors hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-800"
               >
                 Cancel
               </button>
@@ -299,7 +299,7 @@ export function ReportModal({ isOpen, onClose }: ReportModalProps) {
             <>
               <button
                 onClick={handleBackToConfig}
-                className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm text-text-secondary transition-colors hover:bg-gray-50"
+                className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm text-text-secondary transition-colors hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-800"
               >
                 <ArrowLeft className="h-4 w-4" />
                 Back to Config
@@ -313,7 +313,7 @@ export function ReportModal({ isOpen, onClose }: ReportModalProps) {
                     'flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm transition-colors',
                     !report?.report_text
                       ? 'cursor-not-allowed opacity-50'
-                      : 'text-text-secondary hover:bg-gray-50'
+                      : 'text-text-secondary hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-800'
                   )}
                 >
                   {copied ? (
@@ -405,7 +405,7 @@ function ConfigStep({
                   'flex w-full items-center justify-between rounded-lg border px-3 py-2 text-left transition-all',
                   reportMode === mode.value
                     ? 'border-primary bg-primary/5'
-                    : 'border-border/50 hover:border-border hover:bg-gray-50/50'
+                    : 'border-border/50 hover:border-border hover:bg-gray-50 dark:bg-gray-900/50 dark:hover:bg-gray-800'
                 )}
               >
                 <div>
@@ -429,7 +429,7 @@ function ConfigStep({
                   'flex w-full items-center justify-between rounded-lg border px-3 py-2 text-left transition-all',
                   reportType === type.value
                     ? 'border-primary bg-primary/5'
-                    : 'border-border/50 hover:border-border hover:bg-gray-50/50'
+                    : 'border-border/50 hover:border-border hover:bg-gray-50 dark:bg-gray-900/50 dark:hover:bg-gray-800'
                 )}
               >
                 <div>
@@ -443,7 +443,7 @@ function ConfigStep({
       </div>
 
       {/* Extraction Config */}
-      <div className="border-border/50 rounded-xl border bg-gray-50/50 p-4">
+      <div className="border-border/50 rounded-xl border bg-gray-50 p-4 dark:bg-gray-900/50">
         <h3 className="mb-4 flex items-center gap-2 text-sm font-medium text-text-primary">
           <Settings2 className="h-4 w-4" />
           Extraction Configuration
@@ -543,7 +543,7 @@ function ConfigStep({
                       'rounded-full px-3 py-1 text-xs font-medium transition-colors',
                       isSelected
                         ? 'bg-primary text-white'
-                        : 'border-border/50 border bg-white text-text-secondary hover:border-primary hover:text-primary'
+                        : 'border-border/50 border bg-surface text-text-secondary hover:border-primary hover:text-primary'
                     )}
                   >
                     {metric}
@@ -570,7 +570,7 @@ function ConfigStep({
                     'rounded-full px-3 py-1 text-xs font-medium transition-colors',
                     isSelected
                       ? 'bg-primary text-white'
-                      : 'border-border/50 border bg-white text-text-secondary hover:border-primary hover:text-primary'
+                      : 'border-border/50 border bg-surface text-text-secondary hover:border-primary hover:text-primary'
                   )}
                 >
                   {field.replace(/_/g, ' ')}
@@ -622,7 +622,7 @@ function ResultStep({
         <div className="border-border/50 border-b">
           <button
             onClick={() => setThoughtsExpanded(!thoughtsExpanded)}
-            className="flex w-full items-center justify-between px-6 py-3 text-left transition-colors hover:bg-gray-50/50"
+            className="flex w-full items-center justify-between px-6 py-3 text-left transition-colors hover:bg-gray-50 dark:bg-gray-900/50 dark:hover:bg-gray-800"
           >
             <div className="flex items-center gap-2">
               {isGenerating ? (
@@ -647,7 +647,7 @@ function ResultStep({
           </button>
 
           {thoughtsExpanded && (
-            <div className="border-border/30 max-h-40 overflow-y-auto border-t bg-gray-50/30 px-6 py-3">
+            <div className="border-border/30 max-h-40 overflow-y-auto border-t bg-gray-50 px-6 py-3 dark:bg-gray-900/30">
               {thoughts.map((thought, idx) => (
                 <ThoughtBubble key={thought.id || idx} thought={thought} />
               ))}
@@ -678,7 +678,7 @@ function ResultStep({
                 'rounded-full px-3 py-1 text-xs font-medium transition-colors',
                 activeTab === tab.key
                   ? 'bg-primary text-white'
-                  : 'text-text-muted hover:bg-gray-100 hover:text-text-primary'
+                  : 'text-text-muted hover:bg-gray-100 hover:text-text-primary dark:bg-gray-800 dark:hover:bg-gray-700'
               )}
             >
               {tab.label}
@@ -739,7 +739,7 @@ function ResultStep({
                       <strong className="font-semibold text-text-primary">{children}</strong>
                     ),
                     code: ({ children }) => (
-                      <code className="rounded bg-gray-100 px-1.5 py-0.5 font-mono text-xs text-primary-dark">
+                      <code className="rounded bg-gray-100 px-1.5 py-0.5 font-mono text-xs text-primary-dark dark:bg-gray-800">
                         {children}
                       </code>
                     ),
@@ -754,7 +754,9 @@ function ResultStep({
                       </div>
                     ),
                     thead: ({ children }) => (
-                      <thead className="border-b border-border bg-gray-50">{children}</thead>
+                      <thead className="border-b border-border bg-gray-50 dark:bg-gray-900">
+                        {children}
+                      </thead>
                     ),
                     th: ({ children }) => (
                       <th className="px-3 py-2 text-left text-xs font-semibold text-text-primary">
@@ -772,7 +774,7 @@ function ResultStep({
                 </ReactMarkdown>
 
                 {/* Report Stats */}
-                <div className="mt-6 rounded-lg bg-gray-50/80 p-4">
+                <div className="mt-6 rounded-lg bg-gray-50 p-4 dark:bg-gray-900/80">
                   <p className="mb-2 text-xs font-medium uppercase tracking-wider text-text-muted">
                     Report Statistics
                   </p>

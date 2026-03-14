@@ -65,7 +65,7 @@ export function ExportCSV({ rows, metrics, filename = 'comparison-export' }: Exp
     <button
       onClick={handleExport}
       disabled={rows.length === 0}
-      className="flex items-center gap-2 rounded-lg border border-border bg-white px-3 py-2 text-sm font-medium text-text-secondary transition-all hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-50"
+      className="flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-2 text-sm font-medium text-text-secondary transition-all hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-50"
       title="Export filtered data to CSV"
     >
       <Download className="h-4 w-4" />

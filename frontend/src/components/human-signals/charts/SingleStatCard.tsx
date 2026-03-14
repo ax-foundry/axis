@@ -17,7 +17,7 @@ export function SingleStatCard({ label, value, subtitle, highlight }: SingleStat
       </div>
       <div className="mt-1.5 text-sm font-medium text-text-secondary">{label}</div>
       {subtitle && (
-        <div className="mt-1 rounded-full bg-gray-100 px-2.5 py-0.5 text-xs text-text-muted">
+        <div className="mt-1 rounded-full bg-gray-100 px-2.5 py-0.5 text-xs text-text-muted dark:bg-gray-800">
           {subtitle}
         </div>
       )}

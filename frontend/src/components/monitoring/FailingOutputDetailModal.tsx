@@ -164,7 +164,7 @@ function InlineMetadataValue({ value }: { value: unknown }) {
       <span
         className={cn(
           'inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium',
-          value ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-text-muted'
+          value ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-text-muted dark:bg-gray-800'
         )}
       >
         {value ? 'Yes' : 'No'}
@@ -197,7 +197,7 @@ function StructuredValueView({ value, depth = 0 }: { value: unknown; depth?: num
       <span
         className={cn(
           'inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium',
-          value ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-text-muted'
+          value ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-text-muted dark:bg-gray-800'
         )}
       >
         {value ? 'Yes' : 'No'}
@@ -209,7 +209,7 @@ function StructuredValueView({ value, depth = 0 }: { value: unknown; depth?: num
   if (typeof value === 'string') {
     if (value.length > 120)
       return (
-        <div className="border-border/30 max-h-48 overflow-y-auto rounded border bg-white p-2">
+        <div className="border-border/30 max-h-48 overflow-y-auto rounded border bg-surface p-2">
           <p className="text-sm leading-relaxed text-text-secondary">
             <MarkdownContent content={value} />
           </p>
@@ -244,7 +244,7 @@ function StructuredValueView({ value, depth = 0 }: { value: unknown; depth?: num
 
     if (depth > 2) {
       return (
-        <pre className="max-h-32 overflow-auto rounded bg-gray-100 p-2 font-mono text-xs text-text-secondary">
+        <pre className="max-h-32 overflow-auto rounded bg-gray-100 p-2 font-mono text-xs text-text-secondary dark:bg-gray-800">
           {JSON.stringify(value, null, 2)}
         </pre>
       );
@@ -396,7 +396,7 @@ function SignalRow({
       {isExpanded && canExpand && (
         <div className="space-y-2 px-3 pb-3 pl-10">
           {(isStatement || isReason) && typeof signal.value === 'string' && (
-            <p className="rounded-md bg-gray-50 p-2 text-sm leading-relaxed text-text-secondary">
+            <p className="rounded-md bg-gray-50 p-2 text-sm leading-relaxed text-text-secondary dark:bg-gray-900">
               {signal.value}
             </p>
           )}
@@ -404,7 +404,7 @@ function SignalRow({
             <p className="text-xs italic leading-relaxed text-text-muted">{signal.description}</p>
           )}
           {typeof signal.value === 'object' && signal.value !== null && (
-            <pre className="max-h-32 overflow-x-auto overflow-y-auto rounded-md bg-gray-100 p-2 text-xs text-text-secondary">
+            <pre className="max-h-32 overflow-x-auto overflow-y-auto rounded-md bg-gray-100 p-2 text-xs text-text-secondary dark:bg-gray-800">
               {JSON.stringify(signal.value, null, 2)}
             </pre>
           )}
@@ -509,7 +509,7 @@ function SignalGroup({ groupName, signals }: { groupName: string; signals: Signa
       </button>
 
       {isGroupExpanded && (
-        <div className="bg-white">
+        <div className="bg-surface">
           {sortedSignals.map((signal, index) => (
             <SignalRow
               key={index}
@@ -762,7 +762,7 @@ export function FailingOutputDetailModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-      <div className="max-h-[90vh] w-full max-w-3xl overflow-hidden rounded-xl border border-border bg-white shadow-2xl">
+      <div className="max-h-[90vh] w-full max-w-3xl overflow-hidden rounded-xl border border-border bg-surface shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-border px-5 py-4">
           <div className="flex items-center gap-4">
@@ -799,7 +799,7 @@ export function FailingOutputDetailModal({
           </div>
           <button
             onClick={onClose}
-            className="rounded-lg p-2 text-text-muted transition-colors hover:bg-gray-100 hover:text-text-primary"
+            className="rounded-lg p-2 text-text-muted transition-colors hover:bg-gray-100 hover:text-text-primary dark:bg-gray-800 dark:hover:bg-gray-700"
           >
             <X className="h-5 w-5" />
           </button>
@@ -809,7 +809,7 @@ export function FailingOutputDetailModal({
         <div className="max-h-[calc(90vh-80px)] space-y-4 overflow-y-auto p-5">
           {/* Trace ID Banner */}
           {record.trace_id && (
-            <div className="flex items-center justify-between rounded-lg border border-border bg-gray-50/50 px-4 py-3">
+            <div className="flex items-center justify-between rounded-lg border border-border bg-gray-50 px-4 py-3 dark:bg-gray-900/50">
               <div className="flex items-center gap-3">
                 <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/10">
                   <ExternalLink className="h-3.5 w-3.5 text-primary" />
@@ -823,7 +823,7 @@ export function FailingOutputDetailModal({
               </div>
               <button
                 onClick={() => copyToClipboard(record.trace_id || '', 'trace_id')}
-                className="flex items-center gap-1 rounded-md border border-border bg-white px-2.5 py-1 text-xs font-medium text-text-muted transition-colors hover:border-primary/30 hover:text-primary"
+                className="flex items-center gap-1 rounded-md border border-border bg-surface px-2.5 py-1 text-xs font-medium text-text-muted transition-colors hover:border-primary/30 hover:text-primary"
               >
                 <Copy className="h-3 w-3" />
                 {copiedField === 'trace_id' ? 'Copied!' : 'Copy'}
@@ -849,7 +849,7 @@ export function FailingOutputDetailModal({
                   </button>
                 )}
               </div>
-              <div className="max-h-40 overflow-y-auto rounded-lg border border-border bg-gray-50/50 p-3">
+              <div className="max-h-40 overflow-y-auto rounded-lg border border-border bg-gray-50 p-3 dark:bg-gray-900/50">
                 <p className="whitespace-pre-wrap text-sm text-text-secondary">
                   {record.query || 'No input available'}
                 </p>
@@ -872,7 +872,7 @@ export function FailingOutputDetailModal({
                   </button>
                 )}
               </div>
-              <div className="max-h-40 overflow-y-auto rounded-lg border border-border bg-gray-50/50 p-3">
+              <div className="max-h-40 overflow-y-auto rounded-lg border border-border bg-gray-50 p-3 dark:bg-gray-900/50">
                 <p className="whitespace-pre-wrap text-sm text-text-secondary">
                   {record.actual_output || 'No output available'}
                 </p>
@@ -887,7 +887,7 @@ export function FailingOutputDetailModal({
                 <CheckCircle className="h-3.5 w-3.5 text-success" />
                 Expected Output
               </h4>
-              <div className="max-h-32 overflow-y-auto rounded-lg border border-border bg-gray-50/50 p-3">
+              <div className="max-h-32 overflow-y-auto rounded-lg border border-border bg-gray-50 p-3 dark:bg-gray-900/50">
                 <p className="whitespace-pre-wrap text-sm text-text-secondary">
                   {record.expected_output}
                 </p>
@@ -973,7 +973,7 @@ export function FailingOutputDetailModal({
                 </span>
               </button>
               {metadataExpanded && (
-                <div className="bg-gray-50/50">
+                <div className="bg-gray-50 dark:bg-gray-900/50">
                   {/* Simple fields in a 2-col grid */}
                   {simpleFields.length > 0 && (
                     <div className="px-3 py-2">
@@ -1006,7 +1006,7 @@ export function FailingOutputDetailModal({
                                   return next;
                                 });
                               }}
-                              className="flex w-full items-center gap-2 px-3 py-2 text-left transition-colors hover:bg-gray-100"
+                              className="flex w-full items-center gap-2 px-3 py-2 text-left transition-colors hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700"
                             >
                               {isExpanded ? (
                                 <ChevronDown className="h-3.5 w-3.5 flex-shrink-0 text-text-muted" />
@@ -1020,7 +1020,7 @@ export function FailingOutputDetailModal({
                             </button>
                             {isExpanded && (
                               <div className="px-3 pb-3 pl-8">
-                                <div className="border-border/30 rounded-lg border bg-gray-100/50 p-3">
+                                <div className="border-border/30 rounded-lg border bg-gray-100 p-3 dark:bg-gray-800/50">
                                   <StructuredValueView value={value} />
                                 </div>
                               </div>
@@ -1051,7 +1051,7 @@ export function FailingOutputDetailModal({
 
           {/* Basic Info Footer */}
           <div className="grid grid-cols-4 gap-2 text-sm">
-            <div className="rounded-lg border border-border bg-gray-50/50 p-3">
+            <div className="rounded-lg border border-border bg-gray-50 p-3 dark:bg-gray-900/50">
               <div className="flex items-center gap-1.5">
                 <Cpu className="h-3 w-3 text-primary" />
                 <p className="text-[10px] font-medium uppercase tracking-wider text-text-muted">
@@ -1060,7 +1060,7 @@ export function FailingOutputDetailModal({
               </div>
               <p className="mt-1 font-medium text-text-primary">{record.model_name || '-'}</p>
             </div>
-            <div className="rounded-lg border border-border bg-gray-50/50 p-3">
+            <div className="rounded-lg border border-border bg-gray-50 p-3 dark:bg-gray-900/50">
               <div className="flex items-center gap-1.5">
                 <Globe className="h-3 w-3 text-primary-light" />
                 <p className="text-[10px] font-medium uppercase tracking-wider text-text-muted">
@@ -1069,7 +1069,7 @@ export function FailingOutputDetailModal({
               </div>
               <p className="mt-1 font-medium text-text-primary">{record.environment || '-'}</p>
             </div>
-            <div className="rounded-lg border border-border bg-gray-50/50 p-3">
+            <div className="rounded-lg border border-border bg-gray-50 p-3 dark:bg-gray-900/50">
               <div className="flex items-center gap-1.5">
                 <Timer className="h-3 w-3 text-accent-gold" />
                 <p className="text-[10px] font-medium uppercase tracking-wider text-text-muted">
@@ -1080,7 +1080,7 @@ export function FailingOutputDetailModal({
                 {record.latency ? `${record.latency.toFixed(2)}s` : '-'}
               </p>
             </div>
-            <div className="rounded-lg border border-border bg-gray-50/50 p-3">
+            <div className="rounded-lg border border-border bg-gray-50 p-3 dark:bg-gray-900/50">
               <div className="flex items-center gap-1.5">
                 <Calendar className="h-3 w-3 text-primary-soft" />
                 <p className="text-[10px] font-medium uppercase tracking-wider text-text-muted">

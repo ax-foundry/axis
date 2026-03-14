@@ -98,7 +98,7 @@ function PaginationControls({
         <button
           onClick={() => onPageChange(currentPage - 1)}
           disabled={currentPage === 1}
-          className="flex h-7 w-7 items-center justify-center rounded text-text-muted transition-colors hover:bg-gray-100 hover:text-text-primary disabled:opacity-40"
+          className="flex h-7 w-7 items-center justify-center rounded text-text-muted transition-colors hover:bg-gray-100 hover:text-text-primary disabled:opacity-40 dark:bg-gray-800 dark:hover:bg-gray-700"
         >
           <ChevronLeft className="h-4 w-4" />
         </button>
@@ -110,7 +110,7 @@ function PaginationControls({
               'flex h-7 min-w-[28px] items-center justify-center rounded px-1.5 text-xs font-medium transition-colors',
               p === currentPage
                 ? 'bg-primary text-white'
-                : 'text-text-muted hover:bg-gray-100 hover:text-text-primary'
+                : 'text-text-muted hover:bg-gray-100 hover:text-text-primary dark:bg-gray-800 dark:hover:bg-gray-700'
             )}
           >
             {p}
@@ -119,7 +119,7 @@ function PaginationControls({
         <button
           onClick={() => onPageChange(currentPage + 1)}
           disabled={currentPage === totalPages}
-          className="flex h-7 w-7 items-center justify-center rounded text-text-muted transition-colors hover:bg-gray-100 hover:text-text-primary disabled:opacity-40"
+          className="flex h-7 w-7 items-center justify-center rounded text-text-muted transition-colors hover:bg-gray-100 hover:text-text-primary disabled:opacity-40 dark:bg-gray-800 dark:hover:bg-gray-700"
         >
           <ChevronRight className="h-4 w-4" />
         </button>
@@ -160,7 +160,7 @@ function RuleCreateForm({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <div className="space-y-3 rounded-lg border border-primary/20 bg-white p-4">
+    <div className="space-y-3 rounded-lg border border-primary/20 bg-surface p-4">
       <div className="flex items-center justify-between">
         <span className="text-xs font-semibold uppercase tracking-wider text-primary">
           New Rule
@@ -177,7 +177,7 @@ function RuleCreateForm({ onClose }: { onClose: () => void }) {
           <button
             onClick={onClose}
             disabled={isPending}
-            className="flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-medium text-text-muted transition-colors hover:bg-gray-100 hover:text-text-primary disabled:opacity-50"
+            className="flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-medium text-text-muted transition-colors hover:bg-gray-100 hover:text-text-primary disabled:opacity-50 dark:bg-gray-800 dark:hover:bg-gray-700"
           >
             <X className="h-3.5 w-3.5" />
             Cancel
@@ -351,7 +351,7 @@ export function RulesTab() {
 
       <div className="overflow-x-auto rounded-xl border">
         <table className="w-full text-left text-sm">
-          <thead className="border-b bg-gray-50/80">
+          <thead className="border-b bg-gray-50 dark:bg-gray-900/80">
             <tr>
               <th className="w-8 px-3 py-2.5" />
               {sortableColumns.map((col) => (
@@ -426,7 +426,7 @@ function RuleEditForm({ rule, onClose }: { rule: MemoryRuleRecord; onClose: () =
   };
 
   return (
-    <div className="space-y-3 rounded-lg border border-primary/20 bg-white p-4">
+    <div className="space-y-3 rounded-lg border border-primary/20 bg-surface p-4">
       <div className="flex items-center justify-between">
         <span className="text-xs font-semibold uppercase tracking-wider text-primary">
           Update Rule
@@ -443,7 +443,7 @@ function RuleEditForm({ rule, onClose }: { rule: MemoryRuleRecord; onClose: () =
           <button
             onClick={onClose}
             disabled={isPending}
-            className="flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-medium text-text-muted transition-colors hover:bg-gray-100 hover:text-text-primary disabled:opacity-50"
+            className="flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-medium text-text-muted transition-colors hover:bg-gray-100 hover:text-text-primary disabled:opacity-50 dark:bg-gray-800 dark:hover:bg-gray-700"
           >
             <X className="h-3.5 w-3.5" />
             Cancel
@@ -580,7 +580,7 @@ function RuleRow({
     <>
       <tr
         className={cn(
-          'cursor-pointer border-b transition-colors hover:bg-gray-50',
+          'cursor-pointer border-b transition-colors hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-800',
           isExpanded && 'bg-primary/5'
         )}
         onClick={onToggle}
@@ -607,7 +607,7 @@ function RuleRow({
       </tr>
 
       {isExpanded && (
-        <tr className="border-b bg-gray-50/50">
+        <tr className="border-b bg-gray-50 dark:bg-gray-900/50">
           <td colSpan={7} className="px-6 py-4">
             <div className="space-y-3">
               {/* Description */}

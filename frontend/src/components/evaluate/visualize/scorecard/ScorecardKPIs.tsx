@@ -25,7 +25,7 @@ function KPICard({ title, value, subtitle, icon: Icon, color }: KPICardProps) {
   };
 
   return (
-    <div className="rounded-lg border border-border bg-white p-5">
+    <div className="rounded-lg border border-border bg-surface p-5">
       <div className="flex items-start justify-between">
         <div>
           <p className="text-sm font-medium text-text-muted">{title}</p>

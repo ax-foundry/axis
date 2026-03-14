@@ -18,7 +18,7 @@ function confidenceBorderColor(confidence: number | null) {
 }
 
 function confidenceBadgeClasses(confidence: number | null) {
-  if (confidence === null) return 'bg-gray-100 text-gray-600';
+  if (confidence === null) return 'bg-gray-100 dark:bg-gray-800 text-gray-600';
   if (confidence >= 0.7) return 'bg-green-50 text-green-700';
   if (confidence >= 0.4) return 'bg-amber-50 text-amber-700';
   return 'bg-red-50 text-red-600';
@@ -39,7 +39,7 @@ function InsightPatternCard({ pattern }: InsightPatternCardProps) {
   return (
     <div
       className={cn(
-        'rounded-lg border border-l-4 border-border bg-white p-4',
+        'rounded-lg border border-l-4 border-border bg-surface p-4',
         confidenceBorderColor(pattern.confidence)
       )}
     >
@@ -48,7 +48,7 @@ function InsightPatternCard({ pattern }: InsightPatternCardProps) {
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <h4 className="text-[13px] font-bold text-text-primary">{pattern.category}</h4>
-            <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-semibold text-text-muted">
+            <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-semibold text-text-muted dark:bg-gray-800">
               {pattern.count}
             </span>
             {pattern.is_cross_metric && (
@@ -157,7 +157,7 @@ export function InsightPatternsPanel({ insights }: InsightPatternsPanelProps) {
             <Layers className="h-4 w-4 text-primary" />
             <h3 className="text-sm font-bold text-text-primary">
               Patterns Discovered
-              <span className="ml-1.5 rounded-full bg-gray-100 px-2 py-0.5 text-xs font-semibold text-text-muted">
+              <span className="ml-1.5 rounded-full bg-gray-100 px-2 py-0.5 text-xs font-semibold text-text-muted dark:bg-gray-800">
                 {insights.patterns.length}
               </span>
             </h3>
@@ -165,7 +165,7 @@ export function InsightPatternsPanel({ insights }: InsightPatternsPanelProps) {
 
           {/* Summary strip */}
           <div className="flex flex-wrap items-center gap-3">
-            <div className="flex items-center gap-1.5 rounded-md border border-border bg-gray-50 px-2.5 py-1 text-xs">
+            <div className="flex items-center gap-1.5 rounded-md border border-border bg-gray-50 px-2.5 py-1 text-xs dark:bg-gray-900">
               <Layers className="h-3 w-3 text-text-muted" />
               <span className="font-semibold text-text-primary">
                 {insights.total_issues_analyzed}

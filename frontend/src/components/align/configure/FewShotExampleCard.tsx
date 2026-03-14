@@ -17,7 +17,7 @@ export function FewShotExampleCard({ example, index, onEdit, onDelete }: FewShot
   const isAccepted = example.score === 1;
 
   return (
-    <div className="rounded-lg border border-border bg-white transition-shadow hover:shadow-sm">
+    <div className="rounded-lg border border-border bg-surface transition-shadow hover:shadow-sm">
       {/* Header */}
       <div className="flex items-center justify-between border-b border-border px-4 py-2">
         <div className="flex items-center gap-2">
@@ -36,7 +36,7 @@ export function FewShotExampleCard({ example, index, onEdit, onDelete }: FewShot
           {onEdit && (
             <button
               onClick={() => onEdit(index)}
-              className="rounded p-1.5 text-text-muted transition-colors hover:bg-gray-100 hover:text-text-primary"
+              className="rounded p-1.5 text-text-muted transition-colors hover:bg-gray-100 hover:text-text-primary dark:bg-gray-800 dark:hover:bg-gray-700"
             >
               <Edit2 className="h-4 w-4" />
             </button>

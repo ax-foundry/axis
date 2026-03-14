@@ -100,13 +100,13 @@ export function ScoreDistributionTab() {
         {/* Chart Type Toggle */}
         <div className="flex items-center gap-2">
           <span className="text-sm text-text-muted">Chart Type:</span>
-          <div className="flex items-center rounded-lg bg-gray-100 p-1">
+          <div className="flex items-center rounded-lg bg-gray-100 p-1 dark:bg-gray-800">
             <button
               onClick={() => setDistributionChartType('violin')}
               className={cn(
                 'rounded-md px-3 py-1.5 text-sm font-medium transition-all',
                 distributionChartType === 'violin'
-                  ? 'bg-white text-primary shadow-sm'
+                  ? 'bg-surface text-primary shadow-sm'
                   : 'text-text-muted hover:text-text-primary'
               )}
             >
@@ -117,7 +117,7 @@ export function ScoreDistributionTab() {
               className={cn(
                 'rounded-md px-3 py-1.5 text-sm font-medium transition-all',
                 distributionChartType === 'box'
-                  ? 'bg-white text-primary shadow-sm'
+                  ? 'bg-surface text-primary shadow-sm'
                   : 'text-text-muted hover:text-text-primary'
               )}
             >
@@ -133,7 +133,7 @@ export function ScoreDistributionTab() {
       </div>
 
       {/* Metric Selector */}
-      <div className="border-border/50 rounded-xl border bg-white p-4">
+      <div className="border-border/50 rounded-xl border bg-surface p-4">
         <h4 className="mb-3 text-sm font-medium text-text-primary">Select Metrics</h4>
         <div className="flex flex-wrap gap-2">
           {availableMetrics.map((metric) => {
@@ -146,7 +146,7 @@ export function ScoreDistributionTab() {
                   'rounded-lg border px-3 py-1.5 text-sm font-medium transition-all',
                   isSelected
                     ? 'border-primary bg-primary text-white'
-                    : 'border-border bg-white text-text-secondary hover:border-primary hover:text-primary'
+                    : 'border-border bg-surface text-text-secondary hover:border-primary hover:text-primary'
                 )}
               >
                 {metric}
@@ -157,7 +157,7 @@ export function ScoreDistributionTab() {
       </div>
 
       {/* Chart */}
-      <div className="border-border/50 rounded-xl border bg-white p-5 shadow-sm">
+      <div className="border-border/50 rounded-xl border bg-surface p-5 shadow-sm">
         <h3 className="mb-4 text-lg font-semibold text-text-primary">Score Distribution</h3>
         {distributionData.data.length > 0 ? (
           <div className="h-[450px]">

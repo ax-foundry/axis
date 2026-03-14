@@ -45,7 +45,7 @@ function MetricCard({
   }
 
   return (
-    <div className="rounded-lg border border-border bg-white p-4 transition-all hover:shadow-sm">
+    <div className="rounded-lg border border-border bg-surface p-4 transition-all hover:shadow-sm">
       <div className="flex items-start justify-between">
         <div className="text-xs font-medium uppercase tracking-wide text-text-muted">{label}</div>
         {description && (
@@ -104,9 +104,9 @@ export function MetricsOverview({ metrics }: MetricsOverviewProps) {
       </div>
 
       {/* Kappa Interpretation */}
-      <div className="rounded-lg border border-border bg-white p-4">
+      <div className="rounded-lg border border-border bg-surface p-4">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800">
             {metrics.cohens_kappa >= 0.6 ? (
               <TrendingUp className="h-5 w-5 text-success" />
             ) : metrics.cohens_kappa >= 0.4 ? (

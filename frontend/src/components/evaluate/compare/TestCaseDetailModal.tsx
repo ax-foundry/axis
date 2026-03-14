@@ -51,7 +51,7 @@ function ContentSection({ title, content }: { title: string; content: string }) 
           {copied ? 'Copied' : 'Copy'}
         </button>
       </div>
-      <div className="max-h-48 overflow-y-auto whitespace-pre-wrap rounded-lg bg-gray-50 p-4 font-mono text-sm text-text-secondary">
+      <div className="max-h-48 overflow-y-auto whitespace-pre-wrap rounded-lg bg-gray-50 p-4 font-mono text-sm text-text-secondary dark:bg-gray-900">
         {content}
       </div>
     </div>
@@ -62,7 +62,7 @@ function ExperimentCard({ row, metrics }: { row: ComparisonRow; metrics: string[
   return (
     <div className="min-w-0 flex-1">
       {/* Header */}
-      <div className="border-border/30 rounded-t-xl border-b bg-gray-50 p-4">
+      <div className="border-border/30 rounded-t-xl border-b bg-gray-50 p-4 dark:bg-gray-900">
         <p className="text-sm font-semibold text-text-primary">{row.experimentName || 'Default'}</p>
         <p className={cn('mt-1 text-2xl font-bold', getScoreColor(row.overallScore))}>
           {(row.overallScore * 100).toFixed(1)}%
@@ -92,7 +92,7 @@ function ExperimentCard({ row, metrics }: { row: ComparisonRow; metrics: string[
         {/* Response Preview */}
         <div className="space-y-2">
           <p className="text-xs font-medium uppercase text-text-muted">Response</p>
-          <div className="max-h-32 overflow-y-auto whitespace-pre-wrap rounded-lg bg-gray-50 p-3 font-mono text-xs text-text-secondary">
+          <div className="max-h-32 overflow-y-auto whitespace-pre-wrap rounded-lg bg-gray-50 p-3 font-mono text-xs text-text-secondary dark:bg-gray-900">
             {row.actualOutput.length > 500
               ? row.actualOutput.substring(0, 500) + '...'
               : row.actualOutput}
@@ -139,14 +139,14 @@ export function TestCaseDetailModal({ rows, metrics }: TestCaseDetailModalProps)
       {/* Modal */}
       <div
         className={cn(
-          'relative max-h-[90vh] overflow-hidden rounded-2xl bg-white shadow-2xl transition-all',
+          'relative max-h-[90vh] overflow-hidden rounded-2xl bg-surface shadow-2xl transition-all',
           compareDetailCompareMode && hasMultipleExperiments
             ? 'w-full max-w-5xl'
             : 'w-full max-w-3xl'
         )}
       >
         {/* Header */}
-        <div className="border-border/50 flex items-center justify-between border-b bg-gray-50 px-6 py-4">
+        <div className="border-border/50 flex items-center justify-between border-b bg-gray-50 px-6 py-4 dark:bg-gray-900">
           <div>
             <h3 className="text-lg font-semibold text-text-primary">Test Case Details</h3>
             <p className="max-w-md truncate text-sm text-text-muted" title={testCase.id}>
@@ -161,7 +161,7 @@ export function TestCaseDetailModal({ rows, metrics }: TestCaseDetailModalProps)
                   'flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm font-medium transition-all',
                   compareDetailCompareMode
                     ? 'border-primary bg-primary text-white'
-                    : 'border-border bg-white text-text-secondary hover:border-primary hover:text-primary'
+                    : 'border-border bg-surface text-text-secondary hover:border-primary hover:text-primary'
                 )}
                 title="Compare experiments side-by-side"
               >
@@ -235,7 +235,7 @@ export function TestCaseDetailModal({ rows, metrics }: TestCaseDetailModalProps)
             /* Normal Mode - Single View */
             <div className="space-y-6">
               {/* Overall Score */}
-              <div className="flex items-center gap-4 rounded-xl bg-gray-50 p-4">
+              <div className="flex items-center gap-4 rounded-xl bg-gray-50 p-4 dark:bg-gray-900">
                 <div className="flex-1">
                   <p className="text-sm text-text-muted">Overall Score</p>
                   <p className={cn('text-3xl font-bold', getScoreColor(overallScore))}>
@@ -312,7 +312,7 @@ export function TestCaseDetailModal({ rows, metrics }: TestCaseDetailModalProps)
         </div>
 
         {/* Footer */}
-        <div className="border-border/50 border-t bg-gray-50 px-6 py-4">
+        <div className="border-border/50 border-t bg-gray-50 px-6 py-4 dark:bg-gray-900">
           <button
             onClick={closeTestCaseDetail}
             className="w-full rounded-lg bg-primary px-4 py-2.5 font-medium text-white transition-colors hover:bg-primary-dark"

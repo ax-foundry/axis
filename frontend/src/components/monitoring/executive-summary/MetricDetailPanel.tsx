@@ -121,7 +121,7 @@ function ClassificationDetail({ records }: { records: MonitoringRecord[] }) {
         <h4 className="mb-2 text-sm font-medium text-text-primary">Value Counts</h4>
         <div className="max-h-48 overflow-y-auto rounded-lg border border-border">
           <table className="w-full text-xs">
-            <thead className="sticky top-0 bg-gray-50">
+            <thead className="sticky top-0 bg-gray-50 dark:bg-gray-900">
               <tr className="border-b border-border text-left font-medium uppercase text-text-muted">
                 <th className="px-3 py-1.5">Category</th>
                 <th className="px-3 py-1.5 text-right">Count</th>
@@ -132,7 +132,7 @@ function ClassificationDetail({ records }: { records: MonitoringRecord[] }) {
               {categories.items.map((cat, i) => (
                 <tr
                   key={cat.value}
-                  className="border-b border-border last:border-0 hover:bg-gray-50"
+                  className="border-b border-border last:border-0 hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-800"
                 >
                   <td className="px-3 py-1.5">
                     <div className="flex items-center gap-2">
@@ -270,7 +270,7 @@ function ScoreDetail({
           <h4 className="mb-2 text-sm font-medium text-text-primary">Recent Values</h4>
           <div className="max-h-40 overflow-y-auto rounded-lg border border-border">
             <table className="w-full text-xs">
-              <thead className="sticky top-0 bg-gray-50">
+              <thead className="sticky top-0 bg-gray-50 dark:bg-gray-900">
                 <tr className="border-b border-border text-left font-medium uppercase text-text-muted">
                   <th className="px-3 py-1.5">Timestamp</th>
                   <th className="px-3 py-1.5">Score</th>
@@ -301,7 +301,7 @@ function ScoreDetail({
                     </td>
                     <td className="px-3 py-1.5">
                       {r.trace_id ? (
-                        <code className="rounded bg-gray-100 px-1 font-mono text-primary">
+                        <code className="rounded bg-gray-100 px-1 font-mono text-primary dark:bg-gray-800">
                           {r.trace_id.slice(0, 8)}...
                         </code>
                       ) : (
@@ -341,7 +341,7 @@ export function MetricDetailPanel({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="max-h-[85vh] w-full max-w-2xl overflow-y-auto rounded-xl bg-white p-6 shadow-xl">
+      <div className="max-h-[85vh] w-full max-w-2xl overflow-y-auto rounded-xl bg-surface p-6 shadow-xl">
         {/* Header */}
         <div className="mb-4 flex items-center justify-between">
           <div>
@@ -353,7 +353,10 @@ export function MetricDetailPanel({
                 : ''}
             </p>
           </div>
-          <button onClick={onClose} className="rounded p-1 hover:bg-gray-100">
+          <button
+            onClick={onClose}
+            className="rounded p-1 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700"
+          >
             <X className="h-5 w-5" />
           </button>
         </div>

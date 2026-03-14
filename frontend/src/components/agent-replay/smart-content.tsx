@@ -190,7 +190,7 @@ export function SmartContent({ text, forceType }: { text: string; forceType?: 'j
     const seg = segments[0];
     if (seg.type === 'code') {
       return (
-        <pre className="overflow-x-auto whitespace-pre-wrap rounded bg-gray-100 p-2 font-mono text-[11px] leading-relaxed">
+        <pre className="overflow-x-auto whitespace-pre-wrap rounded bg-gray-100 p-2 font-mono text-[11px] leading-relaxed dark:bg-gray-800">
           <code>{seg.value}</code>
         </pre>
       );
@@ -208,7 +208,7 @@ export function SmartContent({ text, forceType }: { text: string; forceType?: 'j
         ) : seg.type === 'code' ? (
           <pre
             key={i}
-            className="overflow-x-auto whitespace-pre-wrap rounded bg-gray-100 p-2 font-mono text-[11px] leading-relaxed"
+            className="overflow-x-auto whitespace-pre-wrap rounded bg-gray-100 p-2 font-mono text-[11px] leading-relaxed dark:bg-gray-800"
           >
             <code>{seg.value}</code>
           </pre>

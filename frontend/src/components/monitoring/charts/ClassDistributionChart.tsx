@@ -3,6 +3,7 @@
 import { useMemo } from 'react';
 
 import { PlotlyChart } from '@/components/charts/plotly-chart';
+import { useDarkMode } from '@/lib/theme';
 import { ChartColors } from '@/types';
 
 import type { MonitoringClassDistribution } from '@/types';
@@ -20,6 +21,7 @@ export function ClassDistributionChart({
   chartType = 'violin',
   showStats = true,
 }: ClassDistributionChartProps) {
+  const isDark = useDarkMode();
   const chartData = useMemo(() => {
     if (data.length === 0) return [];
 
@@ -71,12 +73,12 @@ export function ClassDistributionChart({
       },
       xaxis: {
         title: { text: 'Group', font: { size: 12 } },
-        gridcolor: 'rgba(0,0,0,0.05)',
+        gridcolor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
       },
       yaxis: {
         title: { text: metric.replace(/_score$/, ' Score'), font: { size: 12 } },
         range: [0, 1.05],
-        gridcolor: 'rgba(0,0,0,0.05)',
+        gridcolor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
       },
       violinmode: 'group' as const,
       margin: { l: 50, r: 30, t: 20, b: 80 },
@@ -86,11 +88,11 @@ export function ClassDistributionChart({
             y: 1.02,
             text: `μ=${group.stats.mean.toFixed(2)}`,
             showarrow: false,
-            font: { size: 9, color: '#666' },
+            font: { size: 9, color: isDark ? '#a0aec0' : '#666' },
           }))
         : [],
     }),
-    [data, metric, showStats]
+    [data, metric, showStats, isDark]
   );
 
   if (data.length === 0) {

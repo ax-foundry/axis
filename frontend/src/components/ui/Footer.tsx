@@ -17,7 +17,7 @@ export function Footer() {
   if (pathname === '/') return null;
 
   return (
-    <footer className="border-t border-border bg-white px-6 py-4">
+    <footer className="border-t border-border bg-surface px-6 py-4">
       <div className="flex flex-col items-center justify-between gap-3 md:flex-row">
         {/* Left: App icon + name + year */}
         <div className="flex items-center gap-2">

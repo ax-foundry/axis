@@ -58,7 +58,7 @@ export function AgentIdentityBar({ trace, className }: AgentIdentityBarProps) {
   return (
     <div
       className={cn(
-        'border-b border-primary/10 bg-gradient-to-r from-white via-primary/[0.02] to-white',
+        'border-b border-primary/10 bg-gradient-to-r from-surface via-primary/[0.02] to-surface',
         className
       )}
     >
@@ -90,7 +90,9 @@ export function AgentIdentityBar({ trace, className }: AgentIdentityBarProps) {
                   <div
                     className={cn(
                       'h-[26px] w-[26px] flex-shrink-0 overflow-hidden rounded-md shadow-sm transition-shadow',
-                      isSelected ? 'bg-primary-pale shadow-primary/20' : 'bg-gray-100'
+                      isSelected
+                        ? 'bg-primary-pale shadow-primary/20'
+                        : 'bg-gray-100 dark:bg-gray-800'
                     )}
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -104,7 +106,9 @@ export function AgentIdentityBar({ trace, className }: AgentIdentityBarProps) {
                   <div
                     className={cn(
                       'flex h-[26px] w-[26px] flex-shrink-0 items-center justify-center rounded-md shadow-sm transition-all',
-                      isSelected ? 'bg-primary/15 shadow-primary/20' : 'bg-gray-100'
+                      isSelected
+                        ? 'bg-primary/15 shadow-primary/20'
+                        : 'bg-gray-100 dark:bg-gray-800'
                     )}
                   >
                     <Bot
@@ -163,7 +167,7 @@ export function AgentIdentityBar({ trace, className }: AgentIdentityBarProps) {
                 <Zap className="h-3 w-3 text-primary" />
                 {formatTokenCount(trace.total_tokens.total)} tokens
               </span>
-              <span className="flex items-center gap-1 rounded-full bg-gray-100 px-2.5 py-1 font-mono text-[10px] text-text-muted">
+              <span className="flex items-center gap-1 rounded-full bg-gray-100 px-2.5 py-1 font-mono text-[10px] text-text-muted dark:bg-gray-800">
                 <Hash className="h-3 w-3" />
                 {trace.id}
               </span>

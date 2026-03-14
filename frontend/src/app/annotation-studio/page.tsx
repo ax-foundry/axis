@@ -317,7 +317,7 @@ export default function AnnotationPage() {
         ) : (
           <div className="grid grid-cols-[1fr_280px] items-start gap-6">
             {/* Left: Annotation Card */}
-            <div className="overflow-hidden rounded-xl border border-border bg-white shadow-sm transition-shadow hover:shadow-md">
+            <div className="overflow-hidden rounded-xl border border-border bg-surface shadow-sm transition-shadow hover:shadow-md">
               {/* Accent gradient bar */}
               <div
                 className="h-[3px] opacity-70"
@@ -327,7 +327,7 @@ export default function AnnotationPage() {
               />
 
               {/* Navigation header */}
-              <div className="flex items-center justify-between border-b border-gray-100 px-5 py-3.5">
+              <div className="flex items-center justify-between border-b border-gray-100 px-5 py-3.5 dark:border-gray-800">
                 <div className="flex items-center gap-2.5">
                   <div className="flex gap-0.5">
                     <button
@@ -351,7 +351,7 @@ export default function AnnotationPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <span className="rounded bg-gray-50 px-2 py-0.5 font-mono text-[11px] text-text-muted">
+                  <span className="rounded bg-gray-50 px-2 py-0.5 font-mono text-[11px] text-text-muted dark:bg-gray-900">
                     {currentId}
                   </span>
                   {/* Flag button */}
@@ -411,8 +411,8 @@ export default function AnnotationPage() {
                             className={cn(
                               'max-h-80 overflow-y-auto rounded-lg border p-3.5 text-[13px] leading-[1.7] text-text-secondary',
                               isActualOutput
-                                ? 'border-l-[3px] border-b-gray-100 border-l-primary border-r-gray-100 border-t-gray-100 bg-gradient-to-r from-primary/[0.02] to-gray-50'
-                                : 'border-gray-100 bg-gray-50'
+                                ? 'border-l-[3px] border-b-gray-100 border-l-primary border-r-gray-100 border-t-gray-100 bg-gradient-to-r from-primary/[0.02] to-gray-50 dark:to-gray-900'
+                                : 'border-gray-100 bg-gray-50 dark:border-gray-800 dark:bg-gray-900'
                             )}
                           >
                             {isEmpty ? (
@@ -462,17 +462,17 @@ export default function AnnotationPage() {
             <button
               onClick={handlePrev}
               disabled={annotateCurrentIndex === 0}
-              className="flex items-center gap-2 rounded-md border border-border bg-white px-4 py-2 text-[13px] font-medium text-text-muted transition-all hover:border-text-muted hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-40"
+              className="flex items-center gap-2 rounded-md border border-border bg-surface px-4 py-2 text-[13px] font-medium text-text-muted transition-all hover:border-text-muted hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-40"
             >
               <ChevronLeft className="h-4 w-4" />
               Previous
             </button>
             <div className="flex items-center gap-2 text-[11px] text-text-muted">
-              <kbd className="min-w-[24px] rounded border border-border bg-gray-50 px-1.5 py-0.5 text-center font-mono text-[10px] text-text-primary">
+              <kbd className="min-w-[24px] rounded border border-border bg-gray-50 px-1.5 py-0.5 text-center font-mono text-[10px] text-text-primary dark:bg-gray-900">
                 ←
               </kbd>
               <span>/</span>
-              <kbd className="min-w-[24px] rounded border border-border bg-gray-50 px-1.5 py-0.5 text-center font-mono text-[10px] text-text-primary">
+              <kbd className="min-w-[24px] rounded border border-border bg-gray-50 px-1.5 py-0.5 text-center font-mono text-[10px] text-text-primary dark:bg-gray-900">
                 →
               </kbd>
               <span className="ml-1">to navigate</span>

@@ -34,7 +34,7 @@ function KPICard({
   trendValue,
 }: KPICardProps) {
   return (
-    <div className="border-border/50 flex min-w-[200px] items-start gap-4 rounded-xl border bg-white p-4 shadow-sm">
+    <div className="border-border/50 flex min-w-[200px] items-start gap-4 rounded-xl border bg-surface p-4 shadow-sm">
       <div className={cn('rounded-lg p-2.5', iconBg)}>
         <Icon className={cn('h-5 w-5', iconColor)} />
       </div>

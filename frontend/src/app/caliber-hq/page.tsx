@@ -68,7 +68,7 @@ export default function CalibrationPage() {
               </button>
               <button
                 onClick={resetAll}
-                className="flex items-center gap-2 rounded-md border border-border px-3 py-[7px] text-xs font-medium text-text-muted transition-colors hover:bg-gray-50 hover:text-text-primary"
+                className="flex items-center gap-2 rounded-md border border-border px-3 py-[7px] text-xs font-medium text-text-muted transition-colors hover:bg-gray-50 hover:text-text-primary dark:bg-gray-900 dark:hover:bg-gray-800"
               >
                 <RotateCcw className="h-3.5 w-3.5" />
                 Start Over

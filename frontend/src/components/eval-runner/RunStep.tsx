@@ -294,7 +294,7 @@ export function RunStep() {
 
         {/* Summary KPIs */}
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <div className="flex items-center gap-3 rounded-lg border border-border bg-white px-4 py-3">
+          <div className="flex items-center gap-3 rounded-lg border border-border bg-surface px-4 py-3">
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
               <Database className="h-[18px] w-[18px] text-primary" />
             </div>
@@ -303,7 +303,7 @@ export function RunStep() {
               <div className="text-xs text-text-muted">Rows Evaluated</div>
             </div>
           </div>
-          <div className="flex items-center gap-3 rounded-lg border border-border bg-white px-4 py-3">
+          <div className="flex items-center gap-3 rounded-lg border border-border bg-surface px-4 py-3">
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
               <BarChart3 className="h-[18px] w-[18px] text-primary" />
             </div>
@@ -312,7 +312,7 @@ export function RunStep() {
               <div className="text-xs text-text-muted">Metrics</div>
             </div>
           </div>
-          <div className="flex items-center gap-3 rounded-lg border border-border bg-white px-4 py-3">
+          <div className="flex items-center gap-3 rounded-lg border border-border bg-surface px-4 py-3">
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
               <Tag className="h-[18px] w-[18px] text-primary" />
             </div>
@@ -323,7 +323,7 @@ export function RunStep() {
               <div className="text-xs text-text-muted">Avg Score</div>
             </div>
           </div>
-          <div className="flex items-center gap-3 rounded-lg border border-border bg-white px-4 py-3">
+          <div className="flex items-center gap-3 rounded-lg border border-border bg-surface px-4 py-3">
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
               <CheckCircle className="h-[18px] w-[18px] text-primary" />
             </div>
@@ -353,7 +353,7 @@ export function RunStep() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-border bg-gray-50/50">
+                <tr className="border-b border-border bg-gray-50 dark:bg-gray-900/50">
                   <th className="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider text-text-muted">
                     Metric
                   </th>
@@ -375,7 +375,7 @@ export function RunStep() {
                 {results.metric_results.map((metric) => (
                   <tr
                     key={metric.metric_key}
-                    className="border-t border-border transition-colors hover:bg-gray-50/50"
+                    className="border-t border-border transition-colors hover:bg-gray-50 dark:bg-gray-900/50 dark:hover:bg-gray-800"
                   >
                     <td className="px-4 py-2.5 text-sm font-medium text-text-primary">
                       {metric.metric_name}
@@ -413,14 +413,14 @@ export function RunStep() {
         <div className="flex flex-wrap items-center gap-3">
           <button
             onClick={handleDownloadCSV}
-            className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm font-medium text-text-secondary transition-colors hover:bg-gray-50"
+            className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm font-medium text-text-secondary transition-colors hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-800"
           >
             <FileSpreadsheet className="h-4 w-4" />
             Download CSV
           </button>
           <button
             onClick={handleDownloadJSON}
-            className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm font-medium text-text-secondary transition-colors hover:bg-gray-50"
+            className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm font-medium text-text-secondary transition-colors hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-800"
           >
             <Download className="h-4 w-4" />
             Download JSON
@@ -428,7 +428,7 @@ export function RunStep() {
           <div className="flex-1" />
           <button
             onClick={reset}
-            className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm font-medium text-text-muted transition-colors hover:bg-gray-50 hover:text-text-secondary"
+            className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm font-medium text-text-muted transition-colors hover:bg-gray-50 hover:text-text-secondary dark:bg-gray-900 dark:hover:bg-gray-800"
           >
             <RotateCcw className="h-4 w-4" />
             New Evaluation
@@ -512,7 +512,7 @@ export function RunStep() {
                     : 'Prompt template agent'}
               </p>
             </div>
-            <span className="rounded bg-gray-100 px-2 py-0.5 text-xs font-medium text-text-muted">
+            <span className="rounded bg-gray-100 px-2 py-0.5 text-xs font-medium text-text-muted dark:bg-gray-800">
               {agentConfig.type === 'none' ? 'Dataset' : agentConfig.type}
             </span>
           </div>
@@ -562,7 +562,7 @@ export function RunStep() {
               value={evaluationName}
               onChange={(e) => setEvaluationName(e.target.value)}
               disabled={isRunning}
-              className="w-full rounded-lg border border-border bg-white px-3 py-2 text-sm transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:bg-gray-50 disabled:text-text-muted"
+              className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:bg-gray-50 disabled:text-text-muted dark:bg-gray-900"
             />
           </div>
           {/* LLM Model */}
@@ -579,7 +579,7 @@ export function RunStep() {
                   if (selected) setLlmProvider(selected.provider);
                 }}
                 disabled={isRunning}
-                className="w-full rounded-lg border border-border bg-white px-3 py-2 text-sm transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:bg-gray-50 disabled:text-text-muted"
+                className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:bg-gray-50 disabled:text-text-muted dark:bg-gray-900"
               >
                 {MODEL_OPTIONS.map((model) => (
                   <option key={model.value} value={model.value}>
@@ -600,7 +600,7 @@ export function RunStep() {
         <div className="flex items-center justify-between">
           <button
             onClick={() => setCurrentStep('metrics')}
-            className="flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium text-text-secondary transition-colors hover:bg-gray-50"
+            className="flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium text-text-secondary transition-colors hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-800"
           >
             <ChevronLeft className="h-4 w-4" />
             Back
@@ -612,7 +612,7 @@ export function RunStep() {
               'flex items-center gap-2 rounded-lg px-6 py-2.5 text-sm font-medium transition-all',
               evaluationName && selectedMetrics.length > 0
                 ? 'bg-primary text-white shadow-sm hover:bg-primary-dark hover:shadow-md'
-                : 'cursor-not-allowed bg-gray-100 text-gray-400'
+                : 'cursor-not-allowed bg-gray-100 text-gray-400 dark:bg-gray-800'
             )}
           >
             <Play className="h-4 w-4" />
@@ -684,7 +684,7 @@ export function RunStep() {
                             ? 'bg-primary text-white'
                             : isActive
                               ? 'bg-primary/15 text-primary ring-2 ring-primary/20'
-                              : 'bg-gray-100 text-text-muted'
+                              : 'bg-gray-100 text-text-muted dark:bg-gray-800'
                         )}
                       >
                         {isDone ? <CheckCircle className="h-3 w-3" /> : <span>{idx + 1}</span>}
@@ -721,7 +721,7 @@ export function RunStep() {
                     </span>
                   </span>
                 </div>
-                <div className="h-2 overflow-hidden rounded-full bg-gray-100">
+                <div className="h-2 overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800">
                   <div
                     className={cn(
                       'h-full rounded-full transition-all duration-500',
@@ -833,13 +833,13 @@ export function RunStep() {
           <div className="mt-3 flex gap-2">
             <button
               onClick={() => setRunError(null)}
-              className="rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-text-secondary transition-colors hover:bg-gray-50"
+              className="rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-text-secondary transition-colors hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-800"
             >
               Try Again
             </button>
             <button
               onClick={() => setCurrentStep('metrics')}
-              className="rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-text-muted transition-colors hover:bg-gray-50"
+              className="rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-text-muted transition-colors hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-800"
             >
               Back to Metrics
             </button>

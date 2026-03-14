@@ -85,7 +85,9 @@ export function SignalRow({ signal, isExpanded, onToggle }: SignalRowProps) {
         onClick={canExpand ? onToggle : undefined}
         className={cn(
           'flex w-full items-center gap-3 px-3 py-2 text-left transition-colors',
-          canExpand ? 'cursor-pointer hover:bg-gray-50' : 'cursor-default'
+          canExpand
+            ? 'cursor-pointer hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-800'
+            : 'cursor-default'
         )}
       >
         {canExpand ? (
@@ -158,7 +160,7 @@ export function SignalRow({ signal, isExpanded, onToggle }: SignalRowProps) {
       {isExpanded && canExpand && (
         <div className="space-y-2 px-3 pb-3 pl-10">
           {(isStatement || isReason) && typeof signal.value === 'string' && (
-            <p className="rounded-md bg-gray-50 p-2 text-sm leading-relaxed text-text-secondary">
+            <p className="rounded-md bg-gray-50 p-2 text-sm leading-relaxed text-text-secondary dark:bg-gray-900">
               {signal.value}
             </p>
           )}
@@ -166,7 +168,7 @@ export function SignalRow({ signal, isExpanded, onToggle }: SignalRowProps) {
             <p className="text-xs italic leading-relaxed text-text-muted">{signal.description}</p>
           )}
           {typeof signal.value === 'object' && signal.value !== null && (
-            <pre className="max-h-32 overflow-x-auto overflow-y-auto rounded-md bg-gray-100 p-2 text-xs text-text-secondary">
+            <pre className="max-h-32 overflow-x-auto overflow-y-auto rounded-md bg-gray-100 p-2 text-xs text-text-secondary dark:bg-gray-800">
               {JSON.stringify(signal.value, null, 2)}
             </pre>
           )}
@@ -250,8 +252,8 @@ export function SignalGroup({ groupName, signals, defaultExpanded }: SignalGroup
               ? 'bg-green-50 hover:bg-green-100'
               : isNegativeVerdict
                 ? 'bg-red-50 hover:bg-red-100'
-                : 'bg-gray-50 hover:bg-gray-100'
-            : 'bg-gray-50 hover:bg-gray-100'
+                : 'bg-gray-50 hover:bg-gray-100 dark:bg-gray-800 dark:bg-gray-900 dark:hover:bg-gray-700'
+            : 'bg-gray-50 hover:bg-gray-100 dark:bg-gray-800 dark:bg-gray-900 dark:hover:bg-gray-700'
         )}
       >
         {isGroupExpanded ? (
@@ -287,7 +289,7 @@ export function SignalGroup({ groupName, signals, defaultExpanded }: SignalGroup
       </button>
 
       {isGroupExpanded && (
-        <div className="bg-white">
+        <div className="bg-surface">
           {sortedSignals.map((signal, index) => (
             <SignalRow
               key={index}

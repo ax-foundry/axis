@@ -138,7 +138,7 @@ export function FlowDiagram({ nodes, edges, activeNodeIds, activeEdgeIds }: Flow
   }, [nodes]);
 
   return (
-    <div className="rounded-xl border border-border bg-white p-3">
+    <div className="rounded-xl border border-border bg-surface p-3">
       <svg
         viewBox={`0 0 ${viewW} ${viewH}`}
         className="h-auto w-full"

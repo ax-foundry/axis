@@ -146,18 +146,18 @@ export function ComparisonTable({ rows, metrics }: ComparisonTableProps) {
 
   if (rows.length === 0) {
     return (
-      <div className="border-border/50 flex h-48 items-center justify-center rounded-xl border bg-white text-text-muted">
+      <div className="border-border/50 flex h-48 items-center justify-center rounded-xl border bg-surface text-text-muted">
         No test cases match the current filters
       </div>
     );
   }
 
   return (
-    <div className="border-border/50 overflow-hidden rounded-xl border bg-white shadow-sm">
+    <div className="border-border/50 overflow-hidden rounded-xl border bg-surface shadow-sm">
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
-            <tr className="border-border/50 border-b bg-gray-50">
+            <tr className="border-border/50 border-b bg-gray-50 dark:bg-gray-900">
               <th className="p-4 text-left">
                 <button
                   onClick={() => handleSort('id')}
@@ -207,8 +207,8 @@ export function ComparisonTable({ rows, metrics }: ComparisonTableProps) {
               <tr
                 key={`${row.id}-${row.experimentName || idx}`}
                 className={cn(
-                  'border-border/30 border-b transition-colors hover:bg-gray-50/50',
-                  idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/30'
+                  'border-border/30 border-b transition-colors hover:bg-gray-50 dark:bg-gray-900/50 dark:hover:bg-gray-800',
+                  idx % 2 === 0 ? 'bg-surface' : 'bg-gray-50 dark:bg-gray-900/30'
                 )}
               >
                 <td className="p-4">
@@ -259,7 +259,7 @@ export function ComparisonTable({ rows, metrics }: ComparisonTableProps) {
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="border-border/50 flex items-center justify-between border-t bg-gray-50/50 px-4 py-3">
+        <div className="border-border/50 flex items-center justify-between border-t bg-gray-50 px-4 py-3 dark:bg-gray-900/50">
           <span className="text-sm text-text-muted">
             Page {currentPage} of {totalPages}
           </span>
@@ -267,14 +267,14 @@ export function ComparisonTable({ rows, metrics }: ComparisonTableProps) {
             <button
               onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
               disabled={currentPage === 1}
-              className="rounded-lg border border-border px-3 py-1.5 text-sm font-medium hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
+              className="rounded-lg border border-border px-3 py-1.5 text-sm font-medium hover:bg-surface disabled:cursor-not-allowed disabled:opacity-50"
             >
               Previous
             </button>
             <button
               onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
               disabled={currentPage === totalPages}
-              className="rounded-lg border border-border px-3 py-1.5 text-sm font-medium hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
+              className="rounded-lg border border-border px-3 py-1.5 text-sm font-medium hover:bg-surface disabled:cursor-not-allowed disabled:opacity-50"
             >
               Next
             </button>

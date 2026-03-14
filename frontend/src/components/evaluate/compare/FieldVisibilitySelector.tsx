@@ -39,7 +39,7 @@ export function FieldVisibilitySelector() {
           'flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm font-medium transition-all',
           activeCount > 0
             ? 'border-primary/30 bg-primary/5 text-primary'
-            : 'border-border bg-white text-text-secondary hover:border-primary hover:text-primary'
+            : 'border-border bg-surface text-text-secondary hover:border-primary hover:text-primary'
         )}
         title="Configure visible fields in detail views"
       >
@@ -53,7 +53,7 @@ export function FieldVisibilitySelector() {
       </button>
 
       {open && (
-        <div className="absolute right-0 z-50 mt-1 w-56 rounded-lg border border-border bg-white py-1 shadow-lg">
+        <div className="absolute right-0 z-50 mt-1 w-56 rounded-lg border border-border bg-surface py-1 shadow-lg">
           <div className="border-b border-border px-3 py-2">
             <p className="text-xs font-semibold text-text-primary">Detail View Fields</p>
             <p className="text-xs text-text-muted">Toggle fields shown in expanded rows</p>
@@ -64,12 +64,12 @@ export function FieldVisibilitySelector() {
               <button
                 key={field.id}
                 onClick={() => toggleCompareVisibleField(field.id)}
-                className="flex w-full items-center gap-2 px-3 py-2 text-sm transition-colors hover:bg-gray-50"
+                className="flex w-full items-center gap-2 px-3 py-2 text-sm transition-colors hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-800"
               >
                 <div
                   className={cn(
                     'flex h-4 w-4 items-center justify-center rounded border transition-colors',
-                    isActive ? 'border-primary bg-primary' : 'border-gray-300 bg-white'
+                    isActive ? 'border-primary bg-primary' : 'border-gray-300 bg-surface'
                   )}
                 >
                   {isActive && <Check className="h-3 w-3 text-white" />}

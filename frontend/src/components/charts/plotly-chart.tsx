@@ -4,7 +4,7 @@ import { Loader2 } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { useMemo } from 'react';
 
-import { useChartColors, useColors } from '@/lib/theme';
+import { useChartColors, useColors, useDarkMode } from '@/lib/theme';
 
 // Dynamic import for Plotly to avoid SSR issues
 const Plot = dynamic(() => import('react-plotly.js'), {
@@ -34,6 +34,7 @@ const defaultConfig: Partial<Plotly.Config> = {
 export function PlotlyChart({ data, layout, config, className = '', style }: PlotlyChartProps) {
   const chartColors = useChartColors();
   const colors = useColors();
+  const isDark = useDarkMode();
 
   const mergedLayout = useMemo(
     () => ({
@@ -47,13 +48,19 @@ export function PlotlyChart({ data, layout, config, className = '', style }: Plo
       },
       colorway: chartColors,
       hoverlabel: {
-        bgcolor: '#fff',
+        bgcolor: isDark ? '#1a1d27' : '#fff',
         bordercolor: colors.primary,
         font: { color: colors.textPrimary },
       },
+      legend: {
+        bgcolor: isDark ? '#1a1d27' : 'rgba(255,255,255,0.9)',
+        bordercolor: isDark ? '#2d3148' : 'rgba(0,0,0,0.08)',
+        borderwidth: 1,
+        font: { color: colors.textPrimary, size: 11 },
+      },
       ...layout,
     }),
-    [layout, chartColors, colors]
+    [layout, chartColors, colors, isDark]
   );
 
   const mergedConfig = useMemo(() => ({ ...defaultConfig, ...config }), [config]);

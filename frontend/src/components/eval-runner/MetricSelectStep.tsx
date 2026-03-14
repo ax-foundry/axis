@@ -169,7 +169,7 @@ export function MetricSelectStep() {
           </div>
           <button
             onClick={loadMetrics}
-            className="rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-text-secondary transition-colors hover:bg-gray-50"
+            className="rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-text-secondary transition-colors hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-800"
           >
             Retry
           </button>
@@ -230,7 +230,7 @@ export function MetricSelectStep() {
       </div>
 
       {/* Toolbar: Search + Actions */}
-      <div className="rounded-lg border border-border bg-gray-50/50 p-3">
+      <div className="rounded-lg border border-border bg-gray-50 p-3 dark:bg-gray-900/50">
         <div className="flex flex-col gap-3 sm:flex-row">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
@@ -239,7 +239,7 @@ export function MetricSelectStep() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search metrics by name, description, or key..."
-              className="w-full rounded-lg border border-border bg-white py-2 pl-9 pr-8 text-sm transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+              className="w-full rounded-lg border border-border bg-surface py-2 pl-9 pr-8 text-sm transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
             />
             {searchQuery && (
               <button
@@ -254,7 +254,7 @@ export function MetricSelectStep() {
           {selectedMetrics.length > 0 && (
             <button
               onClick={handleClearAll}
-              className="flex items-center gap-1.5 whitespace-nowrap rounded-lg border border-border bg-white px-3 py-2 text-sm font-medium text-text-muted transition-colors hover:bg-gray-50 hover:text-text-secondary"
+              className="flex items-center gap-1.5 whitespace-nowrap rounded-lg border border-border bg-surface px-3 py-2 text-sm font-medium text-text-muted transition-colors hover:bg-gray-50 hover:text-text-secondary dark:bg-gray-900 dark:hover:bg-gray-800"
             >
               <X className="h-3.5 w-3.5" />
               Clear
@@ -276,7 +276,7 @@ export function MetricSelectStep() {
               'rounded-full px-2.5 py-1 text-xs font-medium transition-colors',
               activeTagFilter === null && !showOnlyCompatible
                 ? 'bg-primary text-white'
-                : 'bg-white text-text-secondary hover:bg-gray-100'
+                : 'bg-surface text-text-secondary hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700'
             )}
           >
             All
@@ -290,7 +290,7 @@ export function MetricSelectStep() {
               'flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium transition-colors',
               showOnlyCompatible
                 ? 'bg-success text-white'
-                : 'hover:bg-success/5 bg-white text-success'
+                : 'hover:bg-success/5 bg-surface text-success'
             )}
           >
             <Check className="h-3 w-3" />
@@ -299,9 +299,9 @@ export function MetricSelectStep() {
           <div className="mx-0.5 h-4 w-px bg-border" />
           {allTags.map((tag) => {
             const config = TAG_CONFIG[tag] || {
-              bg: 'bg-gray-50',
+              bg: 'bg-gray-50 dark:bg-gray-900',
               text: 'text-gray-600',
-              border: 'border-gray-200',
+              border: 'border-gray-200 dark:border-gray-700',
             };
             return (
               <button
@@ -362,13 +362,13 @@ export function MetricSelectStep() {
       )}
 
       {/* Selection Summary */}
-      <div className="rounded-lg border border-border bg-white p-4">
+      <div className="rounded-lg border border-border bg-surface p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div
               className={cn(
                 'flex h-9 w-9 items-center justify-center rounded-lg',
-                selectedMetrics.length > 0 ? 'bg-primary/10' : 'bg-gray-100'
+                selectedMetrics.length > 0 ? 'bg-primary/10' : 'bg-gray-100 dark:bg-gray-800'
               )}
             >
               <CheckCircle2
@@ -410,7 +410,7 @@ export function MetricSelectStep() {
                 );
               })}
               {selectedMetrics.length > 5 && (
-                <span className="inline-flex items-center rounded-md bg-gray-100 px-2 py-0.5 text-xs font-medium text-text-muted">
+                <span className="inline-flex items-center rounded-md bg-gray-100 px-2 py-0.5 text-xs font-medium text-text-muted dark:bg-gray-800">
                   +{selectedMetrics.length - 5} more
                 </span>
               )}
@@ -423,7 +423,7 @@ export function MetricSelectStep() {
       <div className="flex justify-between">
         <button
           onClick={() => setCurrentStep('agent')}
-          className="flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium text-text-secondary transition-colors hover:bg-gray-50"
+          className="flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium text-text-secondary transition-colors hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-800"
         >
           <ChevronLeft className="h-4 w-4" />
           Back
@@ -435,7 +435,7 @@ export function MetricSelectStep() {
             'flex items-center gap-2 rounded-lg px-5 py-2 text-sm font-medium transition-all',
             selectedMetrics.length > 0
               ? 'bg-primary text-white shadow-sm hover:bg-primary-dark hover:shadow-md'
-              : 'cursor-not-allowed bg-gray-100 text-gray-400'
+              : 'cursor-not-allowed bg-gray-100 text-gray-400 dark:bg-gray-800'
           )}
         >
           Continue to Run
@@ -472,8 +472,8 @@ function MetricCard({
         isSelected
           ? 'border-primary bg-primary/[0.03] shadow-sm'
           : hasFields
-            ? 'border-border bg-white hover:border-primary/40 hover:shadow-sm'
-            : 'cursor-not-allowed border-border bg-gray-50/60 opacity-50'
+            ? 'border-border bg-surface hover:border-primary/40 hover:shadow-sm'
+            : 'cursor-not-allowed border-border bg-gray-50 opacity-50 dark:bg-gray-900/60'
       )}
     >
       {/* Selection indicator */}
@@ -483,8 +483,8 @@ function MetricCard({
           isSelected
             ? 'border-primary bg-primary text-white'
             : hasFields
-              ? 'border-gray-300 bg-white group-hover:border-primary/40'
-              : 'border-gray-200 bg-gray-100'
+              ? 'border-gray-300 bg-surface group-hover:border-primary/40'
+              : 'border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-800'
         )}
       >
         {isSelected && <Check className="h-3 w-3" />}
@@ -495,7 +495,9 @@ function MetricCard({
         <div
           className={cn(
             'flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg',
-            metric.is_llm_based ? 'bg-primary/10 text-primary' : 'bg-gray-100 text-text-secondary'
+            metric.is_llm_based
+              ? 'bg-primary/10 text-primary'
+              : 'bg-gray-100 text-text-secondary dark:bg-gray-800'
           )}
         >
           {metric.is_llm_based ? <Sparkles className="h-4 w-4" /> : <Cpu className="h-4 w-4" />}
@@ -546,9 +548,9 @@ function MetricCard({
       <div className="mt-auto flex flex-wrap gap-1">
         {metric.tags.slice(0, 3).map((tag) => {
           const config = TAG_CONFIG[tag] || {
-            bg: 'bg-gray-50',
+            bg: 'bg-gray-50 dark:bg-gray-900',
             text: 'text-gray-500',
-            border: 'border-gray-100',
+            border: 'border-gray-100 dark:border-gray-800',
           };
           return (
             <span
@@ -565,7 +567,7 @@ function MetricCard({
           );
         })}
         {metric.tags.length > 3 && (
-          <span className="rounded bg-gray-50 px-1.5 py-0.5 text-[11px] font-medium text-text-muted">
+          <span className="rounded bg-gray-50 px-1.5 py-0.5 text-[11px] font-medium text-text-muted dark:bg-gray-900">
             +{metric.tags.length - 3}
           </span>
         )}
@@ -600,8 +602,8 @@ function MetricListItem({
         isSelected
           ? 'border-primary bg-primary/[0.03]'
           : hasFields
-            ? 'border-border bg-white hover:border-primary/40 hover:bg-gray-50/30'
-            : 'cursor-not-allowed border-border bg-gray-50/60 opacity-50'
+            ? 'border-border bg-surface hover:border-primary/40 hover:bg-gray-50 dark:bg-gray-900/30 dark:hover:bg-gray-800'
+            : 'cursor-not-allowed border-border bg-gray-50 opacity-50 dark:bg-gray-900/60'
       )}
     >
       {/* Checkbox */}
@@ -612,7 +614,7 @@ function MetricListItem({
             ? 'border-primary bg-primary text-white'
             : hasFields
               ? 'border-gray-300 group-hover:border-primary/40'
-              : 'border-gray-200 bg-gray-100'
+              : 'border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-800'
         )}
       >
         {isSelected && <Check className="h-3 w-3" />}
@@ -622,7 +624,9 @@ function MetricListItem({
       <div
         className={cn(
           'flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg',
-          metric.is_llm_based ? 'bg-primary/10 text-primary' : 'bg-gray-100 text-text-secondary'
+          metric.is_llm_based
+            ? 'bg-primary/10 text-primary'
+            : 'bg-gray-100 text-text-secondary dark:bg-gray-800'
         )}
       >
         {metric.is_llm_based ? (
@@ -664,9 +668,9 @@ function MetricListItem({
       <div className="hidden flex-shrink-0 gap-1 lg:flex">
         {metric.tags.slice(0, 2).map((tag) => {
           const config = TAG_CONFIG[tag] || {
-            bg: 'bg-gray-50',
+            bg: 'bg-gray-50 dark:bg-gray-900',
             text: 'text-gray-500',
-            border: 'border-gray-100',
+            border: 'border-gray-100 dark:border-gray-800',
           };
           return (
             <span
@@ -688,7 +692,9 @@ function MetricListItem({
       <span
         className={cn(
           'flex-shrink-0 rounded px-2 py-0.5 text-[11px] font-semibold',
-          metric.is_llm_based ? 'bg-primary/10 text-primary' : 'bg-gray-100 text-text-muted'
+          metric.is_llm_based
+            ? 'bg-primary/10 text-primary'
+            : 'bg-gray-100 text-text-muted dark:bg-gray-800'
         )}
       >
         {metric.is_llm_based ? 'LLM' : 'Heuristic'}

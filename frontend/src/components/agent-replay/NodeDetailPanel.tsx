@@ -27,7 +27,7 @@ const TYPE_BADGE: Record<string, { bg: string; text: string; Icon: typeof Layers
   SPAN: { bg: 'bg-indigo-100', text: 'text-indigo-700', Icon: Layers },
   GENERATION: { bg: 'bg-emerald-100', text: 'text-emerald-700', Icon: Cpu },
   TOOL: { bg: 'bg-amber-100', text: 'text-amber-700', Icon: Wrench },
-  EVENT: { bg: 'bg-gray-100', text: 'text-gray-600', Icon: Activity },
+  EVENT: { bg: 'bg-gray-100 dark:bg-gray-800', text: 'text-gray-600', Icon: Activity },
 };
 
 function getTypeBadge(type: string | null) {
@@ -85,7 +85,7 @@ export function NodeDetailPanel({ node, traceId, agent, className }: NodeDetailP
   return (
     <div
       className={cn(
-        'flex h-full flex-col overflow-hidden rounded-xl border-2 border-primary/20 bg-white shadow-lg shadow-primary/5',
+        'flex h-full flex-col overflow-hidden rounded-xl border-2 border-primary/20 bg-surface shadow-lg shadow-primary/5',
         className
       )}
     >
@@ -145,7 +145,7 @@ export function NodeDetailPanel({ node, traceId, agent, className }: NodeDetailP
       <div className="replay-compact grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[35%_1fr]">
         {/* Input pane */}
         <div className="min-w-0 border-b border-primary/10 lg:border-b-0 lg:border-r lg:border-r-primary/10">
-          <div className="flex items-center gap-1.5 border-b border-primary/10 bg-gradient-to-r from-blue-50/60 to-primary/[0.02] px-3 py-1.5">
+          <div className="flex items-center gap-1.5 border-b border-primary/10 bg-surface px-3 py-1.5">
             <FileInput className="h-3 w-3 text-blue-500" />
             <h4 className="text-[10px] font-bold uppercase tracking-wider text-blue-600">Input</h4>
           </div>
@@ -156,7 +156,7 @@ export function NodeDetailPanel({ node, traceId, agent, className }: NodeDetailP
 
         {/* Output pane */}
         <div className="min-w-0">
-          <div className="flex items-center gap-1.5 border-b border-primary/10 bg-gradient-to-r from-emerald-50/60 to-primary/[0.02] px-3 py-1.5">
+          <div className="flex items-center gap-1.5 border-b border-primary/10 bg-surface px-3 py-1.5">
             <FileOutput className="h-3 w-3 text-emerald-500" />
             <h4 className="text-[10px] font-bold uppercase tracking-wider text-emerald-600">
               Output
@@ -169,7 +169,7 @@ export function NodeDetailPanel({ node, traceId, agent, className }: NodeDetailP
       </div>
 
       {/* Collapsible details drawer */}
-      <div className="border-t border-primary/10 bg-gradient-to-r from-primary/[0.02] to-transparent">
+      <div className="border-t border-primary/10 ">
         <button
           onClick={() => setDetailsOpen(!detailsOpen)}
           className="flex w-full items-center gap-1.5 px-3 py-1.5 text-[11px] transition-colors hover:bg-primary/[0.04]"
@@ -190,7 +190,7 @@ export function NodeDetailPanel({ node, traceId, agent, className }: NodeDetailP
           )}
         </button>
         {detailsOpen && (
-          <div className="border-t border-primary/10 bg-white px-3 py-3">
+          <div className="border-t border-primary/10 bg-surface px-3 py-3">
             <NodeDetailsPane node={activeNode} />
           </div>
         )}
@@ -204,7 +204,7 @@ function NodeDetailsPane({ node }: { node: ObservationNodeData }) {
     <div className="space-y-3">
       {/* Node info */}
       <div className="overflow-hidden rounded-lg border border-primary/15 shadow-sm">
-        <div className="border-b border-primary/10 bg-gradient-to-r from-primary/[0.06] to-transparent px-3 py-1.5">
+        <div className="border-b border-primary/10 bg-surface px-3 py-1.5">
           <h4 className="text-[10px] font-bold uppercase tracking-wider text-primary-dark/60">
             Node Info
           </h4>
@@ -282,7 +282,7 @@ function NodeDetailsPane({ node }: { node: ObservationNodeData }) {
       {/* Metadata */}
       {node.metadata && Object.keys(node.metadata).length > 0 && (
         <div className="overflow-hidden rounded-lg border border-primary/15 shadow-sm">
-          <div className="border-b border-primary/10 bg-gradient-to-r from-amber-50/50 to-primary/[0.02] px-3 py-1.5">
+          <div className="border-b border-primary/10 bg-surface px-3 py-1.5">
             <h4 className="text-[10px] font-bold uppercase tracking-wider text-amber-700">
               Metadata
               <span className="ml-1.5 rounded-full bg-primary/10 px-1.5 py-px text-[9px] font-semibold text-primary">
@@ -332,7 +332,7 @@ export function TraceIOPanel({ trace, className }: TraceIOPanelProps) {
   return (
     <div
       className={cn(
-        'flex h-full flex-col overflow-hidden rounded-xl border-2 border-primary/20 bg-white shadow-lg shadow-primary/5',
+        'flex h-full flex-col overflow-hidden rounded-xl border-2 border-primary/20 bg-surface shadow-lg shadow-primary/5',
         className
       )}
     >
@@ -368,7 +368,7 @@ export function TraceIOPanel({ trace, className }: TraceIOPanelProps) {
       {/* Split pane: Input | Output */}
       <div className="replay-compact grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[35%_1fr]">
         <div className="min-w-0 border-b border-primary/10 lg:border-b-0 lg:border-r lg:border-r-primary/10">
-          <div className="flex items-center gap-1.5 border-b border-primary/10 bg-gradient-to-r from-blue-50/60 to-primary/[0.02] px-3 py-1.5">
+          <div className="flex items-center gap-1.5 border-b border-primary/10 bg-surface px-3 py-1.5">
             <FileInput className="h-3 w-3 text-blue-500" />
             <h4 className="text-[10px] font-bold uppercase tracking-wider text-blue-600">Input</h4>
           </div>
@@ -378,7 +378,7 @@ export function TraceIOPanel({ trace, className }: TraceIOPanelProps) {
         </div>
 
         <div className="min-w-0">
-          <div className="flex items-center gap-1.5 border-b border-primary/10 bg-gradient-to-r from-emerald-50/60 to-primary/[0.02] px-3 py-1.5">
+          <div className="flex items-center gap-1.5 border-b border-primary/10 bg-surface px-3 py-1.5">
             <FileOutput className="h-3 w-3 text-emerald-500" />
             <h4 className="text-[10px] font-bold uppercase tracking-wider text-emerald-600">
               Output
@@ -392,7 +392,7 @@ export function TraceIOPanel({ trace, className }: TraceIOPanelProps) {
 
       {/* Metadata drawer */}
       {trace.trace_metadata && Object.keys(trace.trace_metadata).length > 0 && (
-        <div className="border-t border-primary/10 bg-gradient-to-r from-primary/[0.02] to-transparent">
+        <div className="border-t border-primary/10 ">
           <button
             onClick={() => setDetailsOpen(!detailsOpen)}
             className="flex w-full items-center gap-1.5 px-3 py-1.5 text-[11px] transition-colors hover:bg-primary/[0.04]"
@@ -412,7 +412,7 @@ export function TraceIOPanel({ trace, className }: TraceIOPanelProps) {
             </span>
           </button>
           {detailsOpen && (
-            <div className="max-h-[200px] overflow-y-auto border-t border-primary/10 bg-white">
+            <div className="max-h-[200px] overflow-y-auto border-t border-primary/10 bg-surface">
               <table className="w-full text-xs">
                 <tbody>
                   {Object.entries(trace.trace_metadata).map(([key, value]) => (

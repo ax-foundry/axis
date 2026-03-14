@@ -248,7 +248,7 @@ export function ConnectionForm() {
             'flex flex-1 items-center justify-center gap-2 rounded-lg border px-4 py-2.5 text-sm font-medium transition-colors',
             inputMode === 'url'
               ? 'border-violet-300 bg-violet-50 text-violet-700'
-              : 'border-border bg-white text-text-secondary hover:border-violet-200 hover:bg-violet-50/50'
+              : 'border-border bg-surface text-text-secondary hover:border-violet-200 hover:bg-violet-50/50'
           )}
         >
           <Link2 className="h-4 w-4" />
@@ -262,7 +262,7 @@ export function ConnectionForm() {
             'flex flex-1 items-center justify-center gap-2 rounded-lg border px-4 py-2.5 text-sm font-medium transition-colors',
             inputMode === 'manual'
               ? 'border-violet-300 bg-violet-50 text-violet-700'
-              : 'border-border bg-white text-text-secondary hover:border-violet-200 hover:bg-violet-50/50'
+              : 'border-border bg-surface text-text-secondary hover:border-violet-200 hover:bg-violet-50/50'
           )}
         >
           <Server className="h-4 w-4" />
@@ -282,7 +282,7 @@ export function ConnectionForm() {
             onChange={(e) => setConnectionUrl(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="postgresql://user:password@host:5432/database?sslmode=require"
-            className="w-full rounded-lg border border-border bg-white px-3 py-2 font-mono text-sm transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+            className="w-full rounded-lg border border-border bg-surface px-3 py-2 font-mono text-sm transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
             disabled={isLoading}
           />
           <p className="mt-1.5 text-xs text-text-muted">
@@ -305,7 +305,7 @@ export function ConnectionForm() {
               onChange={(e) => setHost(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="db.example.com"
-              className="w-full rounded-lg border border-border bg-white px-3 py-2 text-sm transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+              className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
               disabled={isLoading}
             />
           </div>
@@ -319,7 +319,7 @@ export function ConnectionForm() {
               onChange={(e) => setPort(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="5432"
-              className="w-full rounded-lg border border-border bg-white px-3 py-2 text-sm transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+              className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
               disabled={isLoading}
             />
           </div>
@@ -335,7 +335,7 @@ export function ConnectionForm() {
               onChange={(e) => setDatabase(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="mydb"
-              className="w-full rounded-lg border border-border bg-white px-3 py-2 text-sm transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+              className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
               disabled={isLoading}
             />
           </div>
@@ -351,7 +351,7 @@ export function ConnectionForm() {
               onChange={(e) => setUsername(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="postgres"
-              className="w-full rounded-lg border border-border bg-white px-3 py-2 text-sm transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+              className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
               disabled={isLoading}
             />
           </div>
@@ -368,7 +368,7 @@ export function ConnectionForm() {
                 onChange={(e) => setPassword(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="********"
-                className="w-full rounded-lg border border-border bg-white px-3 py-2 pr-10 text-sm transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                className="w-full rounded-lg border border-border bg-surface px-3 py-2 pr-10 text-sm transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                 disabled={isLoading}
               />
               <button
@@ -395,7 +395,7 @@ export function ConnectionForm() {
                     'rounded-lg border px-3 py-2 text-left text-sm transition-colors',
                     sslMode === mode.value
                       ? 'border-primary bg-primary/5 text-primary'
-                      : 'border-border bg-white text-text-primary hover:border-primary/30',
+                      : 'border-border bg-surface text-text-primary hover:border-primary/30',
                     (mode.value === 'verify-ca' || mode.value === 'verify-full') &&
                       'cursor-not-allowed opacity-50'
                   )}

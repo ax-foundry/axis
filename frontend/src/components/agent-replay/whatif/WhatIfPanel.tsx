@@ -120,7 +120,7 @@ export function WhatIfPanel({ traceId, nodeId, nodeName, agent }: WhatIfPanelPro
   };
 
   return (
-    <div className="flex h-full flex-col overflow-hidden rounded-xl border-2 border-primary/25 bg-white shadow-lg shadow-primary/5">
+    <div className="flex h-full flex-col overflow-hidden rounded-xl border-2 border-primary/25 bg-surface shadow-lg shadow-primary/5">
       {/* Header — gradient bar */}
       <div className="flex items-center gap-2.5 bg-gradient-to-r from-primary to-primary-dark px-4 py-3">
         <div className="flex h-6 w-6 items-center justify-center rounded-md bg-white/20">
@@ -180,7 +180,7 @@ export function WhatIfPanel({ traceId, nodeId, nodeName, agent }: WhatIfPanelPro
           )}
           <button
             onClick={handleExit}
-            className="rounded-lg bg-gray-100 px-4 py-1.5 text-xs font-medium text-text-secondary hover:bg-gray-200"
+            className="rounded-lg bg-gray-100 px-4 py-1.5 text-xs font-medium text-text-secondary hover:bg-gray-200 dark:bg-gray-800"
           >
             Go Back
           </button>

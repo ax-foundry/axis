@@ -113,7 +113,7 @@ function ValueIcon({ value }: { value: 'yes' | 'no' | 'partial' }) {
 
 export function MethodComparisonTable() {
   return (
-    <div className="overflow-hidden rounded-xl border border-border bg-white p-5">
+    <div className="overflow-hidden rounded-xl border border-border bg-surface p-5">
       <h3 className="mb-4 text-sm font-semibold text-text-primary">Method Comparison</h3>
       <div className="overflow-x-auto">
         <table className="w-full">
@@ -132,7 +132,10 @@ export function MethodComparisonTable() {
           </thead>
           <tbody>
             {comparisonData.map((row, idx) => (
-              <tr key={row.attribute} className={idx % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
+              <tr
+                key={row.attribute}
+                className={idx % 2 === 0 ? 'bg-gray-50 dark:bg-gray-900' : 'bg-surface'}
+              >
                 <td className="px-4 py-3">
                   <p className="text-sm font-medium text-text-primary">{row.attribute}</p>
                   <p className="text-xs text-text-muted">{row.description}</p>

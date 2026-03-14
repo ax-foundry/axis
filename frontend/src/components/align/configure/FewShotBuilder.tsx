@@ -116,7 +116,7 @@ export function FewShotBuilder({ examples, onAddExample, onRemoveExample }: FewS
                 key={strategy.id}
                 onClick={() => handleSuggestExamples(strategy.id)}
                 disabled={suggestMutation.isPending}
-                className="flex items-center gap-2 rounded-lg border border-primary/30 bg-white px-3 py-2 text-sm font-medium text-primary transition-all hover:bg-primary hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex items-center gap-2 rounded-lg border border-primary/30 bg-surface px-3 py-2 text-sm font-medium text-primary transition-all hover:bg-primary hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {suggestMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                 <span>{strategy.label}</span>
@@ -129,7 +129,7 @@ export function FewShotBuilder({ examples, onAddExample, onRemoveExample }: FewS
 
       {/* Manual Add Form */}
       {isAdding ? (
-        <div className="rounded-lg border border-border bg-white p-4">
+        <div className="rounded-lg border border-border bg-surface p-4">
           <h4 className="mb-4 font-medium text-text-primary">Add New Example</h4>
           <div className="space-y-4">
             <div>
@@ -179,7 +179,7 @@ export function FewShotBuilder({ examples, onAddExample, onRemoveExample }: FewS
             <div className="flex justify-end gap-2">
               <button
                 onClick={() => setIsAdding(false)}
-                className="rounded-lg px-4 py-2 text-sm font-medium text-text-muted hover:bg-gray-100"
+                className="rounded-lg px-4 py-2 text-sm font-medium text-text-muted hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700"
               >
                 Cancel
               </button>
@@ -216,7 +216,7 @@ export function FewShotBuilder({ examples, onAddExample, onRemoveExample }: FewS
           ))}
         </div>
       ) : (
-        <div className="rounded-lg border border-border bg-gray-50 py-8 text-center">
+        <div className="rounded-lg border border-border bg-gray-50 py-8 text-center dark:bg-gray-900">
           <BookOpen className="mx-auto mb-2 h-8 w-8 text-text-muted" />
           <p className="text-text-muted">No few-shot examples added yet</p>
           <p className="mt-1 text-sm text-text-muted">Add examples to improve judge consistency</p>

@@ -111,7 +111,7 @@ export function ModelAgreementChart({
   return (
     <div className="space-y-6">
       {/* Threshold Control */}
-      <div className="border-border/50 rounded-xl border bg-white p-4">
+      <div className="border-border/50 rounded-xl border bg-surface p-4">
         <div className="flex items-center gap-4">
           <span className="text-sm font-medium text-text-primary">Pass Threshold:</span>
           <input
@@ -135,7 +135,7 @@ export function ModelAgreementChart({
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* Agreement Heatmap */}
-        <div className="border-border/50 rounded-xl border bg-white p-4">
+        <div className="border-border/50 rounded-xl border bg-surface p-4">
           <h4 className="mb-3 text-sm font-medium text-text-primary">Agreement Matrix</h4>
           <div className="h-[350px]">
             {heatmapData && (
@@ -152,7 +152,7 @@ export function ModelAgreementChart({
         </div>
 
         {/* Pairwise Agreement Bars */}
-        <div className="border-border/50 rounded-xl border bg-white p-4">
+        <div className="border-border/50 rounded-xl border bg-surface p-4">
           <h4 className="mb-3 text-sm font-medium text-text-primary">Pairwise Agreement Rates</h4>
           <div className="h-[350px]">
             {barData && (
@@ -177,7 +177,7 @@ export function ModelAgreementChart({
       </div>
 
       {/* Detailed Confusion Matrices */}
-      <div className="border-border/50 rounded-xl border bg-white p-4">
+      <div className="border-border/50 rounded-xl border bg-surface p-4">
         <h4 className="mb-3 text-sm font-medium text-text-primary">Confusion Matrix Details</h4>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">

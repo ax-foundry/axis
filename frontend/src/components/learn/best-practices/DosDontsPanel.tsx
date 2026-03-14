@@ -11,7 +11,7 @@ export function DosDontsPanel({ dos, donts }: DosDontsPanelProps) {
   return (
     <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
       {/* Do's */}
-      <div className="border-success/20 rounded-xl border bg-white p-4">
+      <div className="border-success/20 rounded-xl border bg-surface p-4">
         <div className="mb-3 flex items-center gap-2">
           <CheckCircle className="h-4 w-4 text-success" />
           <h4 className="text-xs font-semibold text-success">Do</h4>
@@ -27,7 +27,7 @@ export function DosDontsPanel({ dos, donts }: DosDontsPanelProps) {
       </div>
 
       {/* Don'ts */}
-      <div className="border-error/20 rounded-xl border bg-white p-4">
+      <div className="border-error/20 rounded-xl border bg-surface p-4">
         <div className="mb-3 flex items-center gap-2">
           <XCircle className="h-4 w-4 text-error" />
           <h4 className="text-xs font-semibold text-error">Don&apos;t</h4>

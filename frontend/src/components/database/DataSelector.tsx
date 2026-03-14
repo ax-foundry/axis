@@ -165,7 +165,7 @@ export function DataSelector() {
         <button
           onClick={goBack}
           disabled={isLoading}
-          className="rounded-lg p-1.5 text-text-muted transition-colors hover:bg-gray-100 hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-50"
+          className="rounded-lg p-1.5 text-text-muted transition-colors hover:bg-gray-100 hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-50 dark:bg-gray-800 dark:hover:bg-gray-700"
         >
           <ArrowLeft className="h-5 w-5" />
         </button>
@@ -185,7 +185,7 @@ export function DataSelector() {
             'flex flex-1 items-center justify-center gap-2 rounded-lg border px-4 py-2.5 text-sm font-medium transition-colors',
             dataSelectMode === 'table'
               ? 'border-violet-300 bg-violet-50 text-violet-700'
-              : 'border-border bg-white text-text-secondary hover:border-violet-200 hover:bg-violet-50/50'
+              : 'border-border bg-surface text-text-secondary hover:border-violet-200 hover:bg-violet-50/50'
           )}
         >
           <TableIcon className="h-4 w-4" />
@@ -199,7 +199,7 @@ export function DataSelector() {
             'flex flex-1 items-center justify-center gap-2 rounded-lg border px-4 py-2.5 text-sm font-medium transition-colors',
             dataSelectMode === 'query'
               ? 'border-violet-300 bg-violet-50 text-violet-700'
-              : 'border-border bg-white text-text-secondary hover:border-violet-200 hover:bg-violet-50/50'
+              : 'border-border bg-surface text-text-secondary hover:border-violet-200 hover:bg-violet-50/50'
           )}
         >
           <Code2 className="h-4 w-4" />
@@ -226,7 +226,7 @@ export function DataSelector() {
               value={tableSearchQuery}
               onChange={(e) => setTableSearchQuery(e.target.value)}
               placeholder="Search tables..."
-              className="w-full rounded-lg border border-border bg-white py-2 pl-9 pr-3 text-sm transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+              className="w-full rounded-lg border border-border bg-surface py-2 pl-9 pr-3 text-sm transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
               disabled={isLoading}
             />
           </div>
@@ -243,7 +243,7 @@ export function DataSelector() {
                     <select
                       value={filter.value || ''}
                       onChange={(e) => setFilterValue(filter.column, e.target.value || null)}
-                      className="w-full appearance-none rounded-lg border border-border bg-white px-3 py-1.5 pr-8 text-sm transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                      className="w-full appearance-none rounded-lg border border-border bg-surface px-3 py-1.5 pr-8 text-sm transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                       disabled={loadingFilters}
                     >
                       <option value="">All</option>
@@ -292,7 +292,7 @@ export function DataSelector() {
                           'flex w-full items-center gap-3 rounded-lg border p-3 text-left transition-all',
                           isSelected
                             ? 'border-primary bg-primary/5'
-                            : 'border-transparent hover:border-border hover:bg-gray-50',
+                            : 'border-transparent hover:border-border hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-800',
                           isLoading && 'cursor-wait opacity-70'
                         )}
                       >
@@ -301,7 +301,7 @@ export function DataSelector() {
                             'flex h-9 w-9 items-center justify-center rounded-lg',
                             isSelected
                               ? 'bg-primary/10 text-primary'
-                              : 'bg-gray-100 text-text-muted'
+                              : 'bg-gray-100 text-text-muted dark:bg-gray-800'
                           )}
                         >
                           <TableIcon className="h-4 w-4" />
@@ -356,7 +356,7 @@ export function DataSelector() {
                   ? ''
                   : "SELECT * FROM public.evaluations WHERE created_at > now() - interval '7 days'"
               }
-              className="h-full w-full resize-none rounded-lg border border-border bg-white p-3 font-mono text-sm transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+              className="h-full w-full resize-none rounded-lg border border-border bg-surface p-3 font-mono text-sm transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
               disabled={isLoading}
             />
           </div>

@@ -57,7 +57,7 @@ export function MetricSelector({ availableMetrics }: MetricSelectorProps) {
       <button
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
-          'flex min-w-[140px] items-center gap-2 rounded-lg border bg-white px-3 py-2 text-sm font-medium transition-all',
+          'flex min-w-[140px] items-center gap-2 rounded-lg border bg-surface px-3 py-2 text-sm font-medium transition-all',
           isOpen ? 'border-primary ring-2 ring-primary/20' : 'border-border hover:border-primary'
         )}
       >
@@ -68,9 +68,9 @@ export function MetricSelector({ availableMetrics }: MetricSelectorProps) {
       </button>
 
       {isOpen && (
-        <div className="absolute left-0 top-full z-50 mt-1 w-64 overflow-hidden rounded-lg border border-border bg-white shadow-lg">
+        <div className="absolute left-0 top-full z-50 mt-1 w-64 overflow-hidden rounded-lg border border-border bg-surface shadow-lg">
           {/* Actions */}
-          <div className="border-border/50 flex items-center justify-between border-b bg-gray-50 px-3 py-2">
+          <div className="border-border/50 flex items-center justify-between border-b bg-gray-50 px-3 py-2 dark:bg-gray-900">
             <button
               onClick={selectAll}
               className="text-xs font-medium text-primary hover:text-primary-dark"
@@ -100,7 +100,7 @@ export function MetricSelector({ availableMetrics }: MetricSelectorProps) {
                     key={metric}
                     onClick={() => toggleMetric(metric)}
                     className={cn(
-                      'flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors hover:bg-gray-50',
+                      'flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-800',
                       isSelected && 'text-primary'
                     )}
                   >

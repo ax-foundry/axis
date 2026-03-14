@@ -27,7 +27,7 @@ function KPICard({ title, value, subtitle, icon: Icon, color }: KPICardProps) {
   };
 
   return (
-    <div className="rounded-lg border border-border bg-white p-5">
+    <div className="rounded-lg border border-border bg-surface p-5">
       <div className="flex items-start justify-between">
         <div>
           <p className="text-sm font-medium text-text-muted">{title}</p>
@@ -196,7 +196,7 @@ export function OverviewTab() {
       {/* Charts Grid */}
       <div className="grid grid-cols-2 gap-6">
         {/* Radar Chart */}
-        <div className="rounded-lg border border-border bg-white p-5 shadow-sm">
+        <div className="rounded-lg border border-border bg-surface p-5 shadow-sm">
           <h3 className="mb-4 text-lg font-semibold text-text-primary">Metric Overview</h3>
           {metricSummaries.length > 0 ? (
             <div className="h-[350px]">
@@ -210,7 +210,7 @@ export function OverviewTab() {
         </div>
 
         {/* Bar Chart */}
-        <div className="rounded-lg border border-border bg-white p-5 shadow-sm">
+        <div className="rounded-lg border border-border bg-surface p-5 shadow-sm">
           <h3 className="mb-4 text-lg font-semibold text-text-primary">Metric Comparison</h3>
           {metricSummaries.length > 0 ? (
             <div className="h-[350px]">

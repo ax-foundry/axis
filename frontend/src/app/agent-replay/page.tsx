@@ -210,11 +210,11 @@ export default function AgentReplayPage() {
 
       {/* Pre-trace states: centered with gradient background */}
       {!trace && (
-        <div className="flex flex-1 flex-col bg-gradient-to-b from-white via-primary/[0.02] to-primary/[0.05]">
+        <div className="flex flex-1 flex-col bg-gradient-to-b from-surface via-primary/[0.02] to-primary/[0.05]">
           <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col px-6 pt-12">
             {/* Not configured state */}
             {status && !status.configured && (
-              <div className="mx-auto max-w-lg rounded-2xl border-2 border-primary/20 bg-white p-8 text-center shadow-lg shadow-primary/5">
+              <div className="mx-auto max-w-lg rounded-2xl border-2 border-primary/20 bg-surface p-8 text-center shadow-lg shadow-primary/5">
                 <div className="mb-4 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5">
                   <Settings className="h-7 w-7 text-primary" />
                 </div>
@@ -278,7 +278,7 @@ export default function AgentReplayPage() {
           {/* Left: collapsible tree sidebar */}
           <div
             className={cn(
-              'shrink-0 overflow-hidden border-r border-primary/10 bg-gradient-to-b from-white to-primary/[0.01] transition-[width] duration-200',
+              'shrink-0 overflow-hidden border-r border-primary/10 bg-gradient-to-b from-surface to-primary/[0.01] transition-[width] duration-200',
               sidebarCollapsed ? 'w-0 border-r-0' : 'w-64 overflow-y-auto'
             )}
           >
@@ -345,7 +345,7 @@ export default function AgentReplayPage() {
                     </button>
                   ) : (
                     <span
-                      className="flex cursor-default items-center gap-1.5 rounded-md bg-gray-100 px-2.5 py-1 text-xs text-text-muted"
+                      className="flex cursor-default items-center gap-1.5 rounded-md bg-gray-100 px-2.5 py-1 text-xs text-text-muted dark:bg-gray-800"
                       title="What-If is available on LLM generation steps (look for steps marked GEN in the tree)"
                     >
                       <FlaskConical className="h-3.5 w-3.5" />

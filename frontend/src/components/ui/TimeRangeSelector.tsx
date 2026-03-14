@@ -77,7 +77,7 @@ export function TimeRangeSelector({
         <button
           onClick={() => setIsOpen(!isOpen)}
           className={cn(
-            'flex items-center gap-2 rounded-lg border border-border bg-white font-medium text-text-primary transition-colors hover:bg-gray-50',
+            'flex items-center gap-2 rounded-lg border border-border bg-surface font-medium text-text-primary transition-colors hover:bg-gray-50 dark:hover:bg-gray-800',
             isSmall ? 'h-[34px] px-3 text-xs' : 'px-3 py-2 text-sm'
           )}
         >
@@ -92,7 +92,7 @@ export function TimeRangeSelector({
           />
         </button>
         {isOpen && (
-          <div className="absolute right-0 top-full z-50 mt-1 min-w-[220px] rounded-lg border border-border bg-white shadow-lg">
+          <div className="absolute right-0 top-full z-50 mt-1 min-w-[220px] rounded-lg border border-border bg-surface shadow-lg">
             <div className="py-1">
               {presets.map((option) => (
                 <button
@@ -107,7 +107,7 @@ export function TimeRangeSelector({
                     }
                   }}
                   className={cn(
-                    'flex w-full items-center px-4 text-left transition-colors hover:bg-gray-50',
+                    'flex w-full items-center px-4 text-left transition-colors hover:bg-gray-50 dark:hover:bg-gray-800',
                     isSmall ? 'py-1.5 text-xs' : 'py-2 text-sm',
                     selectedPreset === option.value && !showCustom
                       ? 'bg-primary/5 font-medium text-primary'
@@ -167,7 +167,7 @@ export function TimeRangeSelector({
         )}
       </div>
       {summaryLabel && (
-        <span className="flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1 text-xs text-text-muted">
+        <span className="flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1 text-xs text-text-muted dark:bg-gray-800 dark:bg-gray-800">
           <Calendar className="h-3 w-3" />
           {summaryLabel}
         </span>

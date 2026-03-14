@@ -16,7 +16,7 @@ export function PageSizeSelector() {
         <select
           value={comparePageSize}
           onChange={(e) => setComparePageSize(Number(e.target.value))}
-          className="cursor-pointer appearance-none rounded-lg border border-border bg-white px-3 py-1.5 pr-8 text-sm font-medium text-text-primary hover:border-primary focus:outline-none focus:ring-2 focus:ring-primary/50"
+          className="cursor-pointer appearance-none rounded-lg border border-border bg-surface px-3 py-1.5 pr-8 text-sm font-medium text-text-primary hover:border-primary focus:outline-none focus:ring-2 focus:ring-primary/50"
         >
           {PAGE_SIZES.map((size) => (
             <option key={size} value={size}>

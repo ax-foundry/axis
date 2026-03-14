@@ -66,7 +66,7 @@ export function HardStopsTab() {
         {paginatedStops.map((rule) => (
           <div
             key={rule.id}
-            className="rounded-lg border border-l-4 border-border border-l-red-400 bg-white p-4 transition-colors hover:bg-gray-50/50"
+            className="rounded-lg border border-l-4 border-border border-l-red-400 bg-surface p-4 transition-colors hover:bg-gray-50 dark:bg-gray-900/50 dark:hover:bg-gray-800"
           >
             <div className="flex items-start gap-3">
               <OctagonX className="mt-0.5 h-5 w-5 flex-shrink-0 text-red-400" />
@@ -85,7 +85,7 @@ export function HardStopsTab() {
                 {/* Metadata */}
                 <div className="mt-3 flex flex-wrap gap-2">
                   {getField(rule, 'threshold_type') && (
-                    <span className="rounded-full bg-gray-100 px-2.5 py-0.5 text-xs text-text-muted">
+                    <span className="rounded-full bg-gray-100 px-2.5 py-0.5 text-xs text-text-muted dark:bg-gray-800">
                       Threshold: {getField(rule, 'threshold_type')}
                       {getField(rule, 'threshold_value') &&
                         ` (${getField(rule, 'threshold_value')})`}
@@ -113,7 +113,7 @@ export function HardStopsTab() {
             <button
               onClick={() => setCurrentPage(currentPage - 1)}
               disabled={currentPage === 1}
-              className="flex h-7 w-7 items-center justify-center rounded text-text-muted transition-colors hover:bg-gray-100 hover:text-text-primary disabled:opacity-40"
+              className="flex h-7 w-7 items-center justify-center rounded text-text-muted transition-colors hover:bg-gray-100 hover:text-text-primary disabled:opacity-40 dark:bg-gray-800 dark:hover:bg-gray-700"
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
@@ -125,7 +125,7 @@ export function HardStopsTab() {
                   'flex h-7 min-w-[28px] items-center justify-center rounded px-1.5 text-xs font-medium transition-colors',
                   p === currentPage
                     ? 'bg-primary text-white'
-                    : 'text-text-muted hover:bg-gray-100 hover:text-text-primary'
+                    : 'text-text-muted hover:bg-gray-100 hover:text-text-primary dark:bg-gray-800 dark:hover:bg-gray-700'
                 )}
               >
                 {p}
@@ -134,7 +134,7 @@ export function HardStopsTab() {
             <button
               onClick={() => setCurrentPage(currentPage + 1)}
               disabled={currentPage === totalPages}
-              className="flex h-7 w-7 items-center justify-center rounded text-text-muted transition-colors hover:bg-gray-100 hover:text-text-primary disabled:opacity-40"
+              className="flex h-7 w-7 items-center justify-center rounded text-text-muted transition-colors hover:bg-gray-100 hover:text-text-primary disabled:opacity-40 dark:bg-gray-800 dark:hover:bg-gray-700"
             >
               <ChevronRight className="h-4 w-4" />
             </button>

@@ -92,7 +92,7 @@ export function TracePicker({ onSelect, agent, className }: TracePickerProps) {
       <form onSubmit={handleSubmit} className="w-full max-w-2xl">
         <div
           className={cn(
-            'relative flex items-center overflow-hidden rounded-2xl border bg-white shadow-sm transition-all duration-200',
+            'relative flex items-center overflow-hidden rounded-2xl border bg-surface shadow-sm transition-all duration-200',
             isFocused
               ? 'border-primary/40 shadow-lg shadow-primary/10 ring-2 ring-primary/15'
               : 'border-border hover:border-gray-300 hover:shadow-md'
@@ -137,7 +137,7 @@ export function TracePicker({ onSelect, agent, className }: TracePickerProps) {
               'mr-2 flex items-center gap-1.5 rounded-xl px-5 py-2.5 text-sm font-semibold transition-all duration-200',
               inputValue.trim()
                 ? 'bg-primary text-white shadow-sm hover:bg-primary-dark hover:shadow-md active:scale-[0.97]'
-                : 'cursor-not-allowed bg-gray-100 text-text-muted'
+                : 'cursor-not-allowed bg-gray-100 text-text-muted dark:bg-gray-800'
             )}
           >
             Search
@@ -158,7 +158,7 @@ export function TracePicker({ onSelect, agent, className }: TracePickerProps) {
             <button
               key={chip.label}
               onClick={() => inputRef.current?.focus()}
-              className="flex items-center gap-2 rounded-full border border-border bg-white px-4 py-2 text-xs text-text-secondary shadow-sm transition-all hover:border-primary/30 hover:bg-primary/5 hover:shadow-md"
+              className="flex items-center gap-2 rounded-full border border-border bg-surface px-4 py-2 text-xs text-text-secondary shadow-sm transition-all hover:border-primary/30 hover:bg-primary/5 hover:shadow-md"
             >
               <span>{chip.icon}</span>
               <span className="font-medium">{chip.label}</span>
@@ -189,7 +189,7 @@ export function TracePicker({ onSelect, agent, className }: TracePickerProps) {
       {/* No results */}
       {submittedQuery && !isLoading && !error && data && data.traces.length === 0 && (
         <div className="mt-10 text-center">
-          <div className="mb-3 inline-flex h-12 w-12 items-center justify-center rounded-full bg-gray-100">
+          <div className="mb-3 inline-flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800">
             <Search className="h-5 w-5 text-text-muted" />
           </div>
           <p className="text-sm text-text-muted">
@@ -214,7 +214,7 @@ export function TracePicker({ onSelect, agent, className }: TracePickerProps) {
                 <button
                   key={trace.id}
                   onClick={() => handleTraceClick(trace)}
-                  className="group flex w-full items-center gap-3 rounded-xl border border-border bg-white px-5 py-4 text-left shadow-sm transition-all duration-150 hover:border-primary/30 hover:bg-gradient-to-r hover:from-primary/5 hover:to-transparent hover:shadow-md"
+                  className="group flex w-full items-center gap-3 rounded-xl border border-border bg-surface px-5 py-4 text-left shadow-sm transition-all duration-150 hover:border-primary/30 hover:bg-gradient-to-r hover:from-primary/5 hover:to-transparent hover:shadow-md"
                 >
                   {/* Agent avatar */}
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary/15 to-primary/5 transition-colors group-hover:from-primary/25 group-hover:to-primary/10">
@@ -255,7 +255,7 @@ export function TracePicker({ onSelect, agent, className }: TracePickerProps) {
                       {trace.tags.slice(0, 3).map((tag) => (
                         <span
                           key={tag}
-                          className="flex items-center gap-1 rounded-full bg-gray-100 px-2.5 py-1 text-[10px] font-medium text-text-muted transition-colors group-hover:bg-primary/10 group-hover:text-primary"
+                          className="flex items-center gap-1 rounded-full bg-gray-100 px-2.5 py-1 text-[10px] font-medium text-text-muted transition-colors group-hover:bg-primary/10 group-hover:text-primary dark:bg-gray-800"
                         >
                           <Tag className="h-2.5 w-2.5" />
                           {tag}

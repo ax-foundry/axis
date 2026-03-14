@@ -157,7 +157,7 @@ export function AgentKPISection() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center rounded-lg border border-border bg-white py-12">
+      <div className="flex items-center justify-center rounded-lg border border-border bg-surface py-12">
         <Loader2 className="h-5 w-5 animate-spin text-primary" />
         <span className="ml-2 text-sm text-text-muted">Loading KPI data...</span>
       </div>
@@ -209,7 +209,7 @@ export function AgentKPISection() {
       {selectedKpi && (
         <div className="animate-in fade-in slide-in-from-top-2 duration-200">
           {trendsLoading ? (
-            <div className="flex items-center justify-center rounded-lg border border-border bg-white py-8">
+            <div className="flex items-center justify-center rounded-lg border border-border bg-surface py-8">
               <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
               <span className="ml-2 text-sm text-text-muted">Loading trend...</span>
             </div>

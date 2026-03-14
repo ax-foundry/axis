@@ -199,7 +199,7 @@ export function MetricTradeoffsTab() {
   return (
     <div className="space-y-6">
       {/* Scatter Plot Section */}
-      <div className="border-border/50 rounded-xl border bg-white p-5 shadow-sm">
+      <div className="border-border/50 rounded-xl border bg-surface p-5 shadow-sm">
         <div className="mb-4 flex items-center justify-between">
           <h3 className="text-lg font-semibold text-text-primary">Metric Scatter Plot</h3>
 
@@ -269,7 +269,7 @@ export function MetricTradeoffsTab() {
       </div>
 
       {/* Correlation Heatmap */}
-      <div className="border-border/50 rounded-xl border bg-white p-5 shadow-sm">
+      <div className="border-border/50 rounded-xl border bg-surface p-5 shadow-sm">
         <h3 className="mb-4 text-lg font-semibold text-text-primary">Correlation Matrix</h3>
         {correlationMatrix.metrics.length > 1 ? (
           <div className="h-[400px]">

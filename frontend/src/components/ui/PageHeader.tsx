@@ -19,7 +19,7 @@ export function PageHeader({
   maxWidth = 'max-w-7xl',
 }: PageHeaderProps) {
   return (
-    <div className="border-b border-border bg-white px-6 py-4">
+    <div className="border-b border-border bg-surface px-6 py-4">
       <div className={`mx-auto ${maxWidth}`}>
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3">

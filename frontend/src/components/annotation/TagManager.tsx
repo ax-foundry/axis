@@ -37,7 +37,7 @@ export function TagSelector({
                 ? isPositive
                   ? 'bg-success/10 border-success font-semibold text-success'
                   : 'bg-error/10 border-error font-semibold text-error'
-                : 'border-border bg-white text-text-secondary hover:border-text-muted hover:bg-gray-50'
+                : 'border-border bg-surface text-text-secondary hover:border-text-muted hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-800'
             )}
           >
             {tag}
@@ -96,7 +96,7 @@ export function TagManager({
       {isOpen && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
-          <div className="absolute right-0 top-full z-50 mt-2 w-80 rounded-lg border border-gray-200 bg-white p-4 shadow-lg">
+          <div className="absolute right-0 top-full z-50 mt-2 w-80 rounded-lg border border-gray-200 bg-surface p-4 shadow-lg dark:border-gray-700">
             <div className="mb-3 flex items-center justify-between">
               <h4 className="font-semibold text-text-primary">Manage Tags</h4>
               <button
@@ -115,7 +115,7 @@ export function TagManager({
                   <button
                     key={preset}
                     onClick={() => onApplyPreset(preset)}
-                    className="rounded-md bg-gray-100 px-2.5 py-1 text-xs capitalize text-text-secondary hover:bg-gray-200"
+                    className="rounded-md bg-gray-100 px-2.5 py-1 text-xs capitalize text-text-secondary hover:bg-gray-200 dark:bg-gray-800"
                   >
                     {preset}
                   </button>
@@ -156,7 +156,7 @@ export function TagManager({
                 {tags.map((tag) => (
                   <span
                     key={tag}
-                    className="inline-flex items-center gap-1 rounded bg-gray-100 px-2 py-1 text-xs text-text-secondary"
+                    className="inline-flex items-center gap-1 rounded bg-gray-100 px-2 py-1 text-xs text-text-secondary dark:bg-gray-800"
                   >
                     {tag}
                     <button onClick={() => onRemoveTag(tag)} className="hover:text-error">

@@ -56,7 +56,7 @@ function FilterDropdown({ label, options, selected, onSelect }: FilterDropdownPr
       <button
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
-          'flex items-center gap-2 rounded-lg border bg-white px-3 py-1.5 text-sm transition-all',
+          'flex items-center gap-2 rounded-lg border bg-surface px-3 py-1.5 text-sm transition-all',
           selected.length > 0
             ? 'border-primary bg-primary/5 text-primary'
             : 'border-border text-text-secondary hover:border-primary'
@@ -69,8 +69,8 @@ function FilterDropdown({ label, options, selected, onSelect }: FilterDropdownPr
       </button>
 
       {isOpen && (
-        <div className="absolute left-0 top-full z-50 mt-1 w-56 overflow-hidden rounded-lg border border-border bg-white shadow-lg">
-          <div className="border-border/50 flex items-center justify-between border-b bg-gray-50 px-3 py-2">
+        <div className="absolute left-0 top-full z-50 mt-1 w-56 overflow-hidden rounded-lg border border-border bg-surface shadow-lg">
+          <div className="border-border/50 flex items-center justify-between border-b bg-gray-50 px-3 py-2 dark:bg-gray-900">
             <span className="text-xs font-medium uppercase text-text-muted">{label}</span>
             {selected.length > 0 && (
               <button
@@ -89,7 +89,7 @@ function FilterDropdown({ label, options, selected, onSelect }: FilterDropdownPr
                   key={option}
                   onClick={() => toggleOption(option)}
                   className={cn(
-                    'flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors hover:bg-gray-50',
+                    'flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-800',
                     isSelected && 'bg-primary/5 text-primary'
                   )}
                 >

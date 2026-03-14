@@ -87,7 +87,7 @@ export function ModelDistributionChart({
           <select
             value={activeMetric || ''}
             onChange={(e) => onMetricChange(e.target.value)}
-            className="rounded-lg border border-border bg-white px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+            className="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
           >
             {metrics.map((metric) => (
               <option key={metric} value={metric}>
@@ -100,13 +100,13 @@ export function ModelDistributionChart({
         {/* Chart Type Toggle */}
         <div className="flex items-center gap-2">
           <span className="text-sm text-text-muted">Type:</span>
-          <div className="flex items-center rounded-lg bg-gray-100 p-1">
+          <div className="flex items-center rounded-lg bg-gray-100 p-1 dark:bg-gray-800">
             <button
               onClick={() => onChartTypeChange('violin')}
               className={cn(
                 'rounded-md px-3 py-1.5 text-sm font-medium transition-all',
                 chartType === 'violin'
-                  ? 'bg-white text-primary shadow-sm'
+                  ? 'bg-surface text-primary shadow-sm'
                   : 'text-text-muted hover:text-text-primary'
               )}
             >
@@ -117,7 +117,7 @@ export function ModelDistributionChart({
               className={cn(
                 'rounded-md px-3 py-1.5 text-sm font-medium transition-all',
                 chartType === 'box'
-                  ? 'bg-white text-primary shadow-sm'
+                  ? 'bg-surface text-primary shadow-sm'
                   : 'text-text-muted hover:text-text-primary'
               )}
             >

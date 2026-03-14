@@ -88,17 +88,17 @@ export function TreeTab() {
   return (
     <div className="space-y-4">
       {/* Controls */}
-      <div className="border-border/50 flex items-center justify-between rounded-xl border bg-white p-4">
+      <div className="border-border/50 flex items-center justify-between rounded-xl border bg-surface p-4">
         {/* View Mode Toggle */}
         <div className="flex items-center gap-4">
           <span className="text-sm font-medium text-text-primary">View Mode:</span>
-          <div className="flex items-center rounded-lg bg-gray-100 p-1">
+          <div className="flex items-center rounded-lg bg-gray-100 p-1 dark:bg-gray-800">
             <button
               onClick={() => setTreeViewMode('aggregated')}
               className={cn(
                 'rounded-md px-4 py-2 text-sm font-medium transition-all',
                 treeViewMode === 'aggregated'
-                  ? 'bg-white text-primary shadow-sm'
+                  ? 'bg-surface text-primary shadow-sm'
                   : 'text-text-muted hover:text-text-primary'
               )}
             >
@@ -109,7 +109,7 @@ export function TreeTab() {
               className={cn(
                 'rounded-md px-4 py-2 text-sm font-medium transition-all',
                 treeViewMode === 'individual'
-                  ? 'bg-white text-primary shadow-sm'
+                  ? 'bg-surface text-primary shadow-sm'
                   : 'text-text-muted hover:text-text-primary'
               )}
             >
@@ -139,7 +139,7 @@ export function TreeTab() {
       </div>
 
       {/* Tree Visualization */}
-      <div className="border-border/50 overflow-hidden rounded-xl border bg-white shadow-sm">
+      <div className="border-border/50 overflow-hidden rounded-xl border bg-surface shadow-sm">
         {/* Guidance hint */}
         <div className="flex items-center gap-2 border-b border-blue-100 bg-blue-50 px-4 py-2">
           <Info className="h-4 w-4 flex-shrink-0 text-blue-500" />

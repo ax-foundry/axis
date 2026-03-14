@@ -83,7 +83,7 @@ export function AlignAnnotationCard({
   };
 
   return (
-    <div className="overflow-hidden rounded-xl border border-border bg-white shadow-sm transition-shadow hover:shadow-md">
+    <div className="overflow-hidden rounded-xl border border-border bg-surface shadow-sm transition-shadow hover:shadow-md">
       {/* Accent gradient bar */}
       <div
         className="h-[3px] opacity-70"
@@ -93,7 +93,7 @@ export function AlignAnnotationCard({
       />
 
       {/* Compact Header: nav arrows + record label + record ID */}
-      <div className="flex items-center justify-between border-b border-gray-100 px-5 py-3.5">
+      <div className="flex items-center justify-between border-b border-border px-5 py-3.5">
         <div className="flex items-center gap-2.5">
           <div className="flex gap-0.5">
             <button
@@ -116,7 +116,7 @@ export function AlignAnnotationCard({
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <span className="rounded bg-gray-50 px-2 py-0.5 font-mono text-[11px] text-text-muted">
+          <span className="rounded bg-gray-50 px-2 py-0.5 font-mono text-[11px] text-text-muted dark:bg-gray-900">
             {record[Columns.DATASET_ID]}
           </span>
           {onConfigure && (
@@ -173,8 +173,8 @@ export function AlignAnnotationCard({
                   className={cn(
                     'max-h-80 overflow-y-auto rounded-lg border p-3.5 text-[13px] leading-[1.7] text-text-secondary',
                     isActualOutput
-                      ? 'border-l-[3px] border-b-gray-100 border-l-primary border-r-gray-100 border-t-gray-100 bg-gradient-to-r from-primary/[0.02] to-gray-50'
-                      : 'border-gray-100 bg-gray-50'
+                      ? 'border-l-[3px] border-b-gray-100 border-l-primary border-r-gray-100 border-t-gray-100 bg-gradient-to-r from-primary/[0.02] to-gray-50 dark:border-b-gray-700 dark:border-r-gray-700 dark:border-t-gray-700 dark:to-gray-900'
+                      : 'border-gray-100 bg-gray-50 dark:border-gray-700 dark:border-gray-800 dark:bg-gray-900'
                   )}
                 >
                   <p className="whitespace-pre-wrap">{formatValue(value)}</p>
@@ -210,7 +210,7 @@ export function AlignAnnotationCard({
               'flex items-center justify-center gap-2.5 rounded-lg border-[1.5px] px-4 py-3.5 transition-all active:scale-[0.99]',
               currentScore === 1
                 ? 'bg-success/5 border-success shadow-[0_0_0_3px_rgba(39,174,96,0.1)]'
-                : 'hover:border-success/40 hover:bg-success/[0.02] border-border bg-white hover:-translate-y-px'
+                : 'hover:border-success/40 hover:bg-success/[0.02] border-border bg-surface hover:-translate-y-px'
             )}
           >
             <span
@@ -232,7 +232,7 @@ export function AlignAnnotationCard({
                 'ml-auto rounded border px-1.5 py-0.5 font-mono text-[11px] transition-all',
                 currentScore === 1
                   ? 'border-success/20 bg-success/10 text-success'
-                  : 'border-border bg-gray-50 text-text-muted'
+                  : 'border-border bg-gray-50 text-text-muted dark:bg-gray-900'
               )}
             >
               A
@@ -244,7 +244,7 @@ export function AlignAnnotationCard({
               'flex items-center justify-center gap-2.5 rounded-lg border-[1.5px] px-4 py-3.5 transition-all active:scale-[0.99]',
               currentScore === 0
                 ? 'bg-error/5 border-error shadow-[0_0_0_3px_rgba(231,76,60,0.1)]'
-                : 'hover:border-error/40 hover:bg-error/[0.02] border-border bg-white hover:-translate-y-px'
+                : 'hover:border-error/40 hover:bg-error/[0.02] border-border bg-surface hover:-translate-y-px'
             )}
           >
             <span
@@ -264,7 +264,7 @@ export function AlignAnnotationCard({
                 'ml-auto rounded border px-1.5 py-0.5 font-mono text-[11px] transition-all',
                 currentScore === 0
                   ? 'border-error/20 bg-error/10 text-error'
-                  : 'border-border bg-gray-50 text-text-muted'
+                  : 'border-border bg-gray-50 text-text-muted dark:bg-gray-900'
               )}
             >
               R

@@ -92,7 +92,7 @@ function DiffModal({ origStr, simStr, onClose }: DiffModalProps) {
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="flex h-[85vh] w-[92vw] max-w-7xl flex-col overflow-hidden rounded-2xl border-2 border-primary/20 bg-white shadow-2xl shadow-primary/10">
+      <div className="flex h-[85vh] w-[92vw] max-w-7xl flex-col overflow-hidden rounded-2xl border-2 border-primary/20 bg-surface shadow-2xl shadow-primary/10">
         {/* Header */}
         <div className="flex shrink-0 items-center gap-3 bg-gradient-to-r from-primary to-primary-dark px-5 py-3">
           <ArrowLeftRight className="h-4 w-4 text-white/80" />

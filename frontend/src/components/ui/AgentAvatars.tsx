@@ -28,7 +28,7 @@ export function AgentAvatars({ agents, max = 4, className }: AgentAvatarsProps) 
           <div
             key={name}
             title={label}
-            className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border border-white bg-gray-100 ring-1 ring-border"
+            className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border border-white bg-gray-100 ring-1 ring-border dark:border-gray-600 dark:bg-gray-700 dark:bg-gray-800"
           >
             {avatar ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -45,7 +45,7 @@ export function AgentAvatars({ agents, max = 4, className }: AgentAvatarsProps) 
             .slice(max)
             .map((n) => getAgentConfig(n)?.label ?? n)
             .join(', ')}
-          className="flex h-5 flex-shrink-0 items-center justify-center rounded-full border border-white bg-gray-200 px-1 ring-1 ring-border"
+          className="flex h-5 flex-shrink-0 items-center justify-center rounded-full border border-white bg-gray-200 px-1 ring-1 ring-border dark:border-gray-600 dark:bg-gray-700"
         >
           <span className="text-[9px] font-semibold text-text-muted">+{overflow}</span>
         </div>

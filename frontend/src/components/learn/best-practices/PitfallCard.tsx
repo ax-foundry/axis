@@ -18,7 +18,7 @@ export function PitfallCard({
   solution,
 }: PitfallCardProps) {
   return (
-    <div className="border-error/20 rounded-xl border bg-white p-4">
+    <div className="border-error/20 rounded-xl border bg-surface p-4">
       <div className="mb-3 flex items-center gap-2">
         <div className="bg-error/10 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg">
           <Icon className="h-3.5 w-3.5 text-error" />
@@ -27,7 +27,7 @@ export function PitfallCard({
       </div>
 
       <div className="space-y-2">
-        <div className="rounded-lg bg-gray-50 p-2.5">
+        <div className="rounded-lg bg-gray-50 p-2.5 dark:bg-gray-900">
           <p className="mb-0.5 text-[10px] font-semibold uppercase tracking-wide text-error">
             The Mistake
           </p>
@@ -38,7 +38,7 @@ export function PitfallCard({
           <ArrowRight className="h-3 w-3 text-text-muted" />
         </div>
 
-        <div className="rounded-lg bg-gray-50 p-2.5">
+        <div className="rounded-lg bg-gray-50 p-2.5 dark:bg-gray-900">
           <p className="mb-0.5 text-[10px] font-semibold uppercase tracking-wide text-warning">
             The Consequence
           </p>

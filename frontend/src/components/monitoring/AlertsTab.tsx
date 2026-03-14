@@ -15,7 +15,7 @@ const METHOD_STYLES: Record<string, string> = {
   'z-score': 'bg-blue-50 text-blue-700',
   'moving-average': 'bg-purple-50 text-purple-700',
   'rate-of-change': 'bg-orange-50 text-orange-700',
-  threshold: 'bg-gray-100 text-gray-600',
+  threshold: 'bg-gray-100 dark:bg-gray-800 text-gray-600',
 };
 
 // ---------------------------------------------------------------------------
@@ -117,7 +117,7 @@ function SummaryStrip({ alerts }: { alerts: MonitoringAlert[] }) {
 
 function MethodPill({ method }: { method?: string }) {
   if (!method) return null;
-  const style = METHOD_STYLES[method] ?? 'bg-gray-100 text-gray-600';
+  const style = METHOD_STYLES[method] ?? 'bg-gray-100 dark:bg-gray-800 text-gray-600';
   return (
     <span className={cn('rounded-full px-2 py-0.5 text-[10px] font-medium', style)}>{method}</span>
   );
@@ -125,7 +125,7 @@ function MethodPill({ method }: { method?: string }) {
 
 function ValueBlock({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-md bg-gray-50 px-3 py-2">
+    <div className="rounded-md bg-gray-50 px-3 py-2 dark:bg-gray-900">
       <div className="text-xs text-text-muted">{label}</div>
       <div className="font-mono text-sm font-semibold text-text-primary">{value}</div>
     </div>
@@ -139,7 +139,7 @@ function AlertCard({ alert }: { alert: MonitoringAlert }) {
   return (
     <div
       className={cn(
-        'rounded-lg border border-border bg-white p-4',
+        'rounded-lg border border-border bg-surface p-4',
         alert.type === 'error' ? 'border-l-4 border-l-error' : 'border-l-4 border-l-warning'
       )}
     >
@@ -205,7 +205,7 @@ function AlertGroup({
         <span className="text-xs font-semibold uppercase tracking-wide text-text-muted">
           {title}
         </span>
-        <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-semibold text-text-muted">
+        <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-semibold text-text-muted dark:bg-gray-800">
           {alerts.length}
         </span>
       </button>
@@ -248,7 +248,7 @@ export function AlertsTab({ alerts }: AlertsTabProps) {
   // Empty state
   if (alerts.length === 0) {
     return (
-      <div className="rounded-lg border border-border bg-white p-8">
+      <div className="rounded-lg border border-border bg-surface p-8">
         <div className="flex flex-col items-center justify-center py-8 text-center">
           <CheckCircle2 className="mb-3 h-12 w-12 text-success opacity-40" />
           <p className="text-sm font-medium text-text-primary">All systems nominal</p>
@@ -264,7 +264,7 @@ export function AlertsTab({ alerts }: AlertsTabProps) {
       <SummaryStrip alerts={alerts} />
 
       {/* Grouped sections */}
-      <div className="rounded-lg border border-border bg-white p-5">
+      <div className="rounded-lg border border-border bg-surface p-5">
         <div className="space-y-2">
           {thresholdAlerts.length > 0 && (
             <AlertGroup title="Threshold Alerts" alerts={thresholdAlerts} />

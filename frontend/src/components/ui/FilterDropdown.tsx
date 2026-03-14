@@ -44,7 +44,7 @@ export function FilterDropdown({
     <div ref={dropdownRef} className={cn('relative', className)}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex h-[34px] items-center gap-2 rounded-lg border border-border bg-white px-3 text-xs font-medium text-text-primary transition-colors hover:bg-gray-50"
+        className="flex h-[34px] items-center gap-2 rounded-lg border border-border bg-surface px-3 text-xs font-medium text-text-primary transition-colors hover:bg-gray-50 dark:hover:bg-gray-800"
       >
         <span>{currentLabel}</span>
         <ChevronDown
@@ -52,7 +52,7 @@ export function FilterDropdown({
         />
       </button>
       {isOpen && (
-        <div className="absolute left-0 top-full z-50 mt-1 min-w-[160px] rounded-lg border border-border bg-white py-1 shadow-lg">
+        <div className="absolute left-0 top-full z-50 mt-1 min-w-[160px] rounded-lg border border-border bg-surface py-1 shadow-lg">
           {options.map((option) => (
             <button
               key={option.value}
@@ -61,7 +61,7 @@ export function FilterDropdown({
                 setIsOpen(false);
               }}
               className={cn(
-                'flex w-full items-center px-3 py-1.5 text-left text-xs transition-colors hover:bg-gray-50',
+                'flex w-full items-center px-3 py-1.5 text-left text-xs transition-colors hover:bg-gray-50 dark:hover:bg-gray-800',
                 option.value === value
                   ? 'bg-primary/5 font-medium text-primary'
                   : 'text-text-primary'

@@ -32,7 +32,7 @@ export function PromptEditor({
         {!isDefault && (
           <button
             onClick={onReset}
-            className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm text-text-muted transition-colors hover:bg-gray-100 hover:text-text-primary"
+            className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm text-text-muted transition-colors hover:bg-gray-100 hover:text-text-primary dark:bg-gray-800 dark:hover:bg-gray-700"
           >
             <RotateCcw className="h-4 w-4" />
             Reset to Default
@@ -47,7 +47,7 @@ export function PromptEditor({
           <div className="text-sm text-text-secondary">
             <p>
               The system prompt defines how the LLM judge evaluates responses. Use{' '}
-              <code className="rounded bg-white px-1 py-0.5 font-mono text-xs">
+              <code className="rounded bg-surface px-1 py-0.5 font-mono text-xs">
                 {'{evaluation_criteria}'}
               </code>{' '}
               as a placeholder for your evaluation criteria.
@@ -63,7 +63,7 @@ export function PromptEditor({
           value={systemPrompt}
           onChange={(e) => onSystemPromptChange(e.target.value)}
           rows={12}
-          className="w-full rounded-lg border border-border bg-white p-4 font-mono text-sm text-text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+          className="w-full rounded-lg border border-border bg-surface p-4 font-mono text-sm text-text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
           placeholder="Enter the system prompt for the judge..."
         />
       </div>
@@ -78,13 +78,13 @@ export function PromptEditor({
           value={evaluationCriteria}
           onChange={(e) => onEvaluationCriteriaChange(e.target.value)}
           rows={8}
-          className="w-full rounded-lg border border-border bg-white p-4 text-sm text-text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+          className="w-full rounded-lg border border-border bg-surface p-4 text-sm text-text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
           placeholder="Define evaluation criteria..."
         />
       </div>
 
       {/* Temperature */}
-      <div className="rounded-lg border border-border bg-gray-50 p-4">
+      <div className="rounded-lg border border-border bg-gray-50 p-4 dark:bg-gray-900">
         <div className="flex items-center justify-between">
           <div>
             <label className="block text-sm font-medium text-text-primary">Temperature</label>

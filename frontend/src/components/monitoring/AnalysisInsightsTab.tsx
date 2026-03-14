@@ -329,7 +329,9 @@ export function AnalysisInsightsTab({
         <p>No analysis metrics found.</p>
         <p className="mt-1 text-xs">
           Upload data with{' '}
-          <code className="rounded bg-gray-100 px-1">metric_category: ANALYSIS</code>
+          <code className="rounded bg-gray-100 px-1 dark:bg-gray-800">
+            metric_category: ANALYSIS
+          </code>
         </p>
       </div>
     );
@@ -339,7 +341,7 @@ export function AnalysisInsightsTab({
     <div className="space-y-6">
       {/* KPI Strip */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <div className="rounded-lg border border-border bg-white px-4 py-3">
+        <div className="rounded-lg border border-border bg-surface px-4 py-3">
           <div className="text-xl font-semibold text-text-primary">
             {totalCount.toLocaleString()}
           </div>
@@ -347,7 +349,7 @@ export function AnalysisInsightsTab({
             Total Records
           </div>
         </div>
-        <div className="rounded-lg border border-border bg-white px-4 py-3">
+        <div className="rounded-lg border border-border bg-surface px-4 py-3">
           <div className="text-xl font-semibold text-text-primary">{metricNames.length}</div>
           <div className="text-xs font-medium uppercase tracking-wide text-text-muted">
             Unique Metrics
@@ -356,7 +358,7 @@ export function AnalysisInsightsTab({
       </div>
 
       {/* Analysis Traces Table */}
-      <div className="rounded-lg border border-border bg-white">
+      <div className="rounded-lg border border-border bg-surface">
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-2.5">
           <h3 className="text-sm font-medium text-text-primary">
             Analysis Traces
@@ -371,7 +373,7 @@ export function AnalysisInsightsTab({
                 value={traceSearch}
                 onChange={(e) => setTraceSearch(e.target.value)}
                 placeholder="Search traces..."
-                className="h-[30px] w-48 rounded-md border border-border bg-white pl-7 pr-2 text-xs text-text-primary placeholder:text-text-muted focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/30"
+                className="h-[30px] w-48 rounded-md border border-border bg-surface pl-7 pr-2 text-xs text-text-primary placeholder:text-text-muted focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/30"
               />
             </div>
             {/* Metric filter */}
@@ -390,7 +392,7 @@ export function AnalysisInsightsTab({
               <button
                 onClick={() => setTablePage((p) => Math.max(1, p - 1))}
                 disabled={tablePage <= 1}
-                className="rounded p-1 hover:bg-gray-100 disabled:opacity-30"
+                className="rounded p-1 hover:bg-gray-100 disabled:opacity-30 dark:bg-gray-800 dark:hover:bg-gray-700"
               >
                 <ChevronLeft className="h-4 w-4" />
               </button>
@@ -401,7 +403,7 @@ export function AnalysisInsightsTab({
                   )
                 }
                 disabled={tablePage >= Math.ceil(traceTotal / TABLE_PAGE_SIZE)}
-                className="rounded p-1 hover:bg-gray-100 disabled:opacity-30"
+                className="rounded p-1 hover:bg-gray-100 disabled:opacity-30 dark:bg-gray-800 dark:hover:bg-gray-700"
               >
                 <ChevronRight className="h-4 w-4" />
               </button>
@@ -411,7 +413,7 @@ export function AnalysisInsightsTab({
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-border bg-gray-50/50 text-left text-[11px] font-medium uppercase tracking-wider text-text-muted">
+              <tr className="border-b border-border bg-gray-50 text-left text-[11px] font-medium uppercase tracking-wider text-text-muted dark:bg-gray-900/50">
                 <th className="px-3 py-2">Trace ID</th>
                 <SortableTh
                   label="Timestamp"
@@ -444,11 +446,11 @@ export function AnalysisInsightsTab({
               ).map((record, idx) => (
                 <tr
                   key={`${record.dataset_id}-${idx}`}
-                  className="border-b border-border last:border-0 hover:bg-gray-50"
+                  className="border-b border-border last:border-0 hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-800"
                 >
                   <td className="px-3 py-2">
                     {record.trace_id ? (
-                      <code className="rounded bg-gray-100 px-1.5 py-0.5 font-mono text-xs text-primary">
+                      <code className="rounded bg-gray-100 px-1.5 py-0.5 font-mono text-xs text-primary dark:bg-gray-800">
                         {record.trace_id.slice(0, 8)}
                       </code>
                     ) : (
@@ -459,7 +461,7 @@ export function AnalysisInsightsTab({
                     {record.timestamp ? new Date(record.timestamp).toLocaleString() : '-'}
                   </td>
                   <td className="px-3 py-2">
-                    <span className="rounded bg-gray-100 px-1.5 py-0.5 text-xs font-medium text-text-secondary">
+                    <span className="rounded bg-gray-100 px-1.5 py-0.5 text-xs font-medium text-text-secondary dark:bg-gray-800">
                       {String(record.metric_name || '-')}
                     </span>
                   </td>
@@ -480,7 +482,7 @@ export function AnalysisInsightsTab({
                     <button
                       onClick={() => setSelectedRecord(record)}
                       className={cn(
-                        'rounded p-1 text-text-muted hover:bg-gray-100 hover:text-text-primary'
+                        'rounded p-1 text-text-muted hover:bg-gray-100 hover:text-text-primary dark:bg-gray-800 dark:hover:bg-gray-700'
                       )}
                     >
                       <Eye className="h-4 w-4" />

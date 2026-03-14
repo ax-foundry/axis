@@ -29,7 +29,7 @@ export function DecisionPathDiagram({ rule }: DecisionPathDiagramProps) {
       </svg>
 
       {/* Rule */}
-      <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm font-medium text-text-primary">
+      <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm font-medium text-text-primary dark:border-gray-700 dark:bg-gray-900">
         {getField(rule, 'name')}
         {thresholdValue && (
           <span className="ml-2 text-xs text-text-muted">

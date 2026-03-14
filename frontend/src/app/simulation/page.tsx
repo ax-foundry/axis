@@ -22,7 +22,7 @@ export default function SimulationPage() {
         </div>
 
         {/* Feature Preview */}
-        <div className="mb-8 rounded-lg border border-border bg-white p-5 text-left">
+        <div className="mb-8 rounded-lg border border-border bg-surface p-5 text-left">
           <h3 className="mb-4 font-semibold text-text-primary">Planned Features</h3>
           <div className="space-y-4">
             <div className="flex items-start gap-3">

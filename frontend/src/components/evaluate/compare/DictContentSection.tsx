@@ -54,11 +54,11 @@ function DictEntry({ label, value }: { label: string; value: string }) {
   };
 
   return (
-    <div className="border-border/50 overflow-hidden rounded-lg border bg-white">
+    <div className="border-border/50 overflow-hidden rounded-lg border bg-surface">
       <div
         className={cn(
-          'border-border/30 flex items-center gap-2 border-b bg-gray-50 px-4 py-2',
-          isLong && 'cursor-pointer hover:bg-gray-100'
+          'border-border/30 flex items-center gap-2 border-b bg-gray-50 px-4 py-2 dark:bg-gray-900',
+          isLong && 'cursor-pointer hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700'
         )}
         onClick={() => isLong && setExpanded(!expanded)}
       >
@@ -124,7 +124,7 @@ export function DictContentSection({ title, content, compact }: DictContentSecti
         <h4 className="text-sm font-semibold text-text-primary">{title}</h4>
         <div
           className={cn(
-            'border-border/50 overflow-y-auto rounded-lg border bg-white p-4 text-sm',
+            'border-border/50 overflow-y-auto rounded-lg border bg-surface p-4 text-sm',
             compact ? 'max-h-48' : 'max-h-64'
           )}
         >

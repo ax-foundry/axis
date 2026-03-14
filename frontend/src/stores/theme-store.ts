@@ -117,6 +117,38 @@ function applyCSSVariables(palette: ThemePalette): void {
     root.style.removeProperty('--hero-opacity');
   }
 
+  // Toggle dark mode class and structural CSS vars
+  // Explicit heroMode wins; null/undefined falls back to OS preference
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const isDark = palette.heroMode === 'dark' || (palette.heroMode !== 'light' && prefersDark);
+  document.documentElement.classList.toggle('dark', isDark);
+
+  if (isDark) {
+    root.style.setProperty('--background', '#0f1117');
+    root.style.setProperty('--surface', '#1a1d27');
+    root.style.setProperty('--border', '#2d3148');
+    root.style.setProperty('--glass-bg', 'rgba(20, 23, 34, 0.92)');
+    root.style.setProperty('--glass-border', 'rgba(255, 255, 255, 0.08)');
+    root.style.setProperty('--text-primary', '#e2e8f0');
+    root.style.setProperty('--text-secondary', '#a0aec0');
+    root.style.setProperty('--text-muted', '#718096');
+    root.style.setProperty('--shadow-sm', '0 1px 2px rgba(0,0,0,0.3)');
+    root.style.setProperty('--shadow-md', '0 2px 4px rgba(0,0,0,0.4)');
+    root.style.setProperty('--shadow-lg', '0 4px 12px rgba(0,0,0,0.5)');
+  } else {
+    root.style.setProperty('--background', '#ffffff');
+    root.style.setProperty('--surface', '#ffffff');
+    root.style.setProperty('--border', '#e1e5ea');
+    root.style.setProperty('--glass-bg', 'rgba(255, 255, 255, 0.92)');
+    root.style.setProperty('--glass-border', 'rgba(255, 255, 255, 0.3)');
+    root.style.setProperty('--text-primary', '#2c3e50');
+    root.style.setProperty('--text-secondary', '#34495e');
+    root.style.setProperty('--text-muted', '#7f8c8d');
+    root.style.setProperty('--shadow-sm', '0 1px 2px rgba(0,0,0,0.04)');
+    root.style.setProperty('--shadow-md', '0 2px 4px rgba(0,0,0,0.06)');
+    root.style.setProperty('--shadow-lg', '0 4px 12px rgba(0,0,0,0.08)');
+  }
+
   // Set shimmer gradient colors if provided
   if (palette.shimmerFrom) {
     root.style.setProperty('--shimmer-from', palette.shimmerFrom);

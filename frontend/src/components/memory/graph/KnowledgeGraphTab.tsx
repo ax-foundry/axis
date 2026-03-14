@@ -38,7 +38,7 @@ export function KnowledgeGraphTab() {
 
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center rounded-lg border border-border bg-white p-12 text-center">
+      <div className="flex flex-col items-center justify-center rounded-lg border border-border bg-surface p-12 text-center">
         <AlertCircle className="mb-3 h-8 w-8 text-error" />
         <h3 className="mb-1 text-sm font-semibold text-text-primary">
           Could not connect to Knowledge Graph
@@ -65,7 +65,7 @@ export function KnowledgeGraphTab() {
         <select
           value={graphFilterType}
           onChange={(e) => setGraphFilterType(e.target.value)}
-          className="rounded-lg border border-border bg-white px-3 py-2 text-sm text-text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+          className="rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
         >
           {NODE_TYPE_OPTIONS.map((opt) => (
             <option key={opt.value} value={opt.value}>
@@ -76,7 +76,7 @@ export function KnowledgeGraphTab() {
       </div>
 
       {/* Main graph area */}
-      <div className="overflow-hidden rounded-lg border border-border bg-white">
+      <div className="overflow-hidden rounded-lg border border-border bg-surface">
         {isLoading ? (
           <div className="flex h-[600px] items-center justify-center">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />

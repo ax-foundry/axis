@@ -93,23 +93,25 @@ export default function EvaluateLayout({ children }: { children: React.ReactNode
               if (isDisabled) {
                 return (
                   <div key={step.id} className="flex flex-1 items-center">
-                    <div className="group relative flex w-full cursor-not-allowed items-center gap-3 rounded-lg bg-gray-50 px-4 py-2.5 opacity-50">
-                      <div className="flex h-7 w-7 items-center justify-center rounded-md bg-gray-200">
+                    <div className="group relative flex h-[72px] w-full cursor-not-allowed items-center gap-3 rounded-lg bg-gray-50 px-4 opacity-50 dark:bg-gray-900">
+                      <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md bg-gray-200 dark:bg-gray-700">
                         <Lock className="h-3.5 w-3.5 text-text-muted" />
                       </div>
-                      <div className="text-left">
+                      <div className="min-w-0 text-left">
                         <span className="block text-sm font-semibold text-text-muted">
                           {step.label}
                         </span>
                         <span className="text-xs text-text-muted">{step.description}</span>
                       </div>
                       {/* Tooltip */}
-                      <div className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 -translate-x-1/2 whitespace-nowrap rounded-lg border border-border bg-white px-3 py-1.5 text-xs font-medium text-text-secondary opacity-0 shadow-lg transition-opacity group-hover:opacity-100">
+                      <div className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 -translate-x-1/2 whitespace-nowrap rounded-lg border border-border bg-surface px-3 py-1.5 text-xs font-medium text-text-secondary opacity-0 shadow-lg transition-opacity group-hover:opacity-100">
                         Disabled by Admin
-                        <div className="absolute left-1/2 top-full -translate-x-1/2 border-4 border-transparent border-t-white" />
+                        <div className="absolute left-1/2 top-full -translate-x-1/2 border-4 border-transparent border-t-surface" />
                       </div>
                     </div>
-                    {index < steps.length - 1 && <div className="mx-2 h-0.5 w-8 bg-gray-200" />}
+                    {index < steps.length - 1 && (
+                      <div className="mx-2 h-0.5 w-8 flex-shrink-0 bg-gray-200 dark:bg-gray-700" />
+                    )}
                   </div>
                 );
               }
@@ -119,23 +121,27 @@ export default function EvaluateLayout({ children }: { children: React.ReactNode
                   <Link
                     href={step.href}
                     className={cn(
-                      'relative flex w-full items-center gap-3 rounded-lg px-4 py-2.5 transition-colors duration-150',
+                      'relative flex h-[72px] w-full items-center gap-3 rounded-lg px-4 transition-colors duration-150',
                       isActive
                         ? 'bg-primary text-white'
                         : isPast
                           ? 'bg-primary-pale/50 text-primary hover:bg-primary-pale'
-                          : 'bg-gray-100 text-text-muted hover:bg-gray-200 hover:text-text-primary'
+                          : 'bg-gray-100 text-text-muted hover:bg-gray-200 hover:text-text-primary dark:bg-gray-800 dark:hover:bg-gray-700'
                     )}
                   >
                     <div
                       className={cn(
-                        'flex h-7 w-7 items-center justify-center rounded-md',
-                        isActive ? 'bg-white/20' : isPast ? 'bg-primary/10' : 'bg-gray-200'
+                        'flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md',
+                        isActive
+                          ? 'bg-white/20'
+                          : isPast
+                            ? 'bg-primary/10'
+                            : 'bg-gray-200 dark:bg-gray-700'
                       )}
                     >
                       <Icon className="h-3.5 w-3.5" />
                     </div>
-                    <div className="text-left">
+                    <div className="min-w-0 text-left">
                       <span className="block text-sm font-semibold">{step.label}</span>
                       <span
                         className={cn('text-xs', isActive ? 'text-white/70' : 'text-text-muted')}
@@ -147,8 +153,8 @@ export default function EvaluateLayout({ children }: { children: React.ReactNode
                   {index < steps.length - 1 && (
                     <div
                       className={cn(
-                        'mx-2 h-0.5 w-8 transition-colors',
-                        isPast ? 'bg-primary' : 'bg-gray-200'
+                        'mx-2 h-0.5 w-8 flex-shrink-0 transition-colors',
+                        isPast ? 'bg-primary' : 'bg-gray-200 dark:bg-gray-700'
                       )}
                     />
                   )}

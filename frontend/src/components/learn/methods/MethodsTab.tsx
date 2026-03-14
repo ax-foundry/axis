@@ -135,7 +135,7 @@ export function MethodsTab() {
   return (
     <div className="space-y-6">
       {/* Introduction */}
-      <div className="rounded-xl border border-border bg-white px-5 py-4">
+      <div className="rounded-xl border border-border bg-surface px-5 py-4">
         <h2 className="mb-1 text-sm font-semibold text-text-primary">Evaluation Methods</h2>
         <p className="text-sm text-text-muted">
           There are several approaches to evaluating AI agents, each suited to different stages of
@@ -167,7 +167,7 @@ export function MethodsTab() {
       </div>
 
       {/* Documentation Links */}
-      <div className="rounded-xl border border-border bg-white px-5 py-4">
+      <div className="rounded-xl border border-border bg-surface px-5 py-4">
         <h3 className="mb-3 text-sm font-semibold text-text-primary">Further Reading</h3>
         <div className="flex flex-wrap gap-2">
           {DOC_LINKS.map((link) => (
@@ -176,7 +176,7 @@ export function MethodsTab() {
               href={link.href}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-gray-50 px-3 py-1.5 text-xs font-medium text-text-secondary transition-colors hover:border-primary/30 hover:bg-primary/5 hover:text-primary"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-gray-50 px-3 py-1.5 text-xs font-medium text-text-secondary transition-colors hover:border-primary/30 hover:bg-primary/5 hover:text-primary dark:bg-gray-900"
             >
               {link.label}
               <ExternalLink className="h-3 w-3" />

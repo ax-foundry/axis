@@ -42,7 +42,7 @@ export function GraphStats() {
         return (
           <div
             key={card.type}
-            className="flex items-center gap-3 rounded-lg border border-border bg-white px-4 py-3"
+            className="flex items-center gap-3 rounded-lg border border-border bg-surface px-4 py-3"
           >
             <div
               className="flex h-8 w-8 items-center justify-center rounded-lg"
