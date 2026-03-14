@@ -31,7 +31,6 @@ import {
   useHasShimmer,
   useHeroFilter,
   useHeroImage,
-  useHeroMode,
 } from '@/lib/theme';
 
 // ── Rotating Text ────────────────────────────────────
@@ -1458,7 +1457,6 @@ export default function Home() {
   const heroRef = useRef<HTMLElement>(null);
   const heroImage = useHeroImage();
   const heroFilter = useHeroFilter();
-  const heroMode = useHeroMode();
   const isDark = useDarkMode();
   const isLight = !isDark;
   const branding = useBranding();
