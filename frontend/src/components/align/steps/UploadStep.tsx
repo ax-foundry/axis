@@ -103,15 +103,15 @@ export function UploadStep() {
             <p className="font-medium text-text-primary">Required CSV columns:</p>
             <ul className="list-inside list-disc space-y-1">
               <li>
-                <code className="rounded bg-white px-1.5 py-0.5 font-mono text-xs">id</code> -
+                <code className="rounded bg-surface px-1.5 py-0.5 font-mono text-xs">id</code> -
                 Unique identifier for each record
               </li>
               <li>
-                <code className="rounded bg-white px-1.5 py-0.5 font-mono text-xs">query</code> -
+                <code className="rounded bg-surface px-1.5 py-0.5 font-mono text-xs">query</code> -
                 The user query or input
               </li>
               <li>
-                <code className="rounded bg-white px-1.5 py-0.5 font-mono text-xs">
+                <code className="rounded bg-surface px-1.5 py-0.5 font-mono text-xs">
                   actual_output
                 </code>{' '}
                 - The AI-generated response to evaluate
@@ -119,7 +119,7 @@ export function UploadStep() {
             </ul>
             <p className="text-text-muted">
               Optional:{' '}
-              <code className="rounded bg-white px-1.5 py-0.5 font-mono text-xs">
+              <code className="rounded bg-surface px-1.5 py-0.5 font-mono text-xs">
                 expected_output
               </code>{' '}
               for reference comparison
@@ -154,7 +154,7 @@ export function UploadStep() {
                 </button>
                 <button
                   onClick={() => setCurrentStep('review')}
-                  className="rounded-lg border border-border bg-white px-4 py-2 text-sm font-medium text-text-secondary transition-colors hover:bg-gray-50"
+                  className="rounded-lg border border-border bg-surface px-4 py-2 text-sm font-medium text-text-secondary transition-colors hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-900"
                 >
                   Re-annotate from Scratch
                 </button>
@@ -194,7 +194,7 @@ export function UploadStep() {
               className={cn(
                 'flex items-center gap-2 rounded-lg px-6 py-2.5 font-medium transition-all',
                 hasImportedLabels
-                  ? 'border border-border bg-white text-text-secondary hover:bg-gray-50'
+                  ? 'border border-border bg-surface text-text-secondary hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-900'
                   : 'bg-primary text-white hover:bg-primary-dark hover:shadow-lg hover:shadow-primary/20'
               )}
             >

@@ -145,13 +145,13 @@ export function KPITrendChart({ displayName, unit, data, onClose }: KPITrendChar
   }, [data, unit, colors]);
 
   return (
-    <div className="overflow-hidden rounded-lg border border-border bg-white">
+    <div className="overflow-hidden rounded-lg border border-border bg-surface">
       <div className="flex items-center justify-between border-b border-border px-4 py-2">
         <h3 className="text-sm font-medium text-text-primary">{displayName}</h3>
         {onClose && (
           <button
             onClick={onClose}
-            className="rounded p-1 text-text-muted transition-colors hover:bg-gray-100 hover:text-text-primary"
+            className="rounded p-1 text-text-muted transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-800 hover:text-text-primary"
           >
             <X className="h-4 w-4" />
           </button>

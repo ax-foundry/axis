@@ -56,7 +56,7 @@ export function BestPracticesTab() {
   return (
     <div className="space-y-6">
       {/* Introduction */}
-      <div className="rounded-xl border border-border bg-white px-5 py-4">
+      <div className="rounded-xl border border-border bg-surface px-5 py-4">
         <h2 className="mb-1 text-sm font-semibold text-text-primary">Best Practices</h2>
         <p className="text-sm text-text-muted">
           Proven guidelines for building reliable evaluation systems — drawn from the{' '}
@@ -156,7 +156,7 @@ export function BestPracticesTab() {
                     desc: 'Grow coverage through edge cases and controlled synthesis until no new failure modes emerge.',
                   },
                 ].map((item) => (
-                  <div key={item.phase} className="rounded-lg bg-gray-50 p-2.5">
+                  <div key={item.phase} className="rounded-lg bg-gray-50 dark:bg-gray-900 p-2.5">
                     <p className="text-xs font-semibold text-text-primary">{item.phase}</p>
                     <p className="mt-0.5 text-[11px] leading-relaxed text-text-muted">
                       {item.desc}
@@ -232,7 +232,7 @@ export function BestPracticesTab() {
               feed each other — pre-production experiments and post-production monitoring.
             </p>
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-              <div className="rounded-lg bg-gray-50 p-3">
+              <div className="rounded-lg bg-gray-50 dark:bg-gray-900 p-3">
                 <h5 className="mb-1.5 text-xs font-semibold text-text-primary">
                   Pre-Production (The Lab)
                 </h5>
@@ -242,7 +242,7 @@ export function BestPracticesTab() {
                   <li>Gate on: safety, accuracy, zero regressions</li>
                 </ul>
               </div>
-              <div className="rounded-lg bg-gray-50 p-3">
+              <div className="rounded-lg bg-gray-50 dark:bg-gray-900 p-3">
                 <h5 className="mb-1.5 text-xs font-semibold text-text-primary">
                   Post-Production (The Real World)
                 </h5>
@@ -323,7 +323,7 @@ export function BestPracticesTab() {
       </div>
 
       {/* Documentation Links */}
-      <div className="rounded-xl border border-border bg-white px-5 py-4">
+      <div className="rounded-xl border border-border bg-surface px-5 py-4">
         <h3 className="mb-3 text-sm font-semibold text-text-primary">Further Reading</h3>
         <div className="flex flex-wrap gap-2">
           {DOC_LINKS.map((link) => (
@@ -332,7 +332,7 @@ export function BestPracticesTab() {
               href={link.href}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-gray-50 px-3 py-1.5 text-xs font-medium text-text-secondary transition-colors hover:border-primary/30 hover:bg-primary/5 hover:text-primary"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-gray-50 dark:bg-gray-900 px-3 py-1.5 text-xs font-medium text-text-secondary transition-colors hover:border-primary/30 hover:bg-primary/5 hover:text-primary"
             >
               {link.label}
               <ExternalLink className="h-3 w-3" />

@@ -50,7 +50,7 @@ export function OverviewTab() {
   return (
     <div className="space-y-5">
       {/* Intro */}
-      <div className="rounded-xl border border-border bg-white px-5 py-4">
+      <div className="rounded-xl border border-border bg-surface px-5 py-4">
         <h2 className="mb-1 text-sm font-semibold text-text-primary">Getting Started</h2>
         <p className="text-xs text-text-muted">
           AI evaluation is the systematic process of assessing agent quality, safety, and alignment.
@@ -67,7 +67,7 @@ export function OverviewTab() {
             <button
               key={card.id}
               onClick={() => setLearnMainTab(card.id)}
-              className="group flex flex-col rounded-xl border border-border bg-white p-4 text-left transition-all hover:border-primary/30 hover:shadow-md"
+              className="group flex flex-col rounded-xl border border-border bg-surface p-4 text-left transition-all hover:border-primary/30 hover:shadow-md"
             >
               <div
                 className={`mb-3 flex h-9 w-9 items-center justify-center rounded-lg ${card.bg}`}

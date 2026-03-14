@@ -300,7 +300,7 @@ export function GraphVisualization({ nodes, edges }: GraphVisualizationProps) {
         ref={svgRef}
         width={dimensions.width}
         height={dimensions.height}
-        className="rounded-lg bg-gray-50/50"
+        className="rounded-lg bg-gray-50 dark:bg-gray-900/50"
       />
     </div>
   );

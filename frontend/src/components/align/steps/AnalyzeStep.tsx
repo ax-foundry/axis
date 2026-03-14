@@ -111,7 +111,7 @@ export function AnalyzeStep() {
         <div className="flex gap-2">
           <button
             onClick={handleExportResults}
-            className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm font-medium text-text-secondary transition-colors hover:bg-gray-50"
+            className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm font-medium text-text-secondary transition-colors hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-900"
           >
             <Download className="h-4 w-4" />
             Export Results
@@ -131,7 +131,7 @@ export function AnalyzeStep() {
                 'flex items-center gap-2 rounded-t-lg px-4 py-2 text-sm font-medium transition-colors',
                 analyzeSubTab === tab.id
                   ? 'bg-primary/10 text-primary'
-                  : 'text-text-muted hover:bg-gray-100 hover:text-text-primary'
+                  : 'text-text-muted hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-800 hover:text-text-primary'
               )}
             >
               <Icon className="h-4 w-4" />
@@ -142,7 +142,7 @@ export function AnalyzeStep() {
       </div>
 
       {/* Tab Content */}
-      <div className="rounded-lg border border-border bg-white p-6">
+      <div className="rounded-lg border border-border bg-surface p-6">
         {analyzeSubTab === 'metrics' && (
           <div className="space-y-8">
             <MetricsOverview metrics={alignmentMetrics} />
@@ -197,7 +197,7 @@ export function AnalyzeStep() {
         <button
           onClick={() => setCurrentStep('build')}
           disabled={isEvaluating}
-          className="flex items-center gap-2 rounded-lg bg-gray-100 px-4 py-2 font-medium text-text-secondary transition-colors hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex items-center gap-2 rounded-lg bg-gray-100 dark:bg-gray-800 px-4 py-2 font-medium text-text-secondary transition-colors hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-50"
         >
           <ArrowLeft className="h-4 w-4" />
           Back to Build
@@ -210,7 +210,7 @@ export function AnalyzeStep() {
               setCurrentStep('build');
             }}
             disabled={isEvaluating}
-            className="flex items-center gap-2 rounded-lg border border-border px-4 py-2 font-medium text-text-secondary transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex items-center gap-2 rounded-lg border border-border px-4 py-2 font-medium text-text-secondary transition-colors hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-900 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <RefreshCw className="h-4 w-4" />
             Modify Settings

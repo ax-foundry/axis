@@ -33,7 +33,7 @@ export function ReportGeneratorPanel({
   }, [hierarchy, reportScoreThreshold]);
 
   return (
-    <div className={cn('border-border/50 rounded-xl border bg-white shadow-sm', className)}>
+    <div className={cn('border-border/50 rounded-xl border bg-surface shadow-sm', className)}>
       <div className="flex items-center justify-between px-4 py-3">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">

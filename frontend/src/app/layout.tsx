@@ -27,18 +27,20 @@ export async function generateMetadata(): Promise<Metadata> {
     return {
       title: title || 'AXIS - AI Evaluation Platform',
       description: tagline ?? 'Comprehensive AI evaluation, analytics, and testing platform',
+      other: { 'color-scheme': 'light dark' },
     };
   } catch {
     return {
       title: 'AXIS - AI Evaluation Platform',
       description: 'Comprehensive AI evaluation, analytics, and testing platform',
+      other: { 'color-scheme': 'light dark' },
     };
   }
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body className={`${inter.variable} ${jetbrainsMono.variable} ${inter.className}`}>
         <Providers>
           <div className="flex h-screen overflow-hidden">

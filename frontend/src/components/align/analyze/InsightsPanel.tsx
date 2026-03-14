@@ -59,13 +59,13 @@ export function InsightsPanel() {
     <div className="space-y-6">
       {/* Learning Insights (from EvidencePipeline) */}
       {learningArtifacts.length > 0 && (
-        <div className="rounded-lg border border-border bg-white p-6">
+        <div className="rounded-lg border border-border bg-surface p-6">
           <LearningInsightsPanel learnings={learningArtifacts} metadata={pipelineMetadata} />
         </div>
       )}
 
       {/* Analysis Section */}
-      <div className="rounded-lg border border-border bg-white p-6">
+      <div className="rounded-lg border border-border bg-surface p-6">
         <div className="mb-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-primary" />
@@ -103,7 +103,7 @@ export function InsightsPanel() {
         ) : misalignmentAnalysis ? (
           <div className="space-y-4">
             {/* Summary */}
-            <div className="rounded-lg bg-gray-50 p-4">
+            <div className="rounded-lg bg-gray-50 dark:bg-gray-900 p-4">
               <div className="mb-2 text-sm font-medium text-text-primary">Summary</div>
               <p className="text-sm text-text-secondary">{misalignmentAnalysis.summary}</p>
             </div>
@@ -165,7 +165,7 @@ export function InsightsPanel() {
       </div>
 
       {/* Optimization Section */}
-      <div className="rounded-lg border border-border bg-white p-6">
+      <div className="rounded-lg border border-border bg-surface p-6">
         <div className="mb-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-accent-gold" />
@@ -220,7 +220,7 @@ export function InsightsPanel() {
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setShowOptimizedPrompt(!showOptimizedPrompt)}
-                className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-text-secondary transition-colors hover:bg-gray-50"
+                className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-text-secondary transition-colors hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-900"
               >
                 {showOptimizedPrompt ? 'Hide' : 'View'} Optimized Criteria
               </button>
@@ -234,7 +234,7 @@ export function InsightsPanel() {
             </div>
 
             {showOptimizedPrompt && (
-              <div className="rounded-lg border border-border bg-gray-50 p-4">
+              <div className="rounded-lg border border-border bg-gray-50 dark:bg-gray-900 p-4">
                 <div className="mb-2 text-sm font-medium text-text-primary">
                   Optimized Evaluation Criteria
                 </div>

@@ -179,14 +179,14 @@ export function ExecutiveHierarchyTable({
         <div className="flex items-center gap-2">
           <button
             onClick={onExpandAll}
-            className="flex items-center gap-1 rounded-lg border border-border px-2 py-1 text-xs text-text-muted hover:bg-gray-50 hover:text-text-primary"
+            className="flex items-center gap-1 rounded-lg border border-border px-2 py-1 text-xs text-text-muted hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-900 hover:text-text-primary"
           >
             <ChevronsUpDown className="h-3.5 w-3.5" />
             Expand All
           </button>
           <button
             onClick={onCollapseAll}
-            className="flex items-center gap-1 rounded-lg border border-border px-2 py-1 text-xs text-text-muted hover:bg-gray-50 hover:text-text-primary"
+            className="flex items-center gap-1 rounded-lg border border-border px-2 py-1 text-xs text-text-muted hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-900 hover:text-text-primary"
           >
             <ChevronsDownUp className="h-3.5 w-3.5" />
             Collapse
@@ -197,7 +197,7 @@ export function ExecutiveHierarchyTable({
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-border bg-gray-50 text-left">
+            <tr className="border-b border-border bg-gray-50 dark:bg-gray-900 text-left">
               <SortHeader label="Hierarchy" field="name" />
               <th className="px-3 py-2 text-xs font-medium uppercase text-text-muted">Category</th>
               <SortHeader label="Score" field="score" />
@@ -222,8 +222,8 @@ export function ExecutiveHierarchyTable({
                 <tr
                   key={nodeId}
                   className={cn(
-                    'border-b border-border last:border-0 hover:bg-gray-50',
-                    node.level === 'source' && 'bg-gray-50/50 font-medium'
+                    'border-b border-border last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-900',
+                    node.level === 'source' && 'bg-gray-50 dark:bg-gray-900/50 font-medium'
                   )}
                 >
                   <td className="px-3 py-2.5">

@@ -39,13 +39,13 @@ function AggregateStatsDisplay({ stats }: { stats: AggregateStats }) {
     <div className="space-y-4">
       {/* Summary Statistics */}
       <div className="grid grid-cols-2 gap-3">
-        <div className="border-border/50 rounded-lg border bg-gray-50 p-3">
+        <div className="border-border/50 rounded-lg border bg-gray-50 dark:bg-gray-900 p-3">
           <div className="text-xs font-medium uppercase tracking-wider text-text-muted">
             Sample Size
           </div>
           <div className="mt-1 text-xl font-bold text-text-primary">{stats.count}</div>
         </div>
-        <div className="border-border/50 rounded-lg border bg-gray-50 p-3">
+        <div className="border-border/50 rounded-lg border bg-gray-50 dark:bg-gray-900 p-3">
           <div className="text-xs font-medium uppercase tracking-wider text-text-muted">
             Mean (Avg)
           </div>
@@ -53,13 +53,13 @@ function AggregateStatsDisplay({ stats }: { stats: AggregateStats }) {
             {formatScore(stats.mean)}
           </div>
         </div>
-        <div className="border-border/50 rounded-lg border bg-gray-50 p-3">
+        <div className="border-border/50 rounded-lg border bg-gray-50 dark:bg-gray-900 p-3">
           <div className="text-xs font-medium uppercase tracking-wider text-text-muted">Median</div>
           <div className="mt-1 text-xl font-bold" style={{ color: getScoreColor(stats.median) }}>
             {formatScore(stats.median)}
           </div>
         </div>
-        <div className="border-border/50 rounded-lg border bg-gray-50 p-3">
+        <div className="border-border/50 rounded-lg border bg-gray-50 dark:bg-gray-900 p-3">
           <div className="text-xs font-medium uppercase tracking-wider text-text-muted">
             Std Dev
           </div>
@@ -70,7 +70,7 @@ function AggregateStatsDisplay({ stats }: { stats: AggregateStats }) {
       </div>
 
       {/* Percentile Box */}
-      <div className="border-border/50 rounded-lg border bg-gray-50 p-3">
+      <div className="border-border/50 rounded-lg border bg-gray-50 dark:bg-gray-900 p-3">
         <div className="mb-2 text-xs font-medium uppercase tracking-wider text-text-muted">
           Score Distribution
         </div>
@@ -137,7 +137,7 @@ function AggregateStatsDisplay({ stats }: { stats: AggregateStats }) {
       </div>
 
       {/* Mini Histogram */}
-      <div className="border-border/50 rounded-lg border bg-gray-50 p-3">
+      <div className="border-border/50 rounded-lg border bg-gray-50 dark:bg-gray-900 p-3">
         <div className="mb-2 text-xs font-medium uppercase tracking-wider text-text-muted">
           Histogram
         </div>
@@ -222,11 +222,11 @@ export function MetricDetailPopup({ node, position, onClose }: MetricDetailPopup
   return (
     <div
       ref={popupRef}
-      className="overflow-hidden rounded-xl border border-border bg-white shadow-xl"
+      className="overflow-hidden rounded-xl border border-border bg-surface shadow-xl"
       style={{ ...style, width: popupWidth, maxHeight: popupMaxHeight }}
     >
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-border bg-gray-50 px-4 py-3">
+      <div className="flex items-center justify-between border-b border-border bg-gray-50 dark:bg-gray-900 px-4 py-3">
         <div className="flex items-center gap-3">
           <div
             className="h-3 w-3 flex-shrink-0 rounded-full"

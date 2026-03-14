@@ -40,7 +40,7 @@ export function BinaryScoreSelector({
           sizeClasses[size],
           value === 1
             ? 'shadow-success/30 bg-success text-white shadow-md'
-            : 'hover:bg-success/10 bg-gray-100 text-text-secondary hover:text-success',
+            : 'hover:bg-success/10 bg-gray-100 dark:bg-gray-800 text-text-secondary hover:text-success',
           disabled && 'cursor-not-allowed opacity-50'
         )}
       >
@@ -60,7 +60,7 @@ export function BinaryScoreSelector({
           sizeClasses[size],
           value === 0
             ? 'shadow-error/30 bg-error text-white shadow-md'
-            : 'hover:bg-error/10 bg-gray-100 text-text-secondary hover:text-error',
+            : 'hover:bg-error/10 bg-gray-100 dark:bg-gray-800 text-text-secondary hover:text-error',
           disabled && 'cursor-not-allowed opacity-50'
         )}
       >

@@ -245,7 +245,7 @@ export function ImportPreview() {
         <button
           onClick={goBack}
           disabled={isLoading || isImporting}
-          className="rounded-lg p-1.5 text-text-muted transition-colors hover:bg-gray-100 hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-50"
+          className="rounded-lg p-1.5 text-text-muted transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-800 hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-50"
         >
           <ArrowLeft className="h-5 w-5" />
         </button>
@@ -264,7 +264,7 @@ export function ImportPreview() {
             <select
               value={rowLimit}
               onChange={(e) => setRowLimit(parseInt(e.target.value, 10))}
-              className="w-full appearance-none rounded-lg border border-border bg-white px-3 py-2 pr-8 text-sm transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+              className="w-full appearance-none rounded-lg border border-border bg-surface px-3 py-2 pr-8 text-sm transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
               disabled={isLoading || isImporting}
             >
               <option value={100}>100 rows</option>
@@ -279,7 +279,7 @@ export function ImportPreview() {
 
         {/* Dedupe Option */}
         <div className="flex items-end">
-          <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-border bg-white px-3 py-2">
+          <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-border bg-surface px-3 py-2">
             <input
               type="checkbox"
               checked={dedupeOnId}
@@ -316,7 +316,7 @@ export function ImportPreview() {
         ) : (
           <div className="h-full overflow-auto">
             <table className="w-full min-w-max text-sm">
-              <thead className="sticky top-0 bg-gray-50">
+              <thead className="sticky top-0 bg-gray-50 dark:bg-gray-900">
                 <tr>
                   {displayColumns.map((col) => (
                     <th
@@ -330,7 +330,7 @@ export function ImportPreview() {
               </thead>
               <tbody>
                 {previewData.map((row, rowIdx) => (
-                  <tr key={rowIdx} className="hover:bg-gray-50">
+                  <tr key={rowIdx} className="hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-900">
                     {displayColumns.map((col) => (
                       <td
                         key={col}

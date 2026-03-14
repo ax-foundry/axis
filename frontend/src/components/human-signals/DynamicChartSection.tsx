@@ -60,7 +60,7 @@ export function DynamicChartSection({ cases, displayConfig }: DynamicChartSectio
             <div className="ml-1 h-px flex-1 bg-border" />
           </button>
           {trendExpanded && (
-            <div className="border-border/60 overflow-hidden rounded-lg border bg-white shadow-sm">
+            <div className="border-border/60 overflow-hidden rounded-lg border bg-surface shadow-sm">
               <div className="h-64 px-2 py-2">
                 <SignalsTrendChart data={trendData} signals={trendSignals.map((s) => s.label)} />
               </div>
@@ -168,7 +168,7 @@ function ChartCard({ metric, signal, type, title, cases, colorMaps }: ChartCardP
   }, [cases, metric, signal, type]);
 
   return (
-    <div className="overflow-hidden rounded-lg border border-border bg-white">
+    <div className="overflow-hidden rounded-lg border border-border bg-surface">
       <div className="border-b border-border px-4 py-2">
         <h3 className="text-sm font-medium text-text-primary">{title}</h3>
       </div>

@@ -51,7 +51,7 @@ export function WalkthroughViewer() {
   return (
     <div className="space-y-6">
       {/* Scenario Header */}
-      <div className="rounded-xl border border-border bg-white px-5 py-4">
+      <div className="rounded-xl border border-border bg-surface px-5 py-4">
         <h2 className="mb-1 text-sm font-semibold text-text-primary">{scenario.title}</h2>
         <p className="text-sm text-text-muted">{scenario.description}</p>
       </div>

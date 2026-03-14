@@ -10,7 +10,7 @@ interface StepDetailsProps {
 
 export function StepDetails({ step, stepNumber, totalSteps }: StepDetailsProps) {
   return (
-    <div className="rounded-xl border border-border bg-white p-5">
+    <div className="rounded-xl border border-border bg-surface p-5">
       {/* Step Header */}
       <div className="mb-4 flex items-start justify-between">
         <div>
@@ -24,7 +24,7 @@ export function StepDetails({ step, stepNumber, totalSteps }: StepDetailsProps) 
                   ? 'bg-blue-100 text-blue-700'
                   : step.animationType === 'highlight'
                     ? 'bg-amber-100 text-amber-700'
-                    : 'bg-gray-100 text-gray-700'
+                    : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
               }`}
             >
               {step.animationType}

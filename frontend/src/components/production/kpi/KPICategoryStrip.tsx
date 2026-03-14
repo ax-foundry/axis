@@ -117,7 +117,7 @@ export function KPICategoryStrip({ kpis, selectedKpi, onSelectKpi }: KPICategory
               'flex flex-col gap-1.5 rounded-lg border px-4 py-3 text-left transition-all',
               isSelected
                 ? 'border-primary bg-primary/5 ring-2 ring-primary'
-                : 'border-border bg-white hover:border-primary/40 hover:shadow-sm'
+                : 'border-border bg-surface hover:border-primary/40 hover:shadow-sm'
             )}
           >
             {/* Value + trend icon */}
@@ -148,7 +148,7 @@ export function KPICategoryStrip({ kpis, selectedKpi, onSelectKpi }: KPICategory
             {/* Name + count */}
             <div className="flex items-center gap-1.5">
               <span className="text-xs text-text-muted">{kpi.display_name}</span>
-              <span className="rounded bg-gray-100 px-1 py-0.5 text-[10px] text-text-muted">
+              <span className="rounded bg-gray-100 dark:bg-gray-800 px-1 py-0.5 text-[10px] text-text-muted">
                 {kpi.record_count.toLocaleString()}
               </span>
             </div>

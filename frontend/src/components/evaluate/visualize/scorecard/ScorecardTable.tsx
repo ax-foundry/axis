@@ -126,9 +126,9 @@ export function ScorecardTable({
   }
 
   return (
-    <div className="border-border/50 overflow-hidden rounded-xl border bg-white shadow-sm">
+    <div className="border-border/50 overflow-hidden rounded-xl border bg-surface shadow-sm">
       {/* Header actions */}
-      <div className="border-border/50 flex items-center justify-between border-b bg-gray-50/50 px-4 py-2">
+      <div className="border-border/50 flex items-center justify-between border-b bg-gray-50 dark:bg-gray-900/50 px-4 py-2">
         <span className="text-sm text-text-muted">
           {metricColumns.length} metrics • {componentColumns.length} components
         </span>
@@ -146,7 +146,7 @@ export function ScorecardTable({
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
-            <tr className="border-border/50 border-b bg-gray-50/30">
+            <tr className="border-border/50 border-b bg-gray-50 dark:bg-gray-900/30">
               <th className="px-4 py-3 text-left">
                 <button
                   onClick={() => handleSort('name')}
@@ -242,7 +242,7 @@ function ScorecardTableRow({
   return (
     <tr
       className={cn(
-        'animate-fade-in-up cursor-pointer transition-colors hover:bg-gray-50/50',
+        'animate-fade-in-up cursor-pointer transition-colors hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-900/50',
         row.hasChildren && 'font-medium'
       )}
       onClick={(e) => {

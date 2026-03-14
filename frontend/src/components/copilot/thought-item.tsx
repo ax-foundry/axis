@@ -60,7 +60,7 @@ export function ThoughtItem({ thought, isLatest = false, className }: ThoughtIte
     <div
       className={cn(
         'flex gap-2 rounded-lg p-2 transition-all duration-200',
-        isLatest && 'bg-gray-50',
+        isLatest && 'bg-gray-50 dark:bg-gray-900',
         thought.type === 'error' && 'bg-error/5',
         thought.type === 'success' && 'bg-success/5',
         className

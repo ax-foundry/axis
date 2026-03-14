@@ -65,12 +65,12 @@ export function KPICompositionChart({ config, kpis }: KPICompositionChartProps) 
   const ChevronIcon = expanded ? ChevronUp : ChevronDown;
 
   return (
-    <div className="overflow-hidden rounded-lg border border-border bg-white">
+    <div className="overflow-hidden rounded-lg border border-border bg-surface">
       {/* Header */}
       <button
         type="button"
         onClick={() => setExpanded((v) => !v)}
-        className="flex w-full items-center justify-between border-b border-border px-4 py-2 transition-colors hover:bg-gray-50"
+        className="flex w-full items-center justify-between border-b border-border px-4 py-2 transition-colors hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-900"
       >
         <h3 className="text-sm font-medium text-text-primary">{config.title}</h3>
         <ChevronIcon className="h-4 w-4 text-text-muted" />

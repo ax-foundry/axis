@@ -77,7 +77,7 @@ function KPICard({ label, value, subtitle, valueColor, sparkline }: KPICardData)
   const TrendIcon = trend === 'up' ? TrendingUp : trend === 'down' ? TrendingDown : Minus;
 
   return (
-    <div className="flex flex-col gap-1.5 rounded-lg border border-border bg-white px-4 py-3">
+    <div className="flex flex-col gap-1.5 rounded-lg border border-border bg-surface px-4 py-3">
       {/* Value + trend */}
       <div className="flex items-center gap-1.5">
         <span className={cn('text-xl font-bold text-text-primary', valueColor)}>{value}</span>
@@ -99,7 +99,7 @@ function KPICard({ label, value, subtitle, valueColor, sparkline }: KPICardData)
       {/* Label + subtitle */}
       <span className="text-xs text-text-muted">{label}</span>
       {subtitle && (
-        <span className="w-fit rounded bg-gray-100 px-1 py-0.5 text-[10px] text-text-muted">
+        <span className="w-fit rounded bg-gray-100 dark:bg-gray-800 px-1 py-0.5 text-[10px] text-text-muted">
           {subtitle}
         </span>
       )}

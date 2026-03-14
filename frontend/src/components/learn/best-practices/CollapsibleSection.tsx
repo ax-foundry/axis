@@ -16,7 +16,7 @@ export function CollapsibleSection({ id, title, summary, children }: Collapsible
   const isExpanded = learnExpandedSections.includes(id);
 
   return (
-    <div className="rounded-xl border border-border bg-white p-5">
+    <div className="rounded-xl border border-border bg-surface p-5">
       {/* Header - Always visible */}
       <button
         onClick={() => toggleLearnExpandedSection(id)}

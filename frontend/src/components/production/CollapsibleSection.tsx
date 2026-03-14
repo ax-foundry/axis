@@ -32,7 +32,7 @@ export function CollapsibleSection({
     <div className="space-y-4">
       <button
         onClick={() => setIsOpen((v) => !v)}
-        className="border-border/60 -mx-3 flex w-[calc(100%+1.5rem)] items-center gap-3 rounded-lg border bg-gray-50/80 px-4 py-3 text-left transition-colors hover:bg-gray-100"
+        className="border-border/60 -mx-3 flex w-[calc(100%+1.5rem)] items-center gap-3 rounded-lg border bg-gray-50 dark:bg-gray-900/80 px-4 py-3 text-left transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-800"
       >
         {isOpen ? (
           <ChevronDown className="h-4 w-4 text-text-muted" />

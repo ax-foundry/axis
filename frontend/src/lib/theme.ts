@@ -1,3 +1,5 @@
+import { useEffect, useState } from 'react';
+
 import { useThemeStore } from '@/stores/theme-store';
 import { DefaultColors } from '@/types';
 
@@ -92,6 +94,30 @@ export function useBranding(): BrandingConfig {
 export function useHeroMode(): 'dark' | 'light' {
   const { palette } = useThemeStore();
   return palette.heroMode === 'dark' ? 'dark' : 'light';
+}
+
+/**
+ * Hook to check if dark mode is active.
+ * Respects explicit heroMode ('dark'/'light') or falls back to OS preference.
+ */
+export function useDarkMode(): boolean {
+  const { palette } = useThemeStore();
+  const [prefersDark, setPrefersDark] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches
+  );
+
+  useEffect(() => {
+    // If heroMode is explicitly forced, no need to track OS preference
+    if (palette.heroMode === 'dark' || palette.heroMode === 'light') return;
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    const handler = (e: MediaQueryListEvent) => setPrefersDark(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, [palette.heroMode]);
+
+  if (palette.heroMode === 'dark') return true;
+  if (palette.heroMode === 'light') return false;
+  return prefersDark;
 }
 
 /**

@@ -157,7 +157,7 @@ export function AnnotateStep() {
       <div className="mt-5 flex items-center justify-between border-t border-border pt-4">
         <button
           onClick={() => setCurrentStep('upload')}
-          className="flex items-center gap-2 rounded-md border border-border bg-white px-4 py-2 text-sm font-medium text-text-muted transition-colors hover:border-text-muted hover:text-text-primary"
+          className="flex items-center gap-2 rounded-md border border-border bg-surface px-4 py-2 text-sm font-medium text-text-muted transition-colors hover:border-text-muted hover:text-text-primary"
         >
           <ArrowLeft className="h-4 w-4" />
           Back to Upload

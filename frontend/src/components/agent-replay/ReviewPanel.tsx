@@ -122,7 +122,7 @@ export function ReviewPanel({ traceId, agent, traceName, tree, traceInput }: Rev
   const existingCount = existingReviews?.scores?.length ?? 0;
 
   return (
-    <div className="flex h-full flex-col bg-white">
+    <div className="flex h-full flex-col bg-surface">
       {/* Header */}
       <div className="flex items-center justify-between bg-gradient-to-r from-primary to-primary-dark px-4 py-3">
         <h2 className="text-sm font-bold text-white">Review Trace</h2>
@@ -196,7 +196,7 @@ export function ReviewPanel({ traceId, agent, traceName, tree, traceInput }: Rev
             value={reviewToolingNeeds}
             onChange={(e) => setReviewToolingNeeds(e.target.value)}
             placeholder="What would the agent need to arrive at the correct decision?"
-            className="w-full resize-none rounded-lg border border-primary/15 bg-white px-3 py-2 text-sm text-text-primary shadow-sm placeholder:text-text-muted focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/15"
+            className="w-full resize-none rounded-lg border border-primary/15 bg-surface px-3 py-2 text-sm text-text-primary shadow-sm placeholder:text-text-muted focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/15"
           />
           <p className="mt-0.5 text-right text-[10px] text-text-muted">
             {reviewToolingNeeds.length}/2000
@@ -212,7 +212,7 @@ export function ReviewPanel({ traceId, agent, traceName, tree, traceInput }: Rev
             value={reviewRationale}
             onChange={(e) => setReviewRationale(e.target.value)}
             placeholder="Why did we approve or decline? Feedback loop back to the agent."
-            className="w-full resize-none rounded-lg border border-primary/15 bg-white px-3 py-2 text-sm text-text-primary shadow-sm placeholder:text-text-muted focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/15"
+            className="w-full resize-none rounded-lg border border-primary/15 bg-surface px-3 py-2 text-sm text-text-primary shadow-sm placeholder:text-text-muted focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/15"
           />
           <p className="mt-0.5 text-right text-[10px] text-text-muted">
             {reviewRationale.length}/2000
@@ -230,7 +230,7 @@ export function ReviewPanel({ traceId, agent, traceName, tree, traceInput }: Rev
             value={reviewExpectedOutput}
             onChange={(e) => setReviewExpectedOutput(e.target.value)}
             placeholder="What should the correct answer be? Ground truth for eval."
-            className="w-full resize-none rounded-lg border border-primary/15 bg-white px-3 py-2 text-sm text-text-primary shadow-sm placeholder:text-text-muted focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/15"
+            className="w-full resize-none rounded-lg border border-primary/15 bg-surface px-3 py-2 text-sm text-text-primary shadow-sm placeholder:text-text-muted focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/15"
           />
           <p className="mt-0.5 text-right text-[10px] text-text-muted">
             {reviewExpectedOutput.length}/2000
@@ -257,7 +257,7 @@ export function ReviewPanel({ traceId, agent, traceName, tree, traceInput }: Rev
             'flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-bold transition-all',
             canSave
               ? 'bg-gradient-to-r from-primary to-primary-dark text-white shadow-md shadow-primary/25 hover:shadow-lg hover:shadow-primary/30 hover:brightness-110'
-              : 'cursor-not-allowed bg-gray-100 text-gray-400'
+              : 'cursor-not-allowed bg-gray-100 dark:bg-gray-800 text-gray-400'
           )}
         >
           {isPending ? (

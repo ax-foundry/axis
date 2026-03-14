@@ -3,7 +3,7 @@
 import { useMemo } from 'react';
 
 import { PlotlyChart } from '@/components/charts/plotly-chart';
-import { useChartColors, useColors } from '@/lib/theme';
+import { useChartColors, useColors, useDarkMode } from '@/lib/theme';
 
 interface LatencyDistributionChartProps {
   histogram: {
@@ -45,6 +45,7 @@ export function LatencyDistributionChart({
 }: LatencyDistributionChartProps) {
   const chartColors = useChartColors();
   const themeColors = useColors();
+  const isDark = useDarkMode();
 
   const chartData = useMemo(() => {
     if (!histogram.counts.length) return [];
@@ -129,7 +130,7 @@ export function LatencyDistributionChart({
           text: `<b>${label}</b>`,
           showarrow: false,
           font: { size: 10, color, family: fontFamily },
-          bgcolor: 'rgba(255,255,255,0.85)',
+          bgcolor: isDark ? 'rgba(26,29,39,0.9)' : 'rgba(255,255,255,0.85)',
           borderpad: 3,
         });
       });
@@ -149,8 +150,8 @@ export function LatencyDistributionChart({
       font: { size: 10, color: themeColors.textMuted, family: fontFamily },
       xanchor: 'right',
       yanchor: 'top',
-      bgcolor: 'rgba(255,255,255,0.85)',
-      bordercolor: 'rgba(0,0,0,0.06)',
+      bgcolor: isDark ? 'rgba(26,29,39,0.9)' : 'rgba(255,255,255,0.85)',
+      bordercolor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
       borderwidth: 1,
       borderpad: 5,
     });
@@ -166,7 +167,7 @@ export function LatencyDistributionChart({
         xanchor: 'center' as const,
         font: { size: 10, color: themeColors.textMuted, family: fontFamily },
         bgcolor: 'transparent',
-        bordercolor: 'rgba(0,0,0,0.06)',
+        bordercolor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
         borderwidth: 1,
       },
       xaxis: {
@@ -175,12 +176,12 @@ export function LatencyDistributionChart({
           font: { size: 11, color: themeColors.textMuted, family: fontFamily },
           standoff: 12,
         },
-        gridcolor: 'rgba(0,0,0,0.04)',
+        gridcolor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
         tickfont: { size: 10, color: themeColors.textMuted, family: fontFamily },
         tickangle: 0,
         zeroline: false,
         showline: true,
-        linecolor: 'rgba(0,0,0,0.08)',
+        linecolor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)',
         showgrid: true,
       },
       yaxis: {
@@ -189,11 +190,11 @@ export function LatencyDistributionChart({
           font: { size: 11, color: themeColors.textMuted, family: fontFamily },
           standoff: 8,
         },
-        gridcolor: 'rgba(0,0,0,0.04)',
+        gridcolor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
         tickfont: { size: 10, color: themeColors.textMuted, family: fontFamily },
         zeroline: false,
         showline: true,
-        linecolor: 'rgba(0,0,0,0.08)',
+        linecolor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)',
         showgrid: true,
         range: [0, maxCount * 1.25],
       },
@@ -205,12 +206,12 @@ export function LatencyDistributionChart({
       plot_bgcolor: 'rgba(0,0,0,0)',
       paper_bgcolor: 'rgba(0,0,0,0)',
       hoverlabel: {
-        bgcolor: 'white',
+        bgcolor: isDark ? '#1a1d27' : 'white',
         bordercolor: themeColors.primary,
         font: { size: 11, family: fontFamily, color: themeColors.textPrimary },
       },
     };
-  }, [histogram.counts, percentiles, showPercentileMarkers, byGroup, themeColors]);
+  }, [histogram.counts, percentiles, showPercentileMarkers, byGroup, themeColors, isDark]);
 
   if (!histogram.counts.length) {
     return (

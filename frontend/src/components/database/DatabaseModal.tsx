@@ -72,7 +72,7 @@ export function DatabaseModal() {
       />
 
       {/* Modal */}
-      <div className="relative flex h-[85vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
+      <div className="relative flex h-[85vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-surface shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-border px-6 py-4">
           <div className="flex items-center gap-3">
@@ -89,7 +89,7 @@ export function DatabaseModal() {
           <button
             onClick={() => !isLoading && setDatabaseModalOpen(false)}
             disabled={isLoading}
-            className="rounded-lg p-2 text-text-muted transition-colors hover:bg-gray-100 hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-lg p-2 text-text-muted transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-800 hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-50"
           >
             <X className="h-5 w-5" />
           </button>
@@ -111,7 +111,7 @@ export function DatabaseModal() {
                         'flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium transition-colors',
                         isCompleted && 'bg-success text-white',
                         isCurrent && 'bg-violet-500 text-white',
-                        !isCompleted && !isCurrent && 'bg-gray-100 text-text-muted'
+                        !isCompleted && !isCurrent && 'bg-gray-100 dark:bg-gray-800 text-text-muted'
                       )}
                     >
                       {isCompleted ? <Check className="h-4 w-4" /> : <Icon className="h-4 w-4" />}

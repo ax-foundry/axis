@@ -79,8 +79,8 @@ function NavItem({
         className={cn(
           'flex items-center gap-2.5 rounded-lg px-3 py-[9px] text-[13px] font-medium transition-all duration-150',
           isActive
-            ? 'bg-primary text-white shadow-[0_2px_8px_rgba(139,159,79,0.3)]'
-            : 'text-text-muted hover:bg-gray-100 hover:text-text-primary',
+            ? 'bg-primary text-white shadow-[0_2px_8px_rgba(139,159,79,0.3)] dark:bg-white/15 dark:shadow-none'
+            : 'text-text-muted hover:bg-gray-100 hover:text-text-primary dark:hover:bg-white/10',
           collapsed && 'justify-center px-2'
         )}
         title={collapsed ? item.name : undefined}
@@ -138,7 +138,7 @@ export function Sidebar() {
     <>
       <aside
         className={cn(
-          'flex h-screen flex-col border-r border-border bg-white transition-all duration-300',
+          'flex h-screen flex-col border-r border-border bg-surface transition-all duration-300',
           collapsed ? 'w-20' : 'w-60'
         )}
       >
@@ -215,7 +215,7 @@ export function Sidebar() {
         </nav>
 
         {/* Bottom Actions */}
-        <div className="mt-auto space-y-1 border-t border-gray-100 px-3.5 py-3">
+        <div className="mt-auto space-y-1 border-t border-border px-3.5 py-3">
           {/* AI Copilot Button */}
           {copilotEnabled ? (
             <button
@@ -235,16 +235,16 @@ export function Sidebar() {
           ) : (
             <div
               className={cn(
-                'group relative flex w-full cursor-not-allowed items-center gap-2.5 rounded-lg bg-gray-50 px-3 py-[10px] text-[13px] font-medium opacity-50',
+                'group relative flex w-full cursor-not-allowed items-center gap-2.5 rounded-lg bg-gray-50 dark:bg-gray-900 px-3 py-[10px] text-[13px] font-medium opacity-50 dark:bg-gray-800',
                 collapsed && 'justify-center px-2'
               )}
             >
               <Lock className="h-[18px] w-[18px] flex-shrink-0 text-text-muted" />
               {!collapsed && <span className="text-text-muted">AI Copilot</span>}
               {/* Tooltip */}
-              <div className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 -translate-x-1/2 whitespace-nowrap rounded-lg border border-border bg-white px-3 py-1.5 text-xs font-medium text-text-secondary opacity-0 shadow-lg transition-opacity group-hover:opacity-100">
+              <div className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 -translate-x-1/2 whitespace-nowrap rounded-lg border border-border bg-surface px-3 py-1.5 text-xs font-medium text-text-secondary opacity-0 shadow-lg transition-opacity group-hover:opacity-100">
                 Disabled by Admin
-                <div className="absolute left-1/2 top-full -translate-x-1/2 border-4 border-transparent border-t-white" />
+                <div className="absolute left-1/2 top-full -translate-x-1/2 border-4 border-transparent border-t-surface" />
               </div>
             </div>
           )}
@@ -253,7 +253,7 @@ export function Sidebar() {
           <Link
             href="/settings"
             className={cn(
-              'flex items-center gap-2.5 rounded-lg px-3 py-[9px] text-[13px] font-medium text-text-muted transition-colors duration-150 hover:bg-gray-100 hover:text-text-primary',
+              'flex items-center gap-2.5 rounded-lg px-3 py-[9px] text-[13px] font-medium text-text-muted transition-colors duration-150 hover:bg-gray-100 hover:text-text-primary dark:hover:bg-white/10',
               collapsed && 'justify-center px-2'
             )}
             title={collapsed ? 'Settings' : undefined}
@@ -267,7 +267,7 @@ export function Sidebar() {
             <Link
               href="/auth/signout"
               className={cn(
-                'flex items-center gap-2.5 rounded-lg px-3 py-[9px] text-[13px] font-medium text-text-muted transition-colors duration-150 hover:bg-red-50 hover:text-red-500',
+                'flex items-center gap-2.5 rounded-lg px-3 py-[9px] text-[13px] font-medium text-text-muted transition-colors duration-150 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-500/10',
                 collapsed && 'justify-center px-2'
               )}
               title={collapsed ? 'Sign out' : undefined}
@@ -281,7 +281,7 @@ export function Sidebar() {
           <button
             onClick={() => setCollapsed(!collapsed)}
             className={cn(
-              'flex w-full items-center gap-2.5 rounded-lg px-3 py-[9px] text-[13px] font-medium text-text-muted transition-colors duration-150 hover:bg-gray-100 hover:text-text-primary',
+              'flex w-full items-center gap-2.5 rounded-lg px-3 py-[9px] text-[13px] font-medium text-text-muted transition-colors duration-150 hover:bg-gray-100 hover:text-text-primary dark:hover:bg-white/10',
               collapsed && 'justify-center px-2'
             )}
           >

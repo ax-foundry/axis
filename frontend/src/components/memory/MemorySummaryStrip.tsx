@@ -17,7 +17,7 @@ function titleCase(str: string): string {
 
 function ChartContainer({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="overflow-hidden rounded-lg border border-border bg-white">
+    <div className="overflow-hidden rounded-lg border border-border bg-surface">
       <div className="border-b border-border px-4 py-2">
         <h3 className="text-sm font-medium text-text-primary">{title}</h3>
       </div>
@@ -113,7 +113,7 @@ export function MemorySummaryStrip() {
           return (
             <div
               key={card.label}
-              className="flex items-center gap-3 rounded-lg border border-border bg-white px-4 py-3"
+              className="flex items-center gap-3 rounded-lg border border-border bg-surface px-4 py-3"
             >
               <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
                 <Icon className="h-[18px] w-[18px] text-primary" />

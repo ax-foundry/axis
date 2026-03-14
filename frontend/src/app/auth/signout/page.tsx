@@ -60,7 +60,7 @@ export default function SignOutPage() {
         <div className="flex w-full flex-col gap-2.5">
           <button
             onClick={() => signOut({ callbackUrl: '/auth/signin' })}
-            className="w-full rounded-xl bg-white px-4 py-3 text-sm font-semibold text-text-primary shadow-sm transition-all hover:-translate-y-px hover:shadow-md active:translate-y-0"
+            className="w-full rounded-xl bg-surface px-4 py-3 text-sm font-semibold text-text-primary shadow-sm transition-all hover:-translate-y-px hover:shadow-md active:translate-y-0"
           >
             Sign out
           </button>

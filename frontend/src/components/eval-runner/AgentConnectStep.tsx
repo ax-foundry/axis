@@ -213,7 +213,7 @@ export function AgentConnectStep() {
                   'w-full rounded-lg border p-4 text-left transition-colors',
                   isSelected
                     ? 'border-primary bg-primary-pale'
-                    : 'border-border hover:border-primary hover:bg-gray-50'
+                    : 'border-border hover:border-primary hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-900'
                 )}
               >
                 <div className="flex items-center gap-3">
@@ -223,7 +223,7 @@ export function AgentConnectStep() {
                       isSelected ? 'border-primary bg-primary' : 'border-text-muted'
                     )}
                   >
-                    {isSelected && <div className="h-2 w-2 rounded-full bg-white" />}
+                    {isSelected && <div className="h-2 w-2 rounded-full bg-surface" />}
                   </div>
                   <Icon
                     className={cn('h-5 w-5', isSelected ? 'text-primary' : 'text-text-muted')}
@@ -392,7 +392,7 @@ export function AgentConnectStep() {
           {agentTestResult.output && (
             <div className="mt-2">
               <p className="text-sm font-medium text-text-secondary">Sample Output:</p>
-              <p className="mt-1 rounded bg-white p-2 text-sm text-text-primary">
+              <p className="mt-1 rounded bg-surface p-2 text-sm text-text-primary">
                 {agentTestResult.output}
               </p>
             </div>
@@ -407,7 +407,7 @@ export function AgentConnectStep() {
       <div className="flex justify-between">
         <button
           onClick={() => setCurrentStep('upload')}
-          className="flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium text-text-secondary transition-colors hover:bg-gray-50"
+          className="flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium text-text-secondary transition-colors hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-900"
         >
           <ChevronLeft className="h-4 w-4" />
           Back

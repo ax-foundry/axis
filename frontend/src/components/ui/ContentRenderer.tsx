@@ -70,7 +70,9 @@ export function ContentRenderer({ content, className = '', forceType }: ContentR
       const parsed = JSON.parse(content);
       const formatted = JSON.stringify(parsed, null, 2);
       return (
-        <pre className={`overflow-x-auto rounded bg-gray-100 p-3 font-mono text-sm ${className}`}>
+        <pre
+          className={`overflow-x-auto rounded bg-gray-100 dark:bg-gray-800 p-3 font-mono text-sm dark:bg-gray-800 ${className}`}
+        >
           <code>{formatted}</code>
         </pre>
       );
@@ -95,7 +97,7 @@ export function ContentRenderer({ content, className = '', forceType }: ContentR
               if (isInline) {
                 return (
                   <code
-                    className="rounded bg-gray-100 px-1.5 py-0.5 font-mono text-sm text-primary-dark"
+                    className="rounded bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 font-mono text-sm text-primary-dark dark:bg-gray-800"
                     {...props}
                   >
                     {children}
@@ -104,7 +106,7 @@ export function ContentRenderer({ content, className = '', forceType }: ContentR
               }
               return (
                 <code
-                  className={`block overflow-x-auto rounded-lg bg-gray-100 p-3 font-mono text-sm ${className || ''}`}
+                  className={`block overflow-x-auto rounded-lg bg-gray-100 dark:bg-gray-800 p-3 font-mono text-sm dark:bg-gray-800 ${className || ''}`}
                   {...props}
                 >
                   {children}
@@ -112,7 +114,9 @@ export function ContentRenderer({ content, className = '', forceType }: ContentR
               );
             },
             pre: ({ children }) => (
-              <pre className="my-2 overflow-x-auto rounded-lg bg-gray-100">{children}</pre>
+              <pre className="my-2 overflow-x-auto rounded-lg bg-gray-100 dark:bg-gray-800">
+                {children}
+              </pre>
             ),
             // Style lists
             ul: ({ children }) => <ul className="my-2 list-disc space-y-1 pl-5">{children}</ul>,

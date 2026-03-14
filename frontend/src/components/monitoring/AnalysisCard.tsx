@@ -29,11 +29,11 @@ export function AnalysisCard({ record, defaultExpanded = false }: AnalysisCardPr
     .join(' / ');
 
   return (
-    <div className="overflow-hidden rounded-lg border border-border bg-white">
+    <div className="overflow-hidden rounded-lg border border-border bg-surface">
       {/* Header - always visible */}
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-gray-50"
+        className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-900"
       >
         {isExpanded ? (
           <ChevronDown className="h-4 w-4 flex-shrink-0 text-text-muted" />
@@ -43,7 +43,7 @@ export function AnalysisCard({ record, defaultExpanded = false }: AnalysisCardPr
 
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-3">
-            <span className="rounded bg-gray-100 px-2 py-0.5 text-xs font-medium text-text-secondary">
+            <span className="rounded bg-gray-100 dark:bg-gray-800 px-2 py-0.5 text-xs font-medium text-text-secondary">
               {record.metric_name}
             </span>
             <code className="truncate font-mono text-xs text-text-muted">
@@ -78,7 +78,7 @@ export function AnalysisCard({ record, defaultExpanded = false }: AnalysisCardPr
               <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-text-muted">
                 Query
               </h4>
-              <div className="rounded-lg bg-gray-50 p-3">
+              <div className="rounded-lg bg-gray-50 dark:bg-gray-900 p-3">
                 <p className="whitespace-pre-wrap text-sm text-text-secondary">{record.query}</p>
               </div>
             </div>
@@ -90,7 +90,7 @@ export function AnalysisCard({ record, defaultExpanded = false }: AnalysisCardPr
               <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-text-muted">
                 Output
               </h4>
-              <div className="max-h-40 overflow-y-auto rounded-lg bg-gray-50 p-3">
+              <div className="max-h-40 overflow-y-auto rounded-lg bg-gray-50 dark:bg-gray-900 p-3">
                 <p className="whitespace-pre-wrap text-sm text-text-secondary">
                   {record.actual_output}
                 </p>

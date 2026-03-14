@@ -89,7 +89,7 @@ function DropdownSelect({
         </div>
       </button>
       {isOpen && (
-        <div className="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-lg border border-border bg-white shadow-lg">
+        <div className="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-lg border border-border bg-surface shadow-lg">
           {options.map((opt) => {
             const isSelected = selected.includes(opt.value);
             return (
@@ -203,7 +203,7 @@ export function DynamicFilters({ displayConfig, rightSlot }: DynamicFiltersProps
   };
 
   return (
-    <div className="rounded-lg border border-border bg-white">
+    <div className="rounded-lg border border-border bg-surface">
       <button
         onClick={() => setIsExpanded(!isExpanded)}
         className="flex w-full items-center justify-between px-4 py-2.5"
@@ -224,7 +224,7 @@ export function DynamicFilters({ displayConfig, rightSlot }: DynamicFiltersProps
                 e.stopPropagation();
                 clearFilters();
               }}
-              className="flex items-center gap-1 rounded px-2 py-0.5 text-xs text-text-muted hover:bg-gray-100 hover:text-text-primary"
+              className="flex items-center gap-1 rounded px-2 py-0.5 text-xs text-text-muted hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-800 hover:text-text-primary"
             >
               <RotateCcw className="h-3 w-3" />
               Clear

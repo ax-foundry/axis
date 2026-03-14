@@ -19,6 +19,20 @@ interface ThemeProviderProps {
 export function ThemeProvider({ children }: ThemeProviderProps) {
   const { isLoaded, error, setTheme, setLoading, setError } = useThemeStore();
 
+  // Re-apply palette when OS dark/light preference changes (only when heroMode isn't forced)
+  useEffect(() => {
+    if (!isLoaded) return;
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    const handleChange = () => {
+      const { palette, applyPalette } = useThemeStore.getState();
+      if (palette.heroMode !== 'dark' && palette.heroMode !== 'light') {
+        applyPalette(palette);
+      }
+    };
+    mq.addEventListener('change', handleChange);
+    return () => mq.removeEventListener('change', handleChange);
+  }, [isLoaded]);
+
   useEffect(() => {
     // Only fetch once
     if (isLoaded) return;

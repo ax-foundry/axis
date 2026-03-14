@@ -16,7 +16,7 @@ interface ExampleDataDisplayProps {
 
 export function ExampleDataDisplay({ exampleData, highlightField }: ExampleDataDisplayProps) {
   return (
-    <div className="rounded-xl border border-border bg-white p-5">
+    <div className="rounded-xl border border-border bg-surface p-5">
       <h4 className="mb-4 flex items-center gap-2 text-sm font-medium text-text-muted">
         <BookOpen className="h-4 w-4" />
         Example Test Case
@@ -28,7 +28,7 @@ export function ExampleDataDisplay({ exampleData, highlightField }: ExampleDataD
           className={`rounded-lg border p-3 transition-all duration-300 ${
             highlightField === 'query'
               ? 'border-blue-300 bg-blue-50 ring-2 ring-blue-200'
-              : 'border-border bg-gray-50'
+              : 'border-border bg-gray-50 dark:bg-gray-900'
           }`}
         >
           <div className="mb-2 flex items-center gap-2">
@@ -45,7 +45,7 @@ export function ExampleDataDisplay({ exampleData, highlightField }: ExampleDataD
           className={`rounded-lg border p-3 transition-all duration-300 ${
             highlightField === 'actualOutput'
               ? 'border-green-300 bg-green-50 ring-2 ring-green-200'
-              : 'border-border bg-gray-50'
+              : 'border-border bg-gray-50 dark:bg-gray-900'
           }`}
         >
           <div className="mb-2 flex items-center gap-2">
@@ -63,7 +63,7 @@ export function ExampleDataDisplay({ exampleData, highlightField }: ExampleDataD
             className={`rounded-lg border p-3 transition-all duration-300 ${
               highlightField === 'expectedOutput'
                 ? 'border-purple-300 bg-purple-50 ring-2 ring-purple-200'
-                : 'border-border bg-gray-50'
+                : 'border-border bg-gray-50 dark:bg-gray-900'
             }`}
           >
             <div className="mb-2 flex items-center gap-2">
@@ -82,7 +82,7 @@ export function ExampleDataDisplay({ exampleData, highlightField }: ExampleDataD
             className={`rounded-lg border p-3 transition-all duration-300 ${
               highlightField === 'conversation'
                 ? 'border-orange-300 bg-orange-50 ring-2 ring-orange-200'
-                : 'border-border bg-gray-50'
+                : 'border-border bg-gray-50 dark:bg-gray-900'
             }`}
           >
             <div className="mb-2 flex items-center gap-2">
@@ -112,7 +112,7 @@ export function ExampleDataDisplay({ exampleData, highlightField }: ExampleDataD
             className={`rounded-lg border p-3 transition-all duration-300 ${
               highlightField === 'retrievedContent'
                 ? 'border-cyan-300 bg-cyan-50 ring-2 ring-cyan-200'
-                : 'border-border bg-gray-50'
+                : 'border-border bg-gray-50 dark:bg-gray-900'
             }`}
           >
             <div className="mb-2 flex items-center gap-2">

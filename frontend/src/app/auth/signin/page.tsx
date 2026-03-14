@@ -72,7 +72,7 @@ export default function SignInPage() {
       </div>
 
       {/* ── Right: sign-in panel ───────────────────────────────── */}
-      <div className="flex flex-1 flex-col items-center justify-center bg-white px-8">
+      <div className="flex flex-1 flex-col items-center justify-center bg-surface px-8">
         {/* Mobile wordmark (hidden on lg+) */}
         <div className="mb-10 flex items-center gap-2.5 lg:hidden">
           {appIconUrl && (
@@ -98,7 +98,7 @@ export default function SignInPage() {
           {/* Google button */}
           <button
             onClick={() => signIn('google', { callbackUrl: '/' })}
-            className="mb-3 flex w-full items-center justify-center gap-3 rounded-xl border border-border bg-white px-4 py-3.5 text-sm font-medium text-text-primary shadow-sm transition-all hover:-translate-y-px hover:border-border hover:shadow-md active:translate-y-0 active:shadow-sm"
+            className="mb-3 flex w-full items-center justify-center gap-3 rounded-xl border border-border bg-surface px-4 py-3.5 text-sm font-medium text-text-primary shadow-sm transition-all hover:-translate-y-px hover:border-border hover:shadow-md active:translate-y-0 active:shadow-sm"
           >
             <svg viewBox="0 0 24 24" className="h-[18px] w-[18px] flex-shrink-0" aria-hidden="true">
               <path

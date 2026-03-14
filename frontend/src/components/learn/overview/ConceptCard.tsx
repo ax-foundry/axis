@@ -20,7 +20,7 @@ export function ConceptCard({
   children,
 }: ConceptCardProps) {
   return (
-    <div className="rounded-xl border border-border bg-white p-5">
+    <div className="rounded-xl border border-border bg-surface p-5">
       <div className="mb-4 flex items-center gap-3">
         <div
           className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg ${iconBgColor}`}

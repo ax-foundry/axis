@@ -48,6 +48,8 @@
     --radius-md: 6px;
     --radius-lg: 8px;
     --radius-xl: 12px;
+
+    color-scheme: light dark;
   }
 
   * {
@@ -253,23 +255,23 @@
   }
 
   .btn-secondary {
-    @apply rounded-md border border-primary bg-white px-4 py-2 text-sm font-semibold text-primary
+    @apply rounded-md border border-primary bg-surface px-4 py-2 text-sm font-semibold text-primary
            transition-colors duration-150 hover:bg-primary/5
            focus:outline-none focus:ring-2 focus:ring-primary/50;
   }
 
   .btn-ghost {
     @apply rounded-md px-4 py-2 text-sm font-medium text-text-secondary
-           transition-colors duration-150 hover:bg-gray-100 hover:text-text-primary;
+           transition-colors duration-150 hover:bg-gray-100 hover:text-text-primary dark:hover:bg-white/10;
   }
 
   .card {
-    @apply rounded-lg border border-border bg-white p-5;
+    @apply rounded-lg border border-border bg-surface p-5;
   }
 
   .card-interactive {
-    @apply cursor-pointer rounded-lg border border-border bg-white p-5
-           transition-colors duration-150 hover:bg-gray-50;
+    @apply cursor-pointer rounded-lg border border-border bg-surface p-5
+           transition-colors duration-150 hover:bg-gray-50 dark:hover:bg-white/5;
   }
 
   .card-glass {
@@ -277,17 +279,17 @@
   }
 
   .panel {
-    @apply rounded-lg border border-border bg-white;
+    @apply rounded-lg border border-border bg-surface;
   }
 
   .input {
-    @apply w-full rounded-lg border border-border bg-white px-4 py-2.5 text-sm
+    @apply w-full rounded-lg border border-border bg-surface px-4 py-2.5 text-sm
            transition-colors duration-150 placeholder:text-text-muted focus:border-primary
            focus:outline-none focus:ring-2 focus:ring-primary/30;
   }
 
   .input-lg {
-    @apply w-full rounded-lg border border-border bg-white px-5 py-3.5 text-base
+    @apply w-full rounded-lg border border-border bg-surface px-5 py-3.5 text-base
            transition-colors duration-150 placeholder:text-text-muted focus:border-primary
            focus:outline-none focus:ring-2 focus:ring-primary/30;
   }
@@ -384,7 +386,7 @@
    ============================================ */
 
 .stat-card {
-  @apply rounded-lg border border-border bg-white p-6 text-center;
+  @apply rounded-lg border border-border bg-surface p-6 text-center;
 }
 
 .stat-value {
@@ -400,8 +402,8 @@
    ============================================ */
 
 .feature-card {
-  @apply relative overflow-hidden rounded-lg border border-border bg-white p-6
-         transition-colors duration-150 hover:bg-gray-50;
+  @apply relative overflow-hidden rounded-lg border border-border bg-surface p-6
+         transition-colors duration-150 hover:bg-gray-50 dark:hover:bg-white/5;
 }
 
 .feature-icon {

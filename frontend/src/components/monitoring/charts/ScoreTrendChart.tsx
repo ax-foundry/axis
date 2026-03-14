@@ -3,7 +3,7 @@
 import { useMemo } from 'react';
 
 import { PlotlyChart } from '@/components/charts/plotly-chart';
-import { useChartColors, useColors } from '@/lib/theme';
+import { useChartColors, useColors, useDarkMode } from '@/lib/theme';
 
 import type { MonitoringTrendData } from '@/types';
 
@@ -35,6 +35,7 @@ export function ScoreTrendChart({
 }: ScoreTrendChartProps) {
   const chartColors = useChartColors();
   const themeColors = useColors();
+  const isDark = useDarkMode();
 
   const chartData = useMemo(() => {
     if (data.length === 0) return [];
@@ -182,13 +183,13 @@ export function ScoreTrendChart({
         x: 0.5,
         xanchor: 'center' as const,
         font: { size: 11, color: themeColors.textMuted },
-        bgcolor: 'rgba(255,255,255,0.8)',
-        bordercolor: 'rgba(0,0,0,0.1)',
+        bgcolor: isDark ? 'rgba(26,29,39,0.9)' : 'rgba(255,255,255,0.8)',
+        bordercolor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.1)',
         borderwidth: 1,
       },
       xaxis: {
         title: { text: '', font: { size: 12 } },
-        gridcolor: 'rgba(0,0,0,0.05)',
+        gridcolor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
         tickfont: { size: 10, color: themeColors.textMuted },
         tickformat: '%b %d\n%H:%M',
         tickangle: 0,
@@ -196,24 +197,24 @@ export function ScoreTrendChart({
         showgrid: true,
         zeroline: false,
         showline: true,
-        linecolor: 'rgba(0,0,0,0.1)',
+        linecolor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
       },
       yaxis: {
         title: { text: 'Score', font: { size: 12, color: themeColors.textMuted } },
         range: [0, 1.05],
-        gridcolor: 'rgba(0,0,0,0.05)',
+        gridcolor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
         tickfont: { size: 10, color: themeColors.textMuted },
         tickformat: '.2f',
         showgrid: true,
         zeroline: false,
         showline: true,
-        linecolor: 'rgba(0,0,0,0.1)',
+        linecolor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
       },
       margin: { l: 50, r: 45, t: 10, b: 70 },
       hovermode: 'closest' as const,
       hoverlabel: {
-        bgcolor: 'white',
-        bordercolor: 'rgba(0,0,0,0.12)',
+        bgcolor: isDark ? '#1a1d27' : 'white',
+        bordercolor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.12)',
         font: { size: 11, family: 'Inter, system-ui, sans-serif', color: themeColors.textPrimary },
         align: 'left' as const,
       },
@@ -222,7 +223,7 @@ export function ScoreTrendChart({
       plot_bgcolor: 'rgba(0,0,0,0)',
       paper_bgcolor: 'rgba(0,0,0,0)',
     };
-  }, [themeColors, goodThreshold, passThreshold]);
+  }, [themeColors, goodThreshold, passThreshold, isDark]);
 
   if (data.length === 0) {
     return (

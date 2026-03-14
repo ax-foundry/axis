@@ -89,7 +89,7 @@ export function ModelBarChart({ rows, selectedMetrics, onMetricsChange }: ModelB
   return (
     <div className="space-y-4">
       {/* Metric Selector */}
-      <div className="border-border/50 rounded-xl border bg-white p-4">
+      <div className="border-border/50 rounded-xl border bg-surface p-4">
         <h4 className="mb-3 text-sm font-medium text-text-primary">Select Metrics</h4>
         <div className="flex flex-wrap gap-2">
           {allMetrics.map((metric) => {
@@ -102,7 +102,7 @@ export function ModelBarChart({ rows, selectedMetrics, onMetricsChange }: ModelB
                   'rounded-lg border px-3 py-1.5 text-sm font-medium transition-all',
                   isSelected
                     ? 'border-primary bg-primary text-white'
-                    : 'border-border bg-white text-text-secondary hover:border-primary hover:text-primary'
+                    : 'border-border bg-surface text-text-secondary hover:border-primary hover:text-primary'
                 )}
               >
                 {metric}

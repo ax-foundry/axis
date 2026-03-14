@@ -214,7 +214,7 @@ export function ResponseAnalysisTab() {
           <select
             value={activeMetric || ''}
             onChange={(e) => setAnalyticsResponseMetric(e.target.value)}
-            className="rounded-lg border border-border bg-white px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+            className="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
           >
             {availableMetrics.map((metric) => (
               <option key={metric} value={metric}>
@@ -233,7 +233,7 @@ export function ResponseAnalysisTab() {
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* Response Length Histogram */}
-        <div className="border-border/50 rounded-xl border bg-white p-5 shadow-sm">
+        <div className="border-border/50 rounded-xl border bg-surface p-5 shadow-sm">
           <h3 className="mb-4 text-lg font-semibold text-text-primary">
             Response Length Distribution
           </h3>
@@ -261,7 +261,7 @@ export function ResponseAnalysisTab() {
         </div>
 
         {/* Performance by Length */}
-        <div className="border-border/50 rounded-xl border bg-white p-5 shadow-sm">
+        <div className="border-border/50 rounded-xl border bg-surface p-5 shadow-sm">
           <h3 className="mb-4 text-lg font-semibold text-text-primary">
             {activeMetric || 'Score'} by Response Length
           </h3>
@@ -291,7 +291,7 @@ export function ResponseAnalysisTab() {
 
       {/* Summary Statistics */}
       {analysisData && analysisData.binned.length > 0 && (
-        <div className="border-border/50 rounded-xl border bg-white p-5 shadow-sm">
+        <div className="border-border/50 rounded-xl border bg-surface p-5 shadow-sm">
           <h3 className="mb-4 text-lg font-semibold text-text-primary">Length Bin Statistics</h3>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -310,7 +310,7 @@ export function ResponseAnalysisTab() {
                     </th>
                   ))}
                 </tr>
-                <tr className="border-b border-border bg-gray-50">
+                <tr className="border-b border-border bg-gray-50 dark:bg-gray-900">
                   <th className="px-4 py-1"></th>
                   {analysisData.experiments.map((exp) => (
                     <>

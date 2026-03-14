@@ -31,7 +31,7 @@ export function MemoryTabs() {
               'flex items-center gap-2 rounded-t-lg px-4 py-2.5 text-sm font-medium transition-colors',
               isActive
                 ? 'border-b-2 border-primary bg-primary/5 text-primary'
-                : 'text-text-muted hover:bg-gray-50 hover:text-text-primary'
+                : 'text-text-muted hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-900 hover:text-text-primary'
             )}
           >
             <Icon className="h-4 w-4" />

@@ -56,7 +56,7 @@ function ConnectionStatus() {
       )}
       <button
         onClick={checkConnection}
-        className="ml-2 rounded px-2 py-0.5 text-xs text-text-muted hover:bg-gray-100 hover:text-text-primary"
+        className="ml-2 rounded px-2 py-0.5 text-xs text-text-muted hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-800 hover:text-text-primary"
       >
         Retry
       </button>
@@ -113,7 +113,7 @@ export default function SettingsPage() {
       <div className="mx-auto max-w-4xl px-6 py-8">
         <div className="space-y-6">
           {/* Backend Connection */}
-          <div className="rounded-xl border border-border bg-white p-6">
+          <div className="rounded-xl border border-border bg-surface p-6">
             <div className="mb-5 flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
                 <Server className="h-5 w-5 text-primary" />
@@ -124,7 +124,7 @@ export default function SettingsPage() {
               </div>
             </div>
             <div className="space-y-3">
-              <div className="flex items-center justify-between rounded-lg bg-gray-50 px-4 py-3">
+              <div className="flex items-center justify-between rounded-lg bg-gray-50 dark:bg-gray-900 px-4 py-3">
                 <div>
                   <p className="text-xs font-medium text-text-muted">API Endpoint</p>
                   <p className="font-mono text-sm text-text-primary">{API_BASE_URL}</p>
@@ -133,15 +133,15 @@ export default function SettingsPage() {
               </div>
               <p className="text-xs text-text-muted">
                 Set via{' '}
-                <code className="rounded bg-gray-100 px-1.5 py-0.5">NEXT_PUBLIC_API_URL</code>{' '}
+                <code className="rounded bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5">NEXT_PUBLIC_API_URL</code>{' '}
                 environment variable. Defaults to{' '}
-                <code className="rounded bg-gray-100 px-1.5 py-0.5">http://localhost:8500</code>.
+                <code className="rounded bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5">http://localhost:8500</code>.
               </p>
             </div>
           </div>
 
           {/* Active Theme */}
-          <div className="rounded-xl border border-border bg-white p-6">
+          <div className="rounded-xl border border-border bg-surface p-6">
             <div className="mb-5 flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent-gold/10">
                 <Palette className="h-5 w-5 text-accent-gold" />
@@ -164,7 +164,7 @@ export default function SettingsPage() {
               </p>
             ) : (
               <div className="space-y-4">
-                <div className="flex items-center justify-between rounded-lg bg-gray-50 px-4 py-3">
+                <div className="flex items-center justify-between rounded-lg bg-gray-50 dark:bg-gray-900 px-4 py-3">
                   <div>
                     <p className="text-xs font-medium text-text-muted">Active Palette</p>
                     <p className="text-sm font-medium text-text-primary">
@@ -196,7 +196,7 @@ export default function SettingsPage() {
                 </div>
                 <p className="text-xs text-text-muted">
                   Theme is configured via the backend{' '}
-                  <code className="rounded bg-gray-100 px-1.5 py-0.5">config.yaml</code> or
+                  <code className="rounded bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5">config.yaml</code> or
                   environment variables. See backend documentation for customization.
                 </p>
               </div>
@@ -204,7 +204,7 @@ export default function SettingsPage() {
           </div>
 
           {/* Data Management */}
-          <div className="rounded-xl border border-border bg-white p-6">
+          <div className="rounded-xl border border-border bg-surface p-6">
             <div className="mb-5 flex items-center gap-3">
               <div className="bg-error/10 flex h-10 w-10 items-center justify-center rounded-lg">
                 <Database className="h-5 w-5 text-error" />
@@ -216,13 +216,13 @@ export default function SettingsPage() {
             </div>
             <div className="flex gap-3">
               <button
-                className="rounded-lg border border-border bg-white px-4 py-2 text-sm font-medium text-text-primary transition-colors hover:bg-gray-50"
+                className="rounded-lg border border-border bg-surface px-4 py-2 text-sm font-medium text-text-primary transition-colors hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-900"
                 onClick={handleExportData}
               >
                 Export Settings
               </button>
               <button
-                className="border-error/30 hover:bg-error/5 rounded-lg border bg-white px-4 py-2 text-sm font-medium text-error transition-colors"
+                className="border-error/30 hover:bg-error/5 rounded-lg border bg-surface px-4 py-2 text-sm font-medium text-error transition-colors"
                 onClick={handleClearLocalStorage}
               >
                 Clear Local Storage

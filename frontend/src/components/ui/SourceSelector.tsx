@@ -59,7 +59,7 @@ export function SourceSelector({ className, scope }: SourceSelectorProps) {
   if (sources.length === 0) return null;
 
   return (
-    <div className={cn('border-b border-border bg-white', className)}>
+    <div className={cn('border-b border-border bg-surface', className)}>
       <div className="mx-auto flex max-w-7xl items-stretch px-6">
         {/* Individual agent tabs */}
         {sources.map((source) => {
@@ -114,7 +114,7 @@ function AgentTab({
         <div
           className={cn(
             'h-[26px] w-[26px] flex-shrink-0 overflow-hidden rounded-md',
-            isSelected ? 'bg-primary-pale' : 'bg-gray-100'
+            isSelected ? 'bg-primary-pale' : 'bg-gray-100 dark:bg-gray-700'
           )}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -124,7 +124,7 @@ function AgentTab({
         <div
           className={cn(
             'flex h-[26px] w-[26px] flex-shrink-0 items-center justify-center rounded-md',
-            isSelected ? 'bg-primary-pale' : 'bg-gray-100'
+            isSelected ? 'bg-primary-pale' : 'bg-gray-100 dark:bg-gray-700'
           )}
         >
           <Bot

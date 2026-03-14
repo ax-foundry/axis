@@ -60,7 +60,7 @@ export function BatchesTab() {
           const pctFailed = total > 0 ? (failed / total) * 100 : 0;
 
           return (
-            <div key={batch.batch_id} className="rounded-lg border border-border bg-white p-5">
+            <div key={batch.batch_id} className="rounded-lg border border-border bg-surface p-5">
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">

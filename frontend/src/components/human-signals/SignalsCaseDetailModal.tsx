@@ -318,9 +318,9 @@ export function SignalsCaseDetailModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-xl border border-border bg-white shadow-2xl">
+      <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-xl border border-border bg-surface shadow-2xl">
         {/* Header */}
-        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-white px-6 py-4">
+        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-surface px-6 py-4">
           <div>
             <div className="flex items-center gap-3">
               <Hash className="h-4 w-4 text-text-muted" />
@@ -337,7 +337,7 @@ export function SignalsCaseDetailModal({
           </div>
           <button
             onClick={onClose}
-            className="rounded-lg p-2 text-text-muted transition-colors hover:bg-gray-100 hover:text-text-primary"
+            className="rounded-lg p-2 text-text-muted transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-800 hover:text-text-primary"
           >
             <X className="h-5 w-5" />
           </button>
@@ -497,7 +497,7 @@ export function SignalsCaseDetailModal({
                 onToggle={() => setConversationExpanded(!conversationExpanded)}
                 count={messages.length}
               >
-                <div className="max-h-96 space-y-3 overflow-y-auto rounded-lg border border-border bg-gray-50 p-4">
+                <div className="max-h-96 space-y-3 overflow-y-auto rounded-lg border border-border bg-gray-50 dark:bg-gray-900 p-4">
                   {messages.map((msg, i) => {
                     const isAssistant = msg.role === 'assistant';
                     return (
@@ -545,7 +545,7 @@ export function SignalsCaseDetailModal({
         <div className="border-t border-border px-6 py-4">
           <button
             onClick={onClose}
-            className="w-full rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-text-primary transition-colors hover:bg-gray-200"
+            className="w-full rounded-lg bg-gray-100 dark:bg-gray-800 px-4 py-2 text-sm font-medium text-text-primary transition-colors hover:bg-gray-200"
           >
             Close
           </button>
@@ -574,7 +574,7 @@ function ExpandableSection({
     <div>
       <button
         onClick={onToggle}
-        className="flex w-full items-center justify-between rounded-lg border border-border bg-gray-50 px-4 py-3 text-left transition-colors hover:bg-gray-100"
+        className="flex w-full items-center justify-between rounded-lg border border-border bg-gray-50 dark:bg-gray-900 px-4 py-3 text-left transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-800"
       >
         <div className="flex items-center gap-2">
           {icon}
@@ -691,7 +691,7 @@ function StructuredEntry({ label, value }: { label: string; value: unknown }) {
   if (value != null && typeof value === 'object' && !Array.isArray(value)) {
     const entries = Object.entries(value as Record<string, unknown>);
     return (
-      <div className="rounded-md border border-border bg-gray-50/50 p-3">
+      <div className="rounded-md border border-border bg-gray-50 dark:bg-gray-900/50 p-3">
         <div className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-text-muted">
           {label}
         </div>
@@ -715,13 +715,13 @@ function StructuredEntry({ label, value }: { label: string; value: unknown }) {
     // Array of objects: render each as structured
     if (typeof value[0] === 'object' && value[0] !== null) {
       return (
-        <div className="rounded-md border border-border bg-gray-50/50 p-3">
+        <div className="rounded-md border border-border bg-gray-50 dark:bg-gray-900/50 p-3">
           <div className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-text-muted">
             {label} ({value.length})
           </div>
           <div className="space-y-2">
             {value.map((item, i) => (
-              <div key={i} className="border-border/50 rounded border bg-white p-2">
+              <div key={i} className="border-border/50 rounded border bg-surface p-2">
                 {typeof item === 'object' && item !== null ? (
                   <div className="space-y-1">
                     {Object.entries(item as Record<string, unknown>).map(([k, v]) => (
@@ -808,7 +808,7 @@ function ParsedListDisplay({ items }: { items: unknown[] }) {
         {cleaned.map((item, i) => (
           <span
             key={i}
-            className="inline-flex rounded-md border border-border bg-gray-50 px-2 py-0.5 text-xs text-text-primary"
+            className="inline-flex rounded-md border border-border bg-gray-50 dark:bg-gray-900 px-2 py-0.5 text-xs text-text-primary"
           >
             {item}
           </span>
@@ -822,7 +822,7 @@ function ParsedListDisplay({ items }: { items: unknown[] }) {
     <div className="mt-1 space-y-1.5">
       {cleaned.map((item, i) => (
         <div key={i} className="flex items-start gap-2">
-          <span className="mt-0.5 flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full bg-gray-100 text-[10px] font-medium text-text-muted">
+          <span className="mt-0.5 flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 text-[10px] font-medium text-text-muted">
             {i + 1}
           </span>
           <span className="text-sm leading-relaxed text-text-primary">{item}</span>

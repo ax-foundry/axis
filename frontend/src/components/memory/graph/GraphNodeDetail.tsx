@@ -98,7 +98,7 @@ export function GraphNodeDetail({ nodes, edges }: GraphNodeDetailProps) {
                     key={i}
                     onClick={() => setSelectedNodeId(edge.source)}
                     className={cn(
-                      'flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs hover:bg-gray-50'
+                      'flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-900'
                     )}
                   >
                     <span
@@ -133,7 +133,7 @@ export function GraphNodeDetail({ nodes, edges }: GraphNodeDetailProps) {
                     key={i}
                     onClick={() => setSelectedNodeId(edge.target)}
                     className={cn(
-                      'flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs hover:bg-gray-50'
+                      'flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-900'
                     )}
                   >
                     <span className="flex-shrink-0 font-mono text-text-muted">{edge.type}</span>

@@ -78,7 +78,7 @@ export function ModelSelector({
               }
             }}
             className={cn(
-              'appearance-none rounded-lg border bg-white py-2 pl-3 pr-8 text-sm font-medium transition-all',
+              'appearance-none rounded-lg border bg-surface py-2 pl-3 pr-8 text-sm font-medium transition-all',
               'focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary',
               statusData?.providers[selectedProvider]
                 ? 'border-border text-text-primary'
@@ -97,7 +97,7 @@ export function ModelSelector({
         {/* Model Dropdown */}
         <div className="relative flex-1">
           {modelsLoading ? (
-            <div className="rounded-lg border border-border bg-gray-50 px-3 py-2 text-sm text-text-muted">
+            <div className="rounded-lg border border-border bg-gray-50 dark:bg-gray-900 px-3 py-2 text-sm text-text-muted">
               Loading models...
             </div>
           ) : (
@@ -107,11 +107,11 @@ export function ModelSelector({
                 onChange={(e) => onModelChange(e.target.value, selectedProvider)}
                 disabled={!statusData?.providers[selectedProvider]}
                 className={cn(
-                  'w-full appearance-none rounded-lg border bg-white py-2 pl-3 pr-8 text-sm transition-all',
+                  'w-full appearance-none rounded-lg border bg-surface py-2 pl-3 pr-8 text-sm transition-all',
                   'focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary',
                   statusData?.providers[selectedProvider]
                     ? 'border-border text-text-primary'
-                    : 'cursor-not-allowed border-border bg-gray-50 text-text-muted'
+                    : 'cursor-not-allowed border-border bg-gray-50 dark:bg-gray-900 text-text-muted'
                 )}
               >
                 {modelsByProvider[selectedProvider].map((model) => (

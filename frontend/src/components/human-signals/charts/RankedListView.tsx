@@ -26,11 +26,11 @@ export function RankedListView({ data }: RankedListViewProps) {
           <div className="flex-1">
             <div className="mb-1 flex items-center justify-between">
               <span className="text-xs font-medium text-text-primary">{item.name}</span>
-              <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-semibold text-text-secondary">
+              <span className="rounded-full bg-gray-100 dark:bg-gray-800 px-2 py-0.5 text-[10px] font-semibold text-text-secondary">
                 {item.count}
               </span>
             </div>
-            <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-100">
+            <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800">
               <div
                 className="h-1.5 rounded-full bg-primary transition-all duration-300"
                 style={{ width: `${(item.count / maxCount) * 100}%` }}

@@ -3,6 +3,7 @@
 import { useMemo } from 'react';
 
 import { PlotlyChart } from '@/components/charts/plotly-chart';
+import { useDarkMode } from '@/lib/theme';
 import { Colors } from '@/types';
 
 interface MetricBreakdownItem {
@@ -31,6 +32,7 @@ export function MetricBreakdownChart({
   showByGroup = false,
   groupBy,
 }: MetricBreakdownChartProps) {
+  const isDark = useDarkMode();
   const chartData = useMemo(() => {
     if (data.length === 0) return [];
 
@@ -95,6 +97,7 @@ export function MetricBreakdownChart({
   }, [data, showByGroup, groupBy]);
 
   const layout = useMemo(() => {
+    const annotBg = isDark ? 'rgba(26,29,39,0.9)' : 'rgba(255,255,255,0.8)';
     const shapes: Partial<Plotly.Shape>[] = [
       // 70% threshold line (Good)
       {
@@ -126,7 +129,7 @@ export function MetricBreakdownChart({
         showarrow: false,
         font: { size: 9, color: Colors.success },
         yanchor: 'bottom',
-        bgcolor: 'rgba(255,255,255,0.8)',
+        bgcolor: annotBg,
       },
       {
         x: 50,
@@ -136,7 +139,7 @@ export function MetricBreakdownChart({
         showarrow: false,
         font: { size: 9, color: Colors.warning },
         yanchor: 'bottom',
-        bgcolor: 'rgba(255,255,255,0.8)',
+        bgcolor: annotBg,
       },
     ];
 
@@ -147,23 +150,26 @@ export function MetricBreakdownChart({
         y: -0.2,
         x: 0.5,
         xanchor: 'center' as const,
-        font: { size: 10, color: '#666' },
-        bgcolor: 'rgba(255,255,255,0.8)',
+        font: { size: 10, color: isDark ? '#a0aec0' : '#666' },
+        bgcolor: annotBg,
       },
       xaxis: {
-        title: { text: 'Pass Rate (%)', font: { size: 11, color: '#666' } },
+        title: {
+          text: 'Pass Rate (%)',
+          font: { size: 11, color: isDark ? '#a0aec0' : '#666' },
+        },
         range: [0, 100],
-        gridcolor: 'rgba(0,0,0,0.05)',
-        tickfont: { size: 10, color: '#666' },
+        gridcolor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
+        tickfont: { size: 10, color: isDark ? '#a0aec0' : '#666' },
         ticksuffix: '%',
         dtick: 25,
         zeroline: false,
         showline: true,
-        linecolor: 'rgba(0,0,0,0.1)',
+        linecolor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
       },
       yaxis: {
         automargin: true,
-        tickfont: { size: 11, color: '#444' },
+        tickfont: { size: 11, color: isDark ? '#cbd5e0' : '#444' },
         ticklen: 0,
       },
       barmode: 'group' as const,
@@ -174,12 +180,12 @@ export function MetricBreakdownChart({
       plot_bgcolor: 'rgba(0,0,0,0)',
       paper_bgcolor: 'rgba(0,0,0,0)',
       hoverlabel: {
-        bgcolor: 'white',
-        bordercolor: 'rgba(0,0,0,0.1)',
-        font: { size: 11, family: 'Inter, system-ui' },
+        bgcolor: isDark ? '#1a1d27' : 'white',
+        bordercolor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
+        font: { size: 11, family: 'Inter, system-ui', color: isDark ? '#e2e8f0' : '#2c3e50' },
       },
     };
-  }, [data, showByGroup]);
+  }, [data, showByGroup, isDark]);
 
   if (data.length === 0) {
     return (

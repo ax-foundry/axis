@@ -76,7 +76,7 @@ export function ExperimentSelector({ rows, className }: ExperimentSelectorProps)
 
   if (experiments.length < 2) {
     return (
-      <div className={cn('border-border/50 rounded-xl border bg-white p-6', className)}>
+      <div className={cn('border-border/50 rounded-xl border bg-surface p-6', className)}>
         <div className="text-center text-text-muted">
           <FlaskConical className="mx-auto mb-2 h-8 w-8 opacity-50" />
           <p>Need at least 2 experiments for comparison</p>
@@ -89,7 +89,7 @@ export function ExperimentSelector({ rows, className }: ExperimentSelectorProps)
   }
 
   return (
-    <div className={cn('border-border/50 rounded-xl border bg-white shadow-sm', className)}>
+    <div className={cn('border-border/50 rounded-xl border bg-surface shadow-sm', className)}>
       <div className="border-border/50 border-b px-5 py-4">
         <h3 className="flex items-center gap-2 font-semibold text-text-primary">
           <FlaskConical className="h-5 w-5 text-primary" />
@@ -111,7 +111,7 @@ export function ExperimentSelector({ rows, className }: ExperimentSelectorProps)
             <select
               value={compareBaselineExperiment || ''}
               onChange={(e) => handleBaselineChange(e.target.value)}
-              className="w-full rounded-lg border border-border bg-white px-3 py-2.5 text-text-primary focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/50"
+              className="w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-text-primary focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/50"
             >
               <option value="">Select baseline...</option>
               {experiments.map((exp) => (
@@ -131,7 +131,7 @@ export function ExperimentSelector({ rows, className }: ExperimentSelectorProps)
               className={cn(
                 'rounded-lg border border-border p-2.5 transition-all',
                 compareBaselineExperiment && compareChallengerExperiment
-                  ? 'cursor-pointer text-text-secondary hover:border-gray-300 hover:bg-gray-100'
+                  ? 'cursor-pointer text-text-secondary hover:border-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-800'
                   : 'cursor-not-allowed text-text-muted opacity-40'
               )}
             >
@@ -148,7 +148,7 @@ export function ExperimentSelector({ rows, className }: ExperimentSelectorProps)
             <select
               value={compareChallengerExperiment || ''}
               onChange={(e) => handleChallengerChange(e.target.value)}
-              className="w-full rounded-lg border border-border bg-white px-3 py-2.5 text-text-primary focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/50"
+              className="w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-text-primary focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/50"
             >
               <option value="">Select challenger...</option>
               {experiments.map((exp) => (

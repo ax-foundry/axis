@@ -27,7 +27,7 @@ const TYPE_BADGE: Record<string, { bg: string; text: string; Icon: typeof Layers
   SPAN: { bg: 'bg-indigo-100', text: 'text-indigo-700', Icon: Layers },
   GENERATION: { bg: 'bg-emerald-100', text: 'text-emerald-700', Icon: Cpu },
   TOOL: { bg: 'bg-amber-100', text: 'text-amber-700', Icon: Wrench },
-  EVENT: { bg: 'bg-gray-100', text: 'text-gray-600', Icon: Activity },
+  EVENT: { bg: 'bg-gray-100 dark:bg-gray-800', text: 'text-gray-600', Icon: Activity },
 };
 
 function getTypeBadge(type: string | null) {
@@ -85,7 +85,7 @@ export function NodeDetailPanel({ node, traceId, agent, className }: NodeDetailP
   return (
     <div
       className={cn(
-        'flex h-full flex-col overflow-hidden rounded-xl border-2 border-primary/20 bg-white shadow-lg shadow-primary/5',
+        'flex h-full flex-col overflow-hidden rounded-xl border-2 border-primary/20 bg-surface shadow-lg shadow-primary/5',
         className
       )}
     >
@@ -190,7 +190,7 @@ export function NodeDetailPanel({ node, traceId, agent, className }: NodeDetailP
           )}
         </button>
         {detailsOpen && (
-          <div className="border-t border-primary/10 bg-white px-3 py-3">
+          <div className="border-t border-primary/10 bg-surface px-3 py-3">
             <NodeDetailsPane node={activeNode} />
           </div>
         )}
@@ -332,7 +332,7 @@ export function TraceIOPanel({ trace, className }: TraceIOPanelProps) {
   return (
     <div
       className={cn(
-        'flex h-full flex-col overflow-hidden rounded-xl border-2 border-primary/20 bg-white shadow-lg shadow-primary/5',
+        'flex h-full flex-col overflow-hidden rounded-xl border-2 border-primary/20 bg-surface shadow-lg shadow-primary/5',
         className
       )}
     >
@@ -412,7 +412,7 @@ export function TraceIOPanel({ trace, className }: TraceIOPanelProps) {
             </span>
           </button>
           {detailsOpen && (
-            <div className="max-h-[200px] overflow-y-auto border-t border-primary/10 bg-white">
+            <div className="max-h-[200px] overflow-y-auto border-t border-primary/10 bg-surface">
               <table className="w-full text-xs">
                 <tbody>
                   {Object.entries(trace.trace_metadata).map(([key, value]) => (

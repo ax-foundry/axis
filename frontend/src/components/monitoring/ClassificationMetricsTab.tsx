@@ -7,6 +7,7 @@ import { PlotlyChart } from '@/components/charts/plotly-chart';
 import { FailingOutputDetailModal } from '@/components/monitoring/FailingOutputDetailModal';
 import { FilterDropdown } from '@/components/ui/FilterDropdown';
 import { getClassificationBreakdown, getClassificationTrends, getStoreData } from '@/lib/api';
+import { useDarkMode } from '@/lib/theme';
 import { cn } from '@/lib/utils';
 import {
   ChartColors,
@@ -47,6 +48,8 @@ export function ClassificationMetricsTab({
   chartGranularity,
   datasetReady = false,
 }: ClassificationMetricsTabProps) {
+  const isDark = useDarkMode();
+
   // Server-side state (DuckDB mode)
   const [serverBreakdown, setServerBreakdown] = useState<ClassificationBreakdown[]>([]);
   const [serverTrendData, setServerTrendData] = useState<ClassificationTrendPoint[]>([]);
@@ -283,27 +286,27 @@ export function ClassificationMetricsTab({
     () => ({
       showlegend: false,
       xaxis: {
-        title: { text: 'Percentage (%)', font: { size: 11, color: '#666' } },
+        title: { text: 'Percentage (%)', font: { size: 11, color: isDark ? '#a0aec0' : '#666' } },
         autorange: true,
-        gridcolor: 'rgba(0,0,0,0.05)',
-        tickfont: { size: 10, color: '#666' },
+        gridcolor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
+        tickfont: { size: 10, color: isDark ? '#a0aec0' : '#666' },
         ticksuffix: '%',
       },
       yaxis: {
         automargin: true,
-        tickfont: { size: 11, color: '#444' },
+        tickfont: { size: 11, color: isDark ? '#cbd5e0' : '#444' },
         ticklen: 0,
       },
       margin: { l: 100, r: 20, t: 15, b: 45 },
       plot_bgcolor: 'rgba(0,0,0,0)',
       paper_bgcolor: 'rgba(0,0,0,0)',
       hoverlabel: {
-        bgcolor: 'white',
-        bordercolor: 'rgba(0,0,0,0.1)',
-        font: { size: 11, family: 'Inter, system-ui' },
+        bgcolor: isDark ? '#1a1d27' : 'white',
+        bordercolor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
+        font: { size: 11, family: 'Inter, system-ui', color: isDark ? '#e2e8f0' : '#2c3e50' },
       },
     }),
-    []
+    [isDark]
   );
 
   // Chart data for trends (stacked area chart)
@@ -342,27 +345,27 @@ export function ClassificationMetricsTab({
         y: -0.2,
         x: 0.5,
         xanchor: 'center' as const,
-        font: { size: 10, color: '#666' },
-        bgcolor: 'rgba(255,255,255,0.8)',
+        font: { size: 10, color: isDark ? '#a0aec0' : '#666' },
+        bgcolor: isDark ? 'rgba(26,29,39,0.9)' : 'rgba(255,255,255,0.8)',
       },
       xaxis: {
         type: 'date' as const,
-        gridcolor: 'rgba(0,0,0,0.05)',
-        tickfont: { size: 10, color: '#666' },
+        gridcolor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
+        tickfont: { size: 10, color: isDark ? '#a0aec0' : '#666' },
         tickformat: chartGranularity === 'hourly' ? '%H:%M' : '%m/%d',
         zeroline: false,
         showline: true,
-        linecolor: 'rgba(0,0,0,0.1)',
+        linecolor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
       },
       yaxis: {
         title: {
           text: trendsDisplayMode === 'percentage' ? 'Percentage (%)' : 'Count',
-          font: { size: 11, color: '#666' },
+          font: { size: 11, color: isDark ? '#a0aec0' : '#666' },
         },
-        gridcolor: 'rgba(0,0,0,0.05)',
-        tickfont: { size: 10, color: '#666' },
+        gridcolor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
+        tickfont: { size: 10, color: isDark ? '#a0aec0' : '#666' },
         zeroline: true,
-        zerolinecolor: 'rgba(0,0,0,0.1)',
+        zerolinecolor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
         ...(trendsDisplayMode === 'percentage' ? { ticksuffix: '%' } : {}),
       },
       margin: { l: 60, r: 20, t: 15, b: 60 },
@@ -370,12 +373,12 @@ export function ClassificationMetricsTab({
       paper_bgcolor: 'rgba(0,0,0,0)',
       hovermode: 'x unified' as const,
       hoverlabel: {
-        bgcolor: 'white',
-        bordercolor: 'rgba(0,0,0,0.1)',
-        font: { size: 11, family: 'Inter, system-ui' },
+        bgcolor: isDark ? '#1a1d27' : 'white',
+        bordercolor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
+        font: { size: 11, family: 'Inter, system-ui', color: isDark ? '#e2e8f0' : '#2c3e50' },
       },
     }),
-    [chartGranularity, trendsDisplayMode]
+    [chartGranularity, trendsDisplayMode, isDark]
   );
 
   // Metric filter options for trace table
@@ -460,7 +463,7 @@ export function ClassificationMetricsTab({
         <p>No classification metrics found.</p>
         <p className="mt-1 text-xs">
           Upload data with{' '}
-          <code className="rounded bg-gray-100 px-1">metric_category: CLASSIFICATION</code>
+          <code className="rounded bg-gray-100 dark:bg-gray-800 px-1">metric_category: CLASSIFICATION</code>
         </p>
       </div>
     );
@@ -472,13 +475,13 @@ export function ClassificationMetricsTab({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium text-text-muted">Group by:</span>
-          <div className="flex rounded-lg border border-border bg-gray-50 p-0.5">
+          <div className="flex rounded-lg border border-border bg-gray-50 dark:bg-gray-900 p-0.5">
             <button
               onClick={() => setCategorySource('explanation')}
               className={cn(
                 'rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
                 categorySource === 'explanation'
-                  ? 'bg-white text-text-primary shadow-sm'
+                  ? 'bg-surface text-text-primary shadow-sm'
                   : 'text-text-muted hover:text-text-primary'
               )}
             >
@@ -489,7 +492,7 @@ export function ClassificationMetricsTab({
               className={cn(
                 'rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
                 categorySource === 'actual_output'
-                  ? 'bg-white text-text-primary shadow-sm'
+                  ? 'bg-surface text-text-primary shadow-sm'
                   : 'text-text-muted hover:text-text-primary'
               )}
             >
@@ -517,13 +520,13 @@ export function ClassificationMetricsTab({
           {currentMetricBreakdown && (
             <div className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
-                <div className="rounded-lg bg-gray-50 p-3">
+                <div className="rounded-lg bg-gray-50 dark:bg-gray-900 p-3">
                   <p className="text-xs font-medium text-text-muted">Total Records</p>
                   <p className="text-xl font-bold text-text-primary">
                     {currentMetricBreakdown.total_count.toLocaleString()}
                   </p>
                 </div>
-                <div className="rounded-lg bg-gray-50 p-3">
+                <div className="rounded-lg bg-gray-50 dark:bg-gray-900 p-3">
                   <p className="text-xs font-medium text-text-muted">Unique Categories</p>
                   <p className="text-xl font-bold text-text-primary">
                     {currentMetricBreakdown.categories.length}
@@ -557,7 +560,7 @@ export function ClassificationMetricsTab({
           <div className="max-h-64 overflow-y-auto">
             {currentMetricBreakdown ? (
               <table className="w-full text-sm">
-                <thead className="sticky top-0 bg-white">
+                <thead className="sticky top-0 bg-surface">
                   <tr className="border-b border-border text-left text-xs font-medium uppercase text-text-muted">
                     <th className="px-3 py-2">Category</th>
                     <th className="px-3 py-2 text-right">Count</th>
@@ -568,7 +571,7 @@ export function ClassificationMetricsTab({
                   {currentMetricBreakdown.categories.map((cat, i) => (
                     <tr
                       key={cat.value}
-                      className="border-b border-border last:border-0 hover:bg-gray-50"
+                      className="border-b border-border last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-900"
                     >
                       <td className="px-3 py-2">
                         <div className="flex items-center gap-2">
@@ -599,13 +602,13 @@ export function ClassificationMetricsTab({
         <div className="card">
           <div className="mb-4 flex items-center justify-between">
             <h3 className="font-semibold text-text-primary">Trends by Category</h3>
-            <div className="flex rounded-lg border border-border bg-gray-50 p-0.5">
+            <div className="flex rounded-lg border border-border bg-gray-50 dark:bg-gray-900 p-0.5">
               <button
                 onClick={() => setTrendsDisplayMode('percentage')}
                 className={cn(
                   'rounded-md px-3 py-1 text-xs font-medium transition-colors',
                   trendsDisplayMode === 'percentage'
-                    ? 'bg-white text-text-primary shadow-sm'
+                    ? 'bg-surface text-text-primary shadow-sm'
                     : 'text-text-muted hover:text-text-primary'
                 )}
               >
@@ -616,7 +619,7 @@ export function ClassificationMetricsTab({
                 className={cn(
                   'rounded-md px-3 py-1 text-xs font-medium transition-colors',
                   trendsDisplayMode === 'count'
-                    ? 'bg-white text-text-primary shadow-sm'
+                    ? 'bg-surface text-text-primary shadow-sm'
                     : 'text-text-muted hover:text-text-primary'
                 )}
               >
@@ -649,7 +652,7 @@ export function ClassificationMetricsTab({
       </div>
 
       {/* Classification Traces Table */}
-      <div className="rounded-lg border border-border bg-white">
+      <div className="rounded-lg border border-border bg-surface">
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-2.5">
           <h3 className="text-sm font-medium text-text-primary">
             Classification Traces
@@ -664,7 +667,7 @@ export function ClassificationMetricsTab({
                 value={traceSearch}
                 onChange={(e) => setTraceSearch(e.target.value)}
                 placeholder="Search traces..."
-                className="h-[30px] w-48 rounded-md border border-border bg-white pl-7 pr-2 text-xs text-text-primary placeholder:text-text-muted focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/30"
+                className="h-[30px] w-48 rounded-md border border-border bg-surface pl-7 pr-2 text-xs text-text-primary placeholder:text-text-muted focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/30"
               />
             </div>
             {/* Metric filter */}
@@ -678,7 +681,7 @@ export function ClassificationMetricsTab({
             {/* Sort direction */}
             <button
               onClick={() => setTraceSortDirection((d) => (d === 'asc' ? 'desc' : 'asc'))}
-              className="flex h-[30px] w-[30px] items-center justify-center rounded-md border border-border text-text-muted transition-colors hover:bg-gray-50 hover:text-text-primary"
+              className="flex h-[30px] w-[30px] items-center justify-center rounded-md border border-border text-text-muted transition-colors hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-900 hover:text-text-primary"
               title={traceSortDirection === 'asc' ? 'Ascending' : 'Descending'}
             >
               {traceSortDirection === 'asc' ? (
@@ -695,7 +698,7 @@ export function ClassificationMetricsTab({
               <button
                 onClick={() => setTablePage((p) => Math.max(1, p - 1))}
                 disabled={tablePage <= 1}
-                className="rounded p-1 hover:bg-gray-100 disabled:opacity-30"
+                className="rounded p-1 hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-800 disabled:opacity-30"
               >
                 <ChevronLeft className="h-4 w-4" />
               </button>
@@ -706,7 +709,7 @@ export function ClassificationMetricsTab({
                   )
                 }
                 disabled={tablePage >= Math.ceil(traceTotal / tablePageSize)}
-                className="rounded p-1 hover:bg-gray-100 disabled:opacity-30"
+                className="rounded p-1 hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-800 disabled:opacity-30"
               >
                 <ChevronRight className="h-4 w-4" />
               </button>
@@ -716,7 +719,7 @@ export function ClassificationMetricsTab({
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-border bg-gray-50/50 text-left text-[11px] font-medium uppercase tracking-wider text-text-muted">
+              <tr className="border-b border-border bg-gray-50 dark:bg-gray-900/50 text-left text-[11px] font-medium uppercase tracking-wider text-text-muted">
                 <th className="px-3 py-2">Trace ID</th>
                 <th
                   className="cursor-pointer select-none px-3 py-2 hover:text-text-primary"
@@ -744,11 +747,11 @@ export function ClassificationMetricsTab({
               ).map((record, idx) => (
                 <tr
                   key={`${record.dataset_id}-${idx}`}
-                  className="border-b border-border last:border-0 hover:bg-gray-50"
+                  className="border-b border-border last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-900"
                 >
                   <td className="px-3 py-2">
                     {record.trace_id ? (
-                      <code className="rounded bg-gray-100 px-1.5 py-0.5 font-mono text-xs text-primary">
+                      <code className="rounded bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 font-mono text-xs text-primary">
                         {record.trace_id.slice(0, 8)}...
                       </code>
                     ) : (
@@ -759,7 +762,7 @@ export function ClassificationMetricsTab({
                     {record.timestamp ? new Date(record.timestamp).toLocaleString() : '-'}
                   </td>
                   <td className="px-3 py-2">
-                    <span className="rounded bg-gray-100 px-1.5 py-0.5 text-xs font-medium text-text-secondary">
+                    <span className="rounded bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 text-xs font-medium text-text-secondary">
                       {String(record.metric_name || '-')}
                     </span>
                   </td>
@@ -776,7 +779,7 @@ export function ClassificationMetricsTab({
                   <td className="px-3 py-2 text-center">
                     <button
                       onClick={() => setSelectedRecord(record)}
-                      className="rounded p-1 text-text-muted hover:bg-gray-100 hover:text-text-primary"
+                      className="rounded p-1 text-text-muted hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-800 hover:text-text-primary"
                     >
                       <Eye className="h-4 w-4" />
                     </button>

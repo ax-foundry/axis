@@ -88,7 +88,7 @@ export default function SyntheticPage() {
             {sourceTypes.map((source) => {
               const Icon = source.icon;
               return (
-                <div key={source.title} className="rounded-xl border border-border bg-white p-6">
+                <div key={source.title} className="rounded-xl border border-border bg-surface p-6">
                   <div className="mb-5 h-0.5 rounded-full" style={source.accent} />
                   <div
                     className={`mb-4 flex h-11 w-11 items-center justify-center rounded-xl ${source.bg}`}
@@ -103,7 +103,7 @@ export default function SyntheticPage() {
                     {source.tags.map((tag) => (
                       <span
                         key={tag}
-                        className="rounded-full bg-gray-100 px-2.5 py-0.5 text-[11px] font-medium text-text-muted"
+                        className="rounded-full bg-gray-100 dark:bg-gray-800 px-2.5 py-0.5 text-[11px] font-medium text-text-muted"
                       >
                         {tag}
                       </span>
@@ -141,7 +141,7 @@ export default function SyntheticPage() {
         </div>
 
         {/* Use Cases */}
-        <div className="rounded-xl border border-border bg-white p-6">
+        <div className="rounded-xl border border-border bg-surface p-6">
           <h3 className="mb-4 text-sm font-semibold text-text-primary">Designed For</h3>
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             {[

@@ -61,7 +61,7 @@ export function WalkthroughTabs() {
               ${
                 isActive
                   ? 'border-primary/30 bg-primary/10'
-                  : 'border-border bg-white hover:border-primary/20 hover:bg-gray-50'
+                  : 'border-border bg-surface hover:border-primary/20 hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-900'
               }
             `}
           >

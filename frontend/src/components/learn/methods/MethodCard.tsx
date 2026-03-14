@@ -25,7 +25,7 @@ export function MethodCard({ method }: MethodCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
   return (
-    <div className="rounded-xl border border-border bg-white p-5 transition-shadow duration-200 hover:shadow-md">
+    <div className="rounded-xl border border-border bg-surface p-5 transition-shadow duration-200 hover:shadow-md">
       {/* Header */}
       <div
         className="flex cursor-pointer items-start justify-between gap-3"
@@ -48,7 +48,7 @@ export function MethodCard({ method }: MethodCardProps) {
             </span>
           </div>
         </div>
-        <button className="rounded p-1 hover:bg-gray-100">
+        <button className="rounded p-1 hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-800">
           {isExpanded ? (
             <ChevronUp className="h-4 w-4 text-text-muted" />
           ) : (

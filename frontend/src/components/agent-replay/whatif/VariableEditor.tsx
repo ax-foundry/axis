@@ -119,7 +119,7 @@ export function VariableEditor({ fixture, onSimulate, isSimulating }: VariableEd
                               ? 'bg-blue-100 text-blue-700'
                               : msg.role === 'assistant'
                                 ? 'bg-emerald-100 text-emerald-700'
-                                : 'bg-gray-100 text-gray-700'
+                                : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
                         )}
                       >
                         {msg.role}
@@ -128,7 +128,7 @@ export function VariableEditor({ fixture, onSimulate, isSimulating }: VariableEd
                     <textarea
                       value={msg.content}
                       onChange={(e) => handlePromptChange(idx, e.target.value)}
-                      className="w-full resize-y border-0 bg-white px-2.5 py-2 font-mono text-[11px] leading-relaxed text-text-primary focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary/20"
+                      className="w-full resize-y border-0 bg-surface px-2.5 py-2 font-mono text-[11px] leading-relaxed text-text-primary focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary/20"
                       rows={Math.min(8, Math.max(2, msg.content.split('\n').length))}
                     />
                   </div>
@@ -188,7 +188,7 @@ function FieldInput({
           <select
             value={stringValue}
             onChange={(e) => onChange(e.target.value)}
-            className="w-full rounded-lg border border-primary/15 bg-white px-2.5 py-2 text-xs text-text-primary shadow-sm transition-colors focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/15"
+            className="w-full rounded-lg border border-primary/15 bg-surface px-2.5 py-2 text-xs text-text-primary shadow-sm transition-colors focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/15"
           >
             {field.options?.map((opt) => (
               <option key={opt} value={opt}>
@@ -230,7 +230,7 @@ function FieldInput({
             type="number"
             value={stringValue}
             onChange={(e) => onChange(e.target.value)}
-            className="w-full rounded-lg border border-primary/15 bg-white px-2.5 py-2 font-mono text-xs text-text-primary shadow-sm transition-colors focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/15"
+            className="w-full rounded-lg border border-primary/15 bg-surface px-2.5 py-2 font-mono text-xs text-text-primary shadow-sm transition-colors focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/15"
           />
         </div>
       );
@@ -245,7 +245,7 @@ function FieldInput({
             value={stringValue}
             onChange={(e) => onChange(e.target.value)}
             rows={4}
-            className="max-h-[140px] w-full resize-y rounded-lg border border-primary/15 bg-white px-3 py-2 font-mono text-[10px] leading-relaxed text-text-primary shadow-sm transition-colors focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/15"
+            className="max-h-[140px] w-full resize-y rounded-lg border border-primary/15 bg-surface px-3 py-2 font-mono text-[10px] leading-relaxed text-text-primary shadow-sm transition-colors focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/15"
           />
         </div>
       );
@@ -263,14 +263,14 @@ function FieldInput({
               value={stringValue}
               onChange={(e) => onChange(e.target.value)}
               rows={4}
-              className="max-h-[140px] w-full resize-y rounded-lg border border-primary/15 bg-white px-3 py-2 font-mono text-[10px] leading-relaxed text-text-primary shadow-sm transition-colors focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/15"
+              className="max-h-[140px] w-full resize-y rounded-lg border border-primary/15 bg-surface px-3 py-2 font-mono text-[10px] leading-relaxed text-text-primary shadow-sm transition-colors focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/15"
             />
           ) : (
             <input
               type="text"
               value={stringValue}
               onChange={(e) => onChange(e.target.value)}
-              className="w-full rounded-lg border border-primary/15 bg-white px-2.5 py-2 text-xs text-text-primary shadow-sm transition-colors focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/15"
+              className="w-full rounded-lg border border-primary/15 bg-surface px-2.5 py-2 text-xs text-text-primary shadow-sm transition-colors focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/15"
             />
           )}
         </div>

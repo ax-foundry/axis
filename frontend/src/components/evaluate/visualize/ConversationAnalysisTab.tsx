@@ -266,7 +266,7 @@ export function ConversationAnalysisTab() {
           <select
             value={activeMetric || ''}
             onChange={(e) => setAnalyticsResponseMetric(e.target.value)}
-            className="rounded-lg border border-border bg-white px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+            className="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
           >
             {availableMetrics.map((metric) => (
               <option key={metric} value={metric}>
@@ -285,7 +285,7 @@ export function ConversationAnalysisTab() {
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* Turn Count Distribution */}
-        <div className="border-border/50 rounded-xl border bg-white p-5 shadow-sm">
+        <div className="border-border/50 rounded-xl border bg-surface p-5 shadow-sm">
           <h3 className="mb-4 text-lg font-semibold text-text-primary">Turn Count Distribution</h3>
           <div className="h-[350px]">
             <PlotlyChart
@@ -307,7 +307,7 @@ export function ConversationAnalysisTab() {
         </div>
 
         {/* Performance by Turn Count */}
-        <div className="border-border/50 rounded-xl border bg-white p-5 shadow-sm">
+        <div className="border-border/50 rounded-xl border bg-surface p-5 shadow-sm">
           <h3 className="mb-4 text-lg font-semibold text-text-primary">
             {activeMetric || 'Score'} by Turn Count
           </h3>
@@ -335,7 +335,7 @@ export function ConversationAnalysisTab() {
 
       {/* Summary Table */}
       {analysisData && analysisData.binned.length > 0 && (
-        <div className="border-border/50 rounded-xl border bg-white p-5 shadow-sm">
+        <div className="border-border/50 rounded-xl border bg-surface p-5 shadow-sm">
           <h3 className="mb-4 text-lg font-semibold text-text-primary">Turn Count Statistics</h3>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -354,7 +354,7 @@ export function ConversationAnalysisTab() {
                     </th>
                   ))}
                 </tr>
-                <tr className="border-b border-border bg-gray-50">
+                <tr className="border-b border-border bg-gray-50 dark:bg-gray-900">
                   <th className="px-4 py-1"></th>
                   {analysisData.experiments.map((exp) => (
                     <>

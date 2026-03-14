@@ -76,7 +76,7 @@ function ExperimentColumn({ row, metrics }: { row?: ComparisonRow; metrics: stri
   return (
     <div className="space-y-3 p-3">
       {/* Conversation/Output - using CompactConversation for chat-style display */}
-      <div className="overflow-hidden rounded-lg bg-gray-50">
+      <div className="overflow-hidden rounded-lg bg-gray-50 dark:bg-gray-900">
         <CompactConversation query={row.query} output={row.actualOutput} maxPreviewLength={120} />
       </div>
 
@@ -121,7 +121,7 @@ function ExpandedRow({
   return (
     <tr>
       <td colSpan={experimentNames.length + 2} className="p-0">
-        <div className="border-border/50 border-b border-t bg-gray-50 p-6">
+        <div className="border-border/50 border-b border-t bg-gray-50 dark:bg-gray-900 p-6">
           <div className="space-y-6">
             {/* Additional Input if present and visible */}
             {visibleFields.includes('additional_input') && testCase.additionalInput && (
@@ -156,9 +156,9 @@ function ExpandedRow({
                   return (
                     <div
                       key={expName}
-                      className="border-border/50 overflow-hidden rounded-lg border bg-white"
+                      className="border-border/50 overflow-hidden rounded-lg border bg-surface"
                     >
-                      <div className="border-border/30 border-b bg-gray-100 px-4 py-2">
+                      <div className="border-border/30 border-b bg-gray-100 dark:bg-gray-800 px-4 py-2">
                         <div className="flex items-center justify-between">
                           <span className="text-sm font-semibold text-text-primary">{expName}</span>
                           <ScoreBadge score={row.overallScore} />
@@ -189,7 +189,7 @@ function ExpandedRow({
             {visibleFields.includes('conversation') && testCase.conversation && (
               <div>
                 <h4 className="mb-2 text-sm font-semibold text-text-primary">Conversation</h4>
-                <div className="border-border/50 max-h-48 overflow-y-auto rounded-lg border bg-white p-4">
+                <div className="border-border/50 max-h-48 overflow-y-auto rounded-lg border bg-surface p-4">
                   <p className="whitespace-pre-wrap font-mono text-sm text-text-secondary">
                     {testCase.conversation}
                   </p>
@@ -201,7 +201,7 @@ function ExpandedRow({
             {visibleFields.includes('expected_output') && testCase.expectedOutput && (
               <div>
                 <h4 className="mb-2 text-sm font-semibold text-text-primary">Expected Output</h4>
-                <div className="border-border/50 rounded-lg border bg-white p-4">
+                <div className="border-border/50 rounded-lg border bg-surface p-4">
                   <p className="whitespace-pre-wrap text-sm text-text-secondary">
                     {testCase.expectedOutput}
                   </p>
@@ -213,7 +213,7 @@ function ExpandedRow({
             {visibleFields.includes('retrieved_content') && testCase.retrievedContent && (
               <div>
                 <h4 className="mb-2 text-sm font-semibold text-text-primary">Retrieved Content</h4>
-                <div className="border-border/50 max-h-48 overflow-y-auto rounded-lg border bg-white p-4">
+                <div className="border-border/50 max-h-48 overflow-y-auto rounded-lg border bg-surface p-4">
                   <p className="whitespace-pre-wrap font-mono text-sm text-text-secondary">
                     {testCase.retrievedContent}
                   </p>
@@ -226,10 +226,10 @@ function ExpandedRow({
               <h4 className="mb-2 text-sm font-semibold text-text-primary">
                 All Metrics by Experiment
               </h4>
-              <div className="border-border/50 overflow-hidden overflow-x-auto rounded-lg border bg-white">
+              <div className="border-border/50 overflow-hidden overflow-x-auto rounded-lg border bg-surface">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-border/50 border-b bg-gray-50">
+                    <tr className="border-border/50 border-b bg-gray-50 dark:bg-gray-900">
                       <th className="p-3 text-left font-semibold text-text-primary">Metric</th>
                       {experimentNames.map((name) => (
                         <th key={name} className="p-3 text-center font-semibold text-text-primary">
@@ -370,7 +370,7 @@ export function SideBySideTable({ rows, metrics }: SideBySideTableProps) {
 
   if (groupedTestCases.length === 0) {
     return (
-      <div className="border-border/50 flex h-48 items-center justify-center rounded-xl border bg-white text-text-muted">
+      <div className="border-border/50 flex h-48 items-center justify-center rounded-xl border bg-surface text-text-muted">
         No test cases match the current filters
       </div>
     );
@@ -380,11 +380,11 @@ export function SideBySideTable({ rows, metrics }: SideBySideTableProps) {
   const isMultiExperiment = experimentNames.length > 1;
 
   return (
-    <div className="border-border/50 overflow-hidden rounded-xl border bg-white shadow-sm">
+    <div className="border-border/50 overflow-hidden rounded-xl border bg-surface shadow-sm">
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
-            <tr className="border-border/50 border-b bg-gray-50">
+            <tr className="border-border/50 border-b bg-gray-50 dark:bg-gray-900">
               {/* Expand column */}
               <th className="w-10 p-4"></th>
 
@@ -429,8 +429,8 @@ export function SideBySideTable({ rows, metrics }: SideBySideTableProps) {
                   <tr
                     key={testCase.id}
                     className={cn(
-                      'border-border/30 cursor-pointer border-b transition-colors hover:bg-gray-50/50',
-                      idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/30',
+                      'border-border/30 cursor-pointer border-b transition-colors hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-900/50',
+                      idx % 2 === 0 ? 'bg-surface' : 'bg-gray-50 dark:bg-gray-900/30',
                       isExpanded && 'bg-primary/5'
                     )}
                     onClick={() => toggleExpand(testCase.id)}
@@ -504,7 +504,7 @@ export function SideBySideTable({ rows, metrics }: SideBySideTableProps) {
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="border-border/50 flex items-center justify-between border-t bg-gray-50/50 px-4 py-3">
+        <div className="border-border/50 flex items-center justify-between border-t bg-gray-50 dark:bg-gray-900/50 px-4 py-3">
           <span className="text-sm text-text-muted">
             Showing {(currentPage - 1) * comparePageSize + 1} to{' '}
             {Math.min(currentPage * comparePageSize, sortedTestCases.length)} of{' '}
@@ -514,7 +514,7 @@ export function SideBySideTable({ rows, metrics }: SideBySideTableProps) {
             <button
               onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
               disabled={currentPage === 1}
-              className="rounded-lg border border-border px-3 py-1.5 text-sm font-medium hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
+              className="rounded-lg border border-border px-3 py-1.5 text-sm font-medium hover:bg-surface disabled:cursor-not-allowed disabled:opacity-50"
             >
               Previous
             </button>
@@ -524,7 +524,7 @@ export function SideBySideTable({ rows, metrics }: SideBySideTableProps) {
             <button
               onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
               disabled={currentPage === totalPages}
-              className="rounded-lg border border-border px-3 py-1.5 text-sm font-medium hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
+              className="rounded-lg border border-border px-3 py-1.5 text-sm font-medium hover:bg-surface disabled:cursor-not-allowed disabled:opacity-50"
             >
               Next
             </button>

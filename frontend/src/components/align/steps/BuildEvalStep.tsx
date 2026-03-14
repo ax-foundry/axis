@@ -191,7 +191,7 @@ export function BuildEvalStep() {
       {/* Section 1: Two-Column — Pattern Insights + LLM Config */}
       <div className="grid grid-cols-2 gap-5">
         {/* Left: Pattern Insights */}
-        <div className="overflow-hidden rounded-lg border border-border bg-white">
+        <div className="overflow-hidden rounded-lg border border-border bg-surface">
           <div className="flex items-center justify-between border-b border-border px-4 py-3">
             <h2 className="text-sm font-bold text-text-primary">Pattern Insights</h2>
             <span className="text-xs text-text-muted">
@@ -216,7 +216,7 @@ export function BuildEvalStep() {
                       'rounded-full border px-3 py-1 text-xs font-semibold transition-colors',
                       clusteringMethod === method
                         ? 'border-text-primary bg-text-primary text-white'
-                        : 'border-border bg-white text-text-muted hover:border-text-muted hover:text-text-primary',
+                        : 'border-border bg-surface text-text-muted hover:border-text-muted hover:text-text-primary',
                       isDisabled && 'cursor-not-allowed opacity-50'
                     )}
                     title={
@@ -276,7 +276,7 @@ export function BuildEvalStep() {
                         <span className="text-[13px] font-bold text-text-primary">
                           {pattern.category}
                         </span>
-                        <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-semibold text-text-muted">
+                        <span className="rounded-full bg-gray-100 dark:bg-gray-800 px-2 py-0.5 text-xs font-semibold text-text-muted">
                           {pattern.count}
                         </span>
                         <span className="ml-auto text-xs text-text-muted">
@@ -293,7 +293,7 @@ export function BuildEvalStep() {
                           {pattern.examples.map((example, exIdx) => (
                             <div
                               key={exIdx}
-                              className="rounded-md border-l-[3px] border-l-border bg-gray-50 px-3 py-2.5 text-xs leading-relaxed text-text-secondary"
+                              className="rounded-md border-l-[3px] border-l-border bg-gray-50 dark:bg-gray-900 px-3 py-2.5 text-xs leading-relaxed text-text-secondary"
                             >
                               &ldquo;{example}&rdquo;
                             </div>
@@ -322,7 +322,7 @@ export function BuildEvalStep() {
                 })}
               </div>
             ) : notesCount > 0 ? (
-              <div className="flex items-center justify-center gap-4 rounded-lg border border-dashed border-border bg-gray-50 p-6">
+              <div className="flex items-center justify-center gap-4 rounded-lg border border-dashed border-border bg-gray-50 dark:bg-gray-900 p-6">
                 <div className="text-center">
                   <p className="mb-2 text-sm text-text-muted">
                     {notesCount} annotations with notes ready for analysis
@@ -337,7 +337,7 @@ export function BuildEvalStep() {
                 </div>
               </div>
             ) : (
-              <div className="rounded-lg border border-dashed border-border bg-gray-50 p-6 text-center">
+              <div className="rounded-lg border border-dashed border-border bg-gray-50 dark:bg-gray-900 p-6 text-center">
                 <Sparkles className="mx-auto mb-2 h-8 w-8 text-text-muted" />
                 <p className="text-sm text-text-muted">
                   Add notes during review to discover patterns that inform your evaluation criteria.
@@ -371,7 +371,7 @@ export function BuildEvalStep() {
         </div>
 
         {/* Right: LLM Judge Configuration */}
-        <div className="overflow-hidden rounded-lg border border-border bg-white">
+        <div className="overflow-hidden rounded-lg border border-border bg-surface">
           <div className="border-b border-border px-4 py-3">
             <h2 className="text-sm font-bold text-text-primary">LLM Judge Configuration</h2>
           </div>
@@ -391,7 +391,7 @@ export function BuildEvalStep() {
               >
                 {tab.label}
                 {tab.id === 'examples' && judgeConfig.few_shot_examples.length > 0 && (
-                  <span className="ml-1.5 rounded-full bg-gray-100 px-1.5 py-0.5 text-xs font-semibold">
+                  <span className="ml-1.5 rounded-full bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 text-xs font-semibold">
                     {judgeConfig.few_shot_examples.length}
                   </span>
                 )}
@@ -434,7 +434,7 @@ export function BuildEvalStep() {
       </div>
 
       {/* Section 2: Run Evaluation */}
-      <div className="overflow-hidden rounded-lg border border-border bg-white">
+      <div className="overflow-hidden rounded-lg border border-border bg-surface">
         <div className="flex items-center justify-between border-b border-border px-4 py-3">
           <h3 className="text-sm font-bold text-text-primary">Run Evaluation</h3>
           <div className="flex items-center gap-1.5 text-xs text-text-muted">
@@ -444,16 +444,16 @@ export function BuildEvalStep() {
         </div>
         <div className="flex items-center justify-between p-4">
           <div className="flex gap-3">
-            <div className="flex items-center gap-1.5 rounded-md border border-border bg-gray-50 px-3 py-1.5 text-xs text-text-muted">
+            <div className="flex items-center gap-1.5 rounded-md border border-border bg-gray-50 dark:bg-gray-900 px-3 py-1.5 text-xs text-text-muted">
               Model:{' '}
               <strong className="font-semibold text-text-primary">{judgeConfig.model}</strong>
             </div>
-            <div className="flex items-center gap-1.5 rounded-md border border-border bg-gray-50 px-3 py-1.5 text-xs text-text-muted">
+            <div className="flex items-center gap-1.5 rounded-md border border-border bg-gray-50 dark:bg-gray-900 px-3 py-1.5 text-xs text-text-muted">
               Records:{' '}
               <strong className="font-semibold text-text-primary">{annotationCount}</strong>
             </div>
             {judgeConfig.few_shot_examples.length > 0 && (
-              <div className="flex items-center gap-1.5 rounded-md border border-border bg-gray-50 px-3 py-1.5 text-xs text-text-muted">
+              <div className="flex items-center gap-1.5 rounded-md border border-border bg-gray-50 dark:bg-gray-900 px-3 py-1.5 text-xs text-text-muted">
                 Few-shot:{' '}
                 <strong className="font-semibold text-text-primary">
                   {judgeConfig.few_shot_examples.length} examples
@@ -513,7 +513,7 @@ export function BuildEvalStep() {
 
       {/* Section 3: Results */}
       {hasResults && (
-        <div className="overflow-hidden rounded-lg border border-border bg-white">
+        <div className="overflow-hidden rounded-lg border border-border bg-surface">
           {/* Results header with export */}
           <div className="flex items-center justify-between border-b border-border px-4 py-3">
             <h3 className="text-sm font-bold text-text-primary">Evaluation Results</h3>
@@ -573,7 +573,7 @@ export function BuildEvalStep() {
         <button
           onClick={() => setCurrentStep('review')}
           disabled={isEvaluating}
-          className="flex items-center gap-2 rounded-md border border-border bg-white px-4 py-2 text-sm font-medium text-text-muted transition-colors hover:border-text-muted hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex items-center gap-2 rounded-md border border-border bg-surface px-4 py-2 text-sm font-medium text-text-muted transition-colors hover:border-text-muted hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-50"
         >
           <ArrowLeft className="h-4 w-4" />
           Back to Review & Label
@@ -583,7 +583,7 @@ export function BuildEvalStep() {
           <button
             onClick={handleRunEvaluation}
             disabled={isEvaluating}
-            className="flex items-center gap-2 rounded-md border border-border px-4 py-2 text-sm font-medium text-text-secondary transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex items-center gap-2 rounded-md border border-border px-4 py-2 text-sm font-medium text-text-secondary transition-colors hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-900 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <RefreshCw className="h-4 w-4" />
             Re-run Evaluation

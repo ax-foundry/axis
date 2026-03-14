@@ -33,7 +33,7 @@ function typeBadge(type: string | null) {
   const colors: Record<string, string> = {
     GENERATION: 'bg-purple-100 text-purple-700',
     TOOL: 'bg-blue-100 text-blue-700',
-    SPAN: 'bg-gray-100 text-gray-600',
+    SPAN: 'bg-gray-100 dark:bg-gray-800 text-gray-600',
     EVENT: 'bg-amber-100 text-amber-700',
   };
   const abbr: Record<string, string> = {
@@ -46,7 +46,7 @@ function typeBadge(type: string | null) {
     <span
       className={cn(
         'mr-1.5 inline-block rounded px-1 py-0.5 text-[9px] font-bold leading-none',
-        colors[upper] || 'bg-gray-100 text-gray-500'
+        colors[upper] || 'bg-gray-100 dark:bg-gray-800 text-gray-500'
       )}
     >
       {abbr[upper] || upper.slice(0, 4)}
@@ -67,7 +67,7 @@ export function FailureStepSelector({ nodes, value, onChange }: FailureStepSelec
     <select
       value={value ?? ''}
       onChange={(e) => onChange(e.target.value || null)}
-      className="w-full rounded-lg border border-primary/15 bg-white px-3 py-2 text-sm text-text-primary shadow-sm focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/15"
+      className="w-full rounded-lg border border-primary/15 bg-surface px-3 py-2 text-sm text-text-primary shadow-sm focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/15"
     >
       <option value="">None selected</option>
       {spans.map((node) => (

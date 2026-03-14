@@ -28,7 +28,7 @@ const ROLE_CONFIG: Record<
 > = {
   system: {
     align: 'left',
-    bubble: 'border-gray-200 bg-gray-50',
+    bubble: 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900',
     badge: 'bg-gray-600 text-white',
     label: 'System',
     Icon: Shield,
@@ -70,10 +70,10 @@ function SystemMessage({ text }: { text: string }) {
   const [expanded, setExpanded] = useState(false);
 
   return (
-    <div className="overflow-hidden rounded border border-gray-200 bg-gray-50">
+    <div className="overflow-hidden rounded border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
       <button
         onClick={() => setExpanded(!expanded)}
-        className="flex w-full items-center gap-1.5 px-2.5 py-1.5 text-left text-[11px] transition-colors hover:bg-gray-100"
+        className="flex w-full items-center gap-1.5 px-2.5 py-1.5 text-left text-[11px] transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-800"
       >
         {expanded ? (
           <ChevronDown className="h-3 w-3 shrink-0 text-gray-400" />
@@ -90,7 +90,7 @@ function SystemMessage({ text }: { text: string }) {
         </span>
       </button>
       {expanded && (
-        <div className="border-t border-gray-200 bg-white px-3 py-2 text-xs">
+        <div className="border-t border-gray-200 dark:border-gray-700 bg-surface px-3 py-2 text-xs">
           <SmartContent text={text} />
         </div>
       )}
@@ -101,7 +101,7 @@ function SystemMessage({ text }: { text: string }) {
 function ChatMessage({ role, text }: { role: string; text: string }) {
   const config = ROLE_CONFIG[role] || {
     align: 'left' as const,
-    bubble: 'border-border bg-white',
+    bubble: 'border-border bg-surface',
     badge: 'bg-gray-500 text-white',
     label: role.charAt(0).toUpperCase() + role.slice(1),
     Icon: Bot,
@@ -117,7 +117,7 @@ function ChatMessage({ role, text }: { role: string; text: string }) {
       {/* Avatar circle */}
       <div
         className={cn(
-          'mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white ring-1 ring-border',
+          'mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-surface ring-1 ring-border',
           isRight && 'ring-primary/20'
         )}
       >

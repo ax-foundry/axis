@@ -80,7 +80,7 @@ function CopyButton({ text }: { text: string }) {
   return (
     <button
       onClick={handleCopy}
-      className="rounded-md p-1.5 text-text-muted transition-all hover:bg-white hover:text-text-secondary hover:shadow-sm"
+      className="rounded-md p-1.5 text-text-muted transition-all hover:bg-surface hover:text-text-secondary hover:shadow-sm"
       title="Copy to clipboard"
     >
       {copied ? <Check className="h-3.5 w-3.5 text-success" /> : <Copy className="h-3.5 w-3.5" />}
@@ -145,7 +145,7 @@ function SectionCard({
         </div>
         <CopyButton text={stringified} />
       </div>
-      <div className="overflow-hidden bg-white px-3 py-2 text-xs">
+      <div className="overflow-hidden bg-surface px-3 py-2 text-xs">
         <div className="break-words">
           {isCitations ? (
             <CitationsList items={value as unknown[]} />

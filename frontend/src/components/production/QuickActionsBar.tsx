@@ -5,7 +5,7 @@ import Link from 'next/link';
 
 export function QuickActionsBar() {
   return (
-    <div className="border-border/50 flex items-center gap-4 rounded-lg border bg-white p-4">
+    <div className="border-border/50 flex items-center gap-4 rounded-lg border bg-surface p-4">
       <span className="text-sm font-medium text-text-muted">Quick Actions:</span>
       <Link
         href="/monitoring"

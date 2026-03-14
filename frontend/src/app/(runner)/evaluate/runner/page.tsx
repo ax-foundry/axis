@@ -35,7 +35,7 @@ export default function EvalRunnerPage() {
     return (
       <div className="flex min-h-[60vh] items-center justify-center p-6">
         <div className="max-w-md text-center">
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-gray-100">
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-gray-100 dark:bg-gray-800">
             <Lock className="h-6 w-6 text-text-muted" />
           </div>
           <h2 className="mb-2 text-lg font-semibold text-text-primary">
@@ -69,7 +69,7 @@ export default function EvalRunnerPage() {
         {(uploadedData !== null || results !== null) && (
           <button
             onClick={reset}
-            className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm font-medium text-text-muted transition-colors hover:bg-gray-50 hover:text-text-primary"
+            className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm font-medium text-text-muted transition-colors hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-900 hover:text-text-primary"
           >
             <RotateCcw className="h-4 w-4" />
             Start Over

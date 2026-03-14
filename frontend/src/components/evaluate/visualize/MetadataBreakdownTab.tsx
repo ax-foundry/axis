@@ -335,14 +335,14 @@ export function MetadataBreakdownTab() {
   return (
     <div className="space-y-6">
       {/* Controls */}
-      <div className="border-border/50 rounded-xl border bg-white p-4">
+      <div className="border-border/50 rounded-xl border bg-surface p-4">
         <div className="flex flex-wrap items-center gap-6">
           <div className="flex items-center gap-2">
             <span className="text-sm text-text-muted">Group By:</span>
             <select
               value={activeGrouping || ''}
               onChange={(e) => setAnalyticsMetadataGrouping(e.target.value)}
-              className="rounded-lg border border-border bg-white px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+              className="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
             >
               {availableMetadataKeys.map((key) => (
                 <option key={key} value={key}>
@@ -357,7 +357,7 @@ export function MetadataBreakdownTab() {
             <select
               value={activeMetric || ''}
               onChange={(e) => setAnalyticsResponseMetric(e.target.value)}
-              className="rounded-lg border border-border bg-white px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+              className="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
             >
               {availableMetrics.map((metric) => (
                 <option key={metric} value={metric}>
@@ -387,7 +387,7 @@ export function MetadataBreakdownTab() {
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* Mean Score by Grouping */}
-        <div className="border-border/50 rounded-xl border bg-white p-5 shadow-sm">
+        <div className="border-border/50 rounded-xl border bg-surface p-5 shadow-sm">
           <h3 className="mb-4 text-lg font-semibold text-text-primary">
             Mean {activeMetric || 'Score'} by {activeGrouping}
           </h3>
@@ -411,7 +411,7 @@ export function MetadataBreakdownTab() {
         </div>
 
         {/* Pass Rate by Grouping */}
-        <div className="border-border/50 rounded-xl border bg-white p-5 shadow-sm">
+        <div className="border-border/50 rounded-xl border bg-surface p-5 shadow-sm">
           <h3 className="mb-4 text-lg font-semibold text-text-primary">
             Pass Rate by {activeGrouping}
           </h3>
@@ -437,7 +437,7 @@ export function MetadataBreakdownTab() {
 
       {/* Summary Table */}
       {breakdownData && breakdownData.length > 0 && (
-        <div className="border-border/50 rounded-xl border bg-white p-5 shadow-sm">
+        <div className="border-border/50 rounded-xl border bg-surface p-5 shadow-sm">
           <h3 className="mb-4 text-lg font-semibold text-text-primary">Breakdown Summary</h3>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">

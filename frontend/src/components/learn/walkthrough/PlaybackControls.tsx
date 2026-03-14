@@ -33,7 +33,7 @@ export function PlaybackControls({
   const isPlaying = learnPlaybackState === 'playing';
 
   return (
-    <div className="rounded-xl border border-border bg-white p-4 shadow-sm">
+    <div className="rounded-xl border border-border bg-surface p-4 shadow-sm">
       <div className="flex flex-col gap-4">
         {/* Progress Bar */}
         <div className="space-y-2">
@@ -46,7 +46,7 @@ export function PlaybackControls({
             </span>
           </div>
           <div className="relative">
-            <div className="h-2 overflow-hidden rounded-full bg-gray-100">
+            <div className="h-2 overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800">
               <div
                 className={`h-full rounded-full transition-all duration-300 ${
                   isPlaying ? 'progress-bar-animated' : 'bg-primary'
@@ -63,7 +63,7 @@ export function PlaybackControls({
                   className={`h-3 w-3 rounded-full border-2 transition-all duration-200 ${
                     i <= learnCurrentStep
                       ? 'border-primary bg-primary'
-                      : 'border-gray-300 bg-white hover:border-primary'
+                      : 'border-gray-300 bg-surface hover:border-primary'
                   } ${i === learnCurrentStep && isPlaying ? 'step-indicator-active' : ''}`}
                   title={`Go to step ${i + 1}`}
                 />
@@ -77,7 +77,7 @@ export function PlaybackControls({
           {/* Restart */}
           <button
             onClick={onStop}
-            className="rounded-lg p-2 text-text-muted transition-colors hover:bg-gray-100 hover:text-text-primary"
+            className="rounded-lg p-2 text-text-muted transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-800 hover:text-text-primary"
             title="Restart"
           >
             <RotateCcw className="h-5 w-5" />
@@ -87,7 +87,7 @@ export function PlaybackControls({
           <button
             onClick={onStepBackward}
             disabled={learnCurrentStep === 0}
-            className="rounded-lg p-2 text-text-muted transition-colors hover:bg-gray-100 hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-lg p-2 text-text-muted transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-800 hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-50"
             title="Previous step"
           >
             <SkipBack className="h-5 w-5" />
@@ -106,7 +106,7 @@ export function PlaybackControls({
           <button
             onClick={onStepForward}
             disabled={learnCurrentStep === totalSteps - 1}
-            className="rounded-lg p-2 text-text-muted transition-colors hover:bg-gray-100 hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-lg p-2 text-text-muted transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-800 hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-50"
             title="Next step"
           >
             <SkipForward className="h-5 w-5" />
@@ -122,7 +122,7 @@ export function PlaybackControls({
                 className={`rounded px-2 py-1 text-xs font-medium transition-colors ${
                   learnPlaybackSpeed === speed
                     ? 'bg-primary text-white'
-                    : 'bg-gray-100 text-text-muted hover:bg-gray-200'
+                    : 'bg-gray-100 dark:bg-gray-800 text-text-muted hover:bg-gray-200'
                 }`}
               >
                 {speed}x

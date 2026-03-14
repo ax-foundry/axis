@@ -76,7 +76,7 @@ export function ComparisonTable({ results, filter, onFilterChange }: ComparisonT
                 'rounded-full border px-3 py-1 text-xs font-semibold transition-colors',
                 filter === pill.id
                   ? 'border-text-primary bg-text-primary text-white'
-                  : 'border-border bg-white text-text-muted hover:border-text-muted hover:text-text-primary'
+                  : 'border-border bg-surface text-text-muted hover:border-text-muted hover:text-text-primary'
               )}
             >
               {pill.label}
@@ -96,7 +96,7 @@ export function ComparisonTable({ results, filter, onFilterChange }: ComparisonT
       <div className="overflow-hidden rounded-lg border border-border">
         <table className="w-full">
           <thead>
-            <tr className="bg-gray-50/80">
+            <tr className="bg-gray-50 dark:bg-gray-900/80">
               <th className="px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-text-muted">
                 ID
               </th>
@@ -115,7 +115,7 @@ export function ComparisonTable({ results, filter, onFilterChange }: ComparisonT
               <th className="px-3 py-2.5 text-center text-xs font-semibold uppercase tracking-wider text-text-muted"></th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-border bg-white">
+          <tbody className="divide-y divide-border bg-surface">
             {paginatedResults.map((result) => {
               const isExpanded = expandedRow === result.record_id;
 
@@ -124,9 +124,9 @@ export function ComparisonTable({ results, filter, onFilterChange }: ComparisonT
                   <tr
                     key={result.record_id}
                     className={cn(
-                      'transition-colors hover:bg-gray-50',
+                      'transition-colors hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-900',
                       !result.is_aligned && 'bg-error/5',
-                      isExpanded && 'bg-gray-50'
+                      isExpanded && 'bg-gray-50 dark:bg-gray-900'
                     )}
                   >
                     <td className="px-3 py-2.5 font-mono text-xs text-text-muted">
@@ -175,7 +175,7 @@ export function ComparisonTable({ results, filter, onFilterChange }: ComparisonT
                     <td className="px-3 py-2.5 text-center">
                       <button
                         onClick={() => setExpandedRow(isExpanded ? null : result.record_id)}
-                        className="rounded p-1 text-text-muted hover:bg-gray-100 hover:text-text-primary"
+                        className="rounded p-1 text-text-muted hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-800 hover:text-text-primary"
                       >
                         {isExpanded ? (
                           <ChevronUp className="h-4 w-4" />
@@ -187,11 +187,11 @@ export function ComparisonTable({ results, filter, onFilterChange }: ComparisonT
                   </tr>
                   {isExpanded && (
                     <tr key={`${result.record_id}-expanded`}>
-                      <td colSpan={6} className="border-t bg-gray-50 px-4 py-4">
+                      <td colSpan={6} className="border-t bg-gray-50 dark:bg-gray-900 px-4 py-4">
                         <div className="grid gap-4 md:grid-cols-2">
                           <div>
                             <div className="mb-1 text-xs font-medium text-text-muted">Response</div>
-                            <p className="rounded bg-white p-3 text-sm text-text-secondary">
+                            <p className="rounded bg-surface p-3 text-sm text-text-secondary">
                               {result.actual_output}
                             </p>
                           </div>
@@ -199,7 +199,7 @@ export function ComparisonTable({ results, filter, onFilterChange }: ComparisonT
                             <div className="mb-1 text-xs font-medium text-text-muted">
                               LLM Reasoning
                             </div>
-                            <p className="rounded bg-white p-3 text-sm italic text-text-muted">
+                            <p className="rounded bg-surface p-3 text-sm italic text-text-muted">
                               {result.llm_reasoning}
                             </p>
                           </div>
@@ -225,14 +225,14 @@ export function ComparisonTable({ results, filter, onFilterChange }: ComparisonT
             <button
               onClick={() => setPage((p) => Math.max(0, p - 1))}
               disabled={page === 0}
-              className="rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-text-secondary transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+              className="rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-text-secondary transition-colors hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-900 disabled:cursor-not-allowed disabled:opacity-50"
             >
               Previous
             </button>
             <button
               onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
               disabled={page >= totalPages - 1}
-              className="rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-text-secondary transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+              className="rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-text-secondary transition-colors hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-900 disabled:cursor-not-allowed disabled:opacity-50"
             >
               Next
             </button>
