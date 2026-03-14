@@ -54,6 +54,12 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
           themeResult.value.palettes,
           themeResult.value.branding
         );
+        // Apply user's saved color scheme override (from Settings page)
+        const saved = localStorage.getItem('axis-color-scheme');
+        if (saved === 'dark' || saved === 'light') {
+          const current = useThemeStore.getState().palette;
+          useThemeStore.getState().applyPalette({ ...current, heroMode: saved });
+        }
       } else {
         const reason =
           themeResult.status === 'rejected'

@@ -16,7 +16,7 @@ import {
   ChevronDown,
   ChevronUp,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 import { useAlignEvaluate, useAlignStatus, useClusterPatterns } from '@/lib/hooks';
 import { cn } from '@/lib/utils';
@@ -176,16 +176,6 @@ export function BuildEvalStep() {
   const isProviderConfigured = statusData?.providers[judgeConfig.provider] ?? false;
   const hasResults = evaluationResults.length > 0 && alignmentMetrics !== null;
 
-  const MIN_NOTES_FOR_BERTOPIC = 10;
-  const needsMoreNotes = notesCount < MIN_NOTES_FOR_BERTOPIC;
-
-  // Auto-switch to LLM if selected method requires more notes than available
-  useEffect(() => {
-    if (needsMoreNotes && (clusteringMethod === 'bertopic' || clusteringMethod === 'hybrid')) {
-      setClusteringMethod('llm');
-    }
-  }, [needsMoreNotes, clusteringMethod]);
-
   return (
     <div className="space-y-5">
       {/* Section 1: Two-Column — Pattern Insights + LLM Config */}
@@ -204,31 +194,19 @@ export function BuildEvalStep() {
               <span className="text-xs font-semibold uppercase tracking-wider text-text-muted">
                 Method
               </span>
-              {(['llm', 'bertopic', 'hybrid'] as ClusteringMethod[]).map((method) => {
-                const requiresMinNotes = method === 'bertopic' || method === 'hybrid';
-                const isDisabled = isClusteringPatterns || (requiresMinNotes && needsMoreNotes);
-                return (
-                  <button
-                    key={method}
-                    onClick={() => handleMethodChange(method)}
-                    disabled={isDisabled}
-                    className={cn(
-                      'rounded-full border px-3 py-1 text-xs font-semibold transition-colors',
-                      clusteringMethod === method
-                        ? 'border-text-primary bg-text-primary text-white'
-                        : 'border-border bg-surface text-text-muted hover:border-text-muted hover:text-text-primary',
-                      isDisabled && 'cursor-not-allowed opacity-50'
-                    )}
-                    title={
-                      requiresMinNotes && needsMoreNotes
-                        ? `Requires ${MIN_NOTES_FOR_BERTOPIC}+ notes (${notesCount} available)`
-                        : undefined
-                    }
-                  >
-                    {method === 'llm' ? 'LLM' : method === 'bertopic' ? 'BERTopic' : 'Hybrid'}
-                  </button>
-                );
-              })}
+              <button
+                onClick={() => handleMethodChange('llm')}
+                disabled={isClusteringPatterns}
+                className={cn(
+                  'rounded-full border px-3 py-1 text-xs font-semibold transition-colors',
+                  clusteringMethod === 'llm'
+                    ? 'border-text-primary bg-text-primary text-white'
+                    : 'border-border bg-surface text-text-muted hover:border-text-muted hover:text-text-primary',
+                  isClusteringPatterns && 'cursor-not-allowed opacity-50'
+                )}
+              >
+                LLM
+              </button>
               {notesCount > 0 && (
                 <button
                   onClick={handleRefreshPatterns}
@@ -249,11 +227,6 @@ export function BuildEvalStep() {
                 </button>
               )}
             </div>
-            {needsMoreNotes && (
-              <p className="mb-3 text-xs text-text-muted">
-                BERTopic/Hybrid require {MIN_NOTES_FOR_BERTOPIC}+ notes ({notesCount} available)
-              </p>
-            )}
             {clusterMutation.error && (
               <p className="mb-3 text-xs text-red-600">
                 {clusterMutation.error instanceof Error
