@@ -94,7 +94,11 @@ export function AgentIdentityBar({ trace, className }: AgentIdentityBarProps) {
                     )}
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={config.avatar} alt={config.label} className="h-[26px] w-[26px] object-cover" />
+                    <img
+                      src={config.avatar}
+                      alt={config.label}
+                      className="h-[26px] w-[26px] object-cover"
+                    />
                   </div>
                 ) : (
                   <div
