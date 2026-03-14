@@ -1102,7 +1102,7 @@ function ProductPreviewCarousel({ isLight }: { isLight: boolean }) {
       style={{
         background: isLight
           ? 'linear-gradient(180deg, #f0f1f3 0%, #fafbfc 100%)'
-          : 'linear-gradient(180deg, #111113 0%, #f0f1f3 100%)',
+          : 'linear-gradient(180deg, #111113 0%, #0f1117 100%)',
       }}
     >
       <div className="mx-auto max-w-5xl px-6 pb-24 pt-16">
@@ -1492,9 +1492,11 @@ export default function Home() {
             }}
           />
         )}
-        {/* Light mode overlay to keep text readable over image */}
-        {isLight && heroImage && (
-          <div className="pointer-events-none absolute inset-0 bg-white/60" />
+        {/* Overlay to keep text readable over image */}
+        {heroImage && (
+          <div
+            className={`pointer-events-none absolute inset-0 ${isLight ? 'bg-white/60' : 'bg-black/40'}`}
+          />
         )}
 
         {/* Radial glows */}
@@ -1520,12 +1522,12 @@ export default function Home() {
           {/* Pill badge */}
           <div
             className={`animate-hero-entrance mb-8 inline-flex items-center gap-2 rounded-full border px-4 py-1.5 backdrop-blur-sm ${
-              isLight ? 'border-primary/15 bg-white/70' : 'border-white/[0.06] bg-white/[0.03]'
+              isLight ? 'border-primary/15 bg-white/70' : 'border-white/20 bg-white/10'
             }`}
           >
             <Zap className="h-3.5 w-3.5 text-accent-gold" />
             <span
-              className={`text-xs font-medium tracking-wide ${isLight ? 'text-text-secondary' : 'text-white/50'}`}
+              className={`text-xs font-medium tracking-wide ${isLight ? 'text-text-secondary' : 'text-white/80'}`}
             >
               {branding.tagline}
             </span>
@@ -1558,7 +1560,7 @@ export default function Home() {
           {/* Subtitle */}
           <h2
             className={`animate-hero-entrance-delay-2 mb-8 text-xl font-medium tracking-wide sm:text-2xl ${
-              isLight ? 'text-text-secondary' : 'text-white/60'
+              isLight ? 'text-text-secondary' : 'text-white/90'
             }`}
           >
             {branding.subtitle}
@@ -1568,7 +1570,7 @@ export default function Home() {
           {branding.description && (
             <p
               className={`animate-hero-entrance-delay-2 mx-auto mb-8 max-w-lg whitespace-pre-line text-base leading-relaxed ${
-                isLight ? 'text-text-muted' : 'text-white/40'
+                isLight ? 'text-text-muted' : 'text-white/75'
               }`}
             >
               {branding.description}
@@ -1656,7 +1658,7 @@ export default function Home() {
       <ProductPreviewCarousel isLight={isLight} />
 
       {/* ── Section 5: Bento Feature Grid ────────────── */}
-      <section className="bg-surface py-28">
+      <section className="bg-surface py-28 dark:bg-background">
         <div className="mx-auto max-w-[1120px] px-8">
           <ScrollReveal className="mb-16 text-center">
             <p className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-primary">
@@ -1671,19 +1673,19 @@ export default function Home() {
           </ScrollReveal>
 
           <ScrollReveal>
-            <div className="grid grid-cols-12 gap-[2px]">
+            <div className="grid grid-cols-12 gap-[2px] bg-border dark:bg-[#2d3148]">
               {bentoFeatures.map((f) => (
                 <Link
                   key={f.title}
                   href={f.href}
-                  className={`bento-card group relative flex flex-col overflow-hidden bg-[#fafbfc] p-9 transition-colors duration-300 hover:bg-[#f3f4f6] ${f.cols}`}
+                  className={`bento-card group relative flex flex-col overflow-hidden bg-[#fafbfc] dark:bg-[#1a1d27] p-9 transition-colors duration-300 hover:bg-[#f3f4f6] dark:hover:bg-[#1e2130] ${f.cols}`}
                 >
                   {/* Accent line */}
                   <div
                     className={`absolute left-0 top-0 h-[2px] w-12 opacity-0 transition-all duration-300 group-hover:w-16 group-hover:opacity-100 ${f.accent}`}
                   />
                   {f.badge && (
-                    <span className="absolute right-4 top-4 rounded-full bg-primary/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-primary">
+                    <span className="absolute right-4 top-4 rounded-full bg-primary/10 dark:bg-primary/20 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-primary">
                       {f.badge}
                     </span>
                   )}
