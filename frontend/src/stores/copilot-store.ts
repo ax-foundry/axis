@@ -2,6 +2,13 @@ import { create } from 'zustand';
 
 import type { Thought, SkillInfo } from '@/types';
 
+export type DatasetLabel = 'evaluation' | 'monitoring' | 'human_signals' | 'kpi';
+
+interface HistoryMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
 interface CopilotState {
   // Streaming state
   isStreaming: boolean;
@@ -17,6 +24,12 @@ interface CopilotState {
   // Session
   sessionId: string | null;
 
+  // Dataset selection
+  selectedDataset: DatasetLabel | null;
+
+  // Conversation history (for multi-turn context)
+  conversationHistory: HistoryMessage[];
+
   // Actions
   startStreaming: () => void;
   stopStreaming: () => void;
@@ -29,6 +42,13 @@ interface CopilotState {
   // Skills actions
   setSkills: (skills: SkillInfo[]) => void;
   setSkillsLoaded: (loaded: boolean) => void;
+
+  // Dataset actions
+  setSelectedDataset: (dataset: DatasetLabel | null) => void;
+
+  // History actions
+  appendToHistory: (message: HistoryMessage) => void;
+  clearHistory: () => void;
 }
 
 export const useCopilotStore = create<CopilotState>()((set) => ({
@@ -41,6 +61,8 @@ export const useCopilotStore = create<CopilotState>()((set) => ({
   skills: [],
   skillsLoaded: false,
   sessionId: null,
+  selectedDataset: null,
+  conversationHistory: [],
 
   // Actions
   startStreaming: () =>
@@ -94,4 +116,14 @@ export const useCopilotStore = create<CopilotState>()((set) => ({
   // Skills actions
   setSkills: (skills) => set({ skills }),
   setSkillsLoaded: (loaded) => set({ skillsLoaded: loaded }),
+
+  // Dataset actions
+  setSelectedDataset: (dataset) => set({ selectedDataset: dataset }),
+
+  // History actions
+  appendToHistory: (message) =>
+    set((state) => ({
+      conversationHistory: [...state.conversationHistory.slice(-19), message],
+    })),
+  clearHistory: () => set({ conversationHistory: [] }),
 }));

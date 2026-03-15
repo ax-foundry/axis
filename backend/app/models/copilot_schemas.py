@@ -44,8 +44,11 @@ class CopilotRequest(BaseModel):
 
     message: str = Field(..., min_length=1, description="User's message to the copilot")
     data_context: DataContext | None = None
-    data: list[dict[str, Any]] | None = Field(
-        default=None, description="Evaluation data rows for analysis"
+    dataset_label: str | None = Field(
+        default=None, description="Dataset to query: evaluation, monitoring, human_signals, kpi"
+    )
+    conversation_history: list[dict[str, Any]] | None = Field(
+        default=None, description="Prior conversation turns for context"
     )
     session_id: str | None = Field(default=None, description="Optional session ID for continuity")
 

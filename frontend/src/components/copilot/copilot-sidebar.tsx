@@ -1,13 +1,13 @@
 'use client';
 
-import { Bot, Send, Loader2, X, Sparkles, AlertCircle, Database } from 'lucide-react';
+import { Sparkles, Send, Loader2, X, AlertCircle } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 
 import { useCopilotStream, useAIStatus } from '@/lib/hooks';
 import { cn } from '@/lib/utils';
-import { useDataStore } from '@/stores';
-import { useCopilotStore } from '@/stores/copilot-store';
+import { useDataStore, useMonitoringStore, useHumanSignalsStore, useKpiStore } from '@/stores';
+import { useCopilotStore, type DatasetLabel } from '@/stores/copilot-store';
 
 import { ThoughtPanel } from './thought-panel';
 
@@ -15,6 +15,13 @@ interface Message {
   role: 'user' | 'assistant';
   content: string;
   timestamp: Date;
+}
+
+interface DatasetOption {
+  label: DatasetLabel;
+  display: string;
+  available: boolean;
+  rowCount: number;
 }
 
 interface CopilotSidebarProps {
@@ -25,22 +32,55 @@ interface CopilotSidebarProps {
 export function CopilotSidebar({ isOpen, onClose }: CopilotSidebarProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
-  const [includeData, setIncludeData] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const { data, metricColumns, componentColumns } = useDataStore();
+  const dataStore = useDataStore();
+  const monitoringStore = useMonitoringStore();
+  const humanSignalsStore = useHumanSignalsStore();
+  const kpiStore = useKpiStore();
+
   const { data: aiStatus } = useAIStatus();
   const { stream, cancel, isStreaming } = useCopilotStream();
-  const { finalResponse, error, thoughts, reset } = useCopilotStore();
+  const { finalResponse, error, thoughts, reset, selectedDataset, setSelectedDataset } =
+    useCopilotStore();
 
-  // Debug logging for state changes
-  useEffect(() => {
-    console.log('[CopilotSidebar] thoughts updated, count:', thoughts.length);
-  }, [thoughts]);
+  // Build dataset options
+  const datasetOptions: DatasetOption[] = [
+    {
+      label: 'evaluation',
+      display: 'Evaluation',
+      available: dataStore.data.length > 0,
+      rowCount: dataStore.data.length,
+    },
+    {
+      label: 'monitoring',
+      display: 'Monitoring',
+      available: monitoringStore.data.length > 0,
+      rowCount: monitoringStore.data.length,
+    },
+    {
+      label: 'human_signals',
+      display: 'Human Signals',
+      available: humanSignalsStore.cases.length > 0,
+      rowCount: humanSignalsStore.cases.length,
+    },
+    {
+      label: 'kpi',
+      display: 'KPI',
+      available: kpiStore.datasetReady,
+      rowCount: 0,
+    },
+  ];
 
+  const availableDatasets = datasetOptions.filter((d) => d.available);
+
+  // Auto-select first available dataset on mount / when datasets change
   useEffect(() => {
-    console.log('[CopilotSidebar] isStreaming changed:', isStreaming);
-  }, [isStreaming]);
+    if (!selectedDataset && availableDatasets.length > 0) {
+      setSelectedDataset(availableDatasets[0].label);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [availableDatasets.length, selectedDataset, setSelectedDataset]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -52,9 +92,7 @@ export function CopilotSidebar({ isOpen, onClose }: CopilotSidebarProps) {
 
   // Handle final response from streaming
   useEffect(() => {
-    console.log('[CopilotSidebar] finalResponse changed:', finalResponse?.substring(0, 50));
     if (finalResponse) {
-      console.log('[CopilotSidebar] Adding assistant message from finalResponse');
       setMessages((prev) => [
         ...prev,
         {
@@ -69,9 +107,7 @@ export function CopilotSidebar({ isOpen, onClose }: CopilotSidebarProps) {
 
   // Handle errors
   useEffect(() => {
-    console.log('[CopilotSidebar] error changed:', error);
     if (error) {
-      console.log('[CopilotSidebar] Adding error message');
       setMessages((prev) => [
         ...prev,
         {
@@ -84,12 +120,8 @@ export function CopilotSidebar({ isOpen, onClose }: CopilotSidebarProps) {
     }
   }, [error, reset]);
 
-  const handleSend = async () => {
-    console.log('[CopilotSidebar] handleSend called, input:', input, 'isStreaming:', isStreaming);
-    if (!input.trim() || isStreaming) {
-      console.log('[CopilotSidebar] handleSend returning early');
-      return;
-    }
+  const handleSend = () => {
+    if (!input.trim() || isStreaming) return;
 
     const userMessage: Message = {
       role: 'user',
@@ -97,18 +129,10 @@ export function CopilotSidebar({ isOpen, onClose }: CopilotSidebarProps) {
       timestamp: new Date(),
     };
 
-    console.log('[CopilotSidebar] Adding user message and calling stream()');
     setMessages((prev) => [...prev, userMessage]);
     const messageToSend = input;
     setInput('');
-
-    // Start streaming with the copilot
-    console.log(
-      '[CopilotSidebar] Calling stream with:',
-      messageToSend,
-      includeData && data.length > 0
-    );
-    stream(messageToSend, includeData && data.length > 0);
+    stream(messageToSend);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -118,16 +142,14 @@ export function CopilotSidebar({ isOpen, onClose }: CopilotSidebarProps) {
     }
   };
 
-  const handleCancel = () => {
-    cancel();
-  };
-
   const suggestedQueries = [
-    'What are the main insights from this data?',
-    'Which metrics are performing below threshold?',
-    'How does this compare across experiments?',
-    'Summarize the evaluation results',
+    'Summarize this dataset',
+    'Which metrics are performing below average?',
+    'How does performance compare across groups?',
+    'What are the key statistics?',
   ];
+
+  const selectedOption = datasetOptions.find((d) => d.label === selectedDataset);
 
   if (!isOpen) return null;
 
@@ -137,10 +159,10 @@ export function CopilotSidebar({ isOpen, onClose }: CopilotSidebarProps) {
       <div className="flex h-16 flex-shrink-0 items-center justify-between border-b border-border px-4">
         <div className="flex items-center gap-2">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent-gold/20">
-            <Bot className="h-5 w-5 text-accent-gold" />
+            <Sparkles className="h-5 w-5 text-accent-gold" />
           </div>
           <div>
-            <span className="font-semibold text-text-primary">AI Copilot</span>
+            <span className="font-semibold text-text-primary">Ask Echo</span>
             {aiStatus?.configured && <p className="text-xs text-text-muted">{aiStatus.model}</p>}
           </div>
         </div>
@@ -157,13 +179,46 @@ export function CopilotSidebar({ isOpen, onClose }: CopilotSidebarProps) {
         <div className="border-warning/20 bg-warning/10 flex items-start gap-2 border-b p-3">
           <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-warning" />
           <p className="text-xs text-warning">
-            AI features require OpenAI or Anthropic API configuration. Add your API key to enable
-            the copilot.
+            Ask Echo is not configured. Add an OpenAI or Anthropic API key to enable it.
           </p>
         </div>
       )}
 
-      {/* Thought Panel - Shows real-time reasoning */}
+      {/* Dataset Picker */}
+      {availableDatasets.length > 0 && (
+        <div className="flex-shrink-0 border-b border-border px-4 py-2">
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-text-muted">Dataset:</span>
+            <div className="flex flex-wrap gap-1">
+              {availableDatasets.map((opt) => (
+                <button
+                  key={opt.label}
+                  onClick={() => setSelectedDataset(opt.label)}
+                  className={cn(
+                    'flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium transition-colors',
+                    selectedDataset === opt.label
+                      ? 'bg-primary text-white'
+                      : 'bg-gray-100 text-text-muted hover:bg-gray-200'
+                  )}
+                >
+                  {opt.display}
+                  {opt.rowCount > 0 && (
+                    <span className="opacity-70">{opt.rowCount.toLocaleString()}</span>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+          {selectedOption && (
+            <p className="mt-1 text-xs text-text-muted">
+              {selectedOption.display}
+              {selectedOption.rowCount > 0 && ` · ${selectedOption.rowCount.toLocaleString()} rows`}
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* Thought Panel */}
       <ThoughtPanel />
 
       {/* Messages */}
@@ -171,26 +226,16 @@ export function CopilotSidebar({ isOpen, onClose }: CopilotSidebarProps) {
         {messages.length === 0 && !isStreaming ? (
           <div className="py-8 text-center">
             <Sparkles className="mx-auto mb-4 h-12 w-12 text-accent-gold opacity-50" />
-            <p className="mb-4 text-text-secondary">Ask questions about your evaluation data</p>
+            <p className="mb-4 text-text-secondary">Ask Echo about your data</p>
 
-            {/* Data Context */}
-            {data.length > 0 ? (
-              <div className="mb-4 rounded-lg bg-primary-pale/50 p-3 text-left">
-                <p className="mb-1 text-sm font-medium text-text-primary">Current Context</p>
-                <p className="text-xs text-text-muted">
-                  {data.length} records | {metricColumns.length} metrics | {componentColumns.length}{' '}
-                  components
-                </p>
-              </div>
-            ) : (
+            {availableDatasets.length === 0 && (
               <div className="mb-4 rounded-lg bg-gray-100 p-3 text-left dark:bg-gray-800">
                 <p className="text-sm text-text-muted">
-                  No data loaded. Upload data for contextual insights.
+                  No data loaded. Upload a CSV to get started.
                 </p>
               </div>
             )}
 
-            {/* Suggested Queries */}
             <div className="space-y-2">
               <p className="mb-2 text-xs text-text-muted">Try asking:</p>
               {suggestedQueries.map((query, index) => (
@@ -198,7 +243,7 @@ export function CopilotSidebar({ isOpen, onClose }: CopilotSidebarProps) {
                   key={index}
                   onClick={() => setInput(query)}
                   className="w-full rounded-lg bg-gray-50 px-3 py-2 text-left text-sm text-text-secondary
-                           transition-colors hover:bg-gray-100 dark:bg-gray-800 dark:bg-gray-900 dark:hover:bg-gray-700"
+                           transition-colors hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700"
                 >
                   {query}
                 </button>
@@ -216,7 +261,7 @@ export function CopilotSidebar({ isOpen, onClose }: CopilotSidebarProps) {
             >
               {message.role === 'assistant' && (
                 <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-accent-gold/20">
-                  <Bot className="h-4 w-4 text-accent-gold" />
+                  <Sparkles className="h-4 w-4 text-accent-gold" />
                 </div>
               )}
               <div
@@ -270,38 +315,19 @@ export function CopilotSidebar({ isOpen, onClose }: CopilotSidebarProps) {
 
       {/* Input */}
       <div className="flex-shrink-0 border-t border-border p-4">
-        {/* Data toggle */}
-        {data.length > 0 && (
-          <div className="mb-3 flex items-center justify-between">
-            <button
-              onClick={() => setIncludeData(!includeData)}
-              className={cn(
-                'flex items-center gap-1.5 rounded-md px-2 py-1 text-xs transition-colors',
-                includeData
-                  ? 'bg-primary/10 text-primary'
-                  : 'bg-gray-100 text-text-muted hover:bg-gray-200 dark:bg-gray-800'
-              )}
-            >
-              <Database className="h-3 w-3" />
-              {includeData ? 'Data included' : 'Data excluded'}
-            </button>
-            <span className="text-xs text-text-muted">{data.length} rows</span>
-          </div>
-        )}
-
         <div className="flex gap-2">
           <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyPress}
-            placeholder="Ask a question..."
+            placeholder="Ask Echo..."
             rows={1}
             className="input flex-1 resize-none text-sm"
             disabled={isStreaming}
           />
           {isStreaming ? (
             <button
-              onClick={handleCancel}
+              onClick={cancel}
               className="hover:bg-error/90 rounded-lg bg-error p-2 text-white transition-colors"
             >
               <X className="h-5 w-5" />

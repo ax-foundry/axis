@@ -204,29 +204,26 @@ async def copilot_stream(request: CopilotRequest) -> EventSourceResponse:
 
     async def event_generator() -> AsyncGenerator[dict[str, str], None]:
         logger.info("=== COPILOT STREAM START ===")
-        logger.info(f"Message: {request.message[:100]}...")
-        logger.info(f"Data context: {request.data_context}")
-        logger.info(f"Data rows: {len(request.data) if request.data else 0}")
+        logger.info("Message: %s...", request.message[:100])
+        logger.info("Dataset: %s", request.dataset_label)
 
         thought_stream = ThoughtStream()
         agent = CopilotAgent(thought_stream=thought_stream)
 
-        logger.info(f"Agent configured: {agent.is_configured}")
-
         # Check if copilot is configured
         if not agent.is_configured:
-            logger.warning("Copilot not configured - no API credentials")
+            logger.warning("Ask Echo not configured - no API credentials")
             error_data = json.dumps(
                 {
-                    "error": "AI copilot is not configured. Please set up OpenAI or Anthropic API credentials.",
+                    "error": "Ask Echo is not configured. Please set up OpenAI or Anthropic API credentials.",
                 }
             )
             yield {"event": SSEEventType.ERROR.value, "data": error_data}
             yield {"event": SSEEventType.DONE.value, "data": ""}
             return
 
-        # Prepare data context
-        data_context = {}
+        # Prepare data context (schema hints only — data lives in DuckDB)
+        data_context: dict[str, object] = {}
         if request.data_context:
             data_context = {
                 "format": request.data_context.format,
@@ -234,41 +231,29 @@ async def copilot_stream(request: CopilotRequest) -> EventSourceResponse:
                 "metric_columns": request.data_context.metric_columns,
                 "columns": request.data_context.columns,
             }
-        logger.info(f"Prepared data context: {data_context}")
 
         # Start processing in a task
-        logger.info("Starting agent.process task...")
         task = asyncio.create_task(
             agent.process(
                 message=request.message,
+                dataset_label=request.dataset_label,
                 data_context=data_context,
-                data=request.data,
+                conversation_history=request.conversation_history,
             )
         )
 
         # Stream thoughts as they arrive
         try:
-            logger.info("Subscribing to thought stream...")
             subscriber = await thought_stream.subscribe()
-            logger.info("Subscribed, waiting for thoughts...")
 
-            thought_count = 0
             async for thought in subscriber:
-                thought_count += 1
-                logger.info(
-                    f"Received thought #{thought_count}: type={thought.type.value}, content={thought.content[:50]}..."
-                )
                 thought_data = thought.to_json()
                 yield {"event": SSEEventType.THOUGHT.value, "data": thought_data}
 
-            logger.info(f"Thought stream ended. Total thoughts: {thought_count}")
-
             # Wait for final response
-            logger.info("Waiting for task to complete...")
             response = await task
-            logger.info(f"Task completed. Response length: {len(response) if response else 0}")
+            logger.info("Task completed. Response length: %d", len(response) if response else 0)
 
-            # Send final response
             response_data = json.dumps(
                 {
                     "success": True,
@@ -276,7 +261,6 @@ async def copilot_stream(request: CopilotRequest) -> EventSourceResponse:
                     "thoughts_count": len(thought_stream.thoughts),
                 }
             )
-            logger.info("Sending response event")
             yield {"event": SSEEventType.RESPONSE.value, "data": response_data}
 
         except Exception as e:
@@ -308,13 +292,13 @@ async def copilot_chat(request: CopilotRequest) -> CopilotResponse:
     if not agent.is_configured:
         return CopilotResponse(
             success=False,
-            response="AI copilot is not configured. Please set up OpenAI or Anthropic API credentials.",
+            response="Ask Echo is not configured. Please set up OpenAI or Anthropic API credentials.",
             thoughts=[],
             skills_used=[],
         )
 
-    # Prepare data context
-    data_context = {}
+    # Prepare data context (schema hints only — data lives in DuckDB)
+    data_context: dict[str, object] = {}
     if request.data_context:
         data_context = {
             "format": request.data_context.format,
@@ -326,8 +310,9 @@ async def copilot_chat(request: CopilotRequest) -> CopilotResponse:
     try:
         response = await agent.process(
             message=request.message,
+            dataset_label=request.dataset_label,
             data_context=data_context,
-            data=request.data,
+            conversation_history=request.conversation_history,
         )
 
         # Convert thoughts to schema

@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useRef, useState } from 'react';
 
-import { useDataStore } from '@/stores';
+import { useDataStore, useMonitoringStore, useHumanSignalsStore } from '@/stores';
 import { useCalibrationStore } from '@/stores/calibration-store';
 import { useCopilotStore } from '@/stores/copilot-store';
 
@@ -426,89 +426,120 @@ export function useClusterPatterns() {
 /**
  * Hook for streaming copilot responses with real-time thoughts.
  *
- * Manages the SSE connection and updates the copilot store with thoughts
- * as they arrive.
+ * Reads the selected dataset from the copilot store and sends data_context
+ * (schema hints only — actual data lives in DuckDB on the backend).
  */
 export function useCopilotStream() {
-  const { data, format, metricColumns, columns } = useDataStore();
-  const { startStreaming, stopStreaming, addThought, setFinalResponse, setError, isStreaming } =
-    useCopilotStore();
+  const dataStore = useDataStore();
+  const monitoringStore = useMonitoringStore();
+  const humanSignalsStore = useHumanSignalsStore();
+  const {
+    startStreaming,
+    stopStreaming,
+    addThought,
+    setFinalResponse,
+    setError,
+    isStreaming,
+    selectedDataset,
+    conversationHistory,
+    appendToHistory,
+  } = useCopilotStore();
 
   const abortControllerRef = useRef<AbortController | null>(null);
 
   const stream = useCallback(
-    (message: string, includeData: boolean = false) => {
-      console.log('[useCopilotStream] stream() called with message:', message);
-      console.log('[useCopilotStream] includeData:', includeData, 'data.length:', data.length);
-
+    (message: string) => {
       // Cancel any existing stream
       if (abortControllerRef.current) {
-        console.log('[useCopilotStream] Aborting existing stream');
         abortControllerRef.current.abort();
       }
 
-      console.log('[useCopilotStream] Calling startStreaming()');
       startStreaming();
 
-      const dataContext = {
-        format: format || null,
-        row_count: data.length,
-        metric_columns: metricColumns,
-        columns: columns,
-      };
-      console.log('[useCopilotStream] dataContext:', dataContext);
+      // Append user message to history before sending
+      appendToHistory({ role: 'user', content: message });
 
-      console.log('[useCopilotStream] Calling createCopilotStream...');
+      // Build data_context (schema hints) based on selected dataset
+      let dataContext: {
+        format: string | null;
+        row_count: number;
+        metric_columns: string[];
+        columns: string[];
+      } = { format: null, row_count: 0, metric_columns: [], columns: [] };
+
+      const dataset = selectedDataset || 'evaluation';
+
+      if (dataset === 'evaluation') {
+        dataContext = {
+          format: dataStore.format || null,
+          row_count: dataStore.data.length,
+          metric_columns: dataStore.metricColumns,
+          columns: dataStore.columns,
+        };
+      } else if (dataset === 'monitoring') {
+        dataContext = {
+          format: monitoringStore.format || null,
+          row_count: monitoringStore.data.length,
+          metric_columns: monitoringStore.metricColumns,
+          columns: monitoringStore.columns,
+        };
+      } else if (dataset === 'human_signals') {
+        dataContext = {
+          format: null,
+          row_count: humanSignalsStore.cases.length,
+          metric_columns: [],
+          columns: humanSignalsStore.columns,
+        };
+      } else if (dataset === 'kpi') {
+        dataContext = {
+          format: null,
+          row_count: 0,
+          metric_columns: [],
+          columns: [],
+        };
+      }
+
       abortControllerRef.current = createCopilotStream(
         {
           message,
           dataContext,
-          data: includeData && data.length > 0 ? data : undefined,
+          dataset_label: dataset,
+          conversation_history: conversationHistory,
         },
         {
           onThought: (thought: Thought) => {
-            console.log(
-              '[useCopilotStream] onThought received:',
-              thought.type,
-              thought.content?.substring(0, 50)
-            );
             addThought(thought);
           },
           onResponse: (responseData) => {
-            console.log(
-              '[useCopilotStream] onResponse received:',
-              responseData.success,
-              responseData.response?.substring(0, 50)
-            );
             if (responseData.success) {
               setFinalResponse(responseData.response);
+              appendToHistory({ role: 'assistant', content: responseData.response });
             } else {
               setError('Failed to get response');
             }
           },
           onError: (errorData) => {
-            console.log('[useCopilotStream] onError received:', errorData);
             setError(errorData.error);
           },
           onDone: () => {
-            console.log('[useCopilotStream] onDone called');
             stopStreaming();
             abortControllerRef.current = null;
           },
         }
       );
-      console.log('[useCopilotStream] createCopilotStream returned');
     },
     [
-      data,
-      format,
-      metricColumns,
-      columns,
+      dataStore,
+      monitoringStore,
+      humanSignalsStore,
+      selectedDataset,
+      conversationHistory,
       startStreaming,
       stopStreaming,
       addThought,
       setFinalResponse,
       setError,
+      appendToHistory,
     ]
   );
 
