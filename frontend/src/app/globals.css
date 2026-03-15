@@ -641,6 +641,27 @@
   animation: hero-shimmer 16s linear infinite;
 }
 
+/* Nav button shimmer — same sweep but faster, for sidebar CTA text */
+.animate-nav-shimmer {
+  --sf: var(--shimmer-from-rgb, 76 217 160);
+  --st: var(--shimmer-to-rgb, 128 212 240);
+  background: linear-gradient(
+    90deg,
+    #2c3e50 0%,
+    #2c3e50 35%,
+    rgba(var(--sf) / 0.9) 44%,
+    rgba(var(--st) / 0.95) 50%,
+    rgba(var(--sf) / 0.9) 56%,
+    #2c3e50 65%,
+    #2c3e50 100%
+  );
+  background-size: 400% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: hero-shimmer 5s linear infinite;
+}
+
 /* Hero title glow (behind text, works with background-clip) */
 .hero-title-glow {
   filter: drop-shadow(0 0 80px rgba(var(--shimmer-from-rgb, 76 217 160) / 0.1))

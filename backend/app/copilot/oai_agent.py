@@ -1,6 +1,6 @@
-"""OpenAI Agents SDK implementation of Ask Echo — parallel to pydantic-ai agent.py.
+"""OpenAI Agents SDK implementation of Ask Copilot — parallel to pydantic-ai agent.py.
 
-This module provides an alternative implementation of the Ask Echo copilot using
+This module provides an alternative implementation of the Ask Copilot copilot using
 the `openai-agents` package (``agents`` module). Both implementations share the same
 DuckDB tools, ThoughtStream, and SSE contract; only the agent framework differs.
 
@@ -29,7 +29,7 @@ logger = logging.getLogger("axis.copilot.oai_agent")
 
 @dataclass
 class OAIContext:
-    """Runtime context for OAI Echo tools — mirrors CopilotDeps."""
+    """Runtime context for OAI Copilot tools — mirrors CopilotDeps."""
 
     thought_stream: ThoughtStream
     dataset_label: str = "evaluation"
@@ -84,7 +84,7 @@ class OAIContext:
 # ---------------------------------------------------------------------------
 
 
-class EchoRunHooks(RunHooks[OAIContext]):
+class CopilotRunHooks(RunHooks[OAIContext]):
     """Lifecycle hooks that emit ThoughtStream events during the agent run."""
 
     async def on_tool_start(
@@ -631,7 +631,7 @@ async def run_sql(
 
 
 # Collect tools for easy reuse
-_ECHO_TOOLS: list[FunctionTool] = [
+__COPILOT_TOOLS: list[FunctionTool] = [
     summarize_data,
     query_data,
     analyze_data,
@@ -641,7 +641,7 @@ _ECHO_TOOLS: list[FunctionTool] = [
 ]
 
 _SYSTEM_PROMPT = (
-    "You are Ask Echo, an AI assistant that analyzes data stored in DuckDB. "
+    "You are an AI assistant that analyzes data stored in DuckDB. "
     "Always use tools to answer data questions — never fabricate numbers. "
     "Use summarize_data for overviews, query_data for record lookups and filtering, "
     "analyze_data for statistics, compare_data for group comparisons, "
@@ -677,8 +677,8 @@ def _build_message_with_history(
     )
 
 
-class OAIEchoAgent:
-    """Ask Echo powered by the OpenAI Agents SDK.
+class OAICopilotAgent:
+    """Ask Copilot powered by the OpenAI Agents SDK.
 
     Parallel implementation to CopilotAgent (pydantic-ai). Both consume the same
     DuckDB tools, ThoughtStream, and CopilotRequest schema; only the agent
@@ -716,9 +716,9 @@ class OAIEchoAgent:
 
         model_name = self.llm_provider.model
         self._agent = Agent(
-            name="Ask Echo (OAI)",
+            name="Ask Copilot (OAI)",
             instructions=_SYSTEM_PROMPT,
-            tools=_ECHO_TOOLS,
+            tools=_COPILOT_TOOLS,
             model=model_name,
         )
         return self._agent
@@ -761,7 +761,7 @@ class OAIEchoAgent:
                 agent,
                 input=full_message,
                 context=oai_ctx,
-                hooks=EchoRunHooks(),
+                hooks=CopilotRunHooks(),
             )
 
             async for event in result.stream_events():

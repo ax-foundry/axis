@@ -13,6 +13,7 @@ const defaultBranding: BrandingConfig = {
   docs_url: 'https://ax-foundry.github.io/axis/',
   footer_name: 'AXIS',
   footer_icon: null,
+  copilot_name: 'Copilot',
 };
 
 interface ThemeState {

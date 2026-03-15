@@ -17,6 +17,7 @@ interface CopilotState {
   thoughts: Thought[];
   currentThought: Thought | null;
   finalResponse: string | null;
+  finalChart: Record<string, unknown> | null;
   error: string | null;
 
   // Skills
@@ -39,7 +40,7 @@ interface CopilotState {
   startStreaming: () => void;
   stopStreaming: () => void;
   addThought: (thought: Thought) => void;
-  setFinalResponse: (response: string) => void;
+  setFinalResponse: (response: string, chart?: Record<string, unknown> | null) => void;
   setError: (error: string | null) => void;
   clearThoughts: () => void;
   reset: () => void;
@@ -65,6 +66,7 @@ export const useCopilotStore = create<CopilotState>()((set) => ({
   thoughts: [],
   currentThought: null,
   finalResponse: null,
+  finalChart: null,
   error: null,
   skills: [],
   skillsLoaded: false,
@@ -80,6 +82,7 @@ export const useCopilotStore = create<CopilotState>()((set) => ({
       thoughts: [],
       currentThought: null,
       finalResponse: null,
+      finalChart: null,
       error: null,
     }),
 
@@ -95,9 +98,10 @@ export const useCopilotStore = create<CopilotState>()((set) => ({
       currentThought: thought,
     })),
 
-  setFinalResponse: (response) =>
+  setFinalResponse: (response, chart = null) =>
     set({
       finalResponse: response,
+      finalChart: chart ?? null,
       isStreaming: false,
     }),
 
@@ -119,6 +123,7 @@ export const useCopilotStore = create<CopilotState>()((set) => ({
       thoughts: [],
       currentThought: null,
       finalResponse: null,
+      finalChart: null,
       error: null,
     }),
 

@@ -6,12 +6,36 @@ import { usePathname } from 'next/navigation';
 
 import { useAppIconUrl, useBranding } from '@/lib/theme';
 
+const GUIDE_ROUTE_MAP: Array<{ routePrefix: string; guidePath: string }> = [
+  { routePrefix: '/monitoring', guidePath: 'guides/monitoring-guide.html' },
+  { routePrefix: '/production', guidePath: 'guides/production-guide.html' },
+  { routePrefix: '/evaluate', guidePath: 'guides/evaluate-guide.html' },
+  { routePrefix: '/annotation-studio', guidePath: 'guides/annotation-guide.html' },
+  { routePrefix: '/caliber-hq', guidePath: 'guides/calibration-guide.html' },
+  { routePrefix: '/human-signals', guidePath: 'guides/human-signals-guide.html' },
+  { routePrefix: '/memory', guidePath: 'guides/memory-guide.html' },
+  { routePrefix: '/simulation', guidePath: 'guides/simulation-guide.html' },
+  { routePrefix: '/learn', guidePath: 'guides/learn-guide.html' },
+  { routePrefix: '/settings', guidePath: 'guides/settings-guide.html' },
+  { routePrefix: '/agent-replay', guidePath: 'guides/agent-replay-guide.html' },
+];
+
+function resolveDocumentationUrl(pathname: string, docsBaseUrl: string): string {
+  const matchedRoute = GUIDE_ROUTE_MAP.find(
+    ({ routePrefix }) => pathname === routePrefix || pathname.startsWith(`${routePrefix}/`)
+  );
+  if (!matchedRoute) return docsBaseUrl;
+  return `${docsBaseUrl}/${matchedRoute.guidePath}`;
+}
+
 export function Footer() {
   const pathname = usePathname();
   const branding = useBranding();
   const appIconUrl = useAppIconUrl();
   const footerIcon = branding.footer_icon || appIconUrl;
   const year = new Date().getFullYear();
+  const docsBaseUrl = branding.docs_url?.replace(/\/+$/, '') || '';
+  const docsUrl = docsBaseUrl ? resolveDocumentationUrl(pathname, docsBaseUrl) : '';
 
   // Home page has its own themed footer
   if (pathname === '/') return null;
@@ -37,10 +61,10 @@ export function Footer() {
 
         {/* Right: Documentation + Powered by */}
         <div className="flex items-center gap-3 text-xs text-text-muted">
-          {branding.docs_url && (
+          {docsUrl && (
             <>
               <a
-                href={branding.docs_url}
+                href={docsUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1 transition-colors hover:text-primary"

@@ -552,6 +552,7 @@ export interface ThemePalette {
   logoUrl?: string | null;
   faviconUrl?: string | null;
   appIconUrl?: string | null;
+  copilotIconUrl?: string | null;
   // Hero image filter options
   heroContrast?: number | null;
   heroSaturation?: number | null;
@@ -573,6 +574,7 @@ export interface BrandingConfig {
   docs_url: string;
   footer_name: string;
   footer_icon: string | null;
+  copilot_name: string;
 }
 
 export interface ThemeConfigResponse {

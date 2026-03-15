@@ -159,6 +159,15 @@ export function useAIStatus() {
   });
 }
 
+export function useStoreStatus() {
+  return useQuery({
+    queryKey: ['store-status'],
+    queryFn: api.getStoreStatus,
+    staleTime: 15 * 1000, // 15 seconds
+    refetchInterval: 30 * 1000, // poll every 30s
+  });
+}
+
 export function useChat() {
   return useMutation({
     mutationFn: ({
@@ -517,7 +526,7 @@ export function useCopilotStream() {
           },
           onResponse: (responseData) => {
             if (responseData.success) {
-              setFinalResponse(responseData.response);
+              setFinalResponse(responseData.response, responseData.chart);
               appendToHistory({ role: 'assistant', content: responseData.response });
             } else {
               setError('Failed to get response');

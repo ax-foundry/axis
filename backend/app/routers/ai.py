@@ -10,7 +10,7 @@ from sse_starlette.sse import EventSourceResponse
 
 from app.config.env import settings
 from app.copilot.agent import CopilotAgent
-from app.copilot.oai_agent import OAIEchoAgent
+from app.copilot.oai_agent import OAICopilotAgent
 from app.copilot.thoughts import ThoughtStream
 from app.models.copilot_schemas import (
     CopilotRequest,
@@ -213,10 +213,10 @@ async def copilot_stream(request: CopilotRequest) -> EventSourceResponse:
 
         # Check if copilot is configured
         if not agent.is_configured:
-            logger.warning("Ask Echo not configured - no API credentials")
+            logger.warning("Ask Copilot not configured - no API credentials")
             error_data = json.dumps(
                 {
-                    "error": "Ask Echo is not configured. Please set up OpenAI or Anthropic API credentials.",
+                    "error": "Ask Copilot is not configured. Please set up OpenAI or Anthropic API credentials.",
                 }
             )
             yield {"event": SSEEventType.ERROR.value, "data": error_data}
@@ -252,7 +252,7 @@ async def copilot_stream(request: CopilotRequest) -> EventSourceResponse:
                 yield {"event": SSEEventType.THOUGHT.value, "data": thought_data}
 
             # Wait for final response
-            response = await task
+            response, chart = await task
             logger.info("Task completed. Response length: %d", len(response) if response else 0)
 
             response_data = json.dumps(
@@ -260,6 +260,7 @@ async def copilot_stream(request: CopilotRequest) -> EventSourceResponse:
                     "success": True,
                     "response": response,
                     "thoughts_count": len(thought_stream.thoughts),
+                    "chart": chart,
                 }
             )
             yield {"event": SSEEventType.RESPONSE.value, "data": response_data}
@@ -300,16 +301,16 @@ async def copilot_stream_oai(request: CopilotRequest) -> EventSourceResponse:
         logger.info("Dataset: %s", request.dataset_label)
 
         thought_stream = ThoughtStream()
-        agent = OAIEchoAgent(thought_stream=thought_stream)
+        agent = OAICopilotAgent(thought_stream=thought_stream)
 
         if not agent.is_configured:
-            logger.warning("OAI Ask Echo not configured - no API credentials")
+            logger.warning("OAI Ask Copilot not configured - no API credentials")
             yield {
                 "event": SSEEventType.ERROR.value,
                 "data": json.dumps(
                     {
                         "error": (
-                            "Ask Echo is not configured. "
+                            "Ask Copilot is not configured. "
                             "Please set up OpenAI or Anthropic API credentials."
                         )
                     }
@@ -342,7 +343,7 @@ async def copilot_stream_oai(request: CopilotRequest) -> EventSourceResponse:
             async for thought in subscriber:
                 yield {"event": SSEEventType.THOUGHT.value, "data": thought.to_json()}
 
-            response = await task
+            response, chart = await task
             logger.info("OAI task completed. Response length: %d", len(response) if response else 0)
 
             yield {
@@ -352,6 +353,7 @@ async def copilot_stream_oai(request: CopilotRequest) -> EventSourceResponse:
                         "success": True,
                         "response": response,
                         "thoughts_count": len(thought_stream.thoughts),
+                        "chart": chart,
                     }
                 ),
             }
@@ -382,7 +384,7 @@ async def copilot_chat(request: CopilotRequest) -> CopilotResponse:
     if not agent.is_configured:
         return CopilotResponse(
             success=False,
-            response="Ask Echo is not configured. Please set up OpenAI or Anthropic API credentials.",
+            response="Ask Copilot is not configured. Please set up OpenAI or Anthropic API credentials.",
             thoughts=[],
             skills_used=[],
         )
@@ -398,7 +400,7 @@ async def copilot_chat(request: CopilotRequest) -> CopilotResponse:
         }
 
     try:
-        response = await agent.process(
+        response, _chart = await agent.process(
             message=request.message,
             dataset_label=request.dataset_label,
             data_context=data_context,

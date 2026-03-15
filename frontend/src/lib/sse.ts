@@ -4,7 +4,12 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? '';
 
 export interface SSEHandlers {
   onThought?: (thought: Thought) => void;
-  onResponse?: (data: { success: boolean; response: string; thoughts_count: number }) => void;
+  onResponse?: (data: {
+    success: boolean;
+    response: string;
+    thoughts_count: number;
+    chart?: Record<string, unknown> | null;
+  }) => void;
   onError?: (error: { error: string }) => void;
   onDone?: () => void;
 }

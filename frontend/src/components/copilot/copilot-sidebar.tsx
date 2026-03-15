@@ -1,21 +1,42 @@
 'use client';
 
-import { Sparkles, Send, Loader2, X, AlertCircle } from 'lucide-react';
-import { useState, useRef, useEffect } from 'react';
+import {
+  AlertCircle,
+  Check,
+  ChevronDown,
+  ChevronUp,
+  Copy,
+  Maximize2,
+  Minimize2,
+  Send,
+  Sparkles,
+  X,
+} from 'lucide-react';
+import Image from 'next/image';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
-import { useCopilotStream, useAIStatus } from '@/lib/hooks';
+import { PlotlyChart } from '@/components/charts/plotly-chart';
+import { useCopilotStream, useAIStatus, useStoreStatus } from '@/lib/hooks';
+import { useBranding, useCopilotIcon } from '@/lib/theme';
 import { cn } from '@/lib/utils';
-import { useDataStore, useMonitoringStore, useHumanSignalsStore, useKpiStore } from '@/stores';
 import { useCopilotStore, type DatasetLabel } from '@/stores/copilot-store';
 
-import { ThoughtPanel } from './thought-panel';
+import { ExpandMessageModal } from './expand-message-modal';
+import { ThoughtSteps } from './thought-panel';
+
+import type { Thought } from '@/types';
+import type { Components } from 'react-markdown';
+
+// ─── Types ───────────────────────────────────────────────────────────────────
 
 interface Message {
   role: 'user' | 'assistant';
   content: string;
   timestamp: Date;
+  thoughts?: Thought[];
+  chart?: Record<string, unknown> | null;
 }
 
 interface DatasetOption {
@@ -30,20 +51,192 @@ interface CopilotSidebarProps {
   onClose: () => void;
 }
 
+// ─── Markdown renderers ───────────────────────────────────────────────────────
+
+const MD_COMPONENTS: Components = {
+  table: ({ children }) => (
+    <div className="my-2 overflow-x-auto rounded-lg border border-border">
+      <table className="min-w-full divide-y divide-border">{children}</table>
+    </div>
+  ),
+  thead: ({ children }) => <thead className="bg-gray-50">{children}</thead>,
+  th: ({ children }) => (
+    <th className="whitespace-nowrap px-3 py-1.5 text-left text-xs font-semibold text-text-primary">
+      {children}
+    </th>
+  ),
+  td: ({ children }) => <td className="px-3 py-1 text-sm text-text-secondary">{children}</td>,
+  tr: ({ children }) => <tr className="border-t border-border">{children}</tr>,
+  pre: ({ children }) => (
+    <div className="my-2 overflow-x-auto rounded-lg bg-gray-900">
+      <pre className="p-3 text-xs leading-relaxed text-gray-100">{children}</pre>
+    </div>
+  ),
+  code: ({ children, className, ...props }) => {
+    const isBlock = className?.startsWith('language-');
+    return isBlock ? (
+      <code className={className} {...props}>
+        {children}
+      </code>
+    ) : (
+      <code className="rounded bg-gray-200 px-1 py-0.5 font-mono text-xs text-gray-800" {...props}>
+        {children}
+      </code>
+    );
+  },
+};
+
+const COLLAPSE_THRESHOLD = 600;
+
+// ─── MessageBubble ────────────────────────────────────────────────────────────
+
+function MessageBubble({ message }: { message: Message }) {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const isLong = message.content.length > COLLAPSE_THRESHOLD;
+
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(message.content);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
+
+  // ── User bubble ──
+  if (message.role === 'user') {
+    return (
+      <div className="flex justify-end px-1">
+        <div className="max-w-[82%] rounded-2xl bg-primary px-4 py-2.5 text-white shadow-sm">
+          <p className="whitespace-pre-wrap text-sm leading-relaxed">{message.content}</p>
+          <p className="mt-1 text-right text-[10px] text-white/50">
+            {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Assistant bubble ──
+  return (
+    <>
+      <div className="px-1">
+        {/* Thoughts toggle */}
+        {message.thoughts && message.thoughts.length > 0 && (
+          <ThoughtSteps thoughts={message.thoughts} compact />
+        )}
+
+        {/* Chart (if agent produced one) */}
+        {message.chart && (
+          <div className="mb-2 overflow-hidden rounded-xl border border-border bg-white shadow-sm">
+            <PlotlyChart
+              data={(message.chart.data as Plotly.Data[]) ?? []}
+              layout={(message.chart.layout as Partial<Plotly.Layout>) ?? {}}
+              style={{ width: '100%', height: 260 }}
+            />
+          </div>
+        )}
+
+        {/* Response card */}
+        <div className="border-border/60 rounded-2xl border bg-white px-4 py-3 shadow-sm">
+          {/* Content */}
+          <div className={cn('relative', isLong && !isExpanded && 'max-h-[300px] overflow-hidden')}>
+            <div className="prose prose-sm max-w-none text-text-primary prose-headings:font-semibold prose-headings:text-text-primary prose-p:leading-relaxed prose-strong:text-text-primary prose-ul:my-1 prose-li:my-0">
+              <ReactMarkdown remarkPlugins={[remarkGfm]} components={MD_COMPONENTS}>
+                {message.content}
+              </ReactMarkdown>
+            </div>
+            {isLong && !isExpanded && (
+              <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-white to-transparent" />
+            )}
+          </div>
+
+          {/* Show more/less */}
+          {isLong && (
+            <button
+              onClick={() => setIsExpanded((v) => !v)}
+              className="mt-2 flex items-center gap-1 text-xs font-medium text-primary hover:text-primary-dark"
+            >
+              {isExpanded ? (
+                <>
+                  <ChevronUp className="h-3 w-3" /> Show less
+                </>
+              ) : (
+                <>
+                  <ChevronDown className="h-3 w-3" /> Show full response
+                </>
+              )}
+            </button>
+          )}
+
+          {/* Action footer */}
+          <div className="border-border/40 mt-2.5 flex items-center gap-0.5 border-t pt-2">
+            <button
+              onClick={handleCopy}
+              className="flex items-center gap-1 rounded-md px-2 py-1 text-[11px] text-text-muted transition-colors hover:bg-gray-100 hover:text-text-primary"
+            >
+              {copied ? (
+                <>
+                  <Check className="h-3 w-3 text-success" /> Copied
+                </>
+              ) : (
+                <>
+                  <Copy className="h-3 w-3" /> Copy
+                </>
+              )}
+            </button>
+            <button
+              onClick={() => setShowModal(true)}
+              className="flex items-center gap-1 rounded-md px-2 py-1 text-[11px] text-text-muted transition-colors hover:bg-gray-100 hover:text-text-primary"
+            >
+              <Maximize2 className="h-3 w-3" /> Expand
+            </button>
+            <span className="text-text-muted/50 ml-auto text-[10px]">
+              {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {showModal && (
+        <ExpandMessageModal
+          content={message.content}
+          timestamp={message.timestamp}
+          onClose={() => setShowModal(false)}
+        />
+      )}
+    </>
+  );
+}
+
+// ─── CopilotSidebar ───────────────────────────────────────────────────────────
+
+const MIN_WIDTH = 320;
+const MAX_WIDTH = 900;
+const DEFAULT_WIDTH = 384;
+
 export function CopilotSidebar({ isOpen, onClose }: CopilotSidebarProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
+  const [sidebarWidth, setSidebarWidth] = useState(DEFAULT_WIDTH);
+  const [isDetached, setIsDetached] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const thoughtsRef = useRef<Thought[]>([]);
+  const { url: copilotIcon } = useCopilotIcon();
+  const { copilot_name: copilotName } = useBranding();
 
-  const dataStore = useDataStore();
-  const monitoringStore = useMonitoringStore();
-  const humanSignalsStore = useHumanSignalsStore();
-  const kpiStore = useKpiStore();
+  // Resize drag state
+  const isResizing = useRef(false);
+  const resizeStartX = useRef(0);
+  const resizeStartWidth = useRef(DEFAULT_WIDTH);
 
   const { data: aiStatus } = useAIStatus();
+  const { data: storeStatus } = useStoreStatus();
   const { stream, cancel, isStreaming } = useCopilotStream();
   const {
     finalResponse,
+    finalChart,
     error,
     thoughts,
     reset,
@@ -53,37 +246,47 @@ export function CopilotSidebar({ isOpen, onClose }: CopilotSidebarProps) {
     setProvider,
   } = useCopilotStore();
 
-  // Build dataset options
+  // Keep a ref snapshot of thoughts so we can capture them when response arrives
+  useEffect(() => {
+    thoughtsRef.current = thoughts;
+  }, [thoughts]);
+
+  // ── Dataset options ──
+  const duckdbDatasets = storeStatus?.datasets ?? {};
+  const duckRows = (table: string) =>
+    (duckdbDatasets[table] as { rows?: number } | undefined)?.rows ?? 0;
+
   const datasetOptions: DatasetOption[] = [
     {
       label: 'evaluation',
       display: 'Evaluation',
-      available: dataStore.data.length > 0,
-      rowCount: dataStore.data.length,
+      available: duckRows('eval_data') > 0,
+      rowCount: duckRows('eval_data'),
     },
     {
       label: 'monitoring',
       display: 'Monitoring',
-      available: monitoringStore.data.length > 0,
-      rowCount: monitoringStore.data.length,
+      available: duckRows('monitoring_data') > 0,
+      rowCount: duckRows('monitoring_data'),
     },
     {
       label: 'human_signals',
       display: 'Human Signals',
-      available: humanSignalsStore.cases.length > 0,
-      rowCount: humanSignalsStore.cases.length,
+      available: duckRows('human_signals_cases') > 0,
+      rowCount: duckRows('human_signals_cases'),
     },
     {
       label: 'kpi',
       display: 'KPI',
-      available: kpiStore.datasetReady,
-      rowCount: 0,
+      available: duckRows('kpi_data') > 0,
+      rowCount: duckRows('kpi_data'),
     },
   ];
 
   const availableDatasets = datasetOptions.filter((d) => d.available);
+  const selectedOption = datasetOptions.find((d) => d.label === selectedDataset);
 
-  // Auto-select first available dataset on mount / when datasets change
+  // Auto-select first available
   useEffect(() => {
     if (!selectedDataset && availableDatasets.length > 0) {
       setSelectedDataset(availableDatasets[0].label);
@@ -91,15 +294,20 @@ export function CopilotSidebar({ isOpen, onClose }: CopilotSidebarProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [availableDatasets.length, selectedDataset, setSelectedDataset]);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
+  // Auto-scroll on new messages / thoughts
   useEffect(() => {
-    scrollToBottom();
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, thoughts]);
 
-  // Handle final response from streaming
+  // Auto-resize textarea
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
+  }, [input]);
+
+  // Capture thoughts + chart snapshot and attach to assistant message on completion
   useEffect(() => {
     if (finalResponse) {
       setMessages((prev) => [
@@ -108,43 +316,75 @@ export function CopilotSidebar({ isOpen, onClose }: CopilotSidebarProps) {
           role: 'assistant',
           content: finalResponse,
           timestamp: new Date(),
+          thoughts: [...thoughtsRef.current],
+          chart: finalChart ?? null,
         },
       ]);
       reset();
     }
-  }, [finalResponse, reset]);
+  }, [finalResponse, finalChart, reset]);
 
-  // Handle errors
+  // Handle error
   useEffect(() => {
     if (error) {
       setMessages((prev) => [
         ...prev,
         {
           role: 'assistant',
-          content: `Error: ${error}`,
+          content: `I encountered an error: ${error}`,
           timestamp: new Date(),
+          thoughts: [...thoughtsRef.current],
         },
       ]);
       reset();
     }
   }, [error, reset]);
 
+  // ── Resize ──
+  const handleResizeStart = useCallback(
+    (e: React.MouseEvent) => {
+      isResizing.current = true;
+      resizeStartX.current = e.clientX;
+      resizeStartWidth.current = sidebarWidth;
+      document.body.style.cursor = 'ew-resize';
+      document.body.style.userSelect = 'none';
+      e.preventDefault();
+    },
+    [sidebarWidth]
+  );
+
+  useEffect(() => {
+    const onMove = (e: MouseEvent) => {
+      if (!isResizing.current) return;
+      const delta = resizeStartX.current - e.clientX;
+      const next = Math.min(Math.max(resizeStartWidth.current + delta, MIN_WIDTH), MAX_WIDTH);
+      setSidebarWidth(next);
+    };
+    const onUp = () => {
+      if (!isResizing.current) return;
+      isResizing.current = false;
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+    return () => {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    };
+  }, []);
+
+  // ── Send ──
   const handleSend = () => {
     if (!input.trim() || isStreaming) return;
-
-    const userMessage: Message = {
-      role: 'user',
-      content: input,
-      timestamp: new Date(),
-    };
-
-    setMessages((prev) => [...prev, userMessage]);
-    const messageToSend = input;
+    setMessages((prev) => [...prev, { role: 'user', content: input, timestamp: new Date() }]);
+    const msg = input;
     setInput('');
-    stream(messageToSend);
+    if (textareaRef.current) textareaRef.current.style.height = 'auto';
+    stream(msg);
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSend();
@@ -158,120 +398,140 @@ export function CopilotSidebar({ isOpen, onClose }: CopilotSidebarProps) {
     'What are the key statistics?',
   ];
 
-  const selectedOption = datasetOptions.find((d) => d.label === selectedDataset);
-
   if (!isOpen) return null;
 
-  return (
-    <aside className="flex h-screen w-96 flex-col border-l border-border bg-surface">
+  // ── Shared inner content ──
+  const inner = (
+    <>
+      {/* Resize handle */}
+      {!isDetached && (
+        <div
+          onMouseDown={handleResizeStart}
+          className="absolute inset-y-0 left-0 z-10 w-1.5 cursor-ew-resize transition-colors hover:bg-primary/20"
+        />
+      )}
+
       {/* Header */}
-      <div className="flex h-16 flex-shrink-0 items-center justify-between border-b border-border px-4">
+      <div className="flex flex-shrink-0 items-center justify-between border-b border-border bg-[#FAFAF8] px-4 py-3">
         <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent-gold/20">
-            <Sparkles className="h-5 w-5 text-accent-gold" />
-          </div>
-          <div>
-            <span className="font-semibold text-text-primary">Ask Echo</span>
-            {aiStatus?.configured && <p className="text-xs text-text-muted">{aiStatus.model}</p>}
-          </div>
+          <p className="text-base font-semibold leading-tight text-text-primary">
+            Ask {copilotName}
+          </p>
+          {isStreaming && <p className="text-[10px] font-medium text-blue-500">thinking…</p>}
         </div>
-        <button
-          onClick={onClose}
-          className="rounded-lg p-2 transition-colors hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700"
-        >
-          <X className="h-5 w-5 text-text-muted" />
-        </button>
+
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => setIsDetached((v) => !v)}
+            title={isDetached ? 'Re-attach' : 'Float panel'}
+            className="rounded-lg p-1.5 text-text-muted transition-colors hover:bg-black/5 hover:text-text-primary"
+          >
+            {isDetached ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+          </button>
+          <button
+            onClick={onClose}
+            className="rounded-lg p-1.5 text-text-muted transition-colors hover:bg-black/5 hover:text-text-primary"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
       </div>
 
-      {/* Status Warning */}
+      {/* Not configured warning */}
       {aiStatus && !aiStatus.configured && (
-        <div className="border-warning/20 bg-warning/10 flex items-start gap-2 border-b p-3">
-          <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-warning" />
+        <div className="border-warning/20 bg-warning/8 flex flex-shrink-0 items-start gap-2 border-b p-3">
+          <AlertCircle className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-warning" />
           <p className="text-xs text-warning">
-            Ask Echo is not configured. Add an OpenAI or Anthropic API key to enable it.
+            Ask {copilotName} is not configured. Add an API key in Settings.
           </p>
         </div>
       )}
 
-      {/* Dataset Picker */}
-      {availableDatasets.length > 0 && (
-        <div className="flex-shrink-0 border-b border-border px-4 py-2">
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-text-muted">Dataset:</span>
-            <div className="flex flex-wrap gap-1">
-              {availableDatasets.map((opt) => (
-                <button
-                  key={opt.label}
-                  onClick={() => setSelectedDataset(opt.label)}
-                  className={cn(
-                    'flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium transition-colors',
-                    selectedDataset === opt.label
-                      ? 'bg-primary text-white'
-                      : 'bg-gray-100 text-text-muted hover:bg-gray-200'
-                  )}
-                >
-                  {opt.display}
-                  {opt.rowCount > 0 && (
-                    <span className="opacity-70">{opt.rowCount.toLocaleString()}</span>
-                  )}
-                </button>
-              ))}
-            </div>
+      {/* Dataset + Engine controls */}
+      <div className="flex-shrink-0 border-b border-border bg-[#FAFAF8]">
+        {/* Dataset row */}
+        <div className="flex items-center gap-2 px-4 pb-2 pt-3">
+          <p className="text-[11px] font-medium text-text-muted">Dataset:</p>
+          <div className="border-border/60 flex items-center rounded-full border bg-white px-0.5 py-0.5 shadow-sm">
+            {datasetOptions.map((opt) => (
+              <button
+                key={opt.label}
+                onClick={() => opt.available && setSelectedDataset(opt.label)}
+                disabled={!opt.available}
+                title={opt.available ? undefined : `Load ${opt.display} data to enable`}
+                className={cn(
+                  'rounded-full px-2.5 py-0.5 text-[11px] font-medium transition-all',
+                  selectedDataset === opt.label
+                    ? 'bg-[#6B7FA3] text-white shadow-sm'
+                    : opt.available
+                      ? 'text-text-secondary hover:bg-gray-100'
+                      : 'cursor-not-allowed text-gray-300'
+                )}
+              >
+                {opt.display}
+              </button>
+            ))}
           </div>
-          {selectedOption && (
-            <p className="mt-1 text-xs text-text-muted">
-              {selectedOption.display}
-              {selectedOption.rowCount > 0 && ` · ${selectedOption.rowCount.toLocaleString()} rows`}
-            </p>
-          )}
         </div>
-      )}
 
-      {/* Provider Toggle */}
-      <div className="flex flex-shrink-0 items-center gap-2 border-b border-border px-4 py-1.5">
-        <span className="text-xs text-text-muted">Engine:</span>
-        {(['pydantic-ai', 'oai-agents'] as const).map((p) => (
-          <button
-            key={p}
-            onClick={() => setProvider(p)}
-            className={cn(
-              'rounded-full px-2.5 py-0.5 text-xs font-medium transition-colors',
-              provider === p
-                ? 'bg-primary text-white'
-                : 'bg-gray-100 text-text-muted hover:bg-gray-200'
-            )}
-          >
-            {p === 'pydantic-ai' ? 'Pydantic AI' : 'OAI Agents'}
-          </button>
-        ))}
+        {/* Engine row */}
+        <div className="flex items-center gap-2 px-4 pb-2.5 pt-1">
+          <span className="text-xs font-medium text-text-muted">Engine:</span>
+          {(['pydantic-ai', 'oai-agents'] as const).map((p) => (
+            <button
+              key={p}
+              onClick={() => setProvider(p)}
+              className={cn(
+                'rounded-full px-3 py-1 text-xs font-medium transition-all',
+                provider === p
+                  ? 'bg-[#6B7FA3] text-white shadow-sm'
+                  : 'bg-gray-100 text-text-secondary hover:bg-gray-200'
+              )}
+            >
+              {p === 'pydantic-ai' ? 'Pydantic AI' : 'OAI Agents'}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {/* Thought Panel */}
-      <ThoughtPanel />
-
       {/* Messages */}
-      <div className="flex-1 space-y-4 overflow-y-auto p-4">
+      <div className="flex-1 overflow-y-auto px-3 py-4">
         {messages.length === 0 && !isStreaming ? (
-          <div className="py-8 text-center">
-            <Sparkles className="mx-auto mb-4 h-12 w-12 text-accent-gold opacity-50" />
-            <p className="mb-4 text-text-secondary">Ask Echo about your data</p>
+          /* ── Empty state ── */
+          <div className="flex flex-col items-center py-10 text-center">
+            <div className="relative mb-5 flex h-64 w-64 items-center justify-center overflow-hidden rounded-3xl">
+              {copilotIcon ? (
+                <Image
+                  src={copilotIcon}
+                  alt={copilotName}
+                  fill
+                  className="object-cover opacity-30"
+                />
+              ) : (
+                <Sparkles className="h-10 w-10 text-accent-gold/70" />
+              )}
+            </div>
+            <p className="mb-1 text-sm font-medium text-text-primary">Ask {copilotName}</p>
+            <p className="mb-5 text-xs text-text-muted">
+              {availableDatasets.length > 0
+                ? `Explore your ${selectedOption?.display ?? 'data'} with natural language`
+                : 'Load a dataset to get started'}
+            </p>
 
             {availableDatasets.length === 0 && (
-              <div className="mb-4 rounded-lg bg-gray-100 p-3 text-left dark:bg-gray-800">
-                <p className="text-sm text-text-muted">
-                  No data loaded. Upload a CSV to get started.
+              <div className="mb-4 w-full rounded-xl border border-border bg-gray-50 p-3 text-left">
+                <p className="text-xs text-text-muted">
+                  No data loaded yet. Upload a CSV or connect a database.
                 </p>
               </div>
             )}
 
-            <div className="space-y-2">
-              <p className="mb-2 text-xs text-text-muted">Try asking:</p>
-              {suggestedQueries.map((query, index) => (
+            <div className="w-full space-y-1.5">
+              {suggestedQueries.map((query, i) => (
                 <button
-                  key={index}
+                  key={i}
                   onClick={() => setInput(query)}
-                  className="w-full rounded-lg bg-gray-50 px-3 py-2 text-left text-sm text-text-secondary
-                           transition-colors hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700"
+                  className="border-border/60 w-full rounded-xl border bg-gray-50/80 px-3 py-2 text-left text-xs text-text-secondary transition-colors hover:border-border hover:bg-gray-100"
                 >
                   {query}
                 </button>
@@ -279,99 +539,88 @@ export function CopilotSidebar({ isOpen, onClose }: CopilotSidebarProps) {
             </div>
           </div>
         ) : (
-          messages.map((message, index) => (
-            <div
-              key={index}
-              className={cn(
-                'flex gap-3',
-                message.role === 'user' ? 'justify-end' : 'justify-start'
-              )}
-            >
-              {message.role === 'assistant' && (
-                <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-accent-gold/20">
-                  <Sparkles className="h-4 w-4 text-accent-gold" />
-                </div>
-              )}
-              <div
-                className={cn(
-                  'max-w-[85%] rounded-lg px-4 py-2',
-                  message.role === 'user'
-                    ? 'bg-primary text-white'
-                    : 'bg-gray-100 text-text-primary dark:bg-gray-800'
-                )}
-              >
-                {message.role === 'assistant' ? (
-                  <div className="prose prose-sm max-w-none text-text-primary prose-headings:text-text-primary prose-strong:text-text-primary prose-ul:my-1 prose-li:my-0 prose-table:w-full prose-thead:bg-gray-100 prose-th:px-3 prose-th:py-1.5 prose-th:text-left prose-th:text-xs prose-th:font-semibold prose-td:border-t prose-td:border-border prose-td:px-3 prose-td:py-1 prose-td:text-sm">
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{message.content}</ReactMarkdown>
-                  </div>
-                ) : (
-                  <p className="whitespace-pre-wrap text-sm">{message.content}</p>
-                )}
-                <p
-                  className={cn(
-                    'mt-1 text-xs',
-                    message.role === 'user' ? 'text-white/70' : 'text-text-muted'
-                  )}
-                >
-                  {message.timestamp.toLocaleTimeString([], {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })}
-                </p>
-              </div>
-            </div>
-          ))
-        )}
+          /* ── Message list ── */
+          <div className="space-y-4">
+            {messages.map((message, i) => (
+              <MessageBubble key={i} message={message} />
+            ))}
 
-        {isStreaming && messages.length > 0 && (
-          <div className="flex gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent-gold/20">
-              <Loader2 className="h-4 w-4 animate-spin text-accent-gold" />
-            </div>
-            <div className="rounded-lg bg-gray-100 px-4 py-2 dark:bg-gray-800">
-              <p className="text-sm text-text-muted">
-                {thoughts.length > 0
-                  ? `Processing (${thoughts.length} thoughts)...`
-                  : 'Starting...'}
-              </p>
-            </div>
+            {/* Live thinking card */}
+            {isStreaming && (
+              <div className="px-1">
+                <ThoughtSteps thoughts={thoughts} isStreaming />
+              </div>
+            )}
           </div>
         )}
 
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input */}
-      <div className="flex-shrink-0 border-t border-border p-4">
-        <div className="flex gap-2">
+      {/* Input bar */}
+      <div className="flex-shrink-0 border-t border-border bg-white px-3 py-3">
+        <div className="flex items-end gap-2 rounded-xl border border-border bg-gray-50 px-3 py-2 focus-within:border-primary/40 focus-within:bg-white focus-within:shadow-sm">
           <textarea
+            ref={textareaRef}
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyPress}
-            placeholder="Ask Echo..."
+            onKeyDown={handleKeyDown}
+            placeholder={`Ask ${copilotName}…`}
             rows={1}
-            className="input flex-1 resize-none text-sm"
+            className="placeholder:text-text-muted/60 flex-1 resize-none bg-transparent text-sm leading-relaxed text-text-primary outline-none"
+            style={{ maxHeight: '160px' }}
             disabled={isStreaming}
           />
           {isStreaming ? (
             <button
               onClick={cancel}
-              className="hover:bg-error/90 rounded-lg bg-error p-2 text-white transition-colors"
+              className="bg-error/10 hover:bg-error/20 mb-0.5 flex-shrink-0 rounded-lg p-1.5 text-error transition-colors"
+              title="Cancel"
             >
-              <X className="h-5 w-5" />
+              <X className="h-4 w-4" />
             </button>
           ) : (
             <button
               onClick={handleSend}
               disabled={!input.trim()}
-              className="rounded-lg bg-primary p-2 text-white transition-colors
-                       hover:bg-primary-dark disabled:opacity-50"
+              className="mb-0.5 flex-shrink-0 rounded-lg bg-primary p-1.5 text-white transition-colors hover:bg-primary-dark disabled:opacity-30"
             >
-              <Send className="h-5 w-5" />
+              <Send className="h-4 w-4" />
             </button>
           )}
         </div>
+        <p className="text-text-muted/50 mt-1.5 text-center text-[10px]">
+          Enter to send · Shift+Enter for new line
+        </p>
       </div>
+    </>
+  );
+
+  // ── Detached floating panel ──
+  if (isDetached) {
+    return (
+      <>
+        <div
+          className="fixed inset-0 z-40 bg-black/25 backdrop-blur-[2px]"
+          onClick={() => setIsDetached(false)}
+        />
+        <aside
+          className="fixed inset-y-4 right-4 z-50 flex flex-col overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-black/5"
+          style={{ width: Math.max(sidebarWidth, 680) }}
+        >
+          {inner}
+        </aside>
+      </>
+    );
+  }
+
+  // ── Normal sidebar ──
+  return (
+    <aside
+      className="relative flex h-screen flex-col border-l border-border bg-white"
+      style={{ width: sidebarWidth }}
+    >
+      {inner}
     </aside>
   );
 }
