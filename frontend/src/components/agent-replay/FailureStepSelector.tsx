@@ -61,7 +61,9 @@ interface FailureStepSelectorProps {
 }
 
 export function FailureStepSelector({ nodes, value, onChange }: FailureStepSelectorProps) {
-  const spans = flattenTree(nodes).filter((n) => n.type?.toUpperCase() === 'SPAN');
+  const spans = flattenTree(nodes).filter(
+    (n) => n.depth === 0 && n.type?.toUpperCase() === 'SPAN',
+  );
 
   return (
     <select
