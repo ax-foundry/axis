@@ -38,8 +38,7 @@ class DEFAULT_MODELS(StrEnum):
 
 
 class LLMProvider:
-    """
-    Unified LLM provider with streaming and thought callback support.
+    """Unified LLM provider with streaming and thought callback support.
 
     Provides a consistent interface for working with different LLM providers
     (OpenAI, Anthropic) and integrates with the thought streaming system.
@@ -52,8 +51,7 @@ class LLMProvider:
         temperature: float = 0.7,
         max_tokens: int = 4096,
     ) -> None:
-        """
-        Initialize the LLM provider.
+        """Initialize the LLM provider.
 
         Args:
             provider: LLM provider to use (openai or anthropic)
@@ -133,8 +131,7 @@ class LLMProvider:
         result_type: type[Any] | None = None,
         tools: list[Any] | None = None,
     ) -> Agent[Any, Any]:
-        """
-        Create a pydantic-ai Agent with the configured model.
+        """Create a pydantic-ai Agent with the configured model.
 
         Args:
             system_prompt: System prompt for the agent
@@ -167,8 +164,7 @@ class LLMProvider:
         system_prompt: str | None = None,
         on_token: Callable[[str], None] | None = None,
     ) -> str:
-        """
-        Generate a response from the LLM.
+        """Generate a response from the LLM.
 
         Args:
             prompt: User prompt/message
@@ -189,8 +185,7 @@ class LLMProvider:
         result_type: type[Any],
         system_prompt: str | None = None,
     ) -> Any:
-        """
-        Generate a structured response from the LLM.
+        """Generate a structured response from the LLM.
 
         Args:
             prompt: User prompt/message
@@ -210,8 +205,7 @@ class LLMProvider:
 
     @classmethod
     def is_configured(cls, provider: LLMProviderType | str) -> bool:
-        """
-        Check if a provider is configured with valid credentials.
+        """Check if a provider is configured with valid credentials.
 
         Args:
             provider: Provider to check
@@ -231,8 +225,7 @@ class LLMProvider:
 
     @classmethod
     def get_configured_providers(cls) -> list[LLMProviderType]:
-        """
-        Get list of providers that are properly configured.
+        """Get list of providers that are properly configured.
 
         Returns:
             List of configured provider types
@@ -245,8 +238,7 @@ class LLMProvider:
 
     @classmethod
     def get_default_provider(cls) -> LLMProviderType | None:
-        """
-        Get the default configured provider.
+        """Get the default configured provider.
 
         Prefers OpenAI if both are configured.
 

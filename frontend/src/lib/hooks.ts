@@ -443,6 +443,7 @@ export function useCopilotStream() {
     selectedDataset,
     conversationHistory,
     appendToHistory,
+    provider,
   } = useCopilotStore();
 
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -499,12 +500,16 @@ export function useCopilotStream() {
         };
       }
 
+      const streamUrl =
+        provider === 'oai-agents' ? '/api/ai/copilot/stream/oai' : '/api/ai/copilot/stream';
+
       abortControllerRef.current = createCopilotStream(
         {
           message,
           dataContext,
           dataset_label: dataset,
           conversation_history: conversationHistory,
+          stream_url: streamUrl,
         },
         {
           onThought: (thought: Thought) => {
@@ -534,6 +539,7 @@ export function useCopilotStream() {
       humanSignalsStore,
       selectedDataset,
       conversationHistory,
+      provider,
       startStreaming,
       stopStreaming,
       addThought,

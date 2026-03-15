@@ -3,6 +3,7 @@
 import { Sparkles, Send, Loader2, X, AlertCircle } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 import { useCopilotStream, useAIStatus } from '@/lib/hooks';
 import { cn } from '@/lib/utils';
@@ -41,8 +42,16 @@ export function CopilotSidebar({ isOpen, onClose }: CopilotSidebarProps) {
 
   const { data: aiStatus } = useAIStatus();
   const { stream, cancel, isStreaming } = useCopilotStream();
-  const { finalResponse, error, thoughts, reset, selectedDataset, setSelectedDataset } =
-    useCopilotStore();
+  const {
+    finalResponse,
+    error,
+    thoughts,
+    reset,
+    selectedDataset,
+    setSelectedDataset,
+    provider,
+    setProvider,
+  } = useCopilotStore();
 
   // Build dataset options
   const datasetOptions: DatasetOption[] = [
@@ -218,6 +227,25 @@ export function CopilotSidebar({ isOpen, onClose }: CopilotSidebarProps) {
         </div>
       )}
 
+      {/* Provider Toggle */}
+      <div className="flex flex-shrink-0 items-center gap-2 border-b border-border px-4 py-1.5">
+        <span className="text-xs text-text-muted">Engine:</span>
+        {(['pydantic-ai', 'oai-agents'] as const).map((p) => (
+          <button
+            key={p}
+            onClick={() => setProvider(p)}
+            className={cn(
+              'rounded-full px-2.5 py-0.5 text-xs font-medium transition-colors',
+              provider === p
+                ? 'bg-primary text-white'
+                : 'bg-gray-100 text-text-muted hover:bg-gray-200'
+            )}
+          >
+            {p === 'pydantic-ai' ? 'Pydantic AI' : 'OAI Agents'}
+          </button>
+        ))}
+      </div>
+
       {/* Thought Panel */}
       <ThoughtPanel />
 
@@ -273,8 +301,8 @@ export function CopilotSidebar({ isOpen, onClose }: CopilotSidebarProps) {
                 )}
               >
                 {message.role === 'assistant' ? (
-                  <div className="prose prose-sm max-w-none text-text-primary prose-headings:text-text-primary prose-strong:text-text-primary prose-ul:my-1 prose-li:my-0">
-                    <ReactMarkdown>{message.content}</ReactMarkdown>
+                  <div className="prose prose-sm max-w-none text-text-primary prose-headings:text-text-primary prose-strong:text-text-primary prose-ul:my-1 prose-li:my-0 prose-table:w-full prose-thead:bg-gray-100 prose-th:px-3 prose-th:py-1.5 prose-th:text-left prose-th:text-xs prose-th:font-semibold prose-td:border-t prose-td:border-border prose-td:px-3 prose-td:py-1 prose-td:text-sm">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{message.content}</ReactMarkdown>
                   </div>
                 ) : (
                   <p className="whitespace-pre-wrap text-sm">{message.content}</p>

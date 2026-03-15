@@ -19,6 +19,8 @@ export interface CopilotStreamOptions {
   };
   dataset_label?: string;
   conversation_history?: Array<{ role: string; content: string }>;
+  /** Override stream URL — defaults to /api/ai/copilot/stream */
+  stream_url?: string;
 }
 
 /**
@@ -38,7 +40,10 @@ export function createCopilotStream(
 
   const streamData = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/ai/copilot/stream`, {
+      const url = options.stream_url
+        ? `${API_BASE_URL}${options.stream_url}`
+        : `${API_BASE_URL}/api/ai/copilot/stream`;
+      const response = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

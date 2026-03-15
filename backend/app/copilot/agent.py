@@ -27,8 +27,36 @@ def _safe_json(obj: Any) -> str:
     return json.dumps(obj, default=_default)
 
 
+_MAX_RESULT_CHARS = 6_000  # Cap individual tool result size sent to LLM
+
+
 def _is_numeric(col_info: dict[str, Any]) -> bool:
     return any(t in col_info.get("column_type", "").upper() for t in _NUMERIC_TYPES)
+
+
+def _truncate_result(s: str, max_chars: int = _MAX_RESULT_CHARS) -> str:
+    """Trim a JSON result string so it never blows up the LLM context."""
+    if len(s) <= max_chars:
+        return s
+    truncated = s[:max_chars]
+    omitted = len(s) - max_chars
+    return truncated + f'… [truncated, {omitted} chars omitted]"}}'
+
+
+def _trim_filter_values(
+    fv: dict[str, Any], max_cols: int = 8, max_vals: int = 15
+) -> dict[str, Any]:
+    """Return a pruned filter_values dict to avoid huge token counts."""
+    trimmed: dict[str, Any] = {}
+    for col, vals in list(fv.items())[:max_cols]:
+        if isinstance(vals, list) and len(vals) > max_vals:
+            trimmed[col] = vals[:max_vals] + [f"… +{len(vals) - max_vals} more"]
+        else:
+            trimmed[col] = vals
+    skipped = len(fv) - max_cols
+    if skipped > 0:
+        trimmed["__note__"] = f"{skipped} more columns omitted"
+    return trimmed
 
 
 @dataclass
@@ -115,23 +143,73 @@ class CopilotAgent:
                 "Always use tools to answer data questions — never fabricate numbers. "
                 "Use summarize_data for overviews, query_data for record lookups and filtering, "
                 "analyze_data for statistics, compare_data for group comparisons, "
-                "and query_kpi_data when the dataset is kpi."
+                "query_kpi_data when the dataset is kpi, "
+                "and run_sql for any custom aggregation, date grouping, HAVING, subquery, "
+                "or anything the other tools cannot express. "
+                "Prefer run_sql over query_data when the question asks for counts, "
+                "sums, or grouping by date/time."
             ),
         )
 
         @self._agent.system_prompt
         def _dataset_context(ctx: RunContext[CopilotDeps]) -> str:
+            """Inject a per-column schema catalog so the agent knows types and sample values."""
             deps = ctx.deps
             if not deps.has_data:
                 return f"\nNote: No {deps.dataset_label} data is loaded in DuckDB yet."
-            meta = deps.store.get_metadata(deps.table_name)
-            cols = [c["column_name"] for c in meta.get("columns", [])][:30]
-            return (
-                f"\nCurrent dataset: {deps.dataset_label} | "
-                f"Table: {deps.table_name} | "
-                f"Rows: {meta.get('row_count', '?')} | "
-                f"Columns: {', '.join(cols)}"
-            )
+            store = deps.store
+            table = deps.table_name
+            meta = store.get_metadata(table)
+            all_cols = meta.get("columns", [])
+            # filter_values already computed by DuckDB store (capped per col)
+            filter_values: dict[str, Any] = meta.get("filter_values", {})
+
+            lines: list[str] = [
+                f"\nDataset: {deps.dataset_label} | Table: {table} | "
+                f"Rows: {meta.get('row_count', '?')}",
+                "Column catalog (name | DuckDB type | sample values or numeric range):",
+            ]
+
+            # One batched query for all numeric column ranges
+            num_cols = [c for c in all_cols if _is_numeric(c)][:12]
+            num_ranges: dict[str, tuple[Any, Any]] = {}
+            if num_cols:
+                agg_parts = [
+                    f'MIN(CAST("{c["column_name"]}" AS DOUBLE)) AS "{c["column_name"]}_mn", '
+                    f'MAX(CAST("{c["column_name"]}" AS DOUBLE)) AS "{c["column_name"]}_mx"'
+                    for c in num_cols
+                ]
+                try:
+                    row = store.query_list(f"SELECT {', '.join(agg_parts)} FROM {table}")
+                    if row:
+                        for c in num_cols:
+                            n = c["column_name"]
+                            num_ranges[n] = (row[0].get(f"{n}_mn"), row[0].get(f"{n}_mx"))
+                except Exception:
+                    pass
+
+            for col in all_cols[:50]:
+                col_name = col["column_name"]
+                col_type = col.get("column_type", "?")
+                if _is_numeric(col) and col_name in num_ranges:
+                    mn, mx = num_ranges[col_name]
+                    detail = f"range [{mn} → {mx}]"
+                elif col_name in filter_values:
+                    vals = filter_values[col_name]
+                    if isinstance(vals, list):
+                        sample = ", ".join(str(v) for v in vals[:10])
+                        suffix = " …" if len(vals) > 10 else ""
+                        detail = f"values [{sample}{suffix}]"
+                    else:
+                        detail = str(vals)
+                else:
+                    detail = ""
+                lines.append(f"  {col_name} | {col_type} | {detail}")
+
+            if len(all_cols) > 50:
+                lines.append(f"  … +{len(all_cols) - 50} more columns")
+
+            return "\n".join(lines)
 
         self._register_tools()
         return self._agent
@@ -174,17 +252,19 @@ class CopilotAgent:
                 lambda: store.get_metadata(table), limiter=store.query_limiter
             )
 
+            all_cols = meta.get("columns", [])
             result: dict[str, Any] = {
                 "dataset": deps.dataset_label,
                 "table": table,
                 "row_count": meta.get("row_count", 0),
-                "columns": meta.get("columns", []),
-                "filter_values": meta.get("filter_values", {}),
+                # Return column names + types only (skip per-column stats to save tokens)
+                "columns": [
+                    {"name": c["column_name"], "type": c.get("column_type", "")} for c in all_cols
+                ],
+                "filter_values": _trim_filter_values(meta.get("filter_values", {})),
             }
             if meta.get("time_range"):
                 result["time_range"] = meta["time_range"]
-            if meta.get("summary_stats"):
-                result["summary_stats"] = meta["summary_stats"]
 
             if include_numeric_stats:
                 num_cols = [c["column_name"] for c in meta.get("columns", []) if _is_numeric(c)][:8]
@@ -216,7 +296,7 @@ class CopilotAgent:
                 f"Summary: {result['row_count']} rows, {len(result['columns'])} columns",
                 skill_name="summarize_data",
             )
-            out = _safe_json(result)
+            out = _truncate_result(_safe_json(result))
             deps.set_cached("summarize_data", cache_str, out)
             return out
 
@@ -352,7 +432,7 @@ class CopilotAgent:
                 f"Query returned {result.get('total_matching', 0)} matching records",
                 skill_name="query_data",
             )
-            out = _safe_json(result)
+            out = _truncate_result(_safe_json(result))
             deps.set_cached("query_data", cache_str, out)
             return out
 
@@ -457,7 +537,7 @@ class CopilotAgent:
                 f"Analyzed {len(distributions)} columns",
                 skill_name="analyze_data",
             )
-            out = _safe_json(result)
+            out = _truncate_result(_safe_json(result))
             deps.set_cached("analyze_data", cache_str, out)
             return out
 
@@ -552,7 +632,7 @@ class CopilotAgent:
                 f"Compared {len(rows)} groups across {len(num_cols)} metrics",
                 skill_name="compare_data",
             )
-            out = _safe_json(result)
+            out = _truncate_result(_safe_json(result))
             deps.set_cached("compare_data", cache_str, out)
             return out
 
@@ -613,9 +693,66 @@ class CopilotAgent:
                 f"Retrieved {len(rows)} KPI records",
                 skill_name="query_kpi_data",
             )
-            out = _safe_json(result)
+            out = _truncate_result(_safe_json(result))
             deps.set_cached("query_kpi_data", cache_str, out)
             return out
+
+        @agent.tool
+        async def run_sql(
+            ctx: RunContext[CopilotDeps],
+            sql: str,
+            limit: int = 100,
+        ) -> str:
+            """Execute a custom SELECT query against DuckDB.
+
+            Use this for any question the other tools cannot answer directly:
+            GROUP BY date, counts per metric, HAVING clauses, date truncation,
+            multi-table joins, subqueries, window functions, etc.
+
+            Args:
+                ctx: Run context.
+                sql: A SELECT statement. Use the table name from the system prompt
+                     (e.g. eval_data, monitoring_data). LIMIT is applied automatically
+                     if not present.
+                limit: Max rows to return (capped at 500).
+
+            Returns:
+                JSON with rows and row count.
+            """
+            deps = ctx.deps
+            sql_stripped = sql.strip()
+
+            await deps.thought_stream.emit_tool_use(
+                f"Running SQL: {sql_stripped[:120]}{'…' if len(sql_stripped) > 120 else ''}",
+                skill_name="run_sql",
+            )
+
+            # Safety: only SELECT is allowed
+            if not sql_stripped.upper().startswith("SELECT"):
+                return _safe_json({"error": "Only SELECT statements are permitted."})
+
+            # Inject LIMIT if missing
+            limit_n = min(int(limit), 500)
+            sql_upper = sql_stripped.upper()
+            if "LIMIT" not in sql_upper:
+                sql_stripped = f"{sql_stripped} LIMIT {limit_n}"
+
+            try:
+                rows = await anyio.to_thread.run_sync(
+                    lambda: deps.store.query_list(sql_stripped),
+                    limiter=deps.store.query_limiter,
+                )
+            except Exception as exc:
+                await deps.thought_stream.emit_observation(
+                    f"SQL error: {exc}", skill_name="run_sql"
+                )
+                return _safe_json({"error": f"Query failed: {exc}", "sql": sql_stripped})
+
+            await deps.thought_stream.emit_observation(
+                f"SQL returned {len(rows)} rows",
+                skill_name="run_sql",
+            )
+            return _truncate_result(_safe_json({"rows": rows, "count": len(rows)}))
 
     async def process(
         self,
@@ -704,5 +841,9 @@ class CopilotAgent:
             {
                 "name": "query_kpi_data",
                 "description": "Query KPI data from the kpi_data table",
+            },
+            {
+                "name": "run_sql",
+                "description": "Execute custom SELECT SQL — for date grouping, counts, HAVING, window functions, etc.",
             },
         ]

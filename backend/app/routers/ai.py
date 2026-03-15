@@ -10,6 +10,7 @@ from sse_starlette.sse import EventSourceResponse
 
 from app.config.env import settings
 from app.copilot.agent import CopilotAgent
+from app.copilot.oai_agent import OAIEchoAgent
 from app.copilot.thoughts import ThoughtStream
 from app.models.copilot_schemas import (
     CopilotRequest,
@@ -274,6 +275,95 @@ async def copilot_stream(request: CopilotRequest) -> EventSourceResponse:
 
         finally:
             logger.info("=== COPILOT STREAM END ===")
+            yield {"event": SSEEventType.DONE.value, "data": ""}
+
+    return EventSourceResponse(event_generator())
+
+
+@router.post("/copilot/stream/oai")
+async def copilot_stream_oai(request: CopilotRequest) -> EventSourceResponse:
+    r"""Stream copilot responses using the OpenAI Agents SDK.
+
+    Same SSE contract as ``/copilot/stream`` but uses the ``openai-agents`` package.
+    Toggle between the two via the frontend provider selector.
+
+    Events:
+    - ``thought``: Individual thought (reasoning, tool_use, etc.)
+    - ``response``: Final response when processing is complete
+    - ``error``: Error occurred during processing
+    - ``done``: Stream is complete
+    """
+
+    async def event_generator() -> AsyncGenerator[dict[str, str], None]:
+        logger.info("=== OAI COPILOT STREAM START ===")
+        logger.info("Message: %s...", request.message[:100])
+        logger.info("Dataset: %s", request.dataset_label)
+
+        thought_stream = ThoughtStream()
+        agent = OAIEchoAgent(thought_stream=thought_stream)
+
+        if not agent.is_configured:
+            logger.warning("OAI Ask Echo not configured - no API credentials")
+            yield {
+                "event": SSEEventType.ERROR.value,
+                "data": json.dumps(
+                    {
+                        "error": (
+                            "Ask Echo is not configured. "
+                            "Please set up OpenAI or Anthropic API credentials."
+                        )
+                    }
+                ),
+            }
+            yield {"event": SSEEventType.DONE.value, "data": ""}
+            return
+
+        data_context: dict[str, object] = {}
+        if request.data_context:
+            data_context = {
+                "format": request.data_context.format,
+                "row_count": request.data_context.row_count,
+                "metric_columns": request.data_context.metric_columns,
+                "columns": request.data_context.columns,
+            }
+
+        task = asyncio.create_task(
+            agent.process(
+                message=request.message,
+                dataset_label=request.dataset_label,
+                data_context=data_context,
+                conversation_history=request.conversation_history,
+            )
+        )
+
+        try:
+            subscriber = await thought_stream.subscribe()
+
+            async for thought in subscriber:
+                yield {"event": SSEEventType.THOUGHT.value, "data": thought.to_json()}
+
+            response = await task
+            logger.info("OAI task completed. Response length: %d", len(response) if response else 0)
+
+            yield {
+                "event": SSEEventType.RESPONSE.value,
+                "data": json.dumps(
+                    {
+                        "success": True,
+                        "response": response,
+                        "thoughts_count": len(thought_stream.thoughts),
+                    }
+                ),
+            }
+
+        except Exception as e:
+            logger.error("OAI copilot stream error: %s", e, exc_info=True)
+            yield {"event": SSEEventType.ERROR.value, "data": json.dumps({"error": str(e)})}
+            if not task.done():
+                task.cancel()
+
+        finally:
+            logger.info("=== OAI COPILOT STREAM END ===")
             yield {"event": SSEEventType.DONE.value, "data": ""}
 
     return EventSourceResponse(event_generator())
