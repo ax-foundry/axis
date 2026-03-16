@@ -82,6 +82,8 @@ def get_request_tracer(
     route_name: str,
     trace_id: str | None = None,
     environment: str | None = None,
+    session_id: str | None = None,
+    user_id: str | None = None,
 ) -> Any:
     """Create a fresh root tracer for a single copilot request.
 
@@ -92,6 +94,10 @@ def get_request_tracer(
         route_name: The route identifier added as a tag (e.g. "copilot.stream").
         trace_id: Optional external trace ID to correlate with upstream systems.
         environment: Optional deployment environment label (e.g. "production").
+        session_id: Optional session ID to group traces from the same chat thread.
+        user_id: Authenticated user identifier. Already transformed per user_id_mode
+                 before being passed here. Sourced from x-axis-user-id header (proxy)
+                 or CopilotRequest.user_id (non-proxied callers).
 
     Returns:
         A fresh root tracer instance.
@@ -103,6 +109,8 @@ def get_request_tracer(
         tags=[_copilot_name(), route_name],
         trace_id=trace_id,
         environment=environment,
+        session_id=session_id,
+        user_id=user_id,
     )
     _client_ok = bool(getattr(tracer, "_client", None))
     logger.info(

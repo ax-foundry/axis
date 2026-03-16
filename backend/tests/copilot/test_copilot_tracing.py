@@ -141,6 +141,51 @@ async def test_noop_safety_no_env_vars() -> None:
 
 
 # ---------------------------------------------------------------------------
+# 5. session_id forwarding
+# ---------------------------------------------------------------------------
+
+
+def test_get_request_tracer_forwards_session_id() -> None:
+    """session_id passed to get_request_tracer() must reach init_tracer."""
+    with (
+        patch("app.copilot.tracing.configure_tracing"),
+        patch("app.copilot.tracing.init_tracer", return_value=MagicMock()) as mock_init,
+    ):
+        import app.copilot.tracing as tracing_mod
+
+        tracing_mod._configured = False
+
+        from app.copilot.tracing import get_request_tracer
+
+        get_request_tracer("copilot.stream", session_id="chat-abc-123")
+
+    call_kwargs = mock_init.call_args.kwargs
+    assert call_kwargs.get("session_id") == "chat-abc-123"
+
+
+# ---------------------------------------------------------------------------
+# 6. user_id forwarding
+# ---------------------------------------------------------------------------
+
+
+def test_get_request_tracer_forwards_user_id() -> None:
+    """user_id passed to get_request_tracer() must reach init_tracer."""
+    with (
+        patch("app.copilot.tracing.configure_tracing"),
+        patch("app.copilot.tracing.init_tracer", return_value=MagicMock()) as mock_init,
+    ):
+        import app.copilot.tracing as tracing_mod
+
+        tracing_mod._configured = False
+
+        from app.copilot.tracing import get_request_tracer
+
+        get_request_tracer("copilot.stream", user_id="alice@example.com")
+
+    assert mock_init.call_args.kwargs.get("user_id") == "alice@example.com"
+
+
+# ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 

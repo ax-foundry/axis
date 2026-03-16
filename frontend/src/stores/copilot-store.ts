@@ -2,6 +2,16 @@ import { create } from 'zustand';
 
 import type { Thought, SkillInfo } from '@/types';
 
+function newSessionId(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16);
+  });
+}
+
 export type DatasetLabel = 'evaluation' | 'monitoring' | 'human_signals' | 'kpi';
 
 interface HistoryMessage {
@@ -58,9 +68,13 @@ interface CopilotState {
   // History actions
   appendToHistory: (message: HistoryMessage) => void;
   clearHistory: () => void;
+
+  // Session actions
+  ensureSessionId: () => string;
+  startNewChat: () => void;
 }
 
-export const useCopilotStore = create<CopilotState>()((set) => ({
+export const useCopilotStore = create<CopilotState>()((set, get) => ({
   // Initial state
   isStreaming: false,
   thoughts: [],
@@ -143,4 +157,25 @@ export const useCopilotStore = create<CopilotState>()((set) => ({
       conversationHistory: [...state.conversationHistory.slice(-19), message],
     })),
   clearHistory: () => set({ conversationHistory: [] }),
+
+  // Session actions
+  ensureSessionId: () => {
+    const current = get().sessionId;
+    if (current) return current;
+    const id = newSessionId();
+    set({ sessionId: id });
+    return id;
+  },
+
+  startNewChat: () =>
+    set({
+      sessionId: newSessionId(),
+      conversationHistory: [],
+      isStreaming: false,
+      thoughts: [],
+      currentThought: null,
+      finalResponse: null,
+      finalChart: null,
+      error: null,
+    }),
 }));

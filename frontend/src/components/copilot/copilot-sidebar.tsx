@@ -10,6 +10,7 @@ import {
   Minimize2,
   Send,
   Sparkles,
+  SquarePen,
   X,
 } from 'lucide-react';
 import Image from 'next/image';
@@ -244,7 +245,14 @@ export function CopilotSidebar({ isOpen, onClose }: CopilotSidebarProps) {
     setSelectedDataset,
     provider,
     setProvider,
+    startNewChat,
   } = useCopilotStore();
+
+  const handleNewChat = useCallback(() => {
+    cancel();
+    startNewChat();
+    setMessages([]);
+  }, [cancel, startNewChat]);
 
   // Keep a ref snapshot of thoughts so we can capture them when response arrives
   useEffect(() => {
@@ -421,6 +429,13 @@ export function CopilotSidebar({ isOpen, onClose }: CopilotSidebarProps) {
         </div>
 
         <div className="flex items-center gap-1">
+          <button
+            onClick={handleNewChat}
+            title="New chat"
+            className="rounded-lg p-1.5 text-text-muted transition-colors hover:bg-black/5 hover:text-text-primary"
+          >
+            <SquarePen className="h-4 w-4" />
+          </button>
           <button
             onClick={() => setIsDetached((v) => !v)}
             title={isDetached ? 'Re-attach' : 'Float panel'}

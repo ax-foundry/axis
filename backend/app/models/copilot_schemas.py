@@ -51,6 +51,9 @@ class CopilotRequest(BaseModel):
         default=None, description="Prior conversation turns for context"
     )
     session_id: str | None = Field(default=None, description="Optional session ID for continuity")
+    user_id: str | None = Field(
+        default=None, description="Fallback user ID for non-proxied callers"
+    )
 
 
 class CopilotResponse(BaseModel):

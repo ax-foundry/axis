@@ -1,14 +1,16 @@
 import asyncio
 import contextlib
+import hashlib
 import json
 import logging
 from collections.abc import AsyncGenerator
 from typing import Any
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 from sse_starlette.sse import EventSourceResponse
 
+from app.config.constants import Headers
 from app.config.env import settings
 from app.copilot.agent import CopilotAgent
 from app.copilot.oai_agent import OAICopilotAgent
@@ -27,6 +29,22 @@ from app.models.copilot_schemas import (
 logger = logging.getLogger("axis.routers.ai")
 
 router = APIRouter()
+
+
+def _resolve_user_id(http_request: Request, copilot_request: CopilotRequest) -> str | None:
+    """Header always wins; body field is fallback for non-proxied/internal callers.
+
+    Applies user_id_mode transformation (raw email, sub, or hashed).
+    """
+    raw = http_request.headers.get(Headers.X_AXIS_USER_ID) or copilot_request.user_id
+    if not raw:
+        return None
+
+    mode = getattr(settings, "user_id_mode", "email")
+    if mode == "hashed_email":
+        return hashlib.sha256(raw.encode()).hexdigest()[:16]
+    # "email" and "sub" pass through as-is
+    return raw
 
 
 class ChatMessage(BaseModel):
@@ -185,7 +203,7 @@ async def ai_status() -> dict[str, object]:
 
 
 @router.post("/copilot/stream")
-async def copilot_stream(request: CopilotRequest) -> EventSourceResponse:
+async def copilot_stream(request: CopilotRequest, http_request: Request) -> EventSourceResponse:
     r"""Stream copilot responses with real-time thoughts via Server-Sent Events.
 
     This endpoint provides transparency into the AI's reasoning process
@@ -209,6 +227,13 @@ async def copilot_stream(request: CopilotRequest) -> EventSourceResponse:
         logger.info("=== COPILOT STREAM START ===")
         logger.info("Message: %s...", request.message[:100])
         logger.info("Dataset: %s", request.dataset_label)
+
+        tracer = get_request_tracer(
+            route_name="copilot.stream",
+            environment=getattr(settings, "environment", None),
+            session_id=request.session_id,
+            user_id=_resolve_user_id(http_request, request),
+        )
 
         thought_stream = ThoughtStream()
         agent = CopilotAgent(thought_stream=thought_stream)
@@ -234,11 +259,6 @@ async def copilot_stream(request: CopilotRequest) -> EventSourceResponse:
                 "metric_columns": request.data_context.metric_columns,
                 "columns": request.data_context.columns,
             }
-
-        tracer = get_request_tracer(
-            route_name="copilot.stream",
-            environment=getattr(settings, "environment", None),
-        )
         async with tracer.async_span(
             "copilot.stream",
             input=request.message,
@@ -318,7 +338,7 @@ async def copilot_stream(request: CopilotRequest) -> EventSourceResponse:
 
 
 @router.post("/copilot/stream/oai")
-async def copilot_stream_oai(request: CopilotRequest) -> EventSourceResponse:
+async def copilot_stream_oai(request: CopilotRequest, http_request: Request) -> EventSourceResponse:
     r"""Stream copilot responses using the OpenAI Agents SDK.
 
     Same SSE contract as ``/copilot/stream`` but uses the ``openai-agents`` package.
@@ -335,6 +355,13 @@ async def copilot_stream_oai(request: CopilotRequest) -> EventSourceResponse:
         logger.info("=== OAI COPILOT STREAM START ===")
         logger.info("Message: %s...", request.message[:100])
         logger.info("Dataset: %s", request.dataset_label)
+
+        tracer = get_request_tracer(
+            route_name="copilot.stream.oai",
+            environment=getattr(settings, "environment", None),
+            session_id=request.session_id,
+            user_id=_resolve_user_id(http_request, request),
+        )
 
         thought_stream = ThoughtStream()
         agent = OAICopilotAgent(thought_stream=thought_stream)
@@ -363,11 +390,6 @@ async def copilot_stream_oai(request: CopilotRequest) -> EventSourceResponse:
                 "metric_columns": request.data_context.metric_columns,
                 "columns": request.data_context.columns,
             }
-
-        tracer = get_request_tracer(
-            route_name="copilot.stream.oai",
-            environment=getattr(settings, "environment", None),
-        )
         async with tracer.async_span(
             "copilot.stream.oai",
             input=request.message,
@@ -445,7 +467,7 @@ async def copilot_stream_oai(request: CopilotRequest) -> EventSourceResponse:
 
 
 @router.post("/copilot/chat")
-async def copilot_chat(request: CopilotRequest) -> CopilotResponse:
+async def copilot_chat(request: CopilotRequest, http_request: Request) -> CopilotResponse:
     """Non-streaming copilot endpoint for simple requests.
 
     Returns the complete response with all thoughts after processing.
@@ -475,6 +497,8 @@ async def copilot_chat(request: CopilotRequest) -> CopilotResponse:
     tracer = get_request_tracer(
         route_name="copilot.chat",
         environment=getattr(settings, "environment", None),
+        session_id=request.session_id,
+        user_id=_resolve_user_id(http_request, request),
     )
     async with tracer.async_span(
         "copilot.chat",

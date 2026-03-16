@@ -26,6 +26,7 @@ export interface CopilotStreamOptions {
   conversation_history?: Array<{ role: string; content: string }>;
   /** Override stream URL — defaults to /api/ai/copilot/stream */
   stream_url?: string;
+  session_id?: string;
 }
 
 /**
@@ -59,6 +60,7 @@ export function createCopilotStream(
           data_context: options.dataContext,
           dataset_label: options.dataset_label,
           conversation_history: options.conversation_history,
+          session_id: options.session_id,
         }),
         signal: controller.signal,
       });

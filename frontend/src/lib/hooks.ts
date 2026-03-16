@@ -452,6 +452,7 @@ export function useCopilotStream() {
     selectedDataset,
     conversationHistory,
     appendToHistory,
+    ensureSessionId,
     provider,
   } = useCopilotStore();
 
@@ -466,7 +467,10 @@ export function useCopilotStream() {
 
       startStreaming();
 
-      // Append user message to history before sending
+      const sessionId = ensureSessionId();
+
+      // Build history including the new user turn so the backend sees it immediately.
+      const nextHistory = [...conversationHistory, { role: 'user' as const, content: message }];
       appendToHistory({ role: 'user', content: message });
 
       // Build data_context (schema hints) based on selected dataset
@@ -517,8 +521,9 @@ export function useCopilotStream() {
           message,
           dataContext,
           dataset_label: dataset,
-          conversation_history: conversationHistory,
+          conversation_history: nextHistory,
           stream_url: streamUrl,
+          session_id: sessionId,
         },
         {
           onThought: (thought: Thought) => {
@@ -555,6 +560,7 @@ export function useCopilotStream() {
       setFinalResponse,
       setError,
       appendToHistory,
+      ensureSessionId,
     ]
   );
 
