@@ -166,11 +166,11 @@ function processSSEEvent(event: SSEEventType, data: string, handlers: SSEHandler
 }
 
 /**
- * Fetch available copilot skills (non-streaming).
+ * Fetch available copilot tools (non-streaming).
  */
-export async function fetchCopilotSkills(): Promise<{
+export async function fetchCopilotTools(): Promise<{
   success: boolean;
-  skills: Array<{
+  tools: Array<{
     name: string;
     description: string;
     version: string;
@@ -186,10 +186,10 @@ export async function fetchCopilotSkills(): Promise<{
   }>;
   total: number;
 }> {
-  const response = await fetch(`${API_BASE_URL}/api/ai/copilot/skills`);
+  const response = await fetch(`${API_BASE_URL}/api/ai/copilot/tools`);
 
   if (!response.ok) {
-    throw new Error(`Failed to fetch skills: ${response.status}`);
+    throw new Error(`Failed to fetch tools: ${response.status}`);
   }
 
   return response.json();

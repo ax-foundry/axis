@@ -74,16 +74,16 @@ const TYPE_MAP: Record<ThoughtType, StepStyle> = {
 
 function getStepStyle(thought: Thought): StepStyle {
   if (thought.type === 'tool_use') {
-    const skill = thought.skill_name?.toLowerCase() ?? '';
-    if (skill.includes('sql') || skill.includes('query') || skill.includes('kpi')) {
+    const tool = thought.tool_name?.toLowerCase() ?? '';
+    if (tool.includes('sql') || tool.includes('query') || tool.includes('kpi')) {
       return {
         icon: Database,
-        label: skill.includes('kpi') ? 'Fetching KPIs' : 'Querying Data',
+        label: tool.includes('kpi') ? 'Fetching KPIs' : 'Querying Data',
         iconClass: 'text-violet-500',
         bgClass: 'bg-violet-50',
       };
     }
-    if (skill.includes('summarize')) {
+    if (tool.includes('summarize')) {
       return {
         icon: LayoutList,
         label: 'Summarizing',
@@ -91,7 +91,7 @@ function getStepStyle(thought: Thought): StepStyle {
         bgClass: 'bg-cyan-50',
       };
     }
-    if (skill.includes('analyze')) {
+    if (tool.includes('analyze')) {
       return {
         icon: Activity,
         label: 'Analyzing Data',
@@ -99,7 +99,7 @@ function getStepStyle(thought: Thought): StepStyle {
         bgClass: 'bg-orange-50',
       };
     }
-    if (skill.includes('compare')) {
+    if (tool.includes('compare')) {
       return {
         icon: TrendingUp,
         label: 'Comparing',
@@ -157,8 +157,8 @@ function StepRow({
             <span className="font-semibold text-text-primary">
               {index + 1}. {label}
             </span>
-            {thought.skill_name && (
-              <span className="ml-1.5 font-normal text-text-muted">· {thought.skill_name}</span>
+            {thought.tool_name && (
+              <span className="ml-1.5 font-normal text-text-muted">· {thought.tool_name}</span>
             )}
           </p>
           {isLong && (

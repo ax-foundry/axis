@@ -1,36 +1,36 @@
 import logging
 from typing import Any
 
-from app.copilot.skills.base import BaseSkill, SkillMetadata, SkillParameter
 from app.copilot.thoughts import ThoughtStream
+from app.copilot.tools.base import BaseTool, ToolMetadata, ToolParameter
 
-logger = logging.getLogger("axis.copilot.skills.analyze")
+logger = logging.getLogger("axis.copilot.tools.analyze")
 
 
-class AnalyzeSkill(BaseSkill):
-    """Skill for performing statistical analysis on evaluation data."""
+class AnalyzeTool(BaseTool):
+    """Tool for performing statistical analysis on evaluation data."""
 
     def __init__(self) -> None:
-        """Initialize the analyze skill."""
-        metadata = SkillMetadata(
+        """Initialize the analyze tool."""
+        metadata = ToolMetadata(
             name="analyze",
             description="Perform statistical analysis on evaluation data including distributions, correlations, and patterns",
             version="1.0.0",
             parameters=[
-                SkillParameter(
+                ToolParameter(
                     name="analysis_type",
                     type="string",
                     description="Type of analysis: 'distribution', 'correlation', 'pattern', 'all'",
                     required=False,
                     default="all",
                 ),
-                SkillParameter(
+                ToolParameter(
                     name="metrics",
                     type="array",
                     description="Specific metrics to analyze",
                     required=False,
                 ),
-                SkillParameter(
+                ToolParameter(
                     name="include_outliers",
                     type="boolean",
                     description="Whether to identify outliers",
@@ -50,18 +50,7 @@ class AnalyzeSkill(BaseSkill):
         params: dict[str, Any] | None = None,
         thought_stream: ThoughtStream | None = None,
     ) -> dict[str, Any]:
-        """Execute statistical analysis.
-
-        Args:
-            message: User's analysis request
-            data: Evaluation records to analyze
-            data_context: Context about the data
-            params: Analysis parameters
-            thought_stream: Stream for thoughts
-
-        Returns:
-            Analysis results with statistics and insights
-        """
+        """Execute statistical analysis."""
         params = self.validate_params(params)
 
         await self.emit_thought(
@@ -85,7 +74,6 @@ class AnalyzeSkill(BaseSkill):
             analysis_type = params.get("analysis_type", "all")
             include_outliers = params.get("include_outliers", True)
 
-            # Get numeric columns
             numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
             metrics_to_analyze = params.get("metrics") or numeric_cols[:10]
             metrics_to_analyze = [m for m in metrics_to_analyze if m in numeric_cols]
@@ -96,7 +84,6 @@ class AnalyzeSkill(BaseSkill):
                 "metrics_analyzed": metrics_to_analyze,
             }
 
-            # Distribution analysis
             if analysis_type in ["distribution", "all"]:
                 await self.emit_thought(
                     thought_stream,
@@ -122,7 +109,6 @@ class AnalyzeSkill(BaseSkill):
 
                 result["distributions"] = distributions
 
-            # Correlation analysis
             if analysis_type in ["correlation", "all"] and len(metrics_to_analyze) > 1:
                 await self.emit_thought(
                     thought_stream,
@@ -134,12 +120,10 @@ class AnalyzeSkill(BaseSkill):
                 if len(corr_data) > 2:
                     corr_matrix = corr_data.corr()
                     correlations = {}
-
-                    # Find strong correlations
                     strong_correlations = []
                     for i, m1 in enumerate(metrics_to_analyze):
                         for j, m2 in enumerate(metrics_to_analyze):
-                            if i < j:  # Upper triangle only
+                            if i < j:
                                 corr_val = corr_matrix.loc[m1, m2]
                                 if not pd.isna(corr_val):
                                     correlations[f"{m1}_vs_{m2}"] = float(corr_val)
@@ -157,7 +141,6 @@ class AnalyzeSkill(BaseSkill):
                     result["correlations"] = correlations
                     result["strong_correlations"] = strong_correlations
 
-            # Outlier detection
             if include_outliers and analysis_type in ["pattern", "all"]:
                 await self.emit_thought(
                     thought_stream,
@@ -190,9 +173,7 @@ class AnalyzeSkill(BaseSkill):
 
                 result["outliers"] = outliers
 
-            # Generate insights
             insights = []
-
             if "distributions" in result:
                 for metric, dist in result["distributions"].items():
                     if dist["mean"] < 0.5 and dist["max"] <= 1.0:
@@ -221,7 +202,6 @@ class AnalyzeSkill(BaseSkill):
                 f"Analysis complete: {len(insights)} insights generated",
                 "observation",
             )
-
             return result
 
         except Exception as e:

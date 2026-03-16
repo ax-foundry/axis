@@ -1,4 +1,4 @@
-# Analyze Skill
+# Analyze Tool
 
 Performs comprehensive statistical analysis on evaluation data.
 

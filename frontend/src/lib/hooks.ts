@@ -6,7 +6,7 @@ import { useCalibrationStore } from '@/stores/calibration-store';
 import { useCopilotStore } from '@/stores/copilot-store';
 
 import * as api from './api';
-import { createCopilotStream, createReportStream, fetchCopilotSkills } from './sse';
+import { createCopilotStream, createReportStream, fetchCopilotTools } from './sse';
 
 import type {
   AnnotationWithNotes,
@@ -580,18 +580,18 @@ export function useCopilotStream() {
 }
 
 /**
- * Hook for fetching available copilot skills.
+ * Hook for fetching available copilot tools.
  */
-export function useCopilotSkills() {
-  const { setSkills, setSkillsLoaded } = useCopilotStore();
+export function useCopilotTools() {
+  const { setTools, setToolsLoaded } = useCopilotStore();
 
   return useQuery({
-    queryKey: ['copilot-skills'],
+    queryKey: ['copilot-tools'],
     queryFn: async () => {
-      const response = await fetchCopilotSkills();
+      const response = await fetchCopilotTools();
       if (response.success) {
-        setSkills(response.skills);
-        setSkillsLoaded(true);
+        setTools(response.tools);
+        setToolsLoaded(true);
       }
       return response;
     },

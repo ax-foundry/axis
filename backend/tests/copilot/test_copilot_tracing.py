@@ -29,6 +29,7 @@ async def test_oai_process_returns_tuple() -> None:
         patch.object(agent, "_get_agent", return_value=MagicMock()),
         patch("app.copilot.tracing.init_tracer", return_value=_noop_tracer()),
         patch("app.copilot.tracing.configure_tracing"),
+        patch("app.copilot.oai_agent._build_schema_context", new=AsyncMock(return_value="")),
     ):
         result = await agent.process("Hello", dataset_label="evaluation")
 
@@ -209,6 +210,133 @@ def _noop_tracer() -> MagicMock:
     cm.__aexit__ = AsyncMock(return_value=False)
     tracer.async_span = MagicMock(return_value=cm)
     return tracer
+
+
+def _noop_tracer_capturing() -> MagicMock:
+    """Like _noop_tracer but records (span_name, kwargs) in .span_calls."""
+    tracer = _noop_tracer()
+    tracer.span_calls: list[tuple[str, dict]] = []  # type: ignore[assignment]
+
+    original_async_span = tracer.async_span
+
+    def record(name: str, **kwargs: object) -> object:
+        tracer.span_calls.append((name, kwargs))
+        return original_async_span(name, **kwargs)
+
+    tracer.async_span = MagicMock(side_effect=record)
+    return tracer
+
+
+# ---------------------------------------------------------------------------
+# 7. Tool span naming — pydantic-ai agent
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_agent_tool_span_name_and_tool_name_attr() -> None:
+    """CopilotAgent tool spans must be 'copilot.tool.call' with tool_name attribute."""
+    from app.copilot.thoughts import ThoughtStream
+
+    thought_stream = ThoughtStream()
+    capturing = _noop_tracer_capturing()
+
+    deps_mock = MagicMock()
+    deps_mock.dataset_label = "evaluation"
+    deps_mock.has_data = False  # short-circuits before DuckDB
+
+    ctx_mock = MagicMock()
+    ctx_mock.deps = deps_mock
+
+    with patch("app.copilot.agent.get_copilot_tracer", return_value=capturing):
+        import app.copilot.agent as agent_mod
+
+        copilot_agent = agent_mod.CopilotAgent(thought_stream=thought_stream)
+        inner_agent = copilot_agent._get_agent()
+        # pydantic-ai 1.x: tools live in _function_toolset.tools dict
+        summarize_fn = inner_agent._function_toolset.tools["summarize_data"].function
+        await summarize_fn(ctx_mock, include_numeric_stats=False)
+
+    span_names = [n for n, _ in capturing.span_calls]
+    assert "copilot.tool.call" in span_names
+    tool_kw = next(kw for n, kw in capturing.span_calls if n == "copilot.tool.call")
+    assert tool_kw.get("tool_name") == "summarize_data"
+
+
+# ---------------------------------------------------------------------------
+# 8. DB span naming — pydantic-ai agent (run_sql)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_agent_db_span_name_and_db_system_attr() -> None:
+    """DB spans inside agent tools must be 'copilot.db.query' with db_system='duckdb'."""
+    from app.copilot.thoughts import ThoughtStream
+
+    thought_stream = ThoughtStream()
+    capturing = _noop_tracer_capturing()
+
+    store_mock = MagicMock()
+    store_mock.query_limiter = MagicMock()
+    store_mock.query_list = MagicMock(return_value=[])
+
+    ts_mock = AsyncMock()
+
+    deps_mock = MagicMock()
+    deps_mock.dataset_label = "evaluation"
+    deps_mock.table_name = "eval_data"
+    deps_mock.store = store_mock
+    deps_mock.thought_stream = ts_mock
+
+    ctx_mock = MagicMock()
+    ctx_mock.deps = deps_mock
+
+    with patch("app.copilot.agent.get_copilot_tracer", return_value=capturing):
+        import app.copilot.agent as agent_mod
+
+        copilot_agent = agent_mod.CopilotAgent(thought_stream=thought_stream)
+        inner_agent = copilot_agent._get_agent()
+        run_sql_fn = inner_agent._function_toolset.tools["run_sql"].function
+        with patch("anyio.to_thread.run_sync", new_callable=AsyncMock, return_value=[]):
+            await run_sql_fn(ctx_mock, sql="SELECT 1", limit=1)
+
+    span_names = [n for n, _ in capturing.span_calls]
+    assert "copilot.db.query" in span_names
+    db_kw = next(kw for n, kw in capturing.span_calls if n == "copilot.db.query")
+    assert db_kw.get("db_system") == "duckdb"
+
+
+# ---------------------------------------------------------------------------
+# 9. Tool span naming — oai_agent
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_oai_agent_tool_span_name_and_tool_name_attr() -> None:
+    """OAICopilotAgent tool spans must also use 'copilot.tool.call'."""
+    from app.copilot.oai_agent import OAIContext, summarize_data
+    from app.copilot.thoughts import ThoughtStream
+
+    thought_stream = ThoughtStream()
+    capturing = _noop_tracer_capturing()
+
+    oai_ctx_mock = MagicMock(spec=OAIContext)
+    oai_ctx_mock.dataset_label = "evaluation"
+    oai_ctx_mock.has_data = False
+    oai_ctx_mock.no_data_error = MagicMock(return_value='{"error": "no data"}')
+    oai_ctx_mock.get_cached = MagicMock(return_value=None)
+    oai_ctx_mock.thought_stream = thought_stream
+
+    # ToolContext has many required fields — mock it to avoid construction complexity
+    tool_ctx = MagicMock()
+    tool_ctx.context = oai_ctx_mock
+
+    with patch("app.copilot.oai_agent.get_copilot_tracer", return_value=capturing):
+        await summarize_data.on_invoke_tool(tool_ctx, '{"include_numeric_stats": false}')
+
+    span_names = [n for n, _ in capturing.span_calls]
+    assert "copilot.tool.call" in span_names
+    tool_kw = next(kw for n, kw in capturing.span_calls if n == "copilot.tool.call")
+    assert tool_kw.get("tool_name") == "summarize_data"
 
 
 async def _collect_sse(agent_instance: MagicMock, thought_stream: object) -> list[str]:

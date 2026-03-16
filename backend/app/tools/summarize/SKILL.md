@@ -1,4 +1,4 @@
-# Summarize Skill
+# Summarize Tool
 
 Generates comprehensive summaries and actionable insights from evaluation data.
 

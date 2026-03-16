@@ -18,7 +18,7 @@ class AnalysisResult(BaseModel):
     intent: str
     complexity: Literal["simple", "moderate", "complex"]
     requires_data: bool
-    suggested_skills: list[str]
+    suggested_tools: list[str]
     can_answer_directly: bool
     direct_answer: str | None = None
 
@@ -65,10 +65,10 @@ class AnalyzerNode(BaseNode[CopilotState, GraphDeps, str]):
         )
         logger.info("Reasoning thought emitted")
 
-        # Get available skills
-        available_skills = deps.skill_registry.list_skills()
-        skill_names = [s.name for s in available_skills]
-        state.available_skills = skill_names
+        # Get available tools
+        available_tools = deps.tool_registry.list_tools()
+        tool_names = [t.name for t in available_tools]
+        state.available_tools = tool_names
 
         # Check if we have an LLM
         if not deps.has_llm:
@@ -84,25 +84,25 @@ class AnalyzerNode(BaseNode[CopilotState, GraphDeps, str]):
 
             system_prompt = f"""You are an AI assistant analyzing user requests about evaluation data.
 
-Available skills you can use: {", ".join(skill_names)}
+Available tools you can use: {", ".join(tool_names)}
 
 Analyze the user's request and determine:
 1. What is their intent?
 2. How complex is this request? (simple/moderate/complex)
 3. Does it require looking at the actual data values?
-4. Which skills might be useful?
-5. Can you answer directly without using skills?
+4. Which tools might be useful?
+5. Can you answer directly without using tools?
 
 IMPORTANT: You can ONLY answer directly (can_answer_directly=True) if the question:
 - Does NOT require looking at specific data values (like asking about a specific test ID, metric scores, etc.)
 - Is a general knowledge question OR a question about capabilities
 - Examples of what you CANNOT answer directly: "What is the lowest metric?", "Show me results for ID X", "What's the average score?"
-- Examples of what you CAN answer directly: "What skills are available?", "How does this tool work?", "What metrics can you analyze?"
+- Examples of what you CAN answer directly: "What tools are available?", "How does this tool work?", "What metrics can you analyze?"
 
 If the user is asking about specific data, you MUST set can_answer_directly=False and requires_data=True.
-- For specific lookups (find by ID, min/max values, specific records): suggest 'query' skill
-- For general statistics and patterns: suggest 'analyze' skill
-- For summaries and insights: suggest 'summarize' skill
+- For specific lookups (find by ID, min/max values, specific records): suggest 'query' tool
+- For general statistics and patterns: suggest 'analyze' tool
+- For summaries and insights: suggest 'summarize' tool
 
 Data context: {state.data_context}
 Has data loaded: {has_data}
@@ -125,7 +125,7 @@ Number of records: {len(state.data) if has_data else 0}"""
                 f"Intent: {analysis.intent}\n"
                 f"Complexity: {analysis.complexity}\n"
                 f"Requires data: {analysis.requires_data}\n"
-                f"Suggested skills: {', '.join(analysis.suggested_skills)}",
+                f"Suggested tools: {', '.join(analysis.suggested_tools)}",
                 node_name="Analyzer",
             )
 
@@ -137,7 +137,7 @@ Number of records: {len(state.data) if has_data else 0}"""
                 and not analysis.requires_data
             ):
                 await deps.thought_stream.emit_decision(
-                    "Request can be answered directly without using skills.",
+                    "Request can be answered directly without using tools.",
                     node_name="Analyzer",
                 )
                 state.final_response = analysis.direct_answer
@@ -156,8 +156,8 @@ Number of records: {len(state.data) if has_data else 0}"""
                         PlanStep(
                             step_number=1,
                             description="Execute the request directly",
-                            skill_name=analysis.suggested_skills[0]
-                            if analysis.suggested_skills
+                            tool_name=analysis.suggested_tools[0]
+                            if analysis.suggested_tools
                             else None,
                         )
                     ],
@@ -184,7 +184,7 @@ Number of records: {len(state.data) if has_data else 0}"""
 class PlannerNode(BaseNode[CopilotState, GraphDeps, str]):
     """Creates an execution plan for complex requests.
 
-    Uses available skills to construct a multi-step plan.
+    Uses available tools to construct a multi-step plan.
     """
 
     async def run(self, ctx: GraphRunContext[CopilotState, GraphDeps]) -> "ExecutorNode":
@@ -197,21 +197,21 @@ class PlannerNode(BaseNode[CopilotState, GraphDeps, str]):
             node_name="Planner",
         )
 
-        # Get skill details for planning
-        skills_info = []
-        for skill_name in state.available_skills:
-            skill = deps.skill_registry.get_skill(skill_name)
-            if skill:
-                skills_info.append(f"- {skill.metadata.name}: {skill.metadata.description}")
+        # Get tool details for planning
+        tools_info = []
+        for tool_name in state.available_tools:
+            tool = deps.tool_registry.get_tool(tool_name)
+            if tool:
+                tools_info.append(f"- {tool.metadata.name}: {tool.metadata.description}")
 
         system_prompt = f"""You are a planning assistant that creates execution plans.
 
-Available skills:
-{chr(10).join(skills_info)}
+Available tools:
+{chr(10).join(tools_info)}
 
 Create a plan to accomplish the user's goal. Each step should:
 1. Have a clear description
-2. Specify which skill to use (if any)
+2. Specify which tool to use (if any)
 3. Specify any parameters needed
 4. List dependencies on other steps (by step number)
 
@@ -237,8 +237,8 @@ Has data: {state.data is not None and len(state.data) > 0}"""
                     PlanStep(
                         step_number=i,
                         description=step_data.get("description", ""),
-                        skill_name=step_data.get("skill_name"),
-                        skill_params=step_data.get("params", {}),
+                        tool_name=step_data.get("tool_name"),
+                        tool_params=step_data.get("params", {}),
                         depends_on=step_data.get("depends_on", []),
                     )
                 )
@@ -264,7 +264,7 @@ Has data: {state.data is not None and len(state.data) > 0}"""
                     PlanStep(
                         step_number=1,
                         description="Attempt to answer the request directly",
-                        skill_name=state.available_skills[0] if state.available_skills else None,
+                        tool_name=state.available_tools[0] if state.available_tools else None,
                     )
                 ],
             )
@@ -274,7 +274,7 @@ Has data: {state.data is not None and len(state.data) > 0}"""
 
 @dataclass
 class ExecutorNode(BaseNode[CopilotState, GraphDeps, str]):
-    """Executes the plan by running skills.
+    """Executes the plan by running tools.
 
     Processes each step in the plan and collects results.
     """
@@ -308,36 +308,36 @@ class ExecutorNode(BaseNode[CopilotState, GraphDeps, str]):
 
             await deps.thought_stream.emit_tool_use(
                 f"Step {step.step_number}: {step.description}",
-                skill_name=step.skill_name or "direct",
+                tool_name=step.tool_name or "direct",
                 node_name="Executor",
             )
 
             try:
-                if step.skill_name:
-                    # Execute skill
-                    skill = deps.skill_registry.get_skill(step.skill_name)
-                    if skill:
-                        result = await skill.execute(
+                if step.tool_name:
+                    # Execute tool
+                    tool = deps.tool_registry.get_tool(step.tool_name)
+                    if tool:
+                        result = await tool.execute(
                             message=state.message,
                             data=state.data,
                             data_context=state.data_context,
-                            params=step.skill_params,
+                            params=step.tool_params,
                             thought_stream=deps.thought_stream,
                         )
-                        state.skill_outputs[step.skill_name] = result
+                        state.tool_outputs[step.tool_name] = result
                         state.plan.mark_step_complete(step.step_number, result)
 
                         await deps.thought_stream.emit_observation(
-                            f"Skill '{step.skill_name}' completed",
+                            f"Tool '{step.tool_name}' completed",
                             node_name="Executor",
-                            skill_name=step.skill_name,
+                            tool_name=step.tool_name,
                         )
                     else:
                         state.plan.mark_step_failed(
-                            step.step_number, f"Skill '{step.skill_name}' not found"
+                            step.step_number, f"Tool '{step.tool_name}' not found"
                         )
                 else:
-                    # No skill specified - use LLM directly with data
+                    # No tool specified - use LLM directly with data
                     # Include actual data in the prompt for data queries
                     data_sample = ""
                     if state.data and len(state.data) > 0:

@@ -19,11 +19,11 @@ from app.copilot.tracing import get_request_tracer, safe_span_attrs
 from app.models.copilot_schemas import (
     CopilotRequest,
     CopilotResponse,
-    SkillInfoSchema,
-    SkillsListResponse,
     SSEEventType,
     ThoughtSchema,
     ThoughtType,
+    ToolInfoSchema,
+    ToolsListResponse,
 )
 
 logger = logging.getLogger("axis.routers.ai")
@@ -260,9 +260,10 @@ async def copilot_stream(request: CopilotRequest, http_request: Request) -> Even
                 "columns": request.data_context.columns,
             }
         async with tracer.async_span(
-            "copilot.stream",
+            "copilot.pipeline",
             input=request.message,
             **safe_span_attrs(
+                route_name="copilot.stream",
                 provider="pydantic_ai",
                 dataset_label=request.dataset_label,
                 msg_len=len(request.message),
@@ -391,9 +392,10 @@ async def copilot_stream_oai(request: CopilotRequest, http_request: Request) -> 
                 "columns": request.data_context.columns,
             }
         async with tracer.async_span(
-            "copilot.stream.oai",
+            "copilot.pipeline",
             input=request.message,
             **safe_span_attrs(
+                route_name="copilot.stream.oai",
                 provider="oai_agents",
                 dataset_label=request.dataset_label,
                 msg_len=len(request.message),
@@ -481,7 +483,7 @@ async def copilot_chat(request: CopilotRequest, http_request: Request) -> Copilo
             success=False,
             response="Ask Copilot is not configured. Please set up OpenAI or Anthropic API credentials.",
             thoughts=[],
-            skills_used=[],
+            tools_used=[],
         )
 
     # Prepare data context (schema hints only — data lives in DuckDB)
@@ -501,9 +503,10 @@ async def copilot_chat(request: CopilotRequest, http_request: Request) -> Copilo
         user_id=_resolve_user_id(http_request, request),
     )
     async with tracer.async_span(
-        "copilot.chat",
+        "copilot.pipeline",
         input=request.message,
         **safe_span_attrs(
+            route_name="copilot.chat",
             provider="pydantic_ai",
             dataset_label=request.dataset_label,
             msg_len=len(request.message),
@@ -525,7 +528,7 @@ async def copilot_chat(request: CopilotRequest, http_request: Request) -> Copilo
                     type=ThoughtType(t.type.value),
                     content=t.content,
                     node_name=t.node_name,
-                    skill_name=t.skill_name,
+                    tool_name=t.tool_name,
                     metadata=t.metadata,
                     timestamp=t.timestamp.isoformat(),
                     color=t.to_dict()["color"],
@@ -533,8 +536,8 @@ async def copilot_chat(request: CopilotRequest, http_request: Request) -> Copilo
                 for t in thought_stream.thoughts
             ]
 
-            # Get skills used
-            skills_used = list({t.skill_name for t in thought_stream.thoughts if t.skill_name})
+            # Get tools used
+            tools_used = list({t.tool_name for t in thought_stream.thoughts if t.tool_name})
 
             _root_span.set_output(response or "")
             tracer.complete(output_data={"response_len": len(response or "")})
@@ -542,7 +545,7 @@ async def copilot_chat(request: CopilotRequest, http_request: Request) -> Copilo
                 success=True,
                 response=response,
                 thoughts=thoughts,
-                skills_used=skills_used,
+                tools_used=tools_used,
             )
 
         except Exception as e:
@@ -552,13 +555,13 @@ async def copilot_chat(request: CopilotRequest, http_request: Request) -> Copilo
                 success=False,
                 response=f"An error occurred: {e}",
                 thoughts=[],
-                skills_used=[],
+                tools_used=[],
             )
 
 
-@router.get("/copilot/skills")
-async def list_copilot_skills() -> SkillsListResponse:
-    """List available copilot tools (formerly called skills).
+@router.get("/copilot/tools")
+async def list_copilot_tools() -> ToolsListResponse:
+    """List available copilot tools.
 
     Returns information about all available tools including
     their descriptions and capabilities.
@@ -566,10 +569,10 @@ async def list_copilot_skills() -> SkillsListResponse:
     agent = CopilotAgent()
     tools = agent.get_available_tools()
 
-    skill_infos = []
+    tool_infos = []
     for tool in tools:
-        skill_infos.append(
-            SkillInfoSchema(
+        tool_infos.append(
+            ToolInfoSchema(
                 name=tool["name"],
                 description=tool["description"],
                 version="1.0.0",
@@ -579,8 +582,8 @@ async def list_copilot_skills() -> SkillsListResponse:
             )
         )
 
-    return SkillsListResponse(
+    return ToolsListResponse(
         success=True,
-        skills=skill_infos,
-        total=len(skill_infos),
+        tools=tool_infos,
+        total=len(tool_infos),
     )

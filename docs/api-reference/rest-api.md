@@ -157,7 +157,7 @@ The `insights` event delivers structured cross-metric pattern analysis before th
 | `/api/ai/status` | GET | Check AI service status and configuration |
 | `/api/ai/copilot/stream` | POST | Stream copilot responses with real-time thoughts (SSE) |
 | `/api/ai/copilot/chat` | POST | Non-streaming copilot endpoint for simple requests |
-| `/api/ai/copilot/skills` | GET | List available copilot skills/tools |
+| `/api/ai/copilot/tools` | GET | List available copilot tools |
 
 ### Calibration (Align) Endpoints
 

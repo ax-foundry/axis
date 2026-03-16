@@ -883,7 +883,7 @@ export interface Thought {
   type: ThoughtType;
   content: string;
   node_name: string | null;
-  skill_name: string | null;
+  tool_name: string | null;
   metadata: Record<string, unknown>;
   timestamp: string;
   color: string;
@@ -907,11 +907,11 @@ export interface CopilotResponse {
   success: boolean;
   response: string;
   thoughts: Thought[];
-  skills_used: string[];
+  tools_used: string[];
   metadata?: Record<string, unknown>;
 }
 
-export interface SkillParameter {
+export interface ToolParameter {
   name: string;
   type: string;
   description: string | null;
@@ -919,18 +919,18 @@ export interface SkillParameter {
   default: unknown;
 }
 
-export interface SkillInfo {
+export interface ToolInfo {
   name: string;
   description: string;
   version: string;
-  parameters: SkillParameter[];
+  parameters: ToolParameter[];
   tags: string[];
   enabled: boolean;
 }
 
-export interface SkillsListResponse {
+export interface ToolsListResponse {
   success: boolean;
-  skills: SkillInfo[];
+  tools: ToolInfo[];
   total: number;
 }
 

@@ -8,8 +8,8 @@ class RequestComplexity(StrEnum):
     """Complexity level of a user request."""
 
     SIMPLE = "simple"  # Direct answer, no planning needed
-    MODERATE = "moderate"  # Some planning, single skill
-    COMPLEX = "complex"  # Multi-step plan, multiple skills
+    MODERATE = "moderate"  # Some planning, single tool
+    COMPLEX = "complex"  # Multi-step plan, multiple tools
 
 
 @dataclass
@@ -18,8 +18,8 @@ class PlanStep:
 
     step_number: int
     description: str
-    skill_name: str | None = None  # Skill to use, if any
-    skill_params: dict[str, Any] = field(default_factory=dict)
+    tool_name: str | None = None  # Tool to use, if any
+    tool_params: dict[str, Any] = field(default_factory=dict)
     depends_on: list[int] = field(default_factory=list)  # Step numbers this depends on
     status: str = "pending"  # pending, in_progress, completed, failed
     result: Any = None
@@ -99,7 +99,7 @@ class CopilotState:
     intent: str = ""  # Extracted intent from the message
     complexity: RequestComplexity = RequestComplexity.SIMPLE
     requires_data: bool = False  # Whether the request needs data to process
-    available_skills: list[str] = field(default_factory=list)  # Skills that match the request
+    available_tools: list[str] = field(default_factory=list)  # Tools that match the request
 
     # Planning
     plan: ExecutionPlan | None = None
@@ -107,7 +107,7 @@ class CopilotState:
 
     # Execution
     intermediate_results: list[Any] = field(default_factory=list)
-    skill_outputs: dict[str, Any] = field(default_factory=dict)
+    tool_outputs: dict[str, Any] = field(default_factory=dict)
 
     # Reflection
     quality_score: float = 0.0  # 0-1 quality assessment
@@ -127,7 +127,7 @@ class CopilotState:
         """Reset state for a new planning iteration."""
         self.plan = None
         self.intermediate_results = []
-        self.skill_outputs = {}
+        self.tool_outputs = {}
         self.quality_score = 0.0
         self.quality_feedback = ""
         self.needs_replanning = False

@@ -24,7 +24,7 @@ class ThoughtSchema(BaseModel):
     type: ThoughtType
     content: str
     node_name: str | None = None
-    skill_name: str | None = None
+    tool_name: str | None = None
     metadata: dict[str, Any] = Field(default_factory=dict)
     timestamp: str  # ISO format
     color: str
@@ -62,12 +62,12 @@ class CopilotResponse(BaseModel):
     success: bool
     response: str
     thoughts: list[ThoughtSchema] = Field(default_factory=list)
-    skills_used: list[str] = Field(default_factory=list)
+    tools_used: list[str] = Field(default_factory=list)
     metadata: dict[str, Any] = Field(default_factory=dict)
 
 
-class SkillParameterSchema(BaseModel):
-    """Schema for a skill parameter."""
+class ToolParameterSchema(BaseModel):
+    """Schema for a tool parameter."""
 
     name: str
     type: str  # string, integer, float, boolean, array, object
@@ -76,22 +76,22 @@ class SkillParameterSchema(BaseModel):
     default: Any = None
 
 
-class SkillInfoSchema(BaseModel):
-    """Schema for skill information in API responses."""
+class ToolInfoSchema(BaseModel):
+    """Schema for tool information in API responses."""
 
     name: str
     description: str
     version: str = "1.0.0"
-    parameters: list[SkillParameterSchema] = Field(default_factory=list)
+    parameters: list[ToolParameterSchema] = Field(default_factory=list)
     tags: list[str] = Field(default_factory=list)
     enabled: bool = True
 
 
-class SkillsListResponse(BaseModel):
-    """Response with list of available skills."""
+class ToolsListResponse(BaseModel):
+    """Response with list of available tools."""
 
     success: bool
-    skills: list[SkillInfoSchema]
+    tools: list[ToolInfoSchema]
     total: int
 
 

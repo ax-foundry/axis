@@ -341,9 +341,9 @@ class CopilotAgent:
             deps = ctx.deps
             _tracer = get_copilot_tracer()
             async with _tracer.async_span(
-                "copilot.tool.summarize_data",
+                "copilot.tool.call",
                 input={"include_numeric_stats": include_numeric_stats},
-                **safe_span_attrs(tool="summarize_data", dataset=deps.dataset_label),
+                **safe_span_attrs(tool_name="summarize_data", dataset=deps.dataset_label),
             ) as _span:
                 cache_str = f"summarize:{include_numeric_stats}"
                 cached = deps.get_cached("summarize_data", cache_str)
@@ -353,7 +353,7 @@ class CopilotAgent:
 
                 await deps.thought_stream.emit_tool_use(
                     f"Summarizing {deps.dataset_label} dataset...",
-                    skill_name="summarize_data",
+                    tool_name="summarize_data",
                 )
 
                 if not deps.has_data:
@@ -410,7 +410,7 @@ class CopilotAgent:
 
                 await deps.thought_stream.emit_observation(
                     f"Summary: {result['row_count']} rows, {len(result['columns'])} columns",
-                    skill_name="summarize_data",
+                    tool_name="summarize_data",
                 )
                 out = _truncate_result(_safe_json(result))
                 deps.set_cached("summarize_data", cache_str, out)
@@ -445,7 +445,7 @@ class CopilotAgent:
             deps = ctx.deps
             _tracer = get_copilot_tracer()
             async with _tracer.async_span(
-                "copilot.tool.query_data",
+                "copilot.tool.call",
                 input={
                     "filter_column": filter_column,
                     "filter_value": filter_value,
@@ -454,7 +454,7 @@ class CopilotAgent:
                     "search_text": search_text,
                     "limit": limit,
                 },
-                **safe_span_attrs(tool="query_data", dataset=deps.dataset_label),
+                **safe_span_attrs(tool_name="query_data", dataset=deps.dataset_label),
             ) as _span:
                 cache_str = (
                     f"query:{filter_column}:{filter_value}:{find_min_column}"
@@ -467,7 +467,7 @@ class CopilotAgent:
 
                 await deps.thought_stream.emit_tool_use(
                     "Querying data...",
-                    skill_name="query_data",
+                    tool_name="query_data",
                 )
 
                 if not deps.has_data:
@@ -562,7 +562,7 @@ class CopilotAgent:
 
                 await deps.thought_stream.emit_observation(
                     f"Query returned {result.get('total_matching', 0)} matching records",
-                    skill_name="query_data",
+                    tool_name="query_data",
                 )
                 out = _truncate_result(_safe_json(result))
                 deps.set_cached("query_data", cache_str, out)
@@ -587,9 +587,9 @@ class CopilotAgent:
             deps = ctx.deps
             _tracer = get_copilot_tracer()
             async with _tracer.async_span(
-                "copilot.tool.analyze_data",
+                "copilot.tool.call",
                 input={"columns": columns},
-                **safe_span_attrs(tool="analyze_data", dataset=deps.dataset_label),
+                **safe_span_attrs(tool_name="analyze_data", dataset=deps.dataset_label),
             ) as _span:
                 cache_str = f"analyze:{sorted(columns) if columns else 'all'}"
                 cached = deps.get_cached("analyze_data", cache_str)
@@ -599,7 +599,7 @@ class CopilotAgent:
 
                 await deps.thought_stream.emit_tool_use(
                     "Analyzing data statistics...",
-                    skill_name="analyze_data",
+                    tool_name="analyze_data",
                 )
 
                 if not deps.has_data:
@@ -676,7 +676,7 @@ class CopilotAgent:
                 }
                 await deps.thought_stream.emit_observation(
                     f"Analyzed {len(distributions)} columns",
-                    skill_name="analyze_data",
+                    tool_name="analyze_data",
                 )
                 out = _truncate_result(_safe_json(result))
                 deps.set_cached("analyze_data", cache_str, out)
@@ -703,9 +703,9 @@ class CopilotAgent:
             deps = ctx.deps
             _tracer = get_copilot_tracer()
             async with _tracer.async_span(
-                "copilot.tool.compare_data",
+                "copilot.tool.call",
                 input={"group_by": group_by, "metric_column": metric_column},
-                **safe_span_attrs(tool="compare_data", dataset=deps.dataset_label),
+                **safe_span_attrs(tool_name="compare_data", dataset=deps.dataset_label),
             ) as _span:
                 cache_str = f"compare:{group_by}:{metric_column}"
                 cached = deps.get_cached("compare_data", cache_str)
@@ -715,7 +715,7 @@ class CopilotAgent:
 
                 await deps.thought_stream.emit_tool_use(
                     f"Comparing by {group_by}...",
-                    skill_name="compare_data",
+                    tool_name="compare_data",
                 )
 
                 if not deps.has_data:
@@ -780,7 +780,7 @@ class CopilotAgent:
                 }
                 await deps.thought_stream.emit_observation(
                     f"Compared {len(rows)} groups across {len(num_cols)} metrics",
-                    skill_name="compare_data",
+                    tool_name="compare_data",
                 )
                 out = _truncate_result(_safe_json(result))
                 deps.set_cached("compare_data", cache_str, out)
@@ -807,9 +807,9 @@ class CopilotAgent:
             deps = ctx.deps
             _tracer = get_copilot_tracer()
             async with _tracer.async_span(
-                "copilot.tool.query_kpi_data",
+                "copilot.tool.call",
                 input={"filter_category": filter_category, "limit": limit},
-                **safe_span_attrs(tool="query_kpi_data", dataset=deps.dataset_label),
+                **safe_span_attrs(tool_name="query_kpi_data", dataset=deps.dataset_label),
             ) as _span:
                 cache_str = f"kpi:{filter_category}:{limit}"
                 cached = deps.get_cached("query_kpi_data", cache_str)
@@ -819,7 +819,7 @@ class CopilotAgent:
 
                 await deps.thought_stream.emit_tool_use(
                     "Querying KPI data...",
-                    skill_name="query_kpi_data",
+                    tool_name="query_kpi_data",
                 )
 
                 store = deps.store
@@ -850,7 +850,7 @@ class CopilotAgent:
                 }
                 await deps.thought_stream.emit_observation(
                     f"Retrieved {len(rows)} KPI records",
-                    skill_name="query_kpi_data",
+                    tool_name="query_kpi_data",
                 )
                 out = _truncate_result(_safe_json(result))
                 deps.set_cached("query_kpi_data", cache_str, out)
@@ -899,12 +899,12 @@ class CopilotAgent:
             deps = ctx.deps
             _tracer = get_copilot_tracer()
             async with _tracer.async_span(
-                "copilot.tool.plot_data",
+                "copilot.tool.call",
                 input={
                     "sql": sql_fingerprint(sql.strip()),
                     "layout_title": (layout or {}).get("title", ""),
                 },
-                **safe_span_attrs(tool="plot_data", dataset=deps.dataset_label),
+                **safe_span_attrs(tool_name="plot_data", dataset=deps.dataset_label),
             ) as _span:
                 _tracer.add_trace("info", "cache_miss")
 
@@ -913,13 +913,13 @@ class CopilotAgent:
                     title_text = title_text.get("text", "chart")
                 await deps.thought_stream.emit_tool_use(
                     f"Building chart: {title_text}",
-                    skill_name="plot_data",
+                    tool_name="plot_data",
                 )
 
                 if not deps.has_data:
                     return deps.no_data_error()
 
-                sql_stripped = sql.strip()
+                sql_stripped = sql.strip().rstrip(";")
                 sql_err = _check_sql_safety(sql_stripped)
                 if sql_err:
                     return _safe_json({"error": sql_err})
@@ -930,8 +930,13 @@ class CopilotAgent:
 
                 try:
                     async with _tracer.async_span(
-                        "copilot.duckdb.query",
-                        **safe_span_attrs(table=deps.table_name, sql=sql_fingerprint(sql_stripped)),
+                        "copilot.db.query",
+                        **safe_span_attrs(
+                            table=deps.table_name,
+                            sql=sql_fingerprint(sql_stripped),
+                            db_system="duckdb",
+                            query_kind="select",
+                        ),
                     ) as _sql_span:
                         rows = await anyio.to_thread.run_sync(
                             lambda: deps.store.query_list(sql_stripped),
@@ -1019,7 +1024,7 @@ class CopilotAgent:
                 n_points = len(rows)
                 await deps.thought_stream.emit_observation(
                     f"Chart ready: {title_text} ({n_points} points, {len(resolved_traces)} series)",
-                    skill_name="plot_data",
+                    tool_name="plot_data",
                 )
                 _tracer.add_trace("info", "tool_complete", metadata={"result_len": n_points})
                 out = (
@@ -1054,16 +1059,16 @@ class CopilotAgent:
             deps = ctx.deps
             _tracer = get_copilot_tracer()
             async with _tracer.async_span(
-                "copilot.tool.run_sql",
+                "copilot.tool.call",
                 input={"sql": sql_fingerprint(sql.strip()), "limit": limit},
-                **safe_span_attrs(tool="run_sql", dataset=deps.dataset_label),
+                **safe_span_attrs(tool_name="run_sql", dataset=deps.dataset_label),
             ) as _span:
-                sql_stripped = sql.strip()
+                sql_stripped = sql.strip().rstrip(";")
                 _tracer.add_trace("info", "cache_miss")
 
                 await deps.thought_stream.emit_tool_use(
                     f"Running SQL: {sql_stripped[:120]}{'…' if len(sql_stripped) > 120 else ''}",
-                    skill_name="run_sql",
+                    tool_name="run_sql",
                 )
 
                 # Safety: block DDL/DML and non-SELECT statements
@@ -1081,8 +1086,13 @@ class CopilotAgent:
 
                 try:
                     async with _tracer.async_span(
-                        "copilot.duckdb.query",
-                        **safe_span_attrs(table=deps.table_name, sql=sql_fingerprint(sql_stripped)),
+                        "copilot.db.query",
+                        **safe_span_attrs(
+                            table=deps.table_name,
+                            sql=sql_fingerprint(sql_stripped),
+                            db_system="duckdb",
+                            query_kind="select",
+                        ),
                     ) as _sql_span:
                         rows = await anyio.to_thread.run_sync(
                             lambda: deps.store.query_list(sql_stripped),
@@ -1092,13 +1102,13 @@ class CopilotAgent:
                     _tracer.add_trace("info", "query_done", metadata={"row_count": len(rows)})
                 except Exception as exc:
                     await deps.thought_stream.emit_observation(
-                        f"SQL error: {exc}", skill_name="run_sql"
+                        f"SQL error: {exc}", tool_name="run_sql"
                     )
                     return _safe_json({"error": f"Query failed: {exc}", "sql": sql_stripped})
 
                 await deps.thought_stream.emit_observation(
                     f"SQL returned {len(rows)} rows",
-                    skill_name="run_sql",
+                    tool_name="run_sql",
                 )
                 out = _truncate_result(_safe_json({"rows": rows, "count": len(rows)}))
                 _tracer.add_trace("info", "tool_complete", metadata={"result_len": len(out)})
@@ -1160,14 +1170,19 @@ class CopilotAgent:
 
         tracer = get_copilot_tracer()
         async with tracer.async_span(
-            "copilot.agent",
+            "copilot.agent.run",
             input=message,
-            **safe_span_attrs(dataset_label=dataset_label, msg_len=len(message)),
+            **safe_span_attrs(
+                provider="pydantic_ai",
+                agent_framework="pydantic_ai",
+                dataset_label=dataset_label,
+                msg_len=len(message),
+            ),
         ) as _proc_span:
             try:
                 agent = self._get_agent()
                 async with tracer.async_span(
-                    "copilot.agent.runner", input=full_message
+                    "copilot.agent.execute", input=full_message
                 ) as _llm_span:
                     result = await agent.run(full_message, deps=deps)
                 await self.thought_stream.emit_success("Request completed", node_name="Agent")

@@ -15,7 +15,13 @@ import anyio
 from agents import Agent, FunctionTool, RunContextWrapper, RunHooks, RunItemStreamEvent, Runner
 from agents import function_tool as ft
 
-from app.copilot.agent import _is_numeric, _safe_json, _trim_filter_values, _truncate_result
+from app.copilot.agent import (
+    _check_sql_safety,
+    _is_numeric,
+    _safe_json,
+    _trim_filter_values,
+    _truncate_result,
+)
 from app.copilot.llm.provider import LLMProvider
 from app.copilot.thoughts import ThoughtStream
 from app.copilot.tracing import get_copilot_tracer, safe_span_attrs, sql_fingerprint
@@ -36,6 +42,7 @@ class OAIContext:
     dataset_label: str = "evaluation"
     data_context: dict[str, Any] = field(default_factory=dict)
     _cache: dict[str, str] = field(default_factory=dict)
+    chart_spec: dict[str, Any] | None = None
 
     @property
     def table_name(self) -> str:
@@ -98,7 +105,7 @@ class CopilotRunHooks(RunHooks[OAIContext]):
         tool_name = getattr(tool, "name", str(tool))
         await context.context.thought_stream.emit_tool_use(
             f"Using tool: {tool_name}",
-            skill_name=tool_name,
+            tool_name=tool_name,
         )
 
     async def on_tool_end(
@@ -112,7 +119,7 @@ class CopilotRunHooks(RunHooks[OAIContext]):
         tool_name = getattr(tool, "name", str(tool))
         await context.context.thought_stream.emit_observation(
             f"Tool {tool_name} completed",
-            skill_name=tool_name,
+            tool_name=tool_name,
         )
 
 
@@ -138,9 +145,9 @@ async def summarize_data(
     deps = ctx.context
     tracer = get_copilot_tracer()
     async with tracer.async_span(
-        "copilot.tool.summarize_data",
+        "copilot.tool.call",
         input={"include_numeric_stats": include_numeric_stats},
-        **safe_span_attrs(tool="summarize_data", dataset=deps.dataset_label),
+        **safe_span_attrs(tool_name="summarize_data", dataset=deps.dataset_label),
     ) as _span:
         cache_str = f"summarize:{include_numeric_stats}"
         cached = deps.get_cached("summarize_data", cache_str)
@@ -198,7 +205,7 @@ async def summarize_data(
 
         await deps.thought_stream.emit_observation(
             f"Summary: {result['row_count']} rows, {len(result['columns'])} columns",
-            skill_name="summarize_data",
+            tool_name="summarize_data",
         )
         out = _truncate_result(_safe_json(result))
         deps.set_cached("summarize_data", cache_str, out)
@@ -234,7 +241,7 @@ async def query_data(
     deps = ctx.context
     tracer = get_copilot_tracer()
     async with tracer.async_span(
-        "copilot.tool.query_data",
+        "copilot.tool.call",
         input={
             "filter_column": filter_column,
             "filter_value": filter_value,
@@ -243,7 +250,7 @@ async def query_data(
             "search_text": search_text,
             "limit": limit,
         },
-        **safe_span_attrs(tool="query_data", dataset=deps.dataset_label),
+        **safe_span_attrs(tool_name="query_data", dataset=deps.dataset_label),
     ) as _span:
         cache_str = (
             f"query:{filter_column}:{filter_value}:{find_min_column}"
@@ -346,7 +353,7 @@ async def query_data(
 
         await deps.thought_stream.emit_observation(
             f"Query returned {result.get('total_matching', 0)} matching records",
-            skill_name="query_data",
+            tool_name="query_data",
         )
         out = _truncate_result(_safe_json(result))
         deps.set_cached("query_data", cache_str, out)
@@ -372,9 +379,9 @@ async def analyze_data(
     deps = ctx.context
     tracer = get_copilot_tracer()
     async with tracer.async_span(
-        "copilot.tool.analyze_data",
+        "copilot.tool.call",
         input={"columns": columns},
-        **safe_span_attrs(tool="analyze_data", dataset=deps.dataset_label),
+        **safe_span_attrs(tool_name="analyze_data", dataset=deps.dataset_label),
     ) as _span:
         cache_str = f"analyze:{sorted(columns) if columns else 'all'}"
         cached = deps.get_cached("analyze_data", cache_str)
@@ -456,7 +463,7 @@ async def analyze_data(
         }
         await deps.thought_stream.emit_observation(
             f"Analyzed {len(distributions)} columns",
-            skill_name="analyze_data",
+            tool_name="analyze_data",
         )
         out = _truncate_result(_safe_json(result))
         deps.set_cached("analyze_data", cache_str, out)
@@ -484,9 +491,9 @@ async def compare_data(
     deps = ctx.context
     tracer = get_copilot_tracer()
     async with tracer.async_span(
-        "copilot.tool.compare_data",
+        "copilot.tool.call",
         input={"group_by": group_by, "metric_column": metric_column},
-        **safe_span_attrs(tool="compare_data", dataset=deps.dataset_label),
+        **safe_span_attrs(tool_name="compare_data", dataset=deps.dataset_label),
     ) as _span:
         cache_str = f"compare:{group_by}:{metric_column}"
         cached = deps.get_cached("compare_data", cache_str)
@@ -556,7 +563,7 @@ async def compare_data(
         }
         await deps.thought_stream.emit_observation(
             f"Compared {len(rows)} groups across {len(num_cols)} metrics",
-            skill_name="compare_data",
+            tool_name="compare_data",
         )
         out = _truncate_result(_safe_json(result))
         deps.set_cached("compare_data", cache_str, out)
@@ -584,9 +591,9 @@ async def query_kpi_data(
     deps = ctx.context
     tracer = get_copilot_tracer()
     async with tracer.async_span(
-        "copilot.tool.query_kpi_data",
+        "copilot.tool.call",
         input={"filter_category": filter_category, "limit": limit},
-        **safe_span_attrs(tool="query_kpi_data", dataset=deps.dataset_label),
+        **safe_span_attrs(tool_name="query_kpi_data", dataset=deps.dataset_label),
     ) as _span:
         cache_str = f"kpi:{filter_category}:{limit}"
         cached = deps.get_cached("query_kpi_data", cache_str)
@@ -622,7 +629,7 @@ async def query_kpi_data(
         }
         await deps.thought_stream.emit_observation(
             f"Retrieved {len(rows)} KPI records",
-            skill_name="query_kpi_data",
+            tool_name="query_kpi_data",
         )
         out = _truncate_result(_safe_json(result))
         deps.set_cached("query_kpi_data", cache_str, out)
@@ -656,15 +663,15 @@ async def run_sql(
     deps = ctx.context
     tracer = get_copilot_tracer()
     async with tracer.async_span(
-        "copilot.tool.run_sql",
+        "copilot.tool.call",
         input={"sql": sql_fingerprint(sql.strip()), "limit": limit},
-        **safe_span_attrs(tool="run_sql", dataset=deps.dataset_label),
+        **safe_span_attrs(tool_name="run_sql", dataset=deps.dataset_label),
     ) as _span:
-        sql_stripped = sql.strip()
+        sql_stripped = sql.strip().rstrip(";")
 
         await deps.thought_stream.emit_tool_use(
             f"Running SQL: {sql_stripped[:120]}{'…' if len(sql_stripped) > 120 else ''}",
-            skill_name="run_sql",
+            tool_name="run_sql",
         )
 
         tracer.add_trace("info", "cache_miss")
@@ -678,8 +685,13 @@ async def run_sql(
 
         try:
             async with tracer.async_span(
-                "copilot.duckdb.query",
-                **safe_span_attrs(table=deps.table_name, sql=sql_fingerprint(sql_stripped)),
+                "copilot.db.query",
+                **safe_span_attrs(
+                    table=deps.table_name,
+                    sql=sql_fingerprint(sql_stripped),
+                    db_system="duckdb",
+                    query_kind="select",
+                ),
             ) as _sql_span:
                 rows = await anyio.to_thread.run_sync(
                     lambda: deps.store.query_list(sql_stripped),
@@ -688,12 +700,12 @@ async def run_sql(
                 _sql_span.set_output({"row_count": len(rows)})
             tracer.add_trace("info", "query_done", metadata={"row_count": len(rows)})
         except Exception as exc:
-            await deps.thought_stream.emit_observation(f"SQL error: {exc}", skill_name="run_sql")
+            await deps.thought_stream.emit_observation(f"SQL error: {exc}", tool_name="run_sql")
             return _safe_json({"error": f"Query failed: {exc}", "sql": sql_stripped})
 
         await deps.thought_stream.emit_observation(
             f"SQL returned {len(rows)} rows",
-            skill_name="run_sql",
+            tool_name="run_sql",
         )
         out = _truncate_result(_safe_json({"rows": rows, "count": len(rows)}))
         tracer.add_trace("info", "tool_complete", metadata={"result_len": len(out)})
@@ -702,6 +714,164 @@ async def run_sql(
 
 
 # Collect tools for easy reuse
+@ft(strict_mode=False)
+async def plot_data(
+    ctx: RunContextWrapper[OAIContext],
+    sql: str,
+    traces: list[dict[str, Any]],
+    layout: dict[str, Any] | None = None,
+) -> str:
+    """Build an interactive Plotly chart rendered in the browser.
+
+    You write the full Plotly trace and layout config. The tool executes the SQL,
+    resolves column name strings in each trace's "x" and "y" fields to actual
+    data arrays, applies sensible style defaults, and renders the chart in the browser.
+
+    Use this whenever the user asks to plot, chart, visualize, or graph data.
+    On follow-ups ("set Y axis 0-1", "make it a bar chart", "add color"), call this
+    again with the same SQL and the updated traces/layout.
+
+    Args:
+        ctx: Run context.
+        sql: SELECT query to fetch chart data (GROUP BY date, metric, etc.).
+        traces: List of Plotly trace dicts. Set "x" and "y" to the SQL column names
+            as strings -- they are replaced with the actual data arrays.
+            Include any Plotly trace properties you need:
+            type ("scatter"/"bar"), mode ("lines+markers"), name, line, marker, etc.
+            Example: [{"type": "bar", "x": "metric_name", "y": "avg_score", "name": "Score"}]
+        layout: Full Plotly layout dict -- title, xaxis, yaxis, margins, annotations,
+            colors, legend, etc. Merged on top of sensible defaults.
+            Example: {"title": {"text": "Score Trend"}, "yaxis": {"range": [0, 1]}}
+
+    Returns:
+        Confirmation that the chart was created.
+    """
+    deps = ctx.context
+    tracer = get_copilot_tracer()
+    async with tracer.async_span(
+        "copilot.tool.call",
+        input={
+            "sql": sql_fingerprint(sql.strip()),
+            "layout_title": (layout or {}).get("title", ""),
+        },
+        **safe_span_attrs(tool_name="plot_data", dataset=deps.dataset_label),
+    ) as _span:
+        tracer.add_trace("info", "cache_miss")
+
+        title_text = (layout or {}).get("title", {})
+        if isinstance(title_text, dict):
+            title_text = title_text.get("text", "chart")
+        await deps.thought_stream.emit_tool_use(
+            f"Building chart: {title_text}",
+            tool_name="plot_data",
+        )
+
+        if not deps.has_data:
+            return deps.no_data_error()
+
+        sql_stripped = sql.strip().rstrip(";")
+        sql_err = _check_sql_safety(sql_stripped)
+        if sql_err:
+            return _safe_json({"error": sql_err})
+        if not sql_stripped.upper().startswith("SELECT"):
+            return _safe_json({"error": "Only SELECT statements are permitted."})
+        if "LIMIT" not in sql_stripped.upper():
+            sql_stripped = f"{sql_stripped} LIMIT 500"
+
+        try:
+            async with tracer.async_span(
+                "copilot.db.query",
+                **safe_span_attrs(
+                    table=deps.table_name,
+                    sql=sql_fingerprint(sql_stripped),
+                    db_system="duckdb",
+                    query_kind="select",
+                ),
+            ) as _sql_span:
+                rows = await anyio.to_thread.run_sync(
+                    lambda: deps.store.query_list(sql_stripped),
+                    limiter=deps.store.query_limiter,
+                )
+                _sql_span.set_output({"row_count": len(rows)})
+            tracer.add_trace("info", "query_done", metadata={"row_count": len(rows)})
+        except Exception as exc:
+            return _safe_json({"error": f"Query failed: {exc}"})
+
+        if not rows:
+            return "No data returned for the chart."
+
+        def _coerce(v: Any) -> Any:
+            if hasattr(v, "isoformat"):
+                return v.isoformat()
+            return v
+
+        available = list(rows[0].keys())
+
+        def _resolve_col(name: str) -> str | None:
+            if name in available:
+                return name
+            matches = [c for c in available if name.lower() in c.lower()]
+            return matches[0] if matches else None
+
+        resolved_traces: list[dict[str, Any]] = []
+        for trace in traces:
+            t = dict(trace)
+            for axis in ("x", "y", "z"):
+                if isinstance(t.get(axis), str):
+                    col = _resolve_col(t[axis])
+                    if col:
+                        t[axis] = [_coerce(r[col]) for r in rows]
+                    else:
+                        return _safe_json(
+                            {"error": f"Column '{t[axis]}' not found. Available: {available}"}
+                        )
+            resolved_traces.append(t)
+
+        default_layout: dict[str, Any] = {
+            "autosize": True,
+            "margin": {"l": 50, "r": 20, "t": 40, "b": 50},
+            "paper_bgcolor": "transparent",
+            "plot_bgcolor": "transparent",
+            "font": {"family": "Inter, system-ui, sans-serif", "size": 11},
+            "xaxis": {
+                "showgrid": True,
+                "gridcolor": "rgba(0,0,0,0.05)",
+                "zeroline": False,
+                "showline": True,
+                "tickfont": {"size": 10},
+            },
+            "yaxis": {
+                "showgrid": True,
+                "gridcolor": "rgba(0,0,0,0.05)",
+                "zeroline": False,
+                "showline": True,
+                "tickfont": {"size": 10},
+            },
+            "showlegend": len(resolved_traces) > 1,
+        }
+
+        def _merge(base: dict[str, Any], override: dict[str, Any]) -> dict[str, Any]:
+            out = dict(base)
+            for k, v in override.items():
+                if isinstance(v, dict) and isinstance(out.get(k), dict):
+                    out[k] = _merge(out[k], v)
+                else:
+                    out[k] = v
+            return out
+
+        deps.chart_spec = {"data": resolved_traces, "layout": _merge(default_layout, layout or {})}
+
+        n_points = len(rows)
+        await deps.thought_stream.emit_observation(
+            f"Chart ready: {title_text} ({n_points} points, {len(resolved_traces)} series)",
+            tool_name="plot_data",
+        )
+        tracer.add_trace("info", "tool_complete", metadata={"result_len": n_points})
+        out = f"Chart created: '{title_text}' — {n_points} data points, {len(resolved_traces)} series."
+        _span.set_output(out[:200] if len(out) > 200 else out)
+        return out
+
+
 COPILOT_TOOLS: list[FunctionTool] = [
     summarize_data,
     query_data,
@@ -709,6 +879,7 @@ COPILOT_TOOLS: list[FunctionTool] = [
     compare_data,
     query_kpi_data,
     run_sql,
+    plot_data,
 ]
 
 SYSTEM_PROMPT = (
@@ -717,11 +888,90 @@ SYSTEM_PROMPT = (
     "Use summarize_data for overviews, query_data for record lookups and filtering, "
     "analyze_data for statistics, compare_data for group comparisons, "
     "query_kpi_data when the dataset is kpi, "
-    "and run_sql for any custom aggregation, date grouping, HAVING, subquery, "
-    "or anything the other tools cannot express. "
+    "run_sql for any custom aggregation, date grouping, HAVING, subquery, "
+    "or anything the other tools cannot express, "
+    "and plot_data when the user asks to plot, chart, visualize, or graph data. "
+    "With plot_data YOU write the full Plotly traces and layout — "
+    "use any chart type (scatter/line, bar, heatmap, box, histogram, etc.), "
+    "set axis ranges, colors, bar stacking (barmode: stack), annotations, and so on. "
+    "On follow-up chart requests re-call plot_data with the same SQL and updated spec. "
+    "Never suggest matplotlib or Python code — charts render interactively in the browser. "
     "Prefer run_sql over query_data when the question asks for counts, "
-    "sums, or grouping by date/time."
+    "sums, or grouping by date/time. "
+    "IMPORTANT: Only reference column names that appear in the schema context below. "
+    "Never guess or invent column names."
 )
+
+
+async def _build_schema_context(oai_ctx: "OAIContext") -> str:
+    """Build a column catalog string to prepend to the user message.
+
+    Mirrors the _dataset_context dynamic system prompt in CopilotAgent so the
+    OAI agent has the same column-level awareness without pydantic-ai's
+    per-call system_prompt hook.
+    """
+    if not oai_ctx.has_data:
+        return f"Note: No {oai_ctx.dataset_label} data is loaded in DuckDB yet.\n"
+
+    store = oai_ctx.store
+    table = oai_ctx.table_name
+    try:
+        meta = await anyio.to_thread.run_sync(
+            lambda: store.get_metadata(table), limiter=store.query_limiter
+        )
+    except Exception:
+        return ""
+
+    all_cols: list[dict[str, Any]] = meta.get("columns", [])
+    filter_values: dict[str, Any] = meta.get("filter_values", {})
+
+    lines: list[str] = [
+        f"Dataset: {oai_ctx.dataset_label} | Table: {table} | Rows: {meta.get('row_count', '?')}",
+        "Column catalog (name | DuckDB type | sample values or numeric range):",
+    ]
+
+    num_cols = [c for c in all_cols if _is_numeric(c)][:12]
+    num_ranges: dict[str, tuple[Any, Any]] = {}
+    if num_cols:
+        agg_parts = [
+            f'MIN(CAST("{c["column_name"]}" AS DOUBLE)) AS "{c["column_name"]}_mn", '
+            f'MAX(CAST("{c["column_name"]}" AS DOUBLE)) AS "{c["column_name"]}_mx"'
+            for c in num_cols
+        ]
+        try:
+            rows = await anyio.to_thread.run_sync(
+                lambda: store.query_list(f"SELECT {', '.join(agg_parts)} FROM {table}"),
+                limiter=store.query_limiter,
+            )
+            if rows:
+                for c in num_cols:
+                    n = c["column_name"]
+                    num_ranges[n] = (rows[0].get(f"{n}_mn"), rows[0].get(f"{n}_mx"))
+        except Exception:
+            pass
+
+    for col in all_cols[:50]:
+        col_name = col["column_name"]
+        col_type = col.get("column_type", "?")
+        if _is_numeric(col) and col_name in num_ranges:
+            mn, mx = num_ranges[col_name]
+            detail = f"range [{mn} → {mx}]"
+        elif col_name in filter_values:
+            vals = filter_values[col_name]
+            if isinstance(vals, list):
+                sample = ", ".join(str(v) for v in vals[:10])
+                suffix = " …" if len(vals) > 10 else ""
+                detail = f"values [{sample}{suffix}]"
+            else:
+                detail = str(vals)
+        else:
+            detail = ""
+        lines.append(f"  {col_name} | {col_type} | {detail}")
+
+    if len(all_cols) > 50:
+        lines.append(f"  … +{len(all_cols) - 50} more columns")
+
+    return "\n".join(lines) + "\n"
 
 
 # ---------------------------------------------------------------------------
@@ -814,12 +1064,15 @@ class OAICopilotAgent:
         """
         logger.info("OAI: Processing: %s... (dataset=%s)", message[:100], dataset_label)
 
-        full_message = _build_message_with_history(message, conversation_history)
         oai_ctx = OAIContext(
             thought_stream=self.thought_stream,
             dataset_label=dataset_label or "evaluation",
             data_context=data_context or {},
         )
+
+        schema_ctx = await _build_schema_context(oai_ctx)
+        base_message = f"<schema>\n{schema_ctx}</schema>\n\n{message}" if schema_ctx else message
+        full_message = _build_message_with_history(base_message, conversation_history)
 
         await self.thought_stream.emit_reasoning(
             f"Processing: {message[:100]}...",
@@ -828,14 +1081,19 @@ class OAICopilotAgent:
 
         tracer = get_copilot_tracer()
         async with tracer.async_span(
-            "copilot.oai.agent",
+            "copilot.agent.run",
             input=message,
-            **safe_span_attrs(dataset_label=dataset_label, msg_len=len(message)),
+            **safe_span_attrs(
+                provider="oai_agents",
+                agent_framework="openai_agents",
+                dataset_label=dataset_label,
+                msg_len=len(message),
+            ),
         ) as _proc_span:
             try:
                 agent = self._get_agent()
                 async with tracer.async_span(
-                    "copilot.oai.runner", input=full_message
+                    "copilot.agent.execute", input=full_message
                 ) as _stream_span:
                     result = Runner.run_streamed(
                         agent,
@@ -868,7 +1126,7 @@ class OAICopilotAgent:
                     "oai_complete",
                     metadata={"response_len": len(str(output))},
                 )
-                return output if isinstance(output, str) else str(output), None
+                return output if isinstance(output, str) else str(output), oai_ctx.chart_spec
 
             except Exception as e:
                 logger.error("OAI agent error: %s", e, exc_info=True)

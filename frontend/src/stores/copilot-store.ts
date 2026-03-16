@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-import type { Thought, SkillInfo } from '@/types';
+import type { Thought, ToolInfo } from '@/types';
 
 function newSessionId(): string {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
@@ -30,9 +30,9 @@ interface CopilotState {
   finalChart: Record<string, unknown> | null;
   error: string | null;
 
-  // Skills
-  skills: SkillInfo[];
-  skillsLoaded: boolean;
+  // Tools
+  tools: ToolInfo[];
+  toolsLoaded: boolean;
 
   // Session
   sessionId: string | null;
@@ -55,9 +55,9 @@ interface CopilotState {
   clearThoughts: () => void;
   reset: () => void;
 
-  // Skills actions
-  setSkills: (skills: SkillInfo[]) => void;
-  setSkillsLoaded: (loaded: boolean) => void;
+  // Tools actions
+  setTools: (tools: ToolInfo[]) => void;
+  setToolsLoaded: (loaded: boolean) => void;
 
   // Dataset actions
   setSelectedDataset: (dataset: DatasetLabel | null) => void;
@@ -82,8 +82,8 @@ export const useCopilotStore = create<CopilotState>()((set, get) => ({
   finalResponse: null,
   finalChart: null,
   error: null,
-  skills: [],
-  skillsLoaded: false,
+  tools: [],
+  toolsLoaded: false,
   sessionId: null,
   selectedDataset: null,
   conversationHistory: [],
@@ -141,9 +141,9 @@ export const useCopilotStore = create<CopilotState>()((set, get) => ({
       error: null,
     }),
 
-  // Skills actions
-  setSkills: (skills) => set({ skills }),
-  setSkillsLoaded: (loaded) => set({ skillsLoaded: loaded }),
+  // Tools actions
+  setTools: (tools) => set({ tools }),
+  setToolsLoaded: (loaded) => set({ toolsLoaded: loaded }),
 
   // Dataset actions
   setSelectedDataset: (dataset) => set({ selectedDataset: dataset }),

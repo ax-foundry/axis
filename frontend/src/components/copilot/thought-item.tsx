@@ -79,9 +79,9 @@ export function ThoughtItem({ thought, isLatest = false, className }: ThoughtIte
             {label}
           </span>
 
-          {thought.skill_name && (
+          {thought.tool_name && (
             <span className="rounded bg-purple-100 px-1.5 py-0.5 text-xs text-purple-700">
-              {thought.skill_name}
+              {thought.tool_name}
             </span>
           )}
 

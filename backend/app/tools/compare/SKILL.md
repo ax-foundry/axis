@@ -1,4 +1,4 @@
-# Compare Skill
+# Compare Tool
 
 Compares evaluation results across different experiments, models, or conditions.
 

@@ -6,7 +6,7 @@ from app.copilot.llm.provider import LLMProvider
 from app.copilot.thoughts import ThoughtStream
 
 if TYPE_CHECKING:
-    from app.copilot.skills.registry import SkillRegistry
+    from app.copilot.tools.registry import ToolRegistry
 
 logger = logging.getLogger("axis.copilot.graph.deps")
 
@@ -16,7 +16,7 @@ class GraphDeps:
     """Dependencies injected into graph nodes.
 
     Contains shared resources like the LLM provider, thought stream,
-    and skill registry that nodes need for execution.
+    and tool registry that nodes need for execution.
     """
 
     # Thought streaming
@@ -25,8 +25,8 @@ class GraphDeps:
     # LLM provider
     llm_provider: LLMProvider | None = None
 
-    # Skill registry (lazy loaded)
-    _skill_registry: "SkillRegistry | None" = field(default=None, repr=False)
+    # Tool registry (lazy loaded)
+    _tool_registry: "ToolRegistry | None" = field(default=None, repr=False)
 
     # Configuration
     max_iterations: int = 3
@@ -46,13 +46,13 @@ class GraphDeps:
         logger.info(f"GraphDeps initialized: has_llm={self.has_llm}")
 
     @property
-    def skill_registry(self) -> "SkillRegistry":
-        """Get the skill registry, creating it if needed."""
-        if self._skill_registry is None:
-            from app.copilot.skills.registry import SkillRegistry
+    def tool_registry(self) -> "ToolRegistry":
+        """Get the tool registry, creating it if needed."""
+        if self._tool_registry is None:
+            from app.copilot.tools.registry import ToolRegistry
 
-            self._skill_registry = SkillRegistry.get_instance()
-        return self._skill_registry
+            self._tool_registry = ToolRegistry.get_instance()
+        return self._tool_registry
 
     @property
     def has_llm(self) -> bool:
@@ -64,7 +64,7 @@ class GraphDeps:
         thought_type: str,
         content: str,
         node_name: str | None = None,
-        skill_name: str | None = None,
+        tool_name: str | None = None,
         **metadata: Any,
     ) -> None:
         """Convenience method to emit a thought.
@@ -73,7 +73,7 @@ class GraphDeps:
             thought_type: Type of thought (reasoning, tool_use, etc.)
             content: Thought content
             node_name: Name of the node emitting the thought
-            skill_name: Name of the skill being used (if any)
+            tool_name: Name of the tool being used (if any)
             **metadata: Additional metadata
         """
         from app.copilot.thoughts import Thought, ThoughtType
@@ -82,7 +82,7 @@ class GraphDeps:
             type=ThoughtType(thought_type),
             content=content,
             node_name=node_name,
-            skill_name=skill_name,
+            tool_name=tool_name,
             metadata=metadata,
         )
         await self.thought_stream.emit(thought)
