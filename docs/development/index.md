@@ -129,7 +129,7 @@ axis/
 │   │   ├── routers/             # API route handlers
 │   │   ├── services/            # Business logic
 │   │   ├── models/              # Pydantic schemas
-│   │   └── copilot/             # AI copilot agent + skills
+│   │   └── copilot/             # AI copilot agent + tools
 │   ├── config/                  # YAML config templates (.yaml.example)
 │   ├── tests/                   # pytest test suite
 │   ├── requirements.txt

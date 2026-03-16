@@ -31,6 +31,7 @@ import { getFeaturesConfig } from '@/lib/api';
 import { usePluginNav } from '@/lib/hooks/usePluginNav';
 import { useAppIconUrl, useBranding } from '@/lib/theme';
 import { cn } from '@/lib/utils';
+import { useThemeStore } from '@/stores/theme-store';
 
 import { CopilotSidebar } from './copilot';
 
@@ -100,6 +101,8 @@ export function Sidebar() {
   const { status } = useSession();
   const appIconUrl = useAppIconUrl();
   const branding = useBranding();
+  const { palette } = useThemeStore();
+  const shimmerFrom = palette.shimmerFrom ?? '#4CD9A0';
   const { data: pluginData } = usePluginNav();
 
   useEffect(() => {
@@ -216,21 +219,21 @@ export function Sidebar() {
 
         {/* Bottom Actions */}
         <div className="mt-auto space-y-1 border-t border-border px-3.5 py-3">
-          {/* AI Copilot Button */}
+          {/* Ask Copilot Button */}
           {copilotEnabled ? (
             <button
               onClick={() => setCopilotOpen(!copilotOpen)}
               className={cn(
-                'flex w-full items-center gap-2.5 rounded-lg px-3 py-[10px] text-[13px] font-medium transition-all duration-150',
-                copilotOpen
-                  ? 'border border-accent-gold/25 bg-accent-gold/10 text-accent-gold'
-                  : 'border border-accent-gold/15 bg-accent-gold/[0.06] text-accent-gold hover:border-accent-gold/25 hover:bg-accent-gold/10',
-                collapsed && 'justify-center border-0 bg-transparent px-2'
+                'flex w-full items-center gap-2.5 rounded-lg px-3 py-[10px] text-[13px] font-semibold transition-all duration-150',
+                copilotOpen ? 'bg-gray-100' : 'bg-gray-100/70 hover:bg-gray-100',
+                collapsed && 'justify-center px-2'
               )}
-              title={collapsed ? 'AI Copilot' : undefined}
+              title={collapsed ? `Ask ${branding.copilot_name}` : undefined}
             >
-              <Bot className="h-[18px] w-[18px] flex-shrink-0" />
-              {!collapsed && <span>AI Copilot</span>}
+              <Bot className="h-[18px] w-[18px] flex-shrink-0" style={{ color: shimmerFrom }} />
+              {!collapsed && (
+                <span className="animate-nav-shimmer">Ask {branding.copilot_name}</span>
+              )}
             </button>
           ) : (
             <div
@@ -240,7 +243,7 @@ export function Sidebar() {
               )}
             >
               <Lock className="h-[18px] w-[18px] flex-shrink-0 text-text-muted" />
-              {!collapsed && <span className="text-text-muted">AI Copilot</span>}
+              {!collapsed && <span className="text-text-muted">Ask {branding.copilot_name}</span>}
               {/* Tooltip */}
               <div className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 -translate-x-1/2 whitespace-nowrap rounded-lg border border-border bg-surface px-3 py-1.5 text-xs font-medium text-text-secondary opacity-0 shadow-lg transition-opacity group-hover:opacity-100">
                 Disabled by Admin

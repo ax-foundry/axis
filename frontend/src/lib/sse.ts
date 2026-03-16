@@ -4,7 +4,12 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? '';
 
 export interface SSEHandlers {
   onThought?: (thought: Thought) => void;
-  onResponse?: (data: { success: boolean; response: string; thoughts_count: number }) => void;
+  onResponse?: (data: {
+    success: boolean;
+    response: string;
+    thoughts_count: number;
+    chart?: Record<string, unknown> | null;
+  }) => void;
   onError?: (error: { error: string }) => void;
   onDone?: () => void;
 }
@@ -17,7 +22,11 @@ export interface CopilotStreamOptions {
     metric_columns: string[];
     columns: string[];
   };
-  data?: Record<string, unknown>[];
+  dataset_label?: string;
+  conversation_history?: Array<{ role: string; content: string }>;
+  /** Override stream URL — defaults to /api/ai/copilot/stream */
+  stream_url?: string;
+  session_id?: string;
 }
 
 /**
@@ -37,10 +46,10 @@ export function createCopilotStream(
 
   const streamData = async () => {
     try {
-      console.log('[SSE] Starting stream to:', `${API_BASE_URL}/api/ai/copilot/stream`);
-      console.log('[SSE] Options:', options);
-
-      const response = await fetch(`${API_BASE_URL}/api/ai/copilot/stream`, {
+      const url = options.stream_url
+        ? `${API_BASE_URL}${options.stream_url}`
+        : `${API_BASE_URL}/api/ai/copilot/stream`;
+      const response = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -49,16 +58,15 @@ export function createCopilotStream(
         body: JSON.stringify({
           message: options.message,
           data_context: options.dataContext,
-          data: options.data,
+          dataset_label: options.dataset_label,
+          conversation_history: options.conversation_history,
+          session_id: options.session_id,
         }),
         signal: controller.signal,
       });
 
-      console.log('[SSE] Response status:', response.status);
-
       if (!response.ok) {
         const error = await response.json().catch(() => ({}));
-        console.error('[SSE] HTTP error:', response.status, error);
         handlers.onError?.({ error: error.detail || `HTTP error: ${response.status}` });
         handlers.onDone?.();
         return;
@@ -66,13 +74,11 @@ export function createCopilotStream(
 
       const reader = response.body?.getReader();
       if (!reader) {
-        console.error('[SSE] No response body');
         handlers.onError?.({ error: 'No response body' });
         handlers.onDone?.();
         return;
       }
 
-      console.log('[SSE] Got reader, starting to read chunks...');
       const decoder = new TextDecoder();
       let buffer = '';
 
@@ -80,12 +86,10 @@ export function createCopilotStream(
         const { done, value } = await reader.read();
 
         if (done) {
-          console.log('[SSE] Stream done');
           break;
         }
 
         const chunk = decoder.decode(value, { stream: true });
-        console.log('[SSE] Received chunk:', chunk.substring(0, 200));
         buffer += chunk;
 
         // Process complete SSE messages
@@ -99,31 +103,23 @@ export function createCopilotStream(
           const trimmedLine = line.trim();
           if (trimmedLine.startsWith('event:')) {
             currentEvent = trimmedLine.slice(6).trim();
-            console.log('[SSE] Got event:', currentEvent);
           } else if (trimmedLine.startsWith('data:')) {
             currentData = trimmedLine.slice(5).trim();
-            console.log('[SSE] Got data:', currentData.substring(0, 100));
           } else if (trimmedLine === '' && currentEvent && currentData) {
-            // End of event, process it
-            console.log('[SSE] Processing event:', currentEvent);
             processSSEEvent(currentEvent as SSEEventType, currentData, handlers);
             currentEvent = null;
             currentData = '';
           }
         }
 
-        // Also process if we have a complete event at end of chunk (no trailing empty line)
         if (currentEvent && currentData) {
-          console.log('[SSE] Processing buffered event:', currentEvent);
           processSSEEvent(currentEvent as SSEEventType, currentData, handlers);
         }
       }
 
-      console.log('[SSE] Calling onDone');
       handlers.onDone?.();
     } catch (error) {
       if ((error as Error).name === 'AbortError') {
-        // Stream was cancelled
         handlers.onDone?.();
         return;
       }
@@ -145,26 +141,20 @@ export function createCopilotStream(
  * Process an SSE event and call the appropriate handler.
  */
 function processSSEEvent(event: SSEEventType, data: string, handlers: SSEHandlers): void {
-  console.log('[SSE] processSSEEvent:', event, data.substring(0, 100));
   try {
     const parsed = data ? JSON.parse(data) : {};
-    console.log('[SSE] Parsed data:', parsed);
 
     switch (event) {
       case 'thought':
-        console.log('[SSE] Calling onThought handler');
         handlers.onThought?.(parsed as Thought);
         break;
       case 'response':
-        console.log('[SSE] Calling onResponse handler');
         handlers.onResponse?.(parsed);
         break;
       case 'error':
-        console.log('[SSE] Calling onError handler');
         handlers.onError?.(parsed);
         break;
       case 'done':
-        console.log('[SSE] Calling onDone handler');
         handlers.onDone?.();
         break;
       default:
@@ -176,11 +166,11 @@ function processSSEEvent(event: SSEEventType, data: string, handlers: SSEHandler
 }
 
 /**
- * Fetch available copilot skills (non-streaming).
+ * Fetch available copilot tools (non-streaming).
  */
-export async function fetchCopilotSkills(): Promise<{
+export async function fetchCopilotTools(): Promise<{
   success: boolean;
-  skills: Array<{
+  tools: Array<{
     name: string;
     description: string;
     version: string;
@@ -196,10 +186,10 @@ export async function fetchCopilotSkills(): Promise<{
   }>;
   total: number;
 }> {
-  const response = await fetch(`${API_BASE_URL}/api/ai/copilot/skills`);
+  const response = await fetch(`${API_BASE_URL}/api/ai/copilot/tools`);
 
   if (!response.ok) {
-    throw new Error(`Failed to fetch skills: ${response.status}`);
+    throw new Error(`Failed to fetch tools: ${response.status}`);
   }
 
   return response.json();

@@ -24,6 +24,20 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
+def _write_human_signals_to_duckdb(records: list[dict[str, Any]]) -> None:
+    """Write human signals cases to human_signals_cases DuckDB table."""
+    store = get_store()
+    try:
+        df = pd.DataFrame(records)
+        store._init_staging("human_signals_cases")
+        store._write_chunk("human_signals_cases", df, is_first=True)
+        store._swap_staging("human_signals_cases")
+        store._compute_and_persist_metadata("human_signals_cases")
+        logger.info("human_signals_cases written to DuckDB: %d rows", len(df))
+    except Exception:
+        logger.exception("Failed to write human_signals_cases to DuckDB")
+
+
 def clean_nan_values(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Clean values that can't be JSON-serialized (NaN, inf, numpy arrays)."""
     for record in records:
@@ -135,6 +149,12 @@ async def upload_human_signals(file: UploadFile = File(...)) -> dict[str, Any]:
 
         if format_type == "unknown":
             raise HTTPException(status_code=400, detail=message)
+
+        # Write to DuckDB in background (fire-and-forget)
+        if data_records:
+            asyncio.create_task(  # noqa: RUF006
+                anyio.to_thread.run_sync(lambda: _write_human_signals_to_duckdb(data_records))
+            )
 
         return _build_response(data_records, format_type, message, metric_schema, display_config)
 

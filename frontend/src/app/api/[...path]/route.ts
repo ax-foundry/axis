@@ -4,9 +4,13 @@
  * next.config.js rewrites do not forward headers modified by Edge Middleware,
  * so we proxy here in the Node.js runtime where we have full header control.
  * The API_GATEWAY_KEY is injected server-side; any client-supplied x-api-key
- * is stripped to prevent spoofing.
+ * is stripped to prevent spoofing. The authenticated user identity is injected
+ * via x-axis-user-id (sourced from the NextAuth token — never from the client).
  */
 import { type NextRequest, NextResponse } from 'next/server';
+import { getToken } from 'next-auth/jwt';
+
+import { X_AXIS_USER_ID } from '@/lib/constants';
 
 const BACKEND_URL =
   process.env.NODE_ENV === 'development'
@@ -19,9 +23,29 @@ async function proxy(request: NextRequest): Promise<NextResponse> {
   const { pathname, search } = request.nextUrl;
   const upstream = `${BACKEND_URL}${pathname}${search}`;
 
+  // Resolve authenticated user identity from the NextAuth token (server-side only).
+  const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
+  let userId: string | null = null;
+  if (token) {
+    if (token.email) {
+      userId = token.email as string;
+    } else if (token.sub) {
+      userId = token.sub;
+      console.warn('[proxy] NextAuth token missing email, falling back to sub');
+    } else {
+      console.warn(
+        '[proxy] NextAuth token has no email or sub — user_id will be omitted from trace'
+      );
+    }
+  }
+
   const headers = new Headers(request.headers);
+  // Strip any client-supplied spoofed headers before forwarding.
   headers.delete('x-api-key');
+  headers.delete(X_AXIS_USER_ID);
+  // Inject trusted server-side headers.
   if (API_KEY) headers.set('x-api-key', API_KEY);
+  if (userId) headers.set(X_AXIS_USER_ID, userId);
   // Remove headers that cause issues when proxying
   headers.delete('host');
   headers.delete('connection');

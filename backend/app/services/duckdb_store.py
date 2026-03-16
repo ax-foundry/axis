@@ -511,13 +511,22 @@ class DuckDBStore:
         return self._sync_status.get(table_name, SyncStatus())
 
     def get_all_sync_status(self) -> dict[str, dict[str, Any]]:
-        """Return sync status for all known tables (excluding staging/internal)."""
+        """Return sync status for all known tables (excluding staging/internal).
+
+        For tables populated via CSV upload (no DB sync), _sync_status has no
+        entry, so fall back to the metadata cache for the row count.
+        """
         result: dict[str, dict[str, Any]] = {}
         for table in ALLOWED_TABLES:
             status = self._sync_status.get(table, SyncStatus())
+            # CSV-uploaded tables never go through the sync engine, so
+            # _sync_status.rows stays 0. Use the metadata cache as fallback.
+            rows = status.rows
+            if rows == 0 and self.has_table(table):
+                rows = self.get_metadata(table).get("row_count", 0)
             result[table] = {
                 "state": status.state,
-                "rows": status.rows,
+                "rows": rows,
                 "last_sync": status.last_sync.isoformat() if status.last_sync else None,
                 "error": status.error,
                 "truncated": status.truncated,

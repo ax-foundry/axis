@@ -2,6 +2,12 @@ from dataclasses import dataclass
 from typing import ClassVar
 
 
+class Headers:
+    """Internal trusted header names shared between proxy and backend."""
+
+    X_AXIS_USER_ID = "x-axis-user-id"
+
+
 class Columns:
     """Column names for data processing. Mirrors Dash Config class."""
 

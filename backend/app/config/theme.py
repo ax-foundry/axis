@@ -30,6 +30,7 @@ class ThemePalette:
     logoUrl: str | None = None  # URL or path to logo
     faviconUrl: str | None = None  # URL or path to favicon
     appIconUrl: str | None = None  # URL or path to app icon (used in sidebar, etc.)
+    copilotIconUrl: str | None = None  # URL or path to Ask copilot icon (falls back to heroImage)
     # Hero image filters (CSS filter values)
     heroContrast: float | None = None  # 1.0 = normal, 0.8 = less contrast
     heroSaturation: float | None = None  # 1.0 = normal, 0.8 = less saturated
@@ -95,6 +96,7 @@ class BrandingConfig:
     docs_url: str = "https://ax-foundry.github.io/axis/"
     footer_name: str = ""
     footer_icon: str = ""
+    copilot_name: str = "Copilot"  # Name shown in the Ask <name> copilot header
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dict for JSON serialization."""
@@ -146,6 +148,7 @@ _ENV_OVERRIDES: dict[str, str] = {
     "axis_theme_logo_url": "logoUrl",
     "axis_theme_favicon_url": "faviconUrl",
     "axis_theme_app_icon_url": "appIconUrl",
+    "axis_theme_copilot_icon_url": "copilotIconUrl",
     "axis_theme_hero_contrast": "heroContrast",
     "axis_theme_hero_saturation": "heroSaturation",
     "axis_theme_hero_brightness": "heroBrightness",

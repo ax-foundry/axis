@@ -8,8 +8,8 @@ from app.copilot.graph.deps import GraphDeps
 from app.copilot.graph.nodes import AnalyzerNode, ExecutorNode, PlannerNode, ReflectorNode
 from app.copilot.graph.state import CopilotState
 from app.copilot.llm.provider import LLMProvider
-from app.copilot.skills.registry import SkillRegistry
 from app.copilot.thoughts import ThoughtStream
+from app.copilot.tools.registry import ToolRegistry
 
 logger = logging.getLogger("axis.copilot.orchestrator")
 
@@ -35,8 +35,8 @@ class CopilotOrchestrator:
         self.llm_provider = llm_provider
         self._graph: Graph[CopilotState, GraphDeps, str] | None = None
 
-        # Initialize skill registry
-        self._skill_registry = SkillRegistry.get_instance()
+        # Initialize tool registry
+        self._tool_registry = ToolRegistry.get_instance()
 
     def _create_graph(self) -> Graph[CopilotState, GraphDeps, str]:
         """Create the pydantic-graph pipeline."""
@@ -80,7 +80,7 @@ class CopilotOrchestrator:
         deps = GraphDeps(
             thought_stream=self.thought_stream,
             llm_provider=self.llm_provider,
-            _skill_registry=self._skill_registry,
+            _tool_registry=self._tool_registry,
         )
         logger.info(f"GraphDeps created. has_llm={deps.has_llm}")
 
@@ -166,18 +166,18 @@ class CopilotOrchestrator:
 
         return task, thought_stream
 
-    def get_available_skills(self) -> list[dict[str, Any]]:
-        """Get information about available skills.
+    def get_available_tools(self) -> list[dict[str, Any]]:
+        """Get information about available tools.
 
         Returns:
-            List of skill info dictionaries
+            List of tool info dictionaries
         """
-        skills = self._skill_registry.list_skills()
+        tools = self._tool_registry.list_tools()
         return [
             {
-                "name": skill.name,
-                "description": skill.metadata.description,
-                "version": skill.metadata.version,
+                "name": tool.name,
+                "description": tool.metadata.description,
+                "version": tool.metadata.version,
                 "parameters": [
                     {
                         "name": p.name,
@@ -186,11 +186,11 @@ class CopilotOrchestrator:
                         "required": p.required,
                         "default": p.default,
                     }
-                    for p in skill.metadata.parameters
+                    for p in tool.metadata.parameters
                 ],
-                "tags": skill.metadata.tags,
+                "tags": tool.metadata.tags,
             }
-            for skill in skills
+            for tool in tools
         ]
 
     @property

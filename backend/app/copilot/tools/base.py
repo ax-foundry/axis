@@ -6,12 +6,12 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from app.copilot.thoughts import ThoughtStream
 
-logger = logging.getLogger("axis.copilot.skills")
+logger = logging.getLogger("axis.copilot.tools")
 
 
 @dataclass
-class SkillParameter:
-    """A parameter that a skill accepts."""
+class ToolParameter:
+    """A parameter that a tool accepts."""
 
     name: str
     type: str  # string, integer, float, boolean, array, object
@@ -21,13 +21,13 @@ class SkillParameter:
 
 
 @dataclass
-class SkillMetadata:
-    """Metadata describing a skill."""
+class ToolMetadata:
+    """Metadata describing a tool."""
 
     name: str
     description: str
     version: str = "1.0.0"
-    parameters: list[SkillParameter] = field(default_factory=list)
+    parameters: list[ToolParameter] = field(default_factory=list)
     tags: list[str] = field(default_factory=list)
     enabled: bool = True
 
@@ -35,10 +35,10 @@ class SkillMetadata:
     instructions: str | None = None
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "SkillMetadata":
+    def from_dict(cls, data: dict[str, Any]) -> "ToolMetadata":
         """Create metadata from a dictionary (e.g., from JSON)."""
         parameters = [
-            SkillParameter(
+            ToolParameter(
                 name=p.get("name", ""),
                 type=p.get("type", "string"),
                 description=p.get("description"),
@@ -58,30 +58,25 @@ class SkillMetadata:
         )
 
 
-class BaseSkill(ABC):
-    """Abstract base class for copilot skills.
+class BaseTool(ABC):
+    """Abstract base class for copilot tools."""
 
-    Skills are modular capabilities that the copilot can use to accomplish
-    specific types of tasks. Each skill has metadata describing its purpose
-    and parameters.
-    """
-
-    def __init__(self, metadata: SkillMetadata) -> None:
-        """Initialize the skill.
+    def __init__(self, metadata: ToolMetadata) -> None:
+        """Initialize the tool.
 
         Args:
-            metadata: Skill metadata
+            metadata: Tool metadata
         """
         self._metadata = metadata
 
     @property
-    def metadata(self) -> SkillMetadata:
-        """Get skill metadata."""
+    def metadata(self) -> ToolMetadata:
+        """Get tool metadata."""
         return self._metadata
 
     @property
     def name(self) -> str:
-        """Get skill name."""
+        """Get tool name."""
         return self._metadata.name
 
     @abstractmethod
@@ -93,32 +88,22 @@ class BaseSkill(ABC):
         params: dict[str, Any] | None = None,
         thought_stream: "ThoughtStream | None" = None,
     ) -> Any:
-        """Execute the skill.
+        """Execute the tool.
 
         Args:
             message: User's message/query
             data: Evaluation data rows (if available)
             data_context: Context about the data (format, columns, etc.)
-            params: Skill-specific parameters
+            params: Tool-specific parameters
             thought_stream: Stream for emitting thoughts
 
         Returns:
-            Skill execution result
+            Tool execution result
         """
         ...
 
     def validate_params(self, params: dict[str, Any] | None) -> dict[str, Any]:
-        """Validate and fill in default parameter values.
-
-        Args:
-            params: Provided parameters
-
-        Returns:
-            Validated parameters with defaults
-
-        Raises:
-            ValueError: If required parameters are missing
-        """
+        """Validate and fill in default parameter values."""
         params = params or {}
         validated = {}
 
@@ -138,19 +123,13 @@ class BaseSkill(ABC):
         content: str,
         thought_type: str = "observation",
     ) -> None:
-        """Helper to emit a thought if stream is available.
-
-        Args:
-            thought_stream: Thought stream (may be None)
-            content: Thought content
-            thought_type: Type of thought
-        """
+        """Helper to emit a thought if stream is available."""
         if thought_stream:
             from app.copilot.thoughts import Thought, ThoughtType
 
             thought = Thought(
                 type=ThoughtType(thought_type),
                 content=content,
-                skill_name=self.name,
+                tool_name=self.name,
             )
             await thought_stream.emit(thought)

@@ -1,4 +1,4 @@
-# Evaluate Skill
+# Evaluate Tool
 
 Runs LLM-based evaluation using the AXIS evaluation framework.
 

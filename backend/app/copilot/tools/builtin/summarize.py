@@ -1,37 +1,37 @@
 import logging
 from typing import Any
 
-from app.copilot.skills.base import BaseSkill, SkillMetadata, SkillParameter
 from app.copilot.thoughts import ThoughtStream
+from app.copilot.tools.base import BaseTool, ToolMetadata, ToolParameter
 
-logger = logging.getLogger("axis.copilot.skills.summarize")
+logger = logging.getLogger("axis.copilot.tools.summarize")
 
 
-class SummarizeSkill(BaseSkill):
-    """Skill for generating comprehensive summaries of evaluation data."""
+class SummarizeTool(BaseTool):
+    """Tool for generating comprehensive summaries of evaluation data."""
 
     def __init__(self) -> None:
-        """Initialize the summarize skill."""
-        metadata = SkillMetadata(
+        """Initialize the summarize tool."""
+        metadata = ToolMetadata(
             name="summarize",
             description="Generate a comprehensive summary and insights from evaluation data",
             version="1.0.0",
             parameters=[
-                SkillParameter(
+                ToolParameter(
                     name="focus",
                     type="string",
                     description="Area to focus on: 'performance', 'quality', 'issues', 'all'",
                     required=False,
                     default="all",
                 ),
-                SkillParameter(
+                ToolParameter(
                     name="detail_level",
                     type="string",
                     description="Level of detail: 'brief', 'standard', 'detailed'",
                     required=False,
                     default="standard",
                 ),
-                SkillParameter(
+                ToolParameter(
                     name="include_recommendations",
                     type="boolean",
                     description="Whether to include recommendations",
@@ -51,25 +51,9 @@ class SummarizeSkill(BaseSkill):
         params: dict[str, Any] | None = None,
         thought_stream: ThoughtStream | None = None,
     ) -> dict[str, Any]:
-        """Generate a summary of the evaluation data.
-
-        Args:
-            message: User's summarization request
-            data: Evaluation records to summarize
-            data_context: Context about the data
-            params: Summarization parameters
-            thought_stream: Stream for thoughts
-
-        Returns:
-            Summary with key insights and recommendations
-        """
+        """Generate a summary of the evaluation data."""
         params = self.validate_params(params)
-
-        await self.emit_thought(
-            thought_stream,
-            "Generating data summary...",
-            "tool_use",
-        )
+        await self.emit_thought(thought_stream, "Generating data summary...", "tool_use")
 
         if not data:
             return {
@@ -84,10 +68,8 @@ class SummarizeSkill(BaseSkill):
 
             df = pd.DataFrame(data)
             focus = params.get("focus", "all")
-            _detail_level = params.get("detail_level", "standard")  # Reserved for future use
+            _detail_level = params.get("detail_level", "standard")
             include_recommendations = params.get("include_recommendations", True)
-
-            # Basic statistics
             numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
 
             await self.emit_thought(
@@ -101,19 +83,15 @@ class SummarizeSkill(BaseSkill):
                 "overview": {
                     "total_records": len(df),
                     "total_metrics": len(numeric_cols),
-                    "data_format": data_context.get("format", "unknown")
-                    if data_context
-                    else "unknown",
+                    "data_format": data_context.get("format", "unknown") if data_context else "unknown",
                 },
             }
 
-            # Performance summary
             if focus in ["performance", "all"]:
                 performance = {}
                 high_performers = []
                 low_performers = []
-
-                for metric in numeric_cols[:10]:  # Limit to first 10 metrics
+                for metric in numeric_cols[:10]:
                     values = df[metric].dropna()
                     if len(values) > 0:
                         mean = float(values.mean())
@@ -123,7 +101,6 @@ class SummarizeSkill(BaseSkill):
                             if values.max() <= 1
                             else None,
                         }
-
                         if mean >= 0.8:
                             high_performers.append(metric)
                         elif mean < 0.5:
@@ -135,19 +112,11 @@ class SummarizeSkill(BaseSkill):
                     "low_performers": low_performers,
                 }
 
-            # Quality issues
             if focus in ["quality", "issues", "all"]:
-                await self.emit_thought(
-                    thought_stream,
-                    "Identifying quality issues...",
-                    "observation",
-                )
-
+                await self.emit_thought(thought_stream, "Identifying quality issues...", "observation")
                 issues = []
-
-                # Check for missing values
                 missing = df.isnull().sum()
-                high_missing = missing[missing > len(df) * 0.1]  # >10% missing
+                high_missing = missing[missing > len(df) * 0.1]
                 if len(high_missing) > 0:
                     issues.append(
                         {
@@ -157,7 +126,6 @@ class SummarizeSkill(BaseSkill):
                         }
                     )
 
-                # Check for low variance (potential issues)
                 for metric in numeric_cols[:10]:
                     values = df[metric].dropna()
                     if len(values) > 1:
@@ -171,10 +139,8 @@ class SummarizeSkill(BaseSkill):
                                 }
                             )
 
-                # Check for potential data quality issues
                 for metric in numeric_cols[:10]:
                     values = df[metric].dropna()
-                    # Check for all-same values
                     if len(values) > 0 and values.nunique() == 1:
                         issues.append(
                             {
@@ -186,31 +152,21 @@ class SummarizeSkill(BaseSkill):
 
                 result["quality_issues"] = issues
 
-            # Key insights
             insights = []
-
             if "performance" in result:
                 perf = result["performance"]
                 if perf["high_performers"]:
-                    insights.append(
-                        f"Top performing metrics: {', '.join(perf['high_performers'][:3])}"
-                    )
+                    insights.append(f"Top performing metrics: {', '.join(perf['high_performers'][:3])}")
                 if perf["low_performers"]:
                     insights.append(
                         f"Metrics needing attention: {', '.join(perf['low_performers'][:3])}"
                     )
-
             if result.get("quality_issues"):
-                insights.append(
-                    f"Found {len(result['quality_issues'])} potential data quality issues"
-                )
-
+                insights.append(f"Found {len(result['quality_issues'])} potential data quality issues")
             result["key_insights"] = insights
 
-            # Recommendations
             if include_recommendations:
                 recommendations = []
-
                 if "performance" in result:
                     if result["performance"]["low_performers"]:
                         recommendations.append(
@@ -231,12 +187,10 @@ class SummarizeSkill(BaseSkill):
                             recommendations.append(
                                 f"Review {issue['metric']} - low variance may indicate issues"
                             )
-
                 if not recommendations:
                     recommendations.append(
                         "Data looks healthy - continue monitoring performance trends"
                     )
-
                 result["recommendations"] = recommendations
 
             await self.emit_thought(
@@ -244,12 +198,7 @@ class SummarizeSkill(BaseSkill):
                 f"Summary complete: {len(insights)} insights, {len(result.get('recommendations', []))} recommendations",
                 "observation",
             )
-
             return result
-
         except Exception as e:
             logger.error(f"Summarization failed: {e}", exc_info=True)
-            return {
-                "success": False,
-                "error": str(e),
-            }
+            return {"success": False, "error": str(e)}

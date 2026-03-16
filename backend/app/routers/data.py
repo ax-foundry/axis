@@ -1,7 +1,9 @@
+import asyncio
 import io
 import logging
 from typing import Any
 
+import anyio
 import numpy as np
 import pandas as pd
 from fastapi import APIRouter, File, HTTPException, Request, UploadFile
@@ -20,6 +22,21 @@ from app.services.data_processor import (
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+
+def _write_eval_to_duckdb(df: pd.DataFrame) -> None:
+    """Write processed eval DataFrame to eval_data DuckDB table (staging+swap)."""
+    from app.services.duckdb_store import get_store
+
+    store = get_store()
+    try:
+        store._init_staging("eval_data")
+        store._write_chunk("eval_data", df.copy(), is_first=True)
+        store._swap_staging("eval_data")
+        store._compute_and_persist_metadata("eval_data")
+        logger.info("eval_data written to DuckDB: %d rows", len(df))
+    except Exception:
+        logger.exception("Failed to write eval_data to DuckDB")
 
 
 def clean_nan_values(df: pd.DataFrame) -> pd.DataFrame:
@@ -53,6 +70,11 @@ async def upload_data(file: UploadFile = File(...)) -> UploadResponse:
 
         # Clean NaN values for JSON serialization
         processed_df = clean_nan_values(processed_df)
+
+        # Write to DuckDB in background (fire-and-forget)
+        asyncio.create_task(  # noqa: RUF006
+            anyio.to_thread.run_sync(lambda: _write_eval_to_duckdb(processed_df))
+        )
 
         # Convert to records for JSON response (pandas uses Hashable keys but our columns are strings)
         preview: list[dict[str, Any]] = processed_df.head(10).to_dict(orient="records")  # type: ignore[assignment]

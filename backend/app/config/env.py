@@ -260,6 +260,12 @@ class Settings(BaseSettings):
         default=5, description="Max connections in pool (max 20)."
     )
 
+    # Tracing user attribution mode.
+    # "email"        — raw email from NextAuth token (default)
+    # "sub"          — OIDC subject identifier (opaque, no PII)
+    # "hashed_email" — SHA-256 prefix of email (16 hex chars, non-reversible)
+    user_id_mode: str = Field(default="email", description="email | sub | hashed_email")
+
     # Theme Configuration (env vars)
     axis_theme_active: str | None = Field(
         default=None,

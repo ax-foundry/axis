@@ -1,6 +1,25 @@
 import { create } from 'zustand';
 
-import type { Thought, SkillInfo } from '@/types';
+import type { Thought, ToolInfo } from '@/types';
+
+function newSessionId(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16);
+  });
+}
+
+export type DatasetLabel = 'evaluation' | 'monitoring' | 'human_signals' | 'kpi';
+
+interface HistoryMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
+export type CopilotProvider = 'pydantic-ai' | 'oai-agents';
 
 interface CopilotState {
   // Streaming state
@@ -8,39 +27,67 @@ interface CopilotState {
   thoughts: Thought[];
   currentThought: Thought | null;
   finalResponse: string | null;
+  finalChart: Record<string, unknown> | null;
   error: string | null;
 
-  // Skills
-  skills: SkillInfo[];
-  skillsLoaded: boolean;
+  // Tools
+  tools: ToolInfo[];
+  toolsLoaded: boolean;
 
   // Session
   sessionId: string | null;
+
+  // Dataset selection
+  selectedDataset: DatasetLabel | null;
+
+  // Conversation history (for multi-turn context)
+  conversationHistory: HistoryMessage[];
+
+  // Provider selection
+  provider: CopilotProvider;
 
   // Actions
   startStreaming: () => void;
   stopStreaming: () => void;
   addThought: (thought: Thought) => void;
-  setFinalResponse: (response: string) => void;
+  setFinalResponse: (response: string, chart?: Record<string, unknown> | null) => void;
   setError: (error: string | null) => void;
   clearThoughts: () => void;
   reset: () => void;
 
-  // Skills actions
-  setSkills: (skills: SkillInfo[]) => void;
-  setSkillsLoaded: (loaded: boolean) => void;
+  // Tools actions
+  setTools: (tools: ToolInfo[]) => void;
+  setToolsLoaded: (loaded: boolean) => void;
+
+  // Dataset actions
+  setSelectedDataset: (dataset: DatasetLabel | null) => void;
+
+  // Provider actions
+  setProvider: (provider: CopilotProvider) => void;
+
+  // History actions
+  appendToHistory: (message: HistoryMessage) => void;
+  clearHistory: () => void;
+
+  // Session actions
+  ensureSessionId: () => string;
+  startNewChat: () => void;
 }
 
-export const useCopilotStore = create<CopilotState>()((set) => ({
+export const useCopilotStore = create<CopilotState>()((set, get) => ({
   // Initial state
   isStreaming: false,
   thoughts: [],
   currentThought: null,
   finalResponse: null,
+  finalChart: null,
   error: null,
-  skills: [],
-  skillsLoaded: false,
+  tools: [],
+  toolsLoaded: false,
   sessionId: null,
+  selectedDataset: null,
+  conversationHistory: [],
+  provider: 'pydantic-ai',
 
   // Actions
   startStreaming: () =>
@@ -49,6 +96,7 @@ export const useCopilotStore = create<CopilotState>()((set) => ({
       thoughts: [],
       currentThought: null,
       finalResponse: null,
+      finalChart: null,
       error: null,
     }),
 
@@ -64,9 +112,10 @@ export const useCopilotStore = create<CopilotState>()((set) => ({
       currentThought: thought,
     })),
 
-  setFinalResponse: (response) =>
+  setFinalResponse: (response, chart = null) =>
     set({
       finalResponse: response,
+      finalChart: chart ?? null,
       isStreaming: false,
     }),
 
@@ -88,10 +137,45 @@ export const useCopilotStore = create<CopilotState>()((set) => ({
       thoughts: [],
       currentThought: null,
       finalResponse: null,
+      finalChart: null,
       error: null,
     }),
 
-  // Skills actions
-  setSkills: (skills) => set({ skills }),
-  setSkillsLoaded: (loaded) => set({ skillsLoaded: loaded }),
+  // Tools actions
+  setTools: (tools) => set({ tools }),
+  setToolsLoaded: (loaded) => set({ toolsLoaded: loaded }),
+
+  // Dataset actions
+  setSelectedDataset: (dataset) => set({ selectedDataset: dataset }),
+
+  // Provider actions
+  setProvider: (provider) => set({ provider }),
+
+  // History actions
+  appendToHistory: (message) =>
+    set((state) => ({
+      conversationHistory: [...state.conversationHistory.slice(-19), message],
+    })),
+  clearHistory: () => set({ conversationHistory: [] }),
+
+  // Session actions
+  ensureSessionId: () => {
+    const current = get().sessionId;
+    if (current) return current;
+    const id = newSessionId();
+    set({ sessionId: id });
+    return id;
+  },
+
+  startNewChat: () =>
+    set({
+      sessionId: newSessionId(),
+      conversationHistory: [],
+      isStreaming: false,
+      thoughts: [],
+      currentThought: null,
+      finalResponse: null,
+      finalChart: null,
+      error: null,
+    }),
 }));

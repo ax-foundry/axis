@@ -89,7 +89,7 @@ axis/
 │   │   ├── routers/             # 14 API routers
 │   │   ├── services/            # Business logic layer
 │   │   ├── models/              # Pydantic schemas
-│   │   └── copilot/             # AI copilot agent + skills
+│   │   └── copilot/             # AI copilot agent + tools
 │   ├── config/                  # YAML config files (.example templates tracked)
 │   │   ├── human_signals_db.yaml # Human Signals DB: split queries, incremental sync
 │   │   ├── monitoring_db.yaml   # Monitoring DB: split queries, incremental sync

@@ -30,10 +30,11 @@ class LLMConfig:
 
 
 # Default model configurations by provider
-DEFAULT_MODELS: dict[LLMProviderType, str] = {
-    LLMProviderType.OPENAI: "gpt-4o",
-    LLMProviderType.ANTHROPIC: "claude-3-5-sonnet-20241022",
-}
+class DEFAULT_MODELS(StrEnum):
+    """Default model names by provider."""
+
+    OPENAI = "gpt-5.2"
+    ANTHROPIC = "claude-sonnet-4-5-20250929"
 
 
 class LLMProvider:
@@ -62,7 +63,7 @@ class LLMProvider:
             provider = LLMProviderType(provider)
 
         self.provider = provider
-        self.model = model or DEFAULT_MODELS[provider]
+        self.model = model or DEFAULT_MODELS[provider.name].value
         self.temperature = temperature
         self.max_tokens = max_tokens
 

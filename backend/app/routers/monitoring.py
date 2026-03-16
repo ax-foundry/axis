@@ -13,6 +13,22 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
+
+def _write_monitoring_to_duckdb(df: pd.DataFrame) -> None:
+    """Write processed monitoring DataFrame to monitoring_data DuckDB table."""
+    from app.services.duckdb_store import get_store
+
+    store = get_store()
+    try:
+        store._init_staging("monitoring_data")
+        store._write_chunk("monitoring_data", df.copy(), is_first=True)
+        store._swap_staging("monitoring_data")
+        store._compute_and_persist_metadata("monitoring_data")
+        logger.info("monitoring_data written to DuckDB: %d rows", len(df))
+    except Exception:
+        logger.exception("Failed to write monitoring_data to DuckDB")
+
+
 # Monitoring required columns - at minimum need dataset_id (timestamp will be auto-generated if missing)
 MONITORING_REQUIRED_COLUMNS = {"dataset_id"}
 
@@ -265,6 +281,11 @@ async def upload_monitoring(file: UploadFile = File(...)) -> dict[str, Any]:
 
         if format_type == "unknown":
             raise HTTPException(status_code=400, detail=message)
+
+        # Write to DuckDB in background (fire-and-forget)
+        asyncio.create_task(  # noqa: RUF006
+            anyio.to_thread.run_sync(lambda: _write_monitoring_to_duckdb(processed_df))
+        )
 
         # Convert to records for JSON response
         data_records: list[dict[str, Any]] = processed_df.to_dict(orient="records")  # type: ignore[assignment]

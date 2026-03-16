@@ -68,6 +68,27 @@ export function useAppIconUrl(): string | null {
 }
 
 /**
+ * Hook to get the Ask Copilot icon configuration.
+ * Returns the icon URL and whether it's a dedicated icon (vs a blurred hero fallback).
+ * - copilotIconUrl set → dedicated icon, show clearly (no blur, no sparkle)
+ * - heroImage set → blurred background behind sparkle
+ * - neither → sparkle only
+ */
+export function useCopilotIcon(): { url: string | null; isDedicated: boolean } {
+  const { palette } = useThemeStore();
+  if (palette.copilotIconUrl) {
+    return { url: palette.copilotIconUrl, isDedicated: true };
+  }
+  return { url: palette.heroImage || '/images/hero.jpg', isDedicated: false };
+}
+
+/** @deprecated Use useCopilotIcon() instead */
+export function useCopilotIconUrl(): string | null {
+  const { url } = useCopilotIcon();
+  return url;
+}
+
+/**
  * Hero image filter configuration.
  */
 export interface HeroFilter {

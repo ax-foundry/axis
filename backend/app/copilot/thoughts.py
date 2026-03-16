@@ -14,7 +14,7 @@ class ThoughtType(StrEnum):
     """Types of thoughts the copilot can emit."""
 
     REASONING = "reasoning"  # Internal reasoning/thinking
-    TOOL_USE = "tool_use"  # Using a tool/skill
+    TOOL_USE = "tool_use"  # Using a tool
     OBSERVATION = "observation"  # Observing data or results
     PLANNING = "planning"  # Creating or updating a plan
     REFLECTION = "reflection"  # Evaluating progress or quality
@@ -47,7 +47,7 @@ class Thought:
     type: ThoughtType
     content: str
     node_name: str | None = None  # Which graph node emitted this
-    skill_name: str | None = None  # Which skill is being used (if any)
+    tool_name: str | None = None  # Which tool is being used (if any)
     metadata: dict[str, Any] = field(default_factory=dict)
     id: str = field(default_factory=lambda: str(uuid.uuid4()))
     timestamp: datetime = field(default_factory=datetime.utcnow)
@@ -59,7 +59,7 @@ class Thought:
             "type": self.type.value,
             "content": self.content,
             "node_name": self.node_name,
-            "skill_name": self.skill_name,
+            "tool_name": self.tool_name,
             "metadata": self.metadata,
             "timestamp": self.timestamp.isoformat(),
             "color": THOUGHT_COLORS.get(self.type, "#6B7280"),
@@ -114,14 +114,14 @@ class ThoughtStream:
         )
 
     async def emit_tool_use(
-        self, content: str, skill_name: str, node_name: str | None = None, **metadata: Any
+        self, content: str, tool_name: str, node_name: str | None = None, **metadata: Any
     ) -> None:
         """Convenience method to emit a tool use thought."""
         await self.emit(
             Thought(
                 type=ThoughtType.TOOL_USE,
                 content=content,
-                skill_name=skill_name,
+                tool_name=tool_name,
                 node_name=node_name,
                 metadata=metadata,
             )
