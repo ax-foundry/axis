@@ -9,6 +9,7 @@ from pydantic_ai import Agent, RunContext
 
 from app.copilot.llm.provider import LLMProvider
 from app.copilot.thoughts import ThoughtStream
+from app.copilot.tracing import get_copilot_tracer, safe_span_attrs, sql_fingerprint
 
 logger = logging.getLogger("axis.copilot.agent")
 
@@ -338,72 +339,84 @@ class CopilotAgent:
                 JSON with dataset overview.
             """
             deps = ctx.deps
-            cache_str = f"summarize:{include_numeric_stats}"
-            cached = deps.get_cached("summarize_data", cache_str)
-            if cached:
-                return cached
+            _tracer = get_copilot_tracer()
+            async with _tracer.async_span(
+                "copilot.tool.summarize_data",
+                input={"include_numeric_stats": include_numeric_stats},
+                **safe_span_attrs(tool="summarize_data", dataset=deps.dataset_label),
+            ) as _span:
+                cache_str = f"summarize:{include_numeric_stats}"
+                cached = deps.get_cached("summarize_data", cache_str)
+                _tracer.add_trace("info", "cache_hit" if cached else "cache_miss")
+                if cached:
+                    return cached
 
-            await deps.thought_stream.emit_tool_use(
-                f"Summarizing {deps.dataset_label} dataset...",
-                skill_name="summarize_data",
-            )
+                await deps.thought_stream.emit_tool_use(
+                    f"Summarizing {deps.dataset_label} dataset...",
+                    skill_name="summarize_data",
+                )
 
-            if not deps.has_data:
-                return deps.no_data_error()
+                if not deps.has_data:
+                    return deps.no_data_error()
 
-            store = deps.store
-            table = deps.table_name
-            meta = await anyio.to_thread.run_sync(
-                lambda: store.get_metadata(table), limiter=store.query_limiter
-            )
+                store = deps.store
+                table = deps.table_name
+                meta = await anyio.to_thread.run_sync(
+                    lambda: store.get_metadata(table), limiter=store.query_limiter
+                )
 
-            all_cols = meta.get("columns", [])
-            result: dict[str, Any] = {
-                "dataset": deps.dataset_label,
-                "table": table,
-                "row_count": meta.get("row_count", 0),
-                # Return column names + types only (skip per-column stats to save tokens)
-                "columns": [
-                    {"name": c["column_name"], "type": c.get("column_type", "")} for c in all_cols
-                ],
-                "filter_values": _trim_filter_values(meta.get("filter_values", {})),
-            }
-            if meta.get("time_range"):
-                result["time_range"] = meta["time_range"]
+                all_cols = meta.get("columns", [])
+                result: dict[str, Any] = {
+                    "dataset": deps.dataset_label,
+                    "table": table,
+                    "row_count": meta.get("row_count", 0),
+                    # Return column names + types only (skip per-column stats to save tokens)
+                    "columns": [
+                        {"name": c["column_name"], "type": c.get("column_type", "")}
+                        for c in all_cols
+                    ],
+                    "filter_values": _trim_filter_values(meta.get("filter_values", {})),
+                }
+                if meta.get("time_range"):
+                    result["time_range"] = meta["time_range"]
 
-            if include_numeric_stats:
-                num_cols = [c["column_name"] for c in meta.get("columns", []) if _is_numeric(c)][:8]
-                if num_cols:
-                    agg = ", ".join(
-                        f'ROUND(AVG(CAST("{c}" AS DOUBLE)), 4) AS "{c}_avg",'
-                        f' MIN(CAST("{c}" AS DOUBLE)) AS "{c}_min",'
-                        f' MAX(CAST("{c}" AS DOUBLE)) AS "{c}_max"'
-                        for c in num_cols
-                    )
-                    try:
-                        rows = await anyio.to_thread.run_sync(
-                            lambda: store.query_list(f"SELECT {agg} FROM {table}"),
-                            limiter=store.query_limiter,
+                if include_numeric_stats:
+                    num_cols = [
+                        c["column_name"] for c in meta.get("columns", []) if _is_numeric(c)
+                    ][:8]
+                    if num_cols:
+                        agg = ", ".join(
+                            f'ROUND(AVG(CAST("{c}" AS DOUBLE)), 4) AS "{c}_avg",'
+                            f' MIN(CAST("{c}" AS DOUBLE)) AS "{c}_min",'
+                            f' MAX(CAST("{c}" AS DOUBLE)) AS "{c}_max"'
+                            for c in num_cols
                         )
-                        if rows:
-                            result["numeric_stats"] = {
-                                c: {
-                                    "avg": rows[0].get(f"{c}_avg"),
-                                    "min": rows[0].get(f"{c}_min"),
-                                    "max": rows[0].get(f"{c}_max"),
+                        try:
+                            rows = await anyio.to_thread.run_sync(
+                                lambda: store.query_list(f"SELECT {agg} FROM {table}"),
+                                limiter=store.query_limiter,
+                            )
+                            if rows:
+                                result["numeric_stats"] = {
+                                    c: {
+                                        "avg": rows[0].get(f"{c}_avg"),
+                                        "min": rows[0].get(f"{c}_min"),
+                                        "max": rows[0].get(f"{c}_max"),
+                                    }
+                                    for c in num_cols
                                 }
-                                for c in num_cols
-                            }
-                    except Exception as exc:
-                        logger.debug("Numeric stats query failed: %s", exc)
+                        except Exception as exc:
+                            logger.debug("Numeric stats query failed: %s", exc)
 
-            await deps.thought_stream.emit_observation(
-                f"Summary: {result['row_count']} rows, {len(result['columns'])} columns",
-                skill_name="summarize_data",
-            )
-            out = _truncate_result(_safe_json(result))
-            deps.set_cached("summarize_data", cache_str, out)
-            return out
+                await deps.thought_stream.emit_observation(
+                    f"Summary: {result['row_count']} rows, {len(result['columns'])} columns",
+                    skill_name="summarize_data",
+                )
+                out = _truncate_result(_safe_json(result))
+                deps.set_cached("summarize_data", cache_str, out)
+                _tracer.add_trace("info", "tool_complete", metadata={"result_len": len(out)})
+                _span.set_output(out[:500] if len(out) > 500 else out)
+                return out
 
         @agent.tool
         async def query_data(
@@ -430,116 +443,132 @@ class CopilotAgent:
                 JSON with matching records and total count.
             """
             deps = ctx.deps
-            cache_str = (
-                f"query:{filter_column}:{filter_value}:{find_min_column}"
-                f":{find_max_column}:{search_text}:{limit}"
-            )
-            cached = deps.get_cached("query_data", cache_str)
-            if cached:
-                return cached
+            _tracer = get_copilot_tracer()
+            async with _tracer.async_span(
+                "copilot.tool.query_data",
+                input={
+                    "filter_column": filter_column,
+                    "filter_value": filter_value,
+                    "find_min_column": find_min_column,
+                    "find_max_column": find_max_column,
+                    "search_text": search_text,
+                    "limit": limit,
+                },
+                **safe_span_attrs(tool="query_data", dataset=deps.dataset_label),
+            ) as _span:
+                cache_str = (
+                    f"query:{filter_column}:{filter_value}:{find_min_column}"
+                    f":{find_max_column}:{search_text}:{limit}"
+                )
+                cached = deps.get_cached("query_data", cache_str)
+                _tracer.add_trace("info", "cache_hit" if cached else "cache_miss")
+                if cached:
+                    return cached
 
-            await deps.thought_stream.emit_tool_use(
-                "Querying data...",
-                skill_name="query_data",
-            )
+                await deps.thought_stream.emit_tool_use(
+                    "Querying data...",
+                    skill_name="query_data",
+                )
 
-            if not deps.has_data:
-                return deps.no_data_error()
+                if not deps.has_data:
+                    return deps.no_data_error()
 
-            store = deps.store
-            table = deps.table_name
-            available_cols = await anyio.to_thread.run_sync(
-                lambda: store.get_table_columns(table), limiter=store.query_limiter
-            )
+                store = deps.store
+                table = deps.table_name
+                available_cols = await anyio.to_thread.run_sync(
+                    lambda: store.get_table_columns(table), limiter=store.query_limiter
+                )
 
-            result: dict[str, Any] = {"table": table}
-            conditions: list[str] = []
+                result: dict[str, Any] = {"table": table}
+                conditions: list[str] = []
 
-            if filter_column and filter_value:
-                if filter_column not in available_cols:
-                    similar = [c for c in available_cols if filter_column.lower() in c.lower()]
-                    if similar:
-                        filter_column = similar[0]
-                    else:
-                        return _safe_json(
-                            {
-                                "error": (
-                                    f"Column '{filter_column}' not found. "
-                                    f"Available: {sorted(available_cols)}"
-                                )
-                            }
+                if filter_column and filter_value:
+                    if filter_column not in available_cols:
+                        similar = [c for c in available_cols if filter_column.lower() in c.lower()]
+                        if similar:
+                            filter_column = similar[0]
+                        else:
+                            return _safe_json(
+                                {
+                                    "error": (
+                                        f"Column '{filter_column}' not found. "
+                                        f"Available: {sorted(available_cols)}"
+                                    )
+                                }
+                            )
+                    safe_val = filter_value.replace("'", "''")
+                    conditions.append(f"CAST(\"{filter_column}\" AS VARCHAR) ILIKE '%{safe_val}%'")
+
+                if search_text:
+                    id_cols = [c for c in available_cols if "id" in c.lower()][:3]
+                    if id_cols:
+                        safe_txt = search_text.replace("'", "''")
+                        id_conds = " OR ".join(
+                            f"CAST(\"{c}\" AS VARCHAR) ILIKE '%{safe_txt}%'" for c in id_cols
                         )
-                safe_val = filter_value.replace("'", "''")
-                conditions.append(f"CAST(\"{filter_column}\" AS VARCHAR) ILIKE '%{safe_val}%'")
+                        conditions.append(f"({id_conds})")
 
-            if search_text:
-                id_cols = [c for c in available_cols if "id" in c.lower()][:3]
-                if id_cols:
-                    safe_txt = search_text.replace("'", "''")
-                    id_conds = " OR ".join(
-                        f"CAST(\"{c}\" AS VARCHAR) ILIKE '%{safe_txt}%'" for c in id_cols
+                where = f"WHERE {' AND '.join(conditions)}" if conditions else ""
+                limit_n = min(int(limit), 50)
+
+                try:
+                    records = await anyio.to_thread.run_sync(
+                        lambda: store.query_list(f"SELECT * FROM {table} {where} LIMIT {limit_n}"),
+                        limiter=store.query_limiter,
                     )
-                    conditions.append(f"({id_conds})")
+                    total = await anyio.to_thread.run_sync(
+                        lambda: store.query_value(f"SELECT COUNT(*) FROM {table} {where}"),
+                        limiter=store.query_limiter,
+                    )
+                    result["records"] = records
+                    result["total_matching"] = int(total or 0)
+                    result["returned"] = len(records)
+                except Exception as exc:
+                    return _safe_json({"error": f"Query failed: {exc}"})
 
-            where = f"WHERE {' AND '.join(conditions)}" if conditions else ""
-            limit_n = min(int(limit), 50)
+                if find_min_column:
+                    col = find_min_column
+                    if col not in available_cols:
+                        similar = [c for c in available_cols if col.lower() in c.lower()]
+                        col = similar[0] if similar else None  # type: ignore[assignment]
+                    if col:
+                        try:
+                            min_row = await anyio.to_thread.run_sync(
+                                lambda: store.query_list(
+                                    f'SELECT * FROM {table} ORDER BY CAST("{col}" AS DOUBLE) ASC NULLS LAST LIMIT 1'
+                                ),
+                                limiter=store.query_limiter,
+                            )
+                            result["min_record"] = min_row[0] if min_row else None
+                        except Exception as exc:
+                            logger.debug("Min query failed: %s", exc)
 
-            try:
-                records = await anyio.to_thread.run_sync(
-                    lambda: store.query_list(f"SELECT * FROM {table} {where} LIMIT {limit_n}"),
-                    limiter=store.query_limiter,
+                if find_max_column:
+                    col = find_max_column
+                    if col not in available_cols:
+                        similar = [c for c in available_cols if col.lower() in c.lower()]
+                        col = similar[0] if similar else None  # type: ignore[assignment]
+                    if col:
+                        try:
+                            max_row = await anyio.to_thread.run_sync(
+                                lambda: store.query_list(
+                                    f'SELECT * FROM {table} ORDER BY CAST("{col}" AS DOUBLE) DESC NULLS LAST LIMIT 1'
+                                ),
+                                limiter=store.query_limiter,
+                            )
+                            result["max_record"] = max_row[0] if max_row else None
+                        except Exception as exc:
+                            logger.debug("Max query failed: %s", exc)
+
+                await deps.thought_stream.emit_observation(
+                    f"Query returned {result.get('total_matching', 0)} matching records",
+                    skill_name="query_data",
                 )
-                total = await anyio.to_thread.run_sync(
-                    lambda: store.query_value(f"SELECT COUNT(*) FROM {table} {where}"),
-                    limiter=store.query_limiter,
-                )
-                result["records"] = records
-                result["total_matching"] = int(total or 0)
-                result["returned"] = len(records)
-            except Exception as exc:
-                return _safe_json({"error": f"Query failed: {exc}"})
-
-            if find_min_column:
-                col = find_min_column
-                if col not in available_cols:
-                    similar = [c for c in available_cols if col.lower() in c.lower()]
-                    col = similar[0] if similar else None  # type: ignore[assignment]
-                if col:
-                    try:
-                        min_row = await anyio.to_thread.run_sync(
-                            lambda: store.query_list(
-                                f'SELECT * FROM {table} ORDER BY CAST("{col}" AS DOUBLE) ASC NULLS LAST LIMIT 1'
-                            ),
-                            limiter=store.query_limiter,
-                        )
-                        result["min_record"] = min_row[0] if min_row else None
-                    except Exception as exc:
-                        logger.debug("Min query failed: %s", exc)
-
-            if find_max_column:
-                col = find_max_column
-                if col not in available_cols:
-                    similar = [c for c in available_cols if col.lower() in c.lower()]
-                    col = similar[0] if similar else None  # type: ignore[assignment]
-                if col:
-                    try:
-                        max_row = await anyio.to_thread.run_sync(
-                            lambda: store.query_list(
-                                f'SELECT * FROM {table} ORDER BY CAST("{col}" AS DOUBLE) DESC NULLS LAST LIMIT 1'
-                            ),
-                            limiter=store.query_limiter,
-                        )
-                        result["max_record"] = max_row[0] if max_row else None
-                    except Exception as exc:
-                        logger.debug("Max query failed: %s", exc)
-
-            await deps.thought_stream.emit_observation(
-                f"Query returned {result.get('total_matching', 0)} matching records",
-                skill_name="query_data",
-            )
-            out = _truncate_result(_safe_json(result))
-            deps.set_cached("query_data", cache_str, out)
-            return out
+                out = _truncate_result(_safe_json(result))
+                deps.set_cached("query_data", cache_str, out)
+                _tracer.add_trace("info", "tool_complete", metadata={"result_len": len(out)})
+                _span.set_output(out[:500] if len(out) > 500 else out)
+                return out
 
         @agent.tool
         async def analyze_data(
@@ -556,95 +585,104 @@ class CopilotAgent:
                 JSON with per-column distribution statistics and insights.
             """
             deps = ctx.deps
-            cache_str = f"analyze:{sorted(columns) if columns else 'all'}"
-            cached = deps.get_cached("analyze_data", cache_str)
-            if cached:
-                return cached
+            _tracer = get_copilot_tracer()
+            async with _tracer.async_span(
+                "copilot.tool.analyze_data",
+                input={"columns": columns},
+                **safe_span_attrs(tool="analyze_data", dataset=deps.dataset_label),
+            ) as _span:
+                cache_str = f"analyze:{sorted(columns) if columns else 'all'}"
+                cached = deps.get_cached("analyze_data", cache_str)
+                _tracer.add_trace("info", "cache_hit" if cached else "cache_miss")
+                if cached:
+                    return cached
 
-            await deps.thought_stream.emit_tool_use(
-                "Analyzing data statistics...",
-                skill_name="analyze_data",
-            )
+                await deps.thought_stream.emit_tool_use(
+                    "Analyzing data statistics...",
+                    skill_name="analyze_data",
+                )
 
-            if not deps.has_data:
-                return deps.no_data_error()
+                if not deps.has_data:
+                    return deps.no_data_error()
 
-            store = deps.store
-            table = deps.table_name
-            meta = store.get_metadata(table)
-            all_num_cols = [c["column_name"] for c in meta.get("columns", []) if _is_numeric(c)]
+                store = deps.store
+                table = deps.table_name
+                meta = store.get_metadata(table)
+                all_num_cols = [c["column_name"] for c in meta.get("columns", []) if _is_numeric(c)]
 
-            if columns:
-                available = store.get_table_columns(table)
-                target_cols = [c for c in columns if c in available and c in all_num_cols]
-                if not target_cols:
+                if columns:
+                    available = store.get_table_columns(table)
+                    target_cols = [c for c in columns if c in available and c in all_num_cols]
+                    if not target_cols:
+                        target_cols = all_num_cols[:8]
+                else:
                     target_cols = all_num_cols[:8]
-            else:
-                target_cols = all_num_cols[:8]
 
-            if not target_cols:
-                return _safe_json({"error": "No numeric columns found in this dataset."})
+                if not target_cols:
+                    return _safe_json({"error": "No numeric columns found in this dataset."})
 
-            agg_parts: list[str] = []
-            for c in target_cols:
-                agg_parts.extend(
-                    [
-                        f'COUNT("{c}") FILTER (WHERE "{c}" IS NOT NULL) AS "{c}_count"',
-                        f'ROUND(AVG(CAST("{c}" AS DOUBLE)), 4) AS "{c}_avg"',
-                        f'ROUND(STDDEV(CAST("{c}" AS DOUBLE)), 4) AS "{c}_std"',
-                        f'MIN(CAST("{c}" AS DOUBLE)) AS "{c}_min"',
-                        f'MAX(CAST("{c}" AS DOUBLE)) AS "{c}_max"',
-                        f'ROUND(MEDIAN(CAST("{c}" AS DOUBLE)), 4) AS "{c}_median"',
-                        f'ROUND(QUANTILE_CONT(CAST("{c}" AS DOUBLE), 0.25), 4) AS "{c}_q25"',
-                        f'ROUND(QUANTILE_CONT(CAST("{c}" AS DOUBLE), 0.75), 4) AS "{c}_q75"',
-                    ]
-                )
-
-            sql = f"SELECT {', '.join(agg_parts)} FROM {table}"
-            try:
-                rows = await anyio.to_thread.run_sync(
-                    lambda: store.query_list(sql), limiter=store.query_limiter
-                )
-            except Exception as exc:
-                return _safe_json({"error": f"Analysis query failed: {exc}"})
-
-            distributions: dict[str, Any] = {}
-            if rows:
-                row = rows[0]
+                agg_parts: list[str] = []
                 for c in target_cols:
-                    distributions[c] = {
-                        "count": row.get(f"{c}_count"),
-                        "avg": row.get(f"{c}_avg"),
-                        "std": row.get(f"{c}_std"),
-                        "min": row.get(f"{c}_min"),
-                        "max": row.get(f"{c}_max"),
-                        "median": row.get(f"{c}_median"),
-                        "q25": row.get(f"{c}_q25"),
-                        "q75": row.get(f"{c}_q75"),
-                    }
+                    agg_parts.extend(
+                        [
+                            f'COUNT("{c}") FILTER (WHERE "{c}" IS NOT NULL) AS "{c}_count"',
+                            f'ROUND(AVG(CAST("{c}" AS DOUBLE)), 4) AS "{c}_avg"',
+                            f'ROUND(STDDEV(CAST("{c}" AS DOUBLE)), 4) AS "{c}_std"',
+                            f'MIN(CAST("{c}" AS DOUBLE)) AS "{c}_min"',
+                            f'MAX(CAST("{c}" AS DOUBLE)) AS "{c}_max"',
+                            f'ROUND(MEDIAN(CAST("{c}" AS DOUBLE)), 4) AS "{c}_median"',
+                            f'ROUND(QUANTILE_CONT(CAST("{c}" AS DOUBLE), 0.25), 4) AS "{c}_q25"',
+                            f'ROUND(QUANTILE_CONT(CAST("{c}" AS DOUBLE), 0.75), 4) AS "{c}_q75"',
+                        ]
+                    )
 
-            insights: list[str] = []
-            for col, stats in distributions.items():
-                avg = stats.get("avg")
-                mx = stats.get("max", 1.0)
-                if avg is not None and mx is not None and mx <= 1.0:
-                    if avg < 0.5:
-                        insights.append(f"{col}: low avg ({avg:.3f}) — may need attention")
-                    elif avg >= 0.8:
-                        insights.append(f"{col}: high avg ({avg:.3f}) — performing well")
+                sql = f"SELECT {', '.join(agg_parts)} FROM {table}"
+                try:
+                    rows = await anyio.to_thread.run_sync(
+                        lambda: store.query_list(sql), limiter=store.query_limiter
+                    )
+                except Exception as exc:
+                    return _safe_json({"error": f"Analysis query failed: {exc}"})
 
-            result = {
-                "distributions": distributions,
-                "columns_analyzed": target_cols,
-                "insights": insights,
-            }
-            await deps.thought_stream.emit_observation(
-                f"Analyzed {len(distributions)} columns",
-                skill_name="analyze_data",
-            )
-            out = _truncate_result(_safe_json(result))
-            deps.set_cached("analyze_data", cache_str, out)
-            return out
+                distributions: dict[str, Any] = {}
+                if rows:
+                    row = rows[0]
+                    for c in target_cols:
+                        distributions[c] = {
+                            "count": row.get(f"{c}_count"),
+                            "avg": row.get(f"{c}_avg"),
+                            "std": row.get(f"{c}_std"),
+                            "min": row.get(f"{c}_min"),
+                            "max": row.get(f"{c}_max"),
+                            "median": row.get(f"{c}_median"),
+                            "q25": row.get(f"{c}_q25"),
+                            "q75": row.get(f"{c}_q75"),
+                        }
+
+                insights: list[str] = []
+                for col, stats in distributions.items():
+                    avg = stats.get("avg")
+                    mx = stats.get("max", 1.0)
+                    if avg is not None and mx is not None and mx <= 1.0:
+                        if avg < 0.5:
+                            insights.append(f"{col}: low avg ({avg:.3f}) — may need attention")
+                        elif avg >= 0.8:
+                            insights.append(f"{col}: high avg ({avg:.3f}) — performing well")
+
+                result = {
+                    "distributions": distributions,
+                    "columns_analyzed": target_cols,
+                    "insights": insights,
+                }
+                await deps.thought_stream.emit_observation(
+                    f"Analyzed {len(distributions)} columns",
+                    skill_name="analyze_data",
+                )
+                out = _truncate_result(_safe_json(result))
+                deps.set_cached("analyze_data", cache_str, out)
+                _tracer.add_trace("info", "tool_complete", metadata={"result_len": len(out)})
+                _span.set_output(out[:500] if len(out) > 500 else out)
+                return out
 
         @agent.tool
         async def compare_data(
@@ -663,83 +701,92 @@ class CopilotAgent:
                 JSON with per-group averages and row counts.
             """
             deps = ctx.deps
-            cache_str = f"compare:{group_by}:{metric_column}"
-            cached = deps.get_cached("compare_data", cache_str)
-            if cached:
-                return cached
+            _tracer = get_copilot_tracer()
+            async with _tracer.async_span(
+                "copilot.tool.compare_data",
+                input={"group_by": group_by, "metric_column": metric_column},
+                **safe_span_attrs(tool="compare_data", dataset=deps.dataset_label),
+            ) as _span:
+                cache_str = f"compare:{group_by}:{metric_column}"
+                cached = deps.get_cached("compare_data", cache_str)
+                _tracer.add_trace("info", "cache_hit" if cached else "cache_miss")
+                if cached:
+                    return cached
 
-            await deps.thought_stream.emit_tool_use(
-                f"Comparing by {group_by}...",
-                skill_name="compare_data",
-            )
-
-            if not deps.has_data:
-                return deps.no_data_error()
-
-            store = deps.store
-            table = deps.table_name
-            available_cols = store.get_table_columns(table)
-
-            if group_by not in available_cols:
-                similar = [c for c in available_cols if group_by.lower() in c.lower()]
-                if similar:
-                    group_by = similar[0]
-                else:
-                    return _safe_json(
-                        {
-                            "error": (
-                                f"Column '{group_by}' not found. "
-                                f"Available: {sorted(available_cols)}"
-                            )
-                        }
-                    )
-
-            meta = store.get_metadata(table)
-            num_cols = [
-                c["column_name"]
-                for c in meta.get("columns", [])
-                if _is_numeric(c) and c["column_name"] != group_by
-            ][:6]
-
-            if metric_column:
-                if metric_column in available_cols and metric_column in num_cols:
-                    num_cols = [metric_column]
-                elif metric_column not in available_cols:
-                    similar = [c for c in num_cols if metric_column.lower() in c.lower()]
-                    if similar:
-                        num_cols = [similar[0]]
-
-            if not num_cols:
-                return _safe_json({"error": "No numeric columns to compare."})
-
-            agg_parts = ["COUNT(*) AS _count"] + [
-                f'ROUND(AVG(CAST("{c}" AS DOUBLE)), 4) AS "{c}_avg"' for c in num_cols
-            ]
-            sql = (
-                f'SELECT "{group_by}", {", ".join(agg_parts)} FROM {table} '
-                f'GROUP BY "{group_by}" ORDER BY _count DESC LIMIT 30'
-            )
-
-            try:
-                rows = await anyio.to_thread.run_sync(
-                    lambda: store.query_list(sql), limiter=store.query_limiter
+                await deps.thought_stream.emit_tool_use(
+                    f"Comparing by {group_by}...",
+                    skill_name="compare_data",
                 )
-            except Exception as exc:
-                return _safe_json({"error": f"Comparison query failed: {exc}"})
 
-            result = {
-                "group_by": group_by,
-                "groups": len(rows),
-                "metrics_compared": num_cols,
-                "data": rows,
-            }
-            await deps.thought_stream.emit_observation(
-                f"Compared {len(rows)} groups across {len(num_cols)} metrics",
-                skill_name="compare_data",
-            )
-            out = _truncate_result(_safe_json(result))
-            deps.set_cached("compare_data", cache_str, out)
-            return out
+                if not deps.has_data:
+                    return deps.no_data_error()
+
+                store = deps.store
+                table = deps.table_name
+                available_cols = store.get_table_columns(table)
+
+                if group_by not in available_cols:
+                    similar = [c for c in available_cols if group_by.lower() in c.lower()]
+                    if similar:
+                        group_by = similar[0]
+                    else:
+                        return _safe_json(
+                            {
+                                "error": (
+                                    f"Column '{group_by}' not found. "
+                                    f"Available: {sorted(available_cols)}"
+                                )
+                            }
+                        )
+
+                meta = store.get_metadata(table)
+                num_cols = [
+                    c["column_name"]
+                    for c in meta.get("columns", [])
+                    if _is_numeric(c) and c["column_name"] != group_by
+                ][:6]
+
+                if metric_column:
+                    if metric_column in available_cols and metric_column in num_cols:
+                        num_cols = [metric_column]
+                    elif metric_column not in available_cols:
+                        similar = [c for c in num_cols if metric_column.lower() in c.lower()]
+                        if similar:
+                            num_cols = [similar[0]]
+
+                if not num_cols:
+                    return _safe_json({"error": "No numeric columns to compare."})
+
+                agg_parts = ["COUNT(*) AS _count"] + [
+                    f'ROUND(AVG(CAST("{c}" AS DOUBLE)), 4) AS "{c}_avg"' for c in num_cols
+                ]
+                sql = (
+                    f'SELECT "{group_by}", {", ".join(agg_parts)} FROM {table} '
+                    f'GROUP BY "{group_by}" ORDER BY _count DESC LIMIT 30'
+                )
+
+                try:
+                    rows = await anyio.to_thread.run_sync(
+                        lambda: store.query_list(sql), limiter=store.query_limiter
+                    )
+                except Exception as exc:
+                    return _safe_json({"error": f"Comparison query failed: {exc}"})
+
+                result = {
+                    "group_by": group_by,
+                    "groups": len(rows),
+                    "metrics_compared": num_cols,
+                    "data": rows,
+                }
+                await deps.thought_stream.emit_observation(
+                    f"Compared {len(rows)} groups across {len(num_cols)} metrics",
+                    skill_name="compare_data",
+                )
+                out = _truncate_result(_safe_json(result))
+                deps.set_cached("compare_data", cache_str, out)
+                _tracer.add_trace("info", "tool_complete", metadata={"result_len": len(out)})
+                _span.set_output(out[:500] if len(out) > 500 else out)
+                return out
 
         @agent.tool
         async def query_kpi_data(
@@ -758,49 +805,58 @@ class CopilotAgent:
                 JSON with KPI records.
             """
             deps = ctx.deps
-            cache_str = f"kpi:{filter_category}:{limit}"
-            cached = deps.get_cached("query_kpi_data", cache_str)
-            if cached:
-                return cached
+            _tracer = get_copilot_tracer()
+            async with _tracer.async_span(
+                "copilot.tool.query_kpi_data",
+                input={"filter_category": filter_category, "limit": limit},
+                **safe_span_attrs(tool="query_kpi_data", dataset=deps.dataset_label),
+            ) as _span:
+                cache_str = f"kpi:{filter_category}:{limit}"
+                cached = deps.get_cached("query_kpi_data", cache_str)
+                _tracer.add_trace("info", "cache_hit" if cached else "cache_miss")
+                if cached:
+                    return cached
 
-            await deps.thought_stream.emit_tool_use(
-                "Querying KPI data...",
-                skill_name="query_kpi_data",
-            )
-
-            store = deps.store
-            if not store.has_table("kpi_data"):
-                return _safe_json({"error": "No KPI data available. Trigger a KPI sync first."})
-
-            where = ""
-            if filter_category:
-                safe_cat = filter_category.replace("'", "''")
-                where = f"WHERE kpi_category ILIKE '%{safe_cat}%'"
-
-            sql = f"SELECT * FROM kpi_data {where} LIMIT {min(int(limit), 100)}"
-            try:
-                rows = await anyio.to_thread.run_sync(
-                    lambda: store.query_list(sql), limiter=store.query_limiter
+                await deps.thought_stream.emit_tool_use(
+                    "Querying KPI data...",
+                    skill_name="query_kpi_data",
                 )
-                total = await anyio.to_thread.run_sync(
-                    lambda: store.query_value(f"SELECT COUNT(*) FROM kpi_data {where}"),
-                    limiter=store.query_limiter,
-                )
-            except Exception as exc:
-                return _safe_json({"error": f"KPI query failed: {exc}"})
 
-            result = {
-                "kpi_records": rows,
-                "total": int(total or 0),
-                "returned": len(rows),
-            }
-            await deps.thought_stream.emit_observation(
-                f"Retrieved {len(rows)} KPI records",
-                skill_name="query_kpi_data",
-            )
-            out = _truncate_result(_safe_json(result))
-            deps.set_cached("query_kpi_data", cache_str, out)
-            return out
+                store = deps.store
+                if not store.has_table("kpi_data"):
+                    return _safe_json({"error": "No KPI data available. Trigger a KPI sync first."})
+
+                where = ""
+                if filter_category:
+                    safe_cat = filter_category.replace("'", "''")
+                    where = f"WHERE kpi_category ILIKE '%{safe_cat}%'"
+
+                sql = f"SELECT * FROM kpi_data {where} LIMIT {min(int(limit), 100)}"
+                try:
+                    rows = await anyio.to_thread.run_sync(
+                        lambda: store.query_list(sql), limiter=store.query_limiter
+                    )
+                    total = await anyio.to_thread.run_sync(
+                        lambda: store.query_value(f"SELECT COUNT(*) FROM kpi_data {where}"),
+                        limiter=store.query_limiter,
+                    )
+                except Exception as exc:
+                    return _safe_json({"error": f"KPI query failed: {exc}"})
+
+                result = {
+                    "kpi_records": rows,
+                    "total": int(total or 0),
+                    "returned": len(rows),
+                }
+                await deps.thought_stream.emit_observation(
+                    f"Retrieved {len(rows)} KPI records",
+                    skill_name="query_kpi_data",
+                )
+                out = _truncate_result(_safe_json(result))
+                deps.set_cached("query_kpi_data", cache_str, out)
+                _tracer.add_trace("info", "tool_complete", metadata={"result_len": len(out)})
+                _span.set_output(out[:500] if len(out) > 500 else out)
+                return out
 
         @agent.tool
         async def plot_data(
@@ -841,117 +897,137 @@ class CopilotAgent:
                 Confirmation that the chart was created.
             """
             deps = ctx.deps
+            _tracer = get_copilot_tracer()
+            async with _tracer.async_span(
+                "copilot.tool.plot_data",
+                input={
+                    "sql": sql_fingerprint(sql.strip()),
+                    "layout_title": (layout or {}).get("title", ""),
+                },
+                **safe_span_attrs(tool="plot_data", dataset=deps.dataset_label),
+            ) as _span:
+                _tracer.add_trace("info", "cache_miss")
 
-            title_text = (layout or {}).get("title", {})
-            if isinstance(title_text, dict):
-                title_text = title_text.get("text", "chart")
-            await deps.thought_stream.emit_tool_use(
-                f"Building chart: {title_text}",
-                skill_name="plot_data",
-            )
-
-            if not deps.has_data:
-                return deps.no_data_error()
-
-            sql_stripped = sql.strip()
-            sql_err = _check_sql_safety(sql_stripped)
-            if sql_err:
-                return _safe_json({"error": sql_err})
-            if not sql_stripped.upper().startswith("SELECT"):
-                return _safe_json({"error": "Only SELECT statements are permitted."})
-            if "LIMIT" not in sql_stripped.upper():
-                sql_stripped = f"{sql_stripped} LIMIT 500"
-
-            try:
-                rows = await anyio.to_thread.run_sync(
-                    lambda: deps.store.query_list(sql_stripped),
-                    limiter=deps.store.query_limiter,
+                title_text = (layout or {}).get("title", {})
+                if isinstance(title_text, dict):
+                    title_text = title_text.get("text", "chart")
+                await deps.thought_stream.emit_tool_use(
+                    f"Building chart: {title_text}",
+                    skill_name="plot_data",
                 )
-            except Exception as exc:
-                return _safe_json({"error": f"Query failed: {exc}"})
 
-            if not rows:
-                return "No data returned for the chart."
+                if not deps.has_data:
+                    return deps.no_data_error()
 
-            def _coerce(v: Any) -> Any:
-                if hasattr(v, "isoformat"):
-                    return v.isoformat()
-                return v
+                sql_stripped = sql.strip()
+                sql_err = _check_sql_safety(sql_stripped)
+                if sql_err:
+                    return _safe_json({"error": sql_err})
+                if not sql_stripped.upper().startswith("SELECT"):
+                    return _safe_json({"error": "Only SELECT statements are permitted."})
+                if "LIMIT" not in sql_stripped.upper():
+                    sql_stripped = f"{sql_stripped} LIMIT 500"
 
-            available = list(rows[0].keys())
+                try:
+                    async with _tracer.async_span(
+                        "copilot.duckdb.query",
+                        **safe_span_attrs(table=deps.table_name, sql=sql_fingerprint(sql_stripped)),
+                    ) as _sql_span:
+                        rows = await anyio.to_thread.run_sync(
+                            lambda: deps.store.query_list(sql_stripped),
+                            limiter=deps.store.query_limiter,
+                        )
+                        _sql_span.set_output({"row_count": len(rows)})
+                    _tracer.add_trace("info", "query_done", metadata={"row_count": len(rows)})
+                except Exception as exc:
+                    return _safe_json({"error": f"Query failed: {exc}"})
 
-            def _resolve_col(name: str) -> str | None:
-                if name in available:
-                    return name
-                matches = [c for c in available if name.lower() in c.lower()]
-                return matches[0] if matches else None
+                if not rows:
+                    return "No data returned for the chart."
 
-            # Resolve column name strings → data arrays in each trace
-            resolved_traces: list[dict[str, Any]] = []
-            for trace in traces:
-                t = dict(trace)
-                for axis in ("x", "y", "z"):
-                    if isinstance(t.get(axis), str):
-                        col = _resolve_col(t[axis])
-                        if col:
-                            t[axis] = [_coerce(r[col]) for r in rows]
+                def _coerce(v: Any) -> Any:
+                    if hasattr(v, "isoformat"):
+                        return v.isoformat()
+                    return v
+
+                available = list(rows[0].keys())
+
+                def _resolve_col(name: str) -> str | None:
+                    if name in available:
+                        return name
+                    matches = [c for c in available if name.lower() in c.lower()]
+                    return matches[0] if matches else None
+
+                # Resolve column name strings → data arrays in each trace
+                resolved_traces: list[dict[str, Any]] = []
+                for trace in traces:
+                    t = dict(trace)
+                    for axis in ("x", "y", "z"):
+                        if isinstance(t.get(axis), str):
+                            col = _resolve_col(t[axis])
+                            if col:
+                                t[axis] = [_coerce(r[col]) for r in rows]
+                            else:
+                                return _safe_json(
+                                    {
+                                        "error": (
+                                            f"Column '{t[axis]}' not found. "
+                                            f"Available: {available}"
+                                        )
+                                    }
+                                )
+                    resolved_traces.append(t)
+
+                # Default layout — agent's layout is deep-merged on top
+                default_layout: dict[str, Any] = {
+                    "autosize": True,
+                    "margin": {"l": 50, "r": 20, "t": 40, "b": 50},
+                    "paper_bgcolor": "transparent",
+                    "plot_bgcolor": "transparent",
+                    "font": {"family": "Inter, system-ui, sans-serif", "size": 11},
+                    "xaxis": {
+                        "showgrid": True,
+                        "gridcolor": "rgba(0,0,0,0.05)",
+                        "zeroline": False,
+                        "showline": True,
+                        "tickfont": {"size": 10},
+                    },
+                    "yaxis": {
+                        "showgrid": True,
+                        "gridcolor": "rgba(0,0,0,0.05)",
+                        "zeroline": False,
+                        "showline": True,
+                        "tickfont": {"size": 10},
+                    },
+                    "showlegend": len(resolved_traces) > 1,
+                }
+
+                # Deep merge: agent's layout overrides defaults at each nested key
+                def _merge(base: dict[str, Any], override: dict[str, Any]) -> dict[str, Any]:
+                    out = dict(base)
+                    for k, v in override.items():
+                        if isinstance(v, dict) and isinstance(out.get(k), dict):
+                            out[k] = _merge(out[k], v)
                         else:
-                            return _safe_json(
-                                {
-                                    "error": (
-                                        f"Column '{t[axis]}' not found. " f"Available: {available}"
-                                    )
-                                }
-                            )
-                resolved_traces.append(t)
+                            out[k] = v
+                    return out
 
-            # Default layout — agent's layout is deep-merged on top
-            default_layout: dict[str, Any] = {
-                "autosize": True,
-                "margin": {"l": 50, "r": 20, "t": 40, "b": 50},
-                "paper_bgcolor": "transparent",
-                "plot_bgcolor": "transparent",
-                "font": {"family": "Inter, system-ui, sans-serif", "size": 11},
-                "xaxis": {
-                    "showgrid": True,
-                    "gridcolor": "rgba(0,0,0,0.05)",
-                    "zeroline": False,
-                    "showline": True,
-                    "tickfont": {"size": 10},
-                },
-                "yaxis": {
-                    "showgrid": True,
-                    "gridcolor": "rgba(0,0,0,0.05)",
-                    "zeroline": False,
-                    "showline": True,
-                    "tickfont": {"size": 10},
-                },
-                "showlegend": len(resolved_traces) > 1,
-            }
+                merged_layout = _merge(default_layout, layout or {})
 
-            # Deep merge: agent's layout overrides defaults at each nested key
-            def _merge(base: dict[str, Any], override: dict[str, Any]) -> dict[str, Any]:
-                result = dict(base)
-                for k, v in override.items():
-                    if isinstance(v, dict) and isinstance(result.get(k), dict):
-                        result[k] = _merge(result[k], v)
-                    else:
-                        result[k] = v
-                return result
+                deps.chart_spec = {"data": resolved_traces, "layout": merged_layout}
 
-            merged_layout = _merge(default_layout, layout or {})
-
-            deps.chart_spec = {"data": resolved_traces, "layout": merged_layout}
-
-            n_points = len(rows)
-            await deps.thought_stream.emit_observation(
-                f"Chart ready: {title_text} ({n_points} points, {len(resolved_traces)} series)",
-                skill_name="plot_data",
-            )
-            return (
-                f"Chart created: '{title_text}' — {n_points} data points, "
-                f"{len(resolved_traces)} series."
-            )
+                n_points = len(rows)
+                await deps.thought_stream.emit_observation(
+                    f"Chart ready: {title_text} ({n_points} points, {len(resolved_traces)} series)",
+                    skill_name="plot_data",
+                )
+                _tracer.add_trace("info", "tool_complete", metadata={"result_len": n_points})
+                out = (
+                    f"Chart created: '{title_text}' — {n_points} data points, "
+                    f"{len(resolved_traces)} series."
+                )
+                _span.set_output(out[:200] if len(out) > 200 else out)
+                return out
 
         @agent.tool
         async def run_sql(
@@ -976,42 +1052,58 @@ class CopilotAgent:
                 JSON with rows and row count.
             """
             deps = ctx.deps
-            sql_stripped = sql.strip()
+            _tracer = get_copilot_tracer()
+            async with _tracer.async_span(
+                "copilot.tool.run_sql",
+                input={"sql": sql_fingerprint(sql.strip()), "limit": limit},
+                **safe_span_attrs(tool="run_sql", dataset=deps.dataset_label),
+            ) as _span:
+                sql_stripped = sql.strip()
+                _tracer.add_trace("info", "cache_miss")
 
-            await deps.thought_stream.emit_tool_use(
-                f"Running SQL: {sql_stripped[:120]}{'…' if len(sql_stripped) > 120 else ''}",
-                skill_name="run_sql",
-            )
-
-            # Safety: block DDL/DML and non-SELECT statements
-            sql_err = _check_sql_safety(sql_stripped)
-            if sql_err:
-                return _safe_json({"error": sql_err})
-            if not sql_stripped.upper().startswith("SELECT"):
-                return _safe_json({"error": "Only SELECT statements are permitted."})
-
-            # Inject LIMIT if missing
-            limit_n = min(int(limit), 500)
-            sql_upper = sql_stripped.upper()
-            if "LIMIT" not in sql_upper:
-                sql_stripped = f"{sql_stripped} LIMIT {limit_n}"
-
-            try:
-                rows = await anyio.to_thread.run_sync(
-                    lambda: deps.store.query_list(sql_stripped),
-                    limiter=deps.store.query_limiter,
+                await deps.thought_stream.emit_tool_use(
+                    f"Running SQL: {sql_stripped[:120]}{'…' if len(sql_stripped) > 120 else ''}",
+                    skill_name="run_sql",
                 )
-            except Exception as exc:
+
+                # Safety: block DDL/DML and non-SELECT statements
+                sql_err = _check_sql_safety(sql_stripped)
+                if sql_err:
+                    return _safe_json({"error": sql_err})
+                if not sql_stripped.upper().startswith("SELECT"):
+                    return _safe_json({"error": "Only SELECT statements are permitted."})
+
+                # Inject LIMIT if missing
+                limit_n = min(int(limit), 500)
+                sql_upper = sql_stripped.upper()
+                if "LIMIT" not in sql_upper:
+                    sql_stripped = f"{sql_stripped} LIMIT {limit_n}"
+
+                try:
+                    async with _tracer.async_span(
+                        "copilot.duckdb.query",
+                        **safe_span_attrs(table=deps.table_name, sql=sql_fingerprint(sql_stripped)),
+                    ) as _sql_span:
+                        rows = await anyio.to_thread.run_sync(
+                            lambda: deps.store.query_list(sql_stripped),
+                            limiter=deps.store.query_limiter,
+                        )
+                        _sql_span.set_output({"row_count": len(rows)})
+                    _tracer.add_trace("info", "query_done", metadata={"row_count": len(rows)})
+                except Exception as exc:
+                    await deps.thought_stream.emit_observation(
+                        f"SQL error: {exc}", skill_name="run_sql"
+                    )
+                    return _safe_json({"error": f"Query failed: {exc}", "sql": sql_stripped})
+
                 await deps.thought_stream.emit_observation(
-                    f"SQL error: {exc}", skill_name="run_sql"
+                    f"SQL returned {len(rows)} rows",
+                    skill_name="run_sql",
                 )
-                return _safe_json({"error": f"Query failed: {exc}", "sql": sql_stripped})
-
-            await deps.thought_stream.emit_observation(
-                f"SQL returned {len(rows)} rows",
-                skill_name="run_sql",
-            )
-            return _truncate_result(_safe_json({"rows": rows, "count": len(rows)}))
+                out = _truncate_result(_safe_json({"rows": rows, "count": len(rows)}))
+                _tracer.add_trace("info", "tool_complete", metadata={"result_len": len(out)})
+                _span.set_output(out[:500] if len(out) > 500 else out)
+                return out
 
     async def process(
         self,
@@ -1066,21 +1158,37 @@ class CopilotAgent:
             node_name="Agent",
         )
 
-        try:
-            agent = self._get_agent()
-            result = await agent.run(full_message, deps=deps)
-            await self.thought_stream.emit_success("Request completed", node_name="Agent")
-            # --- Output guardrails ---
-            safe_response = _sanitize_output(result.output)
-            return safe_response, deps.chart_spec
+        tracer = get_copilot_tracer()
+        async with tracer.async_span(
+            "copilot.agent",
+            input=message,
+            **safe_span_attrs(dataset_label=dataset_label, msg_len=len(message)),
+        ) as _proc_span:
+            try:
+                agent = self._get_agent()
+                async with tracer.async_span(
+                    "copilot.agent.runner", input=full_message
+                ) as _llm_span:
+                    result = await agent.run(full_message, deps=deps)
+                await self.thought_stream.emit_success("Request completed", node_name="Agent")
+                # --- Output guardrails ---
+                safe_response = _sanitize_output(result.output)
+                _llm_span.set_output(
+                    safe_response[:500] if len(safe_response) > 500 else safe_response
+                )
+                _proc_span.set_output(
+                    safe_response[:500] if len(safe_response) > 500 else safe_response
+                )
+                return safe_response, deps.chart_spec
 
-        except Exception as e:
-            logger.error("Agent error: %s", e, exc_info=True)
-            await self.thought_stream.emit_error("Agent error", node_name="Agent")
-            return "I encountered an error processing your request. Please try again.", None
+            except Exception as e:
+                logger.error("Agent error: %s", e, exc_info=True)
+                await self.thought_stream.emit_error("Agent error", node_name="Agent")
+                tracer.add_trace("error", type(e).__name__)
+                return "I encountered an error processing your request. Please try again.", None
 
-        finally:
-            await self.thought_stream.close()
+            finally:
+                await self.thought_stream.close()
 
     @property
     def is_configured(self) -> bool:
