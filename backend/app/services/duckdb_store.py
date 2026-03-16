@@ -525,7 +525,7 @@ class DuckDBStore:
             if rows == 0 and self.has_table(table):
                 rows = self.get_metadata(table).get("row_count", 0)
             result[table] = {
-                "state": status.state if rows > 0 else status.state,
+                "state": status.state,
                 "rows": rows,
                 "last_sync": status.last_sync.isoformat() if status.last_sync else None,
                 "error": status.error,

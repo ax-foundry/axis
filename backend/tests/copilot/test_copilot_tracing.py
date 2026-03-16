@@ -5,6 +5,7 @@ import os
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from pydantic_ai.models.test import TestModel
 
 # ---------------------------------------------------------------------------
 # 1. OAI tuple contract
@@ -21,7 +22,7 @@ async def test_oai_process_returns_tuple() -> None:
     # Minimal mock: Runner.run_streamed returns an object whose
     # stream_events() is an empty async iterator and final_output is a str.
     mock_result = MagicMock()
-    mock_result.stream_events = AsyncMock(return_value=aiter_empty())
+    mock_result.stream_events = MagicMock(return_value=aiter_empty())
     mock_result.final_output = "Test response"
 
     with (
@@ -46,7 +47,7 @@ async def test_oai_process_returns_tuple() -> None:
 
 
 @pytest.mark.asyncio
-async def test_copilot_stream_event_order(async_client: AsyncMock) -> None:
+async def test_copilot_stream_event_order() -> None:
     """copilot_stream SSE events must arrive in order: thought*, response, done."""
     from app.copilot.thoughts import ThoughtStream
     from app.models.copilot_schemas import SSEEventType
@@ -68,9 +69,7 @@ async def test_copilot_stream_event_order(async_client: AsyncMock) -> None:
         instance.thought_stream = thought_stream
         instance.process = fake_process
 
-        events: list[str] = []
-        async for chunk in _collect_sse(instance, thought_stream):
-            events.append(chunk)
+        events = await _collect_sse(instance, thought_stream)
 
     assert SSEEventType.RESPONSE.value in events
     assert SSEEventType.DONE.value in events
@@ -250,7 +249,12 @@ async def test_agent_tool_span_name_and_tool_name_attr() -> None:
     with patch("app.copilot.agent.get_copilot_tracer", return_value=capturing):
         import app.copilot.agent as agent_mod
 
-        copilot_agent = agent_mod.CopilotAgent(thought_stream=thought_stream)
+        llm_provider = MagicMock()
+        llm_provider._get_model.return_value = TestModel()
+        copilot_agent = agent_mod.CopilotAgent(
+            thought_stream=thought_stream,
+            llm_provider=llm_provider,
+        )
         inner_agent = copilot_agent._get_agent()
         # pydantic-ai 1.x: tools live in _function_toolset.tools dict
         summarize_fn = inner_agent._function_toolset.tools["summarize_data"].function
@@ -293,7 +297,12 @@ async def test_agent_db_span_name_and_db_system_attr() -> None:
     with patch("app.copilot.agent.get_copilot_tracer", return_value=capturing):
         import app.copilot.agent as agent_mod
 
-        copilot_agent = agent_mod.CopilotAgent(thought_stream=thought_stream)
+        llm_provider = MagicMock()
+        llm_provider._get_model.return_value = TestModel()
+        copilot_agent = agent_mod.CopilotAgent(
+            thought_stream=thought_stream,
+            llm_provider=llm_provider,
+        )
         inner_agent = copilot_agent._get_agent()
         run_sql_fn = inner_agent._function_toolset.tools["run_sql"].function
         with patch("anyio.to_thread.run_sync", new_callable=AsyncMock, return_value=[]):
@@ -346,11 +355,12 @@ async def _collect_sse(agent_instance: MagicMock, thought_stream: object) -> lis
     events: list[str] = []
     try:
         ts = thought_stream  # type: ignore[assignment]
+        process_task = asyncio.create_task(agent_instance.process("msg"))
         sub = await ts.subscribe()
         async for _thought in sub:
             events.append(SSEEventType.THOUGHT.value)
 
-        _resp, _chart = await asyncio.create_task(agent_instance.process("msg"))
+        _resp, _chart = await process_task
         events.append(SSEEventType.RESPONSE.value)
     except Exception:
         events.append(SSEEventType.ERROR.value)

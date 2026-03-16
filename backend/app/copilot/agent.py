@@ -133,7 +133,7 @@ def _trim_filter_values(
     trimmed: dict[str, Any] = {}
     for col, vals in list(fv.items())[:max_cols]:
         if isinstance(vals, list) and len(vals) > max_vals:
-            trimmed[col] = vals[:max_vals] + [f"… +{len(vals) - max_vals} more"]
+            trimmed[col] = [*vals[:max_vals], f"… +{len(vals) - max_vals} more"]
         else:
             trimmed[col] = vals
     skipped = len(fv) - max_cols
