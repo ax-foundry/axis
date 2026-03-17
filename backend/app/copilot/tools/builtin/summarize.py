@@ -83,7 +83,9 @@ class SummarizeTool(BaseTool):
                 "overview": {
                     "total_records": len(df),
                     "total_metrics": len(numeric_cols),
-                    "data_format": data_context.get("format", "unknown") if data_context else "unknown",
+                    "data_format": data_context.get("format", "unknown")
+                    if data_context
+                    else "unknown",
                 },
             }
 
@@ -113,7 +115,9 @@ class SummarizeTool(BaseTool):
                 }
 
             if focus in ["quality", "issues", "all"]:
-                await self.emit_thought(thought_stream, "Identifying quality issues...", "observation")
+                await self.emit_thought(
+                    thought_stream, "Identifying quality issues...", "observation"
+                )
                 issues = []
                 missing = df.isnull().sum()
                 high_missing = missing[missing > len(df) * 0.1]
@@ -156,13 +160,17 @@ class SummarizeTool(BaseTool):
             if "performance" in result:
                 perf = result["performance"]
                 if perf["high_performers"]:
-                    insights.append(f"Top performing metrics: {', '.join(perf['high_performers'][:3])}")
+                    insights.append(
+                        f"Top performing metrics: {', '.join(perf['high_performers'][:3])}"
+                    )
                 if perf["low_performers"]:
                     insights.append(
                         f"Metrics needing attention: {', '.join(perf['low_performers'][:3])}"
                     )
             if result.get("quality_issues"):
-                insights.append(f"Found {len(result['quality_issues'])} potential data quality issues")
+                insights.append(
+                    f"Found {len(result['quality_issues'])} potential data quality issues"
+                )
             result["key_insights"] = insights
 
             if include_recommendations:

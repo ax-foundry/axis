@@ -145,7 +145,7 @@ class ReportRequest(BaseModel):
     score_threshold: float = Field(default=0.5, ge=0.0, le=1.0, description="Score threshold")
     max_issues: int = Field(default=100, ge=1, le=500, description="Maximum issues to analyze")
     data: list[dict[str, Any]] = Field(default_factory=list, description="Evaluation data")
-    model: str = Field(default="gpt-4o-mini", description="LLM model to use")
+    model: str = Field(default="gpt-5.2", description="LLM model to use")
     provider: str = Field(default="openai", description="LLM provider")
 
 

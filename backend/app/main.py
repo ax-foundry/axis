@@ -21,6 +21,7 @@ from app.routers import (
     config,
     data,
     database,
+    datasets,
     eval_runner,
     human_signals,
     kpi,
@@ -168,6 +169,7 @@ tags_metadata = [
     },
     {"name": "eval-runner", "description": "Batch evaluation execution via Axion engine"},
     {"name": "store", "description": "DuckDB analytics store: sync, status, metadata, data"},
+    {"name": "datasets", "description": "Copilot-saved datasets: create, list, download, delete"},
     {"name": "kpi", "description": "Agent KPI analytics: category views, trends, filters"},
 ]
 
@@ -229,6 +231,7 @@ app.include_router(
 )
 app.include_router(store.router, prefix="/api/store", tags=["store"])
 app.include_router(kpi.router, prefix="/api/kpi", tags=["kpi"])
+app.include_router(datasets.router, prefix="/api/datasets", tags=["datasets"])
 
 # Register plugin routers
 register_all(app)

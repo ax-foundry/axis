@@ -6,6 +6,7 @@ import {
   ChevronDown,
   ChevronUp,
   Copy,
+  Download,
   Maximize2,
   Minimize2,
   Send,
@@ -38,6 +39,7 @@ interface Message {
   timestamp: Date;
   thoughts?: Thought[];
   chart?: Record<string, unknown> | null;
+  download?: { export_sql: string; filename: string; row_count: number } | null;
 }
 
 interface DatasetOption {
@@ -135,6 +137,47 @@ function MessageBubble({ message }: { message: Message }) {
               layout={(message.chart.layout as Partial<Plotly.Layout>) ?? {}}
               style={{ width: '100%', height: 260 }}
             />
+          </div>
+        )}
+
+        {/* Download button (if agent produced a downloadable export) */}
+        {message.download && (
+          <div className="mb-2 flex items-center gap-3 rounded-xl border border-border bg-white px-4 py-3 shadow-sm">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
+              <Download className="h-4 w-4 text-primary" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-xs font-medium text-text-primary">
+                {message.download.filename}
+              </p>
+              <p className="text-[11px] text-text-muted">
+                {message.download.row_count.toLocaleString()} rows · CSV
+              </p>
+            </div>
+            <button
+              onClick={async () => {
+                const apiBase = process.env.NEXT_PUBLIC_API_URL ?? '';
+                const res = await fetch(`${apiBase}/api/store/export`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    sql: message.download!.export_sql,
+                    filename: message.download!.filename,
+                  }),
+                });
+                if (!res.ok) return;
+                const blob = await res.blob();
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = message.download!.filename;
+                a.click();
+                URL.revokeObjectURL(url);
+              }}
+              className="flex-shrink-0 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-primary-dark"
+            >
+              Download
+            </button>
           </div>
         )}
 
@@ -238,6 +281,7 @@ export function CopilotSidebar({ isOpen, onClose }: CopilotSidebarProps) {
   const {
     finalResponse,
     finalChart,
+    finalDownload,
     error,
     thoughts,
     reset,
@@ -315,7 +359,7 @@ export function CopilotSidebar({ isOpen, onClose }: CopilotSidebarProps) {
     el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
   }, [input]);
 
-  // Capture thoughts + chart snapshot and attach to assistant message on completion
+  // Capture thoughts + chart + download snapshot and attach to assistant message on completion
   useEffect(() => {
     if (finalResponse) {
       setMessages((prev) => [
@@ -326,11 +370,12 @@ export function CopilotSidebar({ isOpen, onClose }: CopilotSidebarProps) {
           timestamp: new Date(),
           thoughts: [...thoughtsRef.current],
           chart: finalChart ?? null,
+          download: finalDownload ?? null,
         },
       ]);
       reset();
     }
-  }, [finalResponse, finalChart, reset]);
+  }, [finalResponse, finalChart, finalDownload, reset]);
 
   // Handle error
   useEffect(() => {

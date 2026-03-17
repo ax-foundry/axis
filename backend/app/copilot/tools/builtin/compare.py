@@ -80,9 +80,7 @@ class CompareTool(BaseTool):
                         "available_columns": list(df.columns),
                     }
 
-            await self.emit_thought(
-                thought_stream, f"Grouping data by '{group_by}'", "observation"
-            )
+            await self.emit_thought(thought_stream, f"Grouping data by '{group_by}'", "observation")
 
             numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
             metrics_to_compare = params.get("metrics") or numeric_cols[:5]

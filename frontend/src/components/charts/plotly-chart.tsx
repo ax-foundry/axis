@@ -36,15 +36,47 @@ export function PlotlyChart({ data, layout, config, className = '', style }: Plo
   const colors = useColors();
   const isDark = useDarkMode();
 
-  const mergedLayout = useMemo(
-    () => ({
+  const mergedLayout = useMemo(() => {
+    // Deep-merge axes and title so LLM additions don't wipe component styling defaults.
+    const {
+      xaxis: llmXaxis,
+      yaxis: llmYaxis,
+      title: llmTitle,
+      font: llmFont,
+      ...restLayout
+    } = layout ?? {};
+
+    const axisDefaults = {
+      tickfont: { size: 10, color: colors.textPrimary },
+      automargin: true,
+      zeroline: false,
+      showline: true,
+      linecolor: isDark ? 'rgba(255,255,255,0.15)' : '#7F8C8D',
+      linewidth: 1.5,
+      gridcolor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(226,232,240,0.6)',
+      gridwidth: 0.8,
+      mirror: false,
+    };
+
+    // title can arrive as a plain string or an object — normalise to object before merging.
+    const titleBase = { font: { size: 13, color: '#1E3A5F' }, x: 0.02, xanchor: 'left' as const };
+    const mergedTitle =
+      llmTitle == null
+        ? undefined
+        : typeof llmTitle === 'string'
+          ? { ...titleBase, text: llmTitle }
+          : { ...titleBase, ...(llmTitle as object) };
+
+    return {
       autosize: true,
-      margin: { l: 50, r: 30, t: 30, b: 50 },
+      margin: { l: 70, r: 55, t: 65, b: 80 },
       paper_bgcolor: 'transparent',
       plot_bgcolor: 'transparent',
       font: {
         family: 'Inter, system-ui, sans-serif',
         color: colors.textPrimary,
+        size: 11,
+        ...(llmFont as object),
       },
       colorway: chartColors,
       hoverlabel: {
@@ -56,12 +88,15 @@ export function PlotlyChart({ data, layout, config, className = '', style }: Plo
         bgcolor: isDark ? '#1a1d27' : 'rgba(255,255,255,0.9)',
         bordercolor: isDark ? '#2d3148' : 'rgba(0,0,0,0.08)',
         borderwidth: 1,
-        font: { color: colors.textPrimary, size: 11 },
+        font: { color: colors.textPrimary, size: 10 },
       },
-      ...layout,
-    }),
-    [layout, chartColors, colors, isDark]
-  );
+      // restLayout first, then axis deep-merges last so they always win over LLM full overrides.
+      ...restLayout,
+      ...(mergedTitle !== undefined && { title: mergedTitle }),
+      xaxis: { ...axisDefaults, ...(llmXaxis as object) },
+      yaxis: { ...axisDefaults, ...(llmYaxis as object) },
+    };
+  }, [layout, chartColors, colors, isDark]);
 
   const mergedConfig = useMemo(() => ({ ...defaultConfig, ...config }), [config]);
 

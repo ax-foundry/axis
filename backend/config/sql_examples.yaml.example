@@ -1,0 +1,77 @@
+# sql_examples.yaml — Verified Q→SQL examples for the Ask Copilot assistant.
+#
+# Copy this file to custom/config/sql_examples.yaml and add your deployment-specific
+# examples. Examples are injected verbatim into the agent's schema context when a user
+# message matches one or more triggers (word-boundary keyword match).
+#
+# Fields:
+#   triggers:     List of keywords/phrases that activate this example (case-insensitive).
+#   description:  Short plain-English description of the question this SQL answers.
+#   sql:          The verified SELECT statement (no trailing semicolon).
+#
+# Tips:
+#   - Double-quote column names that contain spaces or capitals.
+#   - Use TRY_CAST("col" AS DOUBLE) for numeric aggregations — handles NULLs safely.
+#   - Always use DATE_TRUNC + CAST for timestamp columns — DuckDB may store as VARCHAR.
+#   - Aim for 5–20 examples covering the most common user questions at your deployment.
+
+examples:
+  - triggers:
+      - latest
+      - most recent
+      - last run
+      - newest
+    description: "Most recent evaluation run — average score per metric"
+    sql: |
+      SELECT "metric_name",
+             ROUND(AVG(TRY_CAST("metric_score" AS DOUBLE)), 3) AS avg_score,
+             COUNT(*) AS n
+      FROM eval_data
+      WHERE DATE_TRUNC('day', CAST("timestamp" AS TIMESTAMP)) = (
+          SELECT MAX(DATE_TRUNC('day', CAST("timestamp" AS TIMESTAMP))) FROM eval_data
+      )
+      GROUP BY "metric_name"
+      ORDER BY avg_score DESC
+
+  - triggers:
+      - weekly
+      - week over week
+      - trend by week
+      - weekly trend
+    description: "Weekly average score trend"
+    sql: |
+      SELECT DATE_TRUNC('week', CAST("timestamp" AS TIMESTAMP)) AS week,
+             ROUND(AVG(TRY_CAST("metric_score" AS DOUBLE)), 3) AS avg_score,
+             COUNT(*) AS n
+      FROM eval_data
+      GROUP BY week
+      ORDER BY week
+
+  - triggers:
+      - pass rate
+      - passing
+      - threshold
+      - above 0.8
+    description: "Pass rate per metric (score >= 0.8 threshold)"
+    sql: |
+      SELECT "metric_name",
+             ROUND(100.0 * COUNT(*) FILTER (WHERE TRY_CAST("metric_score" AS DOUBLE) >= 0.8)
+                   / NULLIF(COUNT(*), 0), 1) AS pass_pct,
+             COUNT(*) AS total
+      FROM eval_data
+      GROUP BY "metric_name"
+      ORDER BY pass_pct DESC
+
+  - triggers:
+      - by agent
+      - per agent
+      - by source
+      - compare agents
+    description: "Average score by source/agent"
+    sql: |
+      SELECT "source_name",
+             ROUND(AVG(TRY_CAST("metric_score" AS DOUBLE)), 3) AS avg_score,
+             COUNT(*) AS n
+      FROM eval_data
+      GROUP BY "source_name"
+      ORDER BY avg_score DESC

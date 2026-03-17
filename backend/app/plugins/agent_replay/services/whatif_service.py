@@ -16,6 +16,7 @@ import re
 import time
 from typing import Any
 
+from app.config.env import settings
 from app.copilot.llm.provider import LLMProvider, LLMProviderType
 from app.plugins.agent_replay.config import get_replay_config
 from app.plugins.agent_replay.models.replay_schemas import TokenUsage
@@ -476,25 +477,29 @@ async def run_simulation(
 
     async with _SIMULATE_SEMAPHORE:
         # Determine provider
-        provider = _detect_provider_for_model(effective_model or "gpt-4o")
+        provider = _detect_provider_for_model(effective_model or settings.llm_model_name)
 
-        llm = LLMProvider(
+        from pydantic_ai import Agent
+
+        llm_provider = LLMProvider(
             provider=provider,
             model=effective_model,
             temperature=effective_temp,
             max_tokens=effective_max_tokens,
         )
+        _agent = Agent(
+            llm_provider._get_model(),
+            system_prompt=system_prompt or "You are a helpful AI assistant.",
+        )
 
         # Execute with timeout
         start_ts = time.monotonic()
         try:
-            simulated_output = await asyncio.wait_for(
-                llm.generate(
-                    prompt=prompt_text,
-                    system_prompt=system_prompt or None,
-                ),
+            _result = await asyncio.wait_for(
+                _agent.run(prompt_text),
                 timeout=_SIMULATE_TIMEOUT_S,
             )
+            simulated_output = _result.output
         except TimeoutError:
             raise SimulationTimeoutError(f"LLM call timed out after {_SIMULATE_TIMEOUT_S}s")
 

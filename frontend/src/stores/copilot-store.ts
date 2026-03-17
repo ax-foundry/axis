@@ -28,6 +28,7 @@ interface CopilotState {
   currentThought: Thought | null;
   finalResponse: string | null;
   finalChart: Record<string, unknown> | null;
+  finalDownload: { export_sql: string; filename: string; row_count: number } | null;
   error: string | null;
 
   // Tools
@@ -50,7 +51,11 @@ interface CopilotState {
   startStreaming: () => void;
   stopStreaming: () => void;
   addThought: (thought: Thought) => void;
-  setFinalResponse: (response: string, chart?: Record<string, unknown> | null) => void;
+  setFinalResponse: (
+    response: string,
+    chart?: Record<string, unknown> | null,
+    download?: { export_sql: string; filename: string; row_count: number } | null
+  ) => void;
   setError: (error: string | null) => void;
   clearThoughts: () => void;
   reset: () => void;
@@ -81,6 +86,7 @@ export const useCopilotStore = create<CopilotState>()((set, get) => ({
   currentThought: null,
   finalResponse: null,
   finalChart: null,
+  finalDownload: null,
   error: null,
   tools: [],
   toolsLoaded: false,
@@ -97,6 +103,7 @@ export const useCopilotStore = create<CopilotState>()((set, get) => ({
       currentThought: null,
       finalResponse: null,
       finalChart: null,
+      finalDownload: null,
       error: null,
     }),
 
@@ -112,10 +119,11 @@ export const useCopilotStore = create<CopilotState>()((set, get) => ({
       currentThought: thought,
     })),
 
-  setFinalResponse: (response, chart = null) =>
+  setFinalResponse: (response, chart = null, download = null) =>
     set({
       finalResponse: response,
       finalChart: chart ?? null,
+      finalDownload: download ?? null,
       isStreaming: false,
     }),
 
@@ -138,6 +146,7 @@ export const useCopilotStore = create<CopilotState>()((set, get) => ({
       currentThought: null,
       finalResponse: null,
       finalChart: null,
+      finalDownload: null,
       error: null,
     }),
 
@@ -176,6 +185,7 @@ export const useCopilotStore = create<CopilotState>()((set, get) => ({
       currentThought: null,
       finalResponse: null,
       finalChart: null,
+      finalDownload: null,
       error: null,
     }),
 }));

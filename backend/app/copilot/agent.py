@@ -1,12 +1,23 @@
 import json
 import logging
+import math
 import re
 from dataclasses import dataclass, field
 from typing import Any
 
 import anyio
-from pydantic_ai import Agent, RunContext
+from pydantic_ai import (
+    Agent,
+    CallToolsNode,
+    ModelRequest,
+    ModelResponse,
+    RunContext,
+    TextPart,
+    ThinkingPart,
+    UserPromptPart,
+)
 
+from app.copilot.hooks import tool_span
 from app.copilot.llm.provider import LLMProvider
 from app.copilot.thoughts import ThoughtStream
 from app.copilot.tracing import get_copilot_tracer, safe_span_attrs, sql_fingerprint
@@ -117,6 +128,131 @@ def _is_numeric(col_info: dict[str, Any]) -> bool:
     return any(t in col_info.get("column_type", "").upper() for t in _NUMERIC_TYPES)
 
 
+# Human-readable descriptions for AXIS structural columns that are skipped by
+# auto-discovery (free-text / ID fields). Shown in the schema catalog when a
+# column has no sampled values or numeric range so the LLM understands the content.
+_COLUMN_DESCRIPTIONS: dict[str, str] = {
+    # Identifiers
+    "dataset_id": "unique record identifier",
+    "id": "unique record identifier",
+    "case_id": "unique case identifier",
+    "trace_id": "observability trace ID for linking to Langfuse / external systems",
+    # Input / output text
+    "query": "input prompt or test question sent to the LLM",
+    "actual_output": "LLM response text",
+    "expected_output": "ground truth / reference answer",
+    "full_conversation": "full conversation history (multi-turn)",
+    "context": "retrieved context passages used for generation",
+    # Metric detail
+    "explanation": "metric explanation or reasoning text produced by the judge",
+    # Timestamps
+    "timestamp": "ISO datetime of the record",
+    "created_at": "ISO datetime the record was created",
+}
+
+# Maps real column names (lowercase) → common user synonyms injected into DDL comments.
+# Helps the LLM map natural-language terms to the correct column names.
+_COLUMN_SYNONYMS: dict[str, list[str]] = {
+    # Scoring
+    "metric_score": ["score", "quality", "rating", "value"],
+    "metric_name": ["metric", "measure", "indicator"],
+    "metric_category": ["category"],
+    "metric_type": ["type"],
+    # Source / routing
+    "source_name": ["agent", "bot", "model", "system", "assistant"],
+    "source_component": ["component", "module", "service", "step"],
+    "source_type": ["platform", "provider", "integration"],
+    "environment": ["env", "deployment", "stage"],
+    "evaluation_name": ["experiment", "run", "eval", "batch"],
+    # Identity
+    "case_id": ["id", "case", "record", "session"],
+    "trace_id": ["trace", "span"],
+    # Content
+    "query": ["question", "input", "prompt", "request"],
+    "actual_output": ["output", "response", "answer", "reply", "result"],
+    "expected_output": ["expected", "ground_truth", "reference"],
+    "explanation": ["reason", "reasoning", "justification"],
+    # Time
+    "timestamp": ["date", "time", "created_at", "when"],
+    # KPI
+    "kpi_name": ["kpi", "indicator"],
+    "kpi_value": ["value", "kpi_score"],
+    "kpi_category": ["kpi_group"],
+    # Latency
+    "latency": ["latency_ms", "response_time", "duration", "time_ms"],
+}
+
+
+def _parse_sql_error_hint(
+    error_msg: str,
+    available_columns: list[str],
+    table: str,
+) -> str:
+    """Convert a raw DuckDB exception into an actionable hint for the LLM.
+
+    Detects the most common failure modes (bad column name, bad cast, table
+    not found, syntax error) and appends targeted fix instructions so the
+    agent can call run_sql again with a corrected query on the next turn.
+    """
+    msg = str(error_msg)
+    hint_parts: list[str] = [f"SQL error: {msg}"]
+
+    msg_lower = msg.lower()
+
+    # ── column not found ────────────────────────────────────────────────────
+    col_match = re.search(r'[Cc]olumn[^"\'`]*["\']?`?([A-Za-z_]\w*)["\']?`?', msg)
+    if (
+        col_match
+        or "binder error" in msg_lower
+        or ("not found" in msg_lower and "column" in msg_lower)
+    ):
+        bad_col = col_match.group(1).lower() if col_match else ""
+        if bad_col and available_columns:
+            # fuzzy: real column contains bad name or bad name contains real column
+            suggestions = [
+                c for c in available_columns if bad_col in c.lower() or c.lower() in bad_col
+            ]
+            # also check synonyms: user said synonym, find the real column
+            for real_col, synonyms in _COLUMN_SYNONYMS.items():
+                if bad_col in synonyms and real_col in available_columns:
+                    suggestions.insert(0, real_col)
+            suggestions = list(dict.fromkeys(suggestions))[:4]  # dedupe, cap
+            if suggestions:
+                hint_parts.append(
+                    f'Hint: column "{bad_col}" not found. Did you mean: {", ".join(suggestions)}?'
+                )
+            else:
+                hint_parts.append(f"Hint: available columns: {', '.join(available_columns[:25])}")
+        elif available_columns:
+            hint_parts.append(f"Hint: available columns: {', '.join(available_columns[:25])}")
+
+    # ── type / cast error ───────────────────────────────────────────────────
+    elif any(
+        k in msg_lower for k in ("cannot cast", "conversion error", "invalid type", "overflow")
+    ):
+        hint_parts.append(
+            "Hint: use TRY_CAST(col AS DOUBLE) to safely cast numeric columns — returns NULL on failure."
+        )
+
+    # ── table not found ─────────────────────────────────────────────────────
+    elif "table" in msg_lower and any(
+        k in msg_lower for k in ("not found", "does not exist", "unknown")
+    ):
+        hint_parts.append(
+            f'Hint: use the exact table name from the schema context — e.g. "{table}".'
+        )
+
+    # ── syntax error ────────────────────────────────────────────────────────
+    elif any(k in msg_lower for k in ("syntax error", "parser error", "unexpected token")):
+        hint_parts.append(
+            "Hint: check SQL syntax — double-quote column names with spaces/capitals, "
+            "no trailing semicolon, balanced parentheses."
+        )
+
+    hint_parts.append("Rewrite the SQL and call run_sql again.")
+    return " | ".join(hint_parts)
+
+
 def _truncate_result(s: str, max_chars: int = _MAX_RESULT_CHARS) -> str:
     """Trim a JSON result string so it never blows up the LLM context."""
     if len(s) <= max_chars:
@@ -142,6 +278,151 @@ def _trim_filter_values(
     return trimmed
 
 
+def _build_schema_ddl(
+    table: str,
+    dataset_label: str,
+    meta: dict[str, Any],
+    num_ranges: dict[str, tuple[Any, Any]],
+) -> str:
+    """Render schema context as a DDL CREATE TABLE with inline annotations.
+
+    DDL format matches LLM training data — models pattern-match CREATE TABLE
+    statements far better than custom catalog formats, improving SQL accuracy.
+    Includes row count, time range, sampled values, numeric ranges, and
+    structural column descriptions as inline comments.
+    """
+    all_cols: list[dict[str, Any]] = meta.get("columns", [])
+    filter_values: dict[str, Any] = meta.get("filter_values", {})
+    row_count = meta.get("row_count", "?")
+    time_range: dict[str, str] | None = meta.get("time_range")
+
+    header_parts: list[str] = [
+        f"{row_count:,} rows" if isinstance(row_count, int) else f"{row_count} rows"
+    ]
+    if time_range:
+        mn = str(time_range.get("min", ""))[:10]
+        mx = str(time_range.get("max", ""))[:10]
+        if mn and mx:
+            header_parts.append(f"{mn} → {mx}")
+
+    lines: list[str] = [
+        f"\nDataset: {dataset_label}",
+        f'CREATE TABLE {table} (  -- {" | ".join(header_parts)}',
+    ]
+
+    # For the derived human-signals table, explain the column naming convention so the
+    # agent knows how to filter and group by metric vs signal key.
+    if table == "human_signals_cases":
+        lines.insert(
+            1,
+            (
+                "-- Schema note: columns named {metric}__{signal} are flattened from a JSON "
+                "'signals' blob. The prefix before '__' is the metric_name; the suffix is the "
+                "signal key within that metric. To query one metric's signals use "
+                "COLUMNS('metric_name__.*') or WHERE ... LIKE 'metric_name__%'. "
+                "The metric_name column holds the raw metric name string for grouping."
+            ),
+        )
+
+    for col in all_cols[:50]:
+        col_name = col["column_name"]
+        col_type = col.get("column_type", "VARCHAR")
+
+        if _is_numeric(col) and col_name in num_ranges:
+            mn, mx = num_ranges[col_name]
+            comment = f"range: {mn} → {mx}"
+        elif col_name in filter_values:
+            vals = filter_values[col_name]
+            if isinstance(vals, list):
+                sample = ", ".join(str(v) for v in vals[:8])
+                suffix = " …" if len(vals) > 8 else ""
+                comment = f"values: {sample}{suffix}"
+            else:
+                comment = str(vals)
+        else:
+            comment = _COLUMN_DESCRIPTIONS.get(col_name.lower(), "")
+
+        # Append synonym aliases so the LLM maps natural-language terms → exact column names
+        synonyms = _COLUMN_SYNONYMS.get(col_name.lower())
+        if synonyms:
+            alias_str = f"alias: {', '.join(synonyms)}"
+            comment = f"{comment} | {alias_str}" if comment else alias_str
+
+        line = f'    "{col_name}" {col_type},'
+        if comment:
+            line += f"  -- {comment}"
+        lines.append(line)
+
+    if len(all_cols) > 50:
+        lines.append(f"    -- … +{len(all_cols) - 50} more columns")
+
+    lines.append(");")
+
+    sample_sql = _build_sample_sql(table, all_cols, filter_values)
+    if sample_sql:
+        lines.append(sample_sql)
+
+    return "\n".join(lines)
+
+
+def _build_sample_sql(
+    table: str,
+    all_cols: list[dict[str, Any]],
+    filter_values: dict[str, Any],
+) -> str:
+    """Generate table-specific example queries illustrating DuckDB syntax.
+
+    Called at prompt-build time so examples always reflect the live schema.
+    Capped at 3 examples to keep token cost low.
+    """
+    col_names = {c["column_name"] for c in all_cols}
+    num_cols = [c["column_name"] for c in all_cols if _is_numeric(c)]
+    # Low-cardinality string columns useful for GROUP BY
+    cat_cols = [c for c in filter_values if c in col_names and c not in num_cols]
+    has_ts = "timestamp" in col_names
+
+    examples: list[str] = []
+
+    # 1. Always: basic fetch with timestamp sort if available
+    order = 'ORDER BY "timestamp" DESC ' if has_ts else ""
+    examples.append(f"SELECT * FROM {table} {order}LIMIT 10")
+
+    # 2. Time-series aggregation when timestamp + numeric column exist
+    if has_ts and num_cols:
+        num = num_cols[0]
+        examples.append(
+            f"SELECT DATE_TRUNC('week', CAST(\"timestamp\" AS TIMESTAMP)) AS week,\n"
+            f'       AVG(TRY_CAST("{num}" AS DOUBLE)) AS avg_{num}\n'
+            f"FROM {table}\n"
+            f"GROUP BY week ORDER BY week"
+        )
+
+    # 3. Group-by aggregation when categorical + numeric columns exist
+    if cat_cols and num_cols:
+        cat, num = cat_cols[0], num_cols[0]
+        examples.append(
+            f'SELECT "{cat}",\n'
+            f'       AVG(TRY_CAST("{num}" AS DOUBLE)) AS avg_{num},\n'
+            f"       COUNT(*) AS n\n"
+            f"FROM {table}\n"
+            f'GROUP BY "{cat}" ORDER BY avg_{num} DESC'
+        )
+    elif cat_cols:
+        # Fallback: count by category when no numeric col
+        cat = cat_cols[0]
+        examples.append(
+            f'SELECT "{cat}", COUNT(*) AS n\n' f"FROM {table}\n" f'GROUP BY "{cat}" ORDER BY n DESC'
+        )
+
+    if not examples:
+        return ""
+
+    lines = ["\nSample queries (always double-quote column names in DuckDB):"]
+    for ex in examples[:3]:
+        lines.append("  -- " + ex.replace("\n", "\n  "))
+    return "\n".join(lines)
+
+
 @dataclass
 class CopilotDeps:
     """Dependencies for copilot tools — DuckDB-powered, no in-memory DataFrames."""
@@ -151,6 +432,11 @@ class CopilotDeps:
     data_context: dict[str, Any] = field(default_factory=dict)
     _cache: dict[str, str] = field(default_factory=dict)
     chart_spec: dict[str, Any] | None = None
+    download_spec: dict[str, Any] | None = None  # set by download_data tool
+    user_id: str | None = None  # resolved from request header / body
+    skills_injection: str = ""  # pre-computed skill bodies for this request
+    last_sql: str = ""  # last successfully executed SQL (persisted across turns via agent instance)
+    sql_examples_injection: str = ""  # verified Q→SQL examples matched to this request
 
     @property
     def table_name(self) -> str:
@@ -196,6 +482,21 @@ class CopilotDeps:
         )
 
 
+def _build_message_history(history: list[dict[str, Any]]) -> list[Any]:
+    """Convert frontend conversation history dicts to pydantic-ai ModelMessage objects."""
+    messages: list[Any] = []
+    for turn in history:
+        role = turn.get("role", "")
+        content = turn.get("content", "")
+        if not content:
+            continue
+        if role == "user":
+            messages.append(ModelRequest(parts=[UserPromptPart(content=content)]))
+        elif role == "assistant":
+            messages.append(ModelResponse(parts=[TextPart(content=content)]))
+    return messages
+
+
 class CopilotAgent:
     """Ask AXIS — DuckDB-first AI assistant for data analysis.
 
@@ -211,6 +512,7 @@ class CopilotAgent:
         self.thought_stream = thought_stream or ThoughtStream()
         self.llm_provider = llm_provider or LLMProvider()
         self._agent: Agent[CopilotDeps, str] | None = None
+        self._last_sql: str = ""  # persists between process() calls for multi-turn SQL refinement
 
     def _get_agent(self) -> Agent[CopilotDeps, str]:
         """Create or return the pydantic-ai agent with DuckDB tools."""
@@ -230,12 +532,19 @@ class CopilotAgent:
                 "query_kpi_data when the dataset is kpi, "
                 "run_sql for any custom aggregation, date grouping, HAVING, subquery, "
                 "or anything the other tools cannot express, "
+                "analyze_patterns when the user asks about failure patterns, root causes, "
+                "improvement opportunities, what's going wrong, why scores are low, or success drivers, "
+                "save_as_dataset when the user wants to save, export, or persist query results as a named dataset, "
                 "and plot_data when the user asks to plot, chart, visualize, or graph data. "
                 "With plot_data YOU write the full Plotly traces and layout — "
                 "use any chart type (scatter/line, bar, heatmap, box, histogram, etc.), "
                 "set axis ranges, colors, bar stacking (barmode: stack), annotations, and so on. "
                 "On follow-up chart requests re-call plot_data with the same SQL and updated spec. "
                 "Never suggest matplotlib or Python code — charts render interactively in the browser. "
+                "Prefer run_sql over query_data when the question asks for counts, "
+                "sums, or grouping by date/time. "
+                "IMPORTANT: Only reference column names that appear in the schema context. "
+                "Never guess or invent column names. "
                 "IMPORTANT: If a request is ambiguous or missing key details (e.g. which metric, "
                 "which column, which time range, which group), do NOT guess — ask a short, "
                 "specific clarifying question before calling any tool. "
@@ -259,7 +568,7 @@ class CopilotAgent:
 
         @self._agent.system_prompt
         def _dataset_context(ctx: RunContext[CopilotDeps]) -> str:
-            """Inject a per-column schema catalog so the agent knows types and sample values."""
+            """Inject DDL-style schema context so the agent knows types and sample values."""
             deps = ctx.deps
             if not deps.has_data:
                 return f"\nNote: No {deps.dataset_label} data is loaded in DuckDB yet."
@@ -267,14 +576,6 @@ class CopilotAgent:
             table = deps.table_name
             meta = store.get_metadata(table)
             all_cols = meta.get("columns", [])
-            # filter_values already computed by DuckDB store (capped per col)
-            filter_values: dict[str, Any] = meta.get("filter_values", {})
-
-            lines: list[str] = [
-                f"\nDataset: {deps.dataset_label} | Table: {table} | "
-                f"Rows: {meta.get('row_count', '?')}",
-                "Column catalog (name | DuckDB type | sample values or numeric range):",
-            ]
 
             # One batched query for all numeric column ranges
             num_cols = [c for c in all_cols if _is_numeric(c)][:12]
@@ -294,28 +595,45 @@ class CopilotAgent:
                 except Exception:
                     pass
 
-            for col in all_cols[:50]:
-                col_name = col["column_name"]
-                col_type = col.get("column_type", "?")
-                if _is_numeric(col) and col_name in num_ranges:
-                    mn, mx = num_ranges[col_name]
-                    detail = f"range [{mn} → {mx}]"
-                elif col_name in filter_values:
-                    vals = filter_values[col_name]
-                    if isinstance(vals, list):
-                        sample = ", ".join(str(v) for v in vals[:10])
-                        suffix = " …" if len(vals) > 10 else ""
-                        detail = f"values [{sample}{suffix}]"
-                    else:
-                        detail = str(vals)
-                else:
-                    detail = ""
-                lines.append(f"  {col_name} | {col_type} | {detail}")
+            ddl = _build_schema_ddl(table, deps.dataset_label, meta, num_ranges)
 
-            if len(all_cols) > 50:
-                lines.append(f"  … +{len(all_cols) - 50} more columns")
+            extra: list[str] = []
+            from app.copilot.metric_catalog import get_metric_catalog_store
+            from app.copilot.schema_hints import get_schema_hints_store
 
-            return "\n".join(lines)
+            _hints_injection = get_schema_hints_store().get_injection(table)
+            if _hints_injection:
+                extra.append(_hints_injection)
+
+            # Metric catalog: inject per-metric semantic hints (descriptions, signal payload shape)
+            _catalog_metric_names = list(
+                (meta.get("filter_values") or {}).get("metric_name", [])
+                or (meta.get("filter_values") or {}).get("kpi_name", [])
+            )
+            _catalog_injection = get_metric_catalog_store().get_injection(
+                table, _catalog_metric_names or None
+            )
+            if _catalog_injection:
+                extra.append(_catalog_injection)
+
+            if deps.last_sql:
+                extra.append(f"-- Last executed SQL (for multi-turn refinement):\n{deps.last_sql}")
+            if deps.sql_examples_injection:
+                extra.append(deps.sql_examples_injection)
+            if deps.user_id:
+                extra.append(
+                    f"-- Current user: {deps.user_id}\n"
+                    f"-- To list only this user's saved datasets query:\n"
+                    f"--   SELECT dataset_id, name, table_name, row_count, created_at\n"
+                    f"--   FROM axis_datasets WHERE user_id = '{deps.user_id}' ORDER BY created_at DESC"
+                )
+
+            return ddl + ("\n\n" + "\n\n".join(extra) if extra else "")
+
+        @self._agent.system_prompt
+        def _skill_context(ctx: RunContext[CopilotDeps]) -> str:
+            """Inject pre-selected skill bodies into the system prompt."""
+            return ctx.deps.skills_injection
 
         self._register_tools()
         return self._agent
@@ -339,22 +657,16 @@ class CopilotAgent:
                 JSON with dataset overview.
             """
             deps = ctx.deps
-            _tracer = get_copilot_tracer()
-            async with _tracer.async_span(
-                "copilot.tool.call",
-                input={"include_numeric_stats": include_numeric_stats},
-                **safe_span_attrs(tool_name="summarize_data", dataset=deps.dataset_label),
-            ) as _span:
-                cache_str = f"summarize:{include_numeric_stats}"
-                cached = deps.get_cached("summarize_data", cache_str)
-                _tracer.add_trace("info", "cache_hit" if cached else "cache_miss")
+            cache_str = f"summarize:{include_numeric_stats}"
+            async with tool_span(
+                deps,
+                "summarize_data",
+                cache_str,
+                f"Summarizing {deps.dataset_label} dataset...",
+                {"include_numeric_stats": include_numeric_stats},
+            ) as (_tracer, _span, cached):
                 if cached:
                     return cached
-
-                await deps.thought_stream.emit_tool_use(
-                    f"Summarizing {deps.dataset_label} dataset...",
-                    tool_name="summarize_data",
-                )
 
                 if not deps.has_data:
                     return deps.no_data_error()
@@ -443,10 +755,16 @@ class CopilotAgent:
                 JSON with matching records and total count.
             """
             deps = ctx.deps
-            _tracer = get_copilot_tracer()
-            async with _tracer.async_span(
-                "copilot.tool.call",
-                input={
+            cache_str = (
+                f"query:{filter_column}:{filter_value}:{find_min_column}"
+                f":{find_max_column}:{search_text}:{limit}"
+            )
+            async with tool_span(
+                deps,
+                "query_data",
+                cache_str,
+                "Querying data...",
+                {
                     "filter_column": filter_column,
                     "filter_value": filter_value,
                     "find_min_column": find_min_column,
@@ -454,21 +772,9 @@ class CopilotAgent:
                     "search_text": search_text,
                     "limit": limit,
                 },
-                **safe_span_attrs(tool_name="query_data", dataset=deps.dataset_label),
-            ) as _span:
-                cache_str = (
-                    f"query:{filter_column}:{filter_value}:{find_min_column}"
-                    f":{find_max_column}:{search_text}:{limit}"
-                )
-                cached = deps.get_cached("query_data", cache_str)
-                _tracer.add_trace("info", "cache_hit" if cached else "cache_miss")
+            ) as (_tracer, _span, cached):
                 if cached:
                     return cached
-
-                await deps.thought_stream.emit_tool_use(
-                    "Querying data...",
-                    tool_name="query_data",
-                )
 
                 if not deps.has_data:
                     return deps.no_data_error()
@@ -585,22 +891,16 @@ class CopilotAgent:
                 JSON with per-column distribution statistics and insights.
             """
             deps = ctx.deps
-            _tracer = get_copilot_tracer()
-            async with _tracer.async_span(
-                "copilot.tool.call",
-                input={"columns": columns},
-                **safe_span_attrs(tool_name="analyze_data", dataset=deps.dataset_label),
-            ) as _span:
-                cache_str = f"analyze:{sorted(columns) if columns else 'all'}"
-                cached = deps.get_cached("analyze_data", cache_str)
-                _tracer.add_trace("info", "cache_hit" if cached else "cache_miss")
+            cache_str = f"analyze:{sorted(columns) if columns else 'all'}"
+            async with tool_span(
+                deps,
+                "analyze_data",
+                cache_str,
+                "Analyzing data statistics...",
+                {"columns": columns},
+            ) as (_tracer, _span, cached):
                 if cached:
                     return cached
-
-                await deps.thought_stream.emit_tool_use(
-                    "Analyzing data statistics...",
-                    tool_name="analyze_data",
-                )
 
                 if not deps.has_data:
                     return deps.no_data_error()
@@ -701,22 +1001,16 @@ class CopilotAgent:
                 JSON with per-group averages and row counts.
             """
             deps = ctx.deps
-            _tracer = get_copilot_tracer()
-            async with _tracer.async_span(
-                "copilot.tool.call",
-                input={"group_by": group_by, "metric_column": metric_column},
-                **safe_span_attrs(tool_name="compare_data", dataset=deps.dataset_label),
-            ) as _span:
-                cache_str = f"compare:{group_by}:{metric_column}"
-                cached = deps.get_cached("compare_data", cache_str)
-                _tracer.add_trace("info", "cache_hit" if cached else "cache_miss")
+            cache_str = f"compare:{group_by}:{metric_column}"
+            async with tool_span(
+                deps,
+                "compare_data",
+                cache_str,
+                f"Comparing by {group_by}...",
+                {"group_by": group_by, "metric_column": metric_column},
+            ) as (_tracer, _span, cached):
                 if cached:
                     return cached
-
-                await deps.thought_stream.emit_tool_use(
-                    f"Comparing by {group_by}...",
-                    tool_name="compare_data",
-                )
 
                 if not deps.has_data:
                     return deps.no_data_error()
@@ -805,22 +1099,16 @@ class CopilotAgent:
                 JSON with KPI records.
             """
             deps = ctx.deps
-            _tracer = get_copilot_tracer()
-            async with _tracer.async_span(
-                "copilot.tool.call",
-                input={"filter_category": filter_category, "limit": limit},
-                **safe_span_attrs(tool_name="query_kpi_data", dataset=deps.dataset_label),
-            ) as _span:
-                cache_str = f"kpi:{filter_category}:{limit}"
-                cached = deps.get_cached("query_kpi_data", cache_str)
-                _tracer.add_trace("info", "cache_hit" if cached else "cache_miss")
+            cache_str = f"kpi:{filter_category}:{limit}"
+            async with tool_span(
+                deps,
+                "query_kpi_data",
+                cache_str,
+                "Querying KPI data...",
+                {"filter_category": filter_category, "limit": limit},
+            ) as (_tracer, _span, cached):
                 if cached:
                     return cached
-
-                await deps.thought_stream.emit_tool_use(
-                    "Querying KPI data...",
-                    tool_name="query_kpi_data",
-                )
 
                 store = deps.store
                 if not store.has_table("kpi_data"):
@@ -897,25 +1185,22 @@ class CopilotAgent:
                 Confirmation that the chart was created.
             """
             deps = ctx.deps
-            _tracer = get_copilot_tracer()
-            async with _tracer.async_span(
-                "copilot.tool.call",
-                input={
+            _title_raw = (layout or {}).get("title", {})
+            title_text: str = (
+                _title_raw.get("text", "chart")
+                if isinstance(_title_raw, dict)
+                else _title_raw or "chart"
+            )
+            async with tool_span(
+                deps,
+                "plot_data",
+                "",
+                f"Building chart: {title_text}",
+                {
                     "sql": sql_fingerprint(sql.strip()),
-                    "layout_title": (layout or {}).get("title", ""),
+                    "layout_title": title_text,
                 },
-                **safe_span_attrs(tool_name="plot_data", dataset=deps.dataset_label),
-            ) as _span:
-                _tracer.add_trace("info", "cache_miss")
-
-                title_text = (layout or {}).get("title", {})
-                if isinstance(title_text, dict):
-                    title_text = title_text.get("text", "chart")
-                await deps.thought_stream.emit_tool_use(
-                    f"Building chart: {title_text}",
-                    tool_name="plot_data",
-                )
-
+            ) as (_tracer, _span, _cached):
                 if not deps.has_data:
                     return deps.no_data_error()
 
@@ -947,12 +1232,16 @@ class CopilotAgent:
                 except Exception as exc:
                     return _safe_json({"error": f"Query failed: {exc}"})
 
+                deps.last_sql = sql_stripped  # persist for multi-turn chart refinement
+
                 if not rows:
                     return "No data returned for the chart."
 
                 def _coerce(v: Any) -> Any:
                     if hasattr(v, "isoformat"):
                         return v.isoformat()
+                    if isinstance(v, float) and not math.isfinite(v):
+                        return None
                     return v
 
                 available = list(rows[0].keys())
@@ -1035,6 +1324,241 @@ class CopilotAgent:
                 return out
 
         @agent.tool
+        async def analyze_patterns(
+            ctx: RunContext[CopilotDeps],
+            sql: str,
+            mode: str = "low",
+            report_type: str = "recommendations",
+            metric_filter: str | None = None,
+        ) -> str:
+            """Identify failure patterns, root causes, and improvement opportunities in the data.
+
+            Use when asked about: what's going wrong, why scores are low, improvement areas,
+            root causes, recommendations, patterns across failing cases, or success drivers.
+            Write `sql` to scope the exact slice (metric, time range, environment, etc.) and
+            include ORDER BY metric_score ASC for mode=low or DESC for mode=high.
+            Requires long-format data with metric_name and metric_score columns.
+
+            Args:
+                ctx: Run context.
+                sql: SELECT query scoping the data to analyze. Must include ORDER BY metric_score
+                    ASC for mode="low", DESC for "high". LLM writes this to handle arbitrary
+                    filters (metric, time range, env, source, etc.).
+                mode: Analysis framing: "low" (failures), "high" (successes), "overall" (both).
+                report_type: "summary", "detailed", "grouped", or "recommendations".
+                metric_filter: Optional further filter to one metric within the SQL result set.
+
+            Returns:
+                JSON with report, insights, issues_found, records_checked, metrics_covered.
+            """
+            from app.services.issue_extractor_service import run_analysis_pipeline
+
+            deps = ctx.deps
+            async with tool_span(
+                deps,
+                "analyze_patterns",
+                "",
+                "Analyzing patterns...",
+                {
+                    "sql": sql_fingerprint(sql.strip()),
+                    "mode": mode,
+                    "report_type": report_type,
+                },
+            ) as (_tracer, _span, _cached):
+                if not deps.has_data:
+                    return deps.no_data_error()
+
+                sql_stripped = sql.strip().rstrip(";")
+                sql_err = _check_sql_safety(sql_stripped)
+                if sql_err:
+                    return _safe_json({"error": sql_err})
+                if not sql_stripped.upper().startswith("SELECT"):
+                    return _safe_json({"error": "Only SELECT statements are permitted."})
+
+                try:
+                    records = await anyio.to_thread.run_sync(
+                        lambda: deps.store.query_list(sql_stripped),
+                        limiter=deps.store.query_limiter,
+                    )
+                except Exception as exc:
+                    return _safe_json({"error": f"Query failed: {exc}"})
+
+                if records and "metric_name" not in records[0] and "metric_score" not in records[0]:
+                    return _safe_json(
+                        {
+                            "error": (
+                                "analyze_patterns requires long-format data with metric_name and "
+                                "metric_score columns. This table appears to be wide-format or "
+                                "missing these columns."
+                            )
+                        }
+                    )
+
+                await deps.thought_stream.emit_observation(
+                    f"Found {len(records)} records — extracting issues...",
+                    tool_name="analyze_patterns",
+                )
+
+                provider_type = LLMProvider.get_default_provider()
+                provider_str = provider_type.value if provider_type else "openai"
+
+                result = await run_analysis_pipeline(
+                    records=records,
+                    mode=mode,
+                    metric_filter=metric_filter,
+                    report_type=report_type,
+                    provider=provider_str,
+                )
+
+                first_line = result.get("report", "")[:120].split("\n")[0]
+                await deps.thought_stream.emit_observation(
+                    f"Found {result.get('issues_found', 0)} issues — {first_line}",
+                    tool_name="analyze_patterns",
+                )
+
+                cache_key = f"analyze_patterns:{hash(sql)}:{mode}:{report_type}:{metric_filter}"
+                deps._cache[cache_key] = _safe_json(result)
+
+                out = _truncate_result(_safe_json(result))
+                _span.set_output(out[:200] if len(out) > 200 else out)
+                return out
+
+        @agent.tool
+        async def save_as_dataset(
+            ctx: RunContext[CopilotDeps],
+            sql: str,
+            name: str,
+            description: str = "",
+            tags: list[str] | None = None,
+        ) -> str:
+            """Save SQL query results as a named, persisted dataset.
+
+            Use when the user wants to save, export, persist, or create a dataset from
+            current results for later analysis or evaluation pipeline use.
+            The dataset is stored in DuckDB and accessible via the Datasets API.
+
+            Args:
+                ctx: Run context.
+                sql: SELECT query whose results to persist. Include any filters the user specified.
+                name: Human-readable name for the dataset.
+                description: Optional description of the dataset contents.
+                tags: Optional list of tag strings for categorization.
+
+            Returns:
+                JSON with dataset_id, name, table, row_count, columns.
+            """
+            deps = ctx.deps
+            async with tool_span(
+                deps,
+                "save_as_dataset",
+                "",
+                f"Saving dataset: {name}",
+                {"sql": sql_fingerprint(sql.strip()), "name": name},
+            ) as (_tracer, _span, _cached):
+                if not deps.has_data:
+                    return deps.no_data_error()
+
+                sql_stripped = sql.strip().rstrip(";")
+                sql_err = _check_sql_safety(sql_stripped)
+                if sql_err:
+                    return _safe_json({"error": sql_err})
+                if not sql_stripped.upper().startswith("SELECT"):
+                    return _safe_json({"error": "Only SELECT statements are permitted."})
+
+                try:
+                    result = await anyio.to_thread.run_sync(
+                        lambda: deps.store.create_dataset_from_sql(
+                            name=name,
+                            sql=sql_stripped,
+                            description=description,
+                            tags=tags,
+                            user_id=deps.user_id,
+                        ),
+                        limiter=deps.store.query_limiter,
+                    )
+                except Exception as exc:
+                    return _safe_json({"error": f"Failed to save dataset: {exc}"})
+
+                await deps.thought_stream.emit_observation(
+                    f"Dataset '{name}' saved — {result['row_count']} rows"
+                    f" (id: {result['dataset_id']})",
+                    tool_name="save_as_dataset",
+                )
+
+                out = _safe_json(result)
+                _span.set_output(out[:200] if len(out) > 200 else out)
+                return out
+
+        @agent.tool
+        async def download_data(
+            ctx: RunContext[CopilotDeps],
+            sql: str,
+            filename: str = "data.csv",
+        ) -> str:
+            """Export a SQL query result as a downloadable CSV file.
+
+            Use when the user wants to download, export, or save data as a file.
+            Write `sql` to scope exactly what to export (apply any filters the user
+            specified). The user will see a Download button in the chat.
+
+            Args:
+                ctx: Run context.
+                sql: SELECT query whose results to export. Apply any filters the user mentioned.
+                filename: Suggested filename for the download (include .csv extension).
+
+            Returns:
+                Confirmation with row count.
+            """
+            deps = ctx.deps
+            async with tool_span(
+                deps,
+                "download_data",
+                sql,
+                "Preparing download…",
+                {"sql": sql_fingerprint(sql.strip()), "filename": filename},
+            ) as (_tracer, _span, _cached):
+                if not deps.has_data:
+                    return deps.no_data_error()
+
+                sql_stripped = sql.strip().rstrip(";")
+                sql_err = _check_sql_safety(sql_stripped)
+                if sql_err:
+                    return _safe_json({"error": sql_err})
+                if not sql_stripped.upper().startswith("SELECT"):
+                    return _safe_json({"error": "Only SELECT statements are permitted."})
+
+                safe_filename = filename if filename.endswith(".csv") else f"{filename}.csv"
+
+                # Get row count without persisting a table
+                try:
+                    row_count = await anyio.to_thread.run_sync(
+                        lambda: deps.store.query_value(
+                            f"SELECT COUNT(*) FROM ({sql_stripped}) __q"
+                        ) or 0,
+                        limiter=deps.store.query_limiter,
+                    )
+                except Exception as exc:
+                    return _safe_json({"error": f"Failed to count rows: {exc}"})
+
+                # Pass SQL + filename to the frontend — it POSTs to /api/store/export
+                deps.download_spec = {
+                    "export_sql": sql_stripped,
+                    "filename": safe_filename,
+                    "row_count": int(row_count),
+                }
+
+                await deps.thought_stream.emit_observation(
+                    f"Download ready — {int(row_count):,} rows",
+                    tool_name="download_data",
+                )
+
+                out = _safe_json(
+                    {"status": "ready", "row_count": int(row_count), "filename": safe_filename}
+                )
+                _span.set_output(out)
+                return out
+
+        @agent.tool
         async def run_sql(
             ctx: RunContext[CopilotDeps],
             sql: str,
@@ -1057,20 +1581,14 @@ class CopilotAgent:
                 JSON with rows and row count.
             """
             deps = ctx.deps
-            _tracer = get_copilot_tracer()
-            async with _tracer.async_span(
-                "copilot.tool.call",
-                input={"sql": sql_fingerprint(sql.strip()), "limit": limit},
-                **safe_span_attrs(tool_name="run_sql", dataset=deps.dataset_label),
-            ) as _span:
-                sql_stripped = sql.strip().rstrip(";")
-                _tracer.add_trace("info", "cache_miss")
-
-                await deps.thought_stream.emit_tool_use(
-                    f"Running SQL: {sql_stripped[:120]}{'…' if len(sql_stripped) > 120 else ''}",
-                    tool_name="run_sql",
-                )
-
+            sql_stripped = sql.strip().rstrip(";")
+            async with tool_span(
+                deps,
+                "run_sql",
+                "",
+                f"Running SQL: {sql_stripped[:120]}{'…' if len(sql_stripped) > 120 else ''}",
+                {"sql": sql_fingerprint(sql.strip()), "limit": limit},
+            ) as (_tracer, _span, _cached):
                 # Safety: block DDL/DML and non-SELECT statements
                 sql_err = _check_sql_safety(sql_stripped)
                 if sql_err:
@@ -1104,8 +1622,11 @@ class CopilotAgent:
                     await deps.thought_stream.emit_observation(
                         f"SQL error: {exc}", tool_name="run_sql"
                     )
-                    return _safe_json({"error": f"Query failed: {exc}", "sql": sql_stripped})
+                    available_cols = list(deps.store.get_table_columns(deps.table_name))
+                    hint = _parse_sql_error_hint(str(exc), available_cols, deps.table_name)
+                    return _safe_json({"error": hint, "sql_attempted": sql_stripped})
 
+                deps.last_sql = sql_stripped  # persist for multi-turn refinement
                 await deps.thought_stream.emit_observation(
                     f"SQL returned {len(rows)} rows",
                     tool_name="run_sql",
@@ -1121,7 +1642,8 @@ class CopilotAgent:
         dataset_label: str | None = None,
         data_context: dict[str, Any] | None = None,
         conversation_history: list[dict[str, Any]] | None = None,
-    ) -> tuple[str, dict[str, Any] | None]:
+        user_id: str | None = None,
+    ) -> tuple[str, dict[str, Any] | None, dict[str, Any] | None]:
         """Process a user message using DuckDB-powered tools.
 
         Args:
@@ -1129,6 +1651,7 @@ class CopilotAgent:
             dataset_label: Dataset to query (evaluation, monitoring, human_signals, kpi).
             data_context: Optional schema hints (columns, format, row_count).
             conversation_history: Prior conversation turns for multi-turn context.
+            user_id: Resolved user identifier for per-user dataset scoping.
 
         Returns:
             Agent's response string.
@@ -1138,29 +1661,44 @@ class CopilotAgent:
         if input_error:
             logger.warning("Input blocked by guardrail: %s", input_error)
             await self.thought_stream.close()
-            return input_error, None
+            return input_error, None, None
 
         logger.info("Processing: %s... (dataset=%s)", message[:100], dataset_label)
 
-        # Embed conversation history directly in the message
-        full_message = message
-        if conversation_history:
-            history_lines = [
-                f"{m['role'].upper()}: {m['content']}"
-                for m in conversation_history[-6:]
-                if isinstance(m, dict) and "role" in m and "content" in m
-            ]
-            if history_lines:
-                full_message = (
-                    "Previous conversation:\n"
-                    + "\n".join(history_lines)
-                    + f"\n\nCurrent question: {message}"
-                )
+        # Compute skill injection and SQL examples before building deps
+        from app.copilot.skills import get_skill_registry
+        from app.copilot.sql_examples import get_sql_example_store
+
+        _registry = get_skill_registry()
+        _ctx_snippets = [
+            m["content"]
+            for m in (conversation_history or [])[-3:]
+            if isinstance(m, dict) and "content" in m
+        ]
+        _selected = _registry.select_skills(message, conversation_context=_ctx_snippets)
+        _skills_injection = _registry.get_system_prompt_injection(_selected)
+        if _selected:
+            skill_names = ", ".join(s.name for s in _selected)
+            await self.thought_stream.emit_planning(
+                f"Applying skills: {skill_names}", node_name="Agent"
+            )
+
+        _example_store = get_sql_example_store()
+        _sql_examples = _example_store.select(message)
+        _sql_examples_injection = _example_store.get_injection(_sql_examples)
+
+        message_history = (
+            _build_message_history(conversation_history) if conversation_history else None
+        )
 
         deps = CopilotDeps(
             thought_stream=self.thought_stream,
             dataset_label=dataset_label or "evaluation",
             data_context=data_context or {},
+            skills_injection=_skills_injection,
+            last_sql=self._last_sql,
+            sql_examples_injection=_sql_examples_injection,
+            user_id=user_id,
         )
 
         await self.thought_stream.emit_reasoning(
@@ -1181,11 +1719,22 @@ class CopilotAgent:
         ) as _proc_span:
             try:
                 agent = self._get_agent()
-                async with tracer.async_span(
-                    "copilot.agent.execute", input=full_message
-                ) as _llm_span:
-                    result = await agent.run(full_message, deps=deps)
+                async with tracer.async_span("copilot.agent.execute", input=message) as _llm_span:
+                    async with agent.iter(
+                        message, deps=deps, message_history=message_history
+                    ) as agent_run:
+                        async for node in agent_run:
+                            if isinstance(node, CallToolsNode):
+                                for part in node.model_response.parts:
+                                    if isinstance(part, ThinkingPart) and part.thinking:
+                                        await deps.thought_stream.emit_reasoning(
+                                            part.thinking, node_name="Model"
+                                        )
+                    result = agent_run.result
                 await self.thought_stream.emit_success("Request completed", node_name="Agent")
+                # Persist last SQL for the next turn's multi-turn refinement
+                if deps.last_sql:
+                    self._last_sql = deps.last_sql
                 # --- Output guardrails ---
                 safe_response = _sanitize_output(result.output)
                 _llm_span.set_output(
@@ -1194,13 +1743,13 @@ class CopilotAgent:
                 _proc_span.set_output(
                     safe_response[:500] if len(safe_response) > 500 else safe_response
                 )
-                return safe_response, deps.chart_spec
+                return safe_response, deps.chart_spec, deps.download_spec
 
             except Exception as e:
                 logger.error("Agent error: %s", e, exc_info=True)
                 await self.thought_stream.emit_error("Agent error", node_name="Agent")
                 tracer.add_trace("error", type(e).__name__)
-                return "I encountered an error processing your request. Please try again.", None
+                return "I encountered an error processing your request. Please try again.", None, None
 
             finally:
                 await self.thought_stream.close()
@@ -1240,5 +1789,17 @@ class CopilotAgent:
             {
                 "name": "plot_data",
                 "description": "Build an interactive Plotly chart from a SQL query — rendered in the browser",
+            },
+            {
+                "name": "analyze_patterns",
+                "description": "LLM-powered pattern detection and improvement recommendations from a SQL-scoped data slice",
+            },
+            {
+                "name": "save_as_dataset",
+                "description": "Persist SQL query results as a named dataset for later analysis or evaluation pipeline use",
+            },
+            {
+                "name": "download_data",
+                "description": "Export SQL query results as a downloadable CSV file — renders a Download button in the chat",
             },
         ]

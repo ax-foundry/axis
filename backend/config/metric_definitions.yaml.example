@@ -1,34 +1,109 @@
-# Metric Definitions
-# ------------------
-# Centralized descriptions and documentation links for metrics across all domains.
-# Copy this file to custom/config/metric_definitions.yaml and edit as needed.
+# metric_definitions.yaml — Metric catalog and definitions for the AI copilot.
 #
-# Structure:
-#   metric_definitions:
-#     <domain>:          # monitoring | kpi | signals
-#       <metric_name>:
-#         description: "..."   # Optional — human-readable explanation
-#         link: "..."          # Optional — URL to external docs
-#         agents: [...]        # Optional — list of agent source_names that use this metric
+# Copy this file to custom/config/metric_definitions.yaml and edit as needed.
+# Restart the backend after editing for changes to take effect.
+#
+# This file has two independent sections:
+#
+#   metric_catalog:    (NEW) — Injected into the copilot's schema context as per-metric
+#                      semantic hints. Controls what the copilot knows about each metric:
+#                      its purpose, score range, category, and any structured signal payloads.
+#                      This is the primary section to maintain.
+#
+#   metric_definitions: (LEGACY) — Simple description + docs link per metric, not yet wired
+#                       into copilot injection. Kept for reference.
+#
+# Trust boundary: metric_catalog content is injected verbatim into the agent system prompt.
+#                 Only site admins should have write access to this file.
+
+# ─── Metric catalog (injected into copilot prompt) ────────────────────────────
+
+metric_catalog:
+
+  # Monitoring metrics — one entry per metric_name value in monitoring_data
+  monitoring:
+
+    Faithfulness:
+      description: "Measures how faithfully the response reflects the retrieved context (RAG quality)"
+      category: SCORE
+      score_range: "0.0–1.0"
+      threshold: 0.7
+      # No signals: this is a scalar score metric
+
+    Relevance:
+      description: "Measures response relevance to the original query"
+      category: SCORE
+      score_range: "0.0–1.0"
+      threshold: 0.7
+
+    # Example: ANALYSIS metric with grouped signal payload
+    # (uncomment and adapt for metrics that return structured JSON in the signals column)
+    #
+    # Ranking Grounding:
+    #   description: "Evaluates grounding quality for ranked results — each claim checked against evidence"
+    #   category: ANALYSIS
+    #   score_range: "0.0–1.0"
+    #   signals:
+    #     payload_kind: grouped_signal_dict
+    #     note: "Dict keyed by group name (Grounding, Claim 1, Claim 2, ...). N in 'Claim N' is dynamic."
+    #     group_fields: [name, value, score, description, headline_display]
+    #
+    # Tool Reliability:
+    #   description: "Measures tool call reliability across agent steps"
+    #   category: SCORE
+    #   score_range: "0.0–1.0"
+    #
+    # Step Reliability:
+    #   description: "Tracks execution reliability of individual reasoning steps"
+    #   category: SCORE
+    #   score_range: "0.0–1.0"
+
+  # Eval metrics — one entry per _score column in eval_data (without the _score suffix)
+  eval:
+    faithfulness:
+      description: "RAG faithfulness: measures alignment of response with retrieved context"
+      threshold: 0.7
+
+    relevance:
+      description: "Measures how relevant the response is to the original query"
+      threshold: 0.7
+
+    # Add your eval metric columns here (without the _score suffix):
+    # hallucination:
+    #   description: "Detects factual hallucinations in the response"
+    #   threshold: 0.8
+
+  # KPI metrics — one entry per kpi_name value in kpi_data
+  kpi:
+    pass_rate:
+      description: "Percentage of cases meeting the quality score threshold"
+
+    avg_score:
+      description: "Average metric score across all evaluated cases"
+
+    # Add your kpi_name values here:
+    # auto_resolve_rate:
+    #   description: "Rate of automated case resolutions without human intervention"
+
+# ─── Legacy metric definitions (not yet injected into copilot) ────────────────
+# These are loaded by app/config/metric_definitions.py for reference.
+# Move key metrics into metric_catalog above for copilot injection.
 
 metric_definitions:
-  # Monitoring metrics (e.g., from DeepEval or custom evaluators)
   monitoring:
     Faithfulness:
       description: "Measures how well the response aligns with retrieved context"
       link: "https://docs.deepeval.com/metrics/faithfulness"
-      agents: [alpha_bot]
+      agents: []
     Relevance:
       description: "Measures response relevance to the original query"
       link: "https://docs.deepeval.com/metrics/relevance"
 
-  # Business KPI metrics
   kpi:
-    auto_resolve_rate:
-      description: "Rate of automated case resolutions without human intervention"
+    pass_rate:
+      description: "Percentage of cases passing quality threshold"
       link: ""
 
-  # Human signals metrics
   signals:
     is_compliant:
       description: "Whether the case met compliance rules"

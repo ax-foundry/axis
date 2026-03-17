@@ -7,6 +7,7 @@ from typing import Any
 from fastapi import APIRouter, HTTPException
 from sse_starlette.sse import EventSourceResponse
 
+from app.config.env import settings
 from app.models.copilot_schemas import SSEEventType, ThoughtType
 from app.models.report_schemas import (
     InsightPatternSchema,
@@ -19,8 +20,8 @@ from app.services.issue_extractor_service import (
     IssueExtractorService,
     ReportMode,
     ReportType,
-    generate_insights,
     get_configured_llm_info,
+    run_analysis_pipeline,
 )
 
 logger = logging.getLogger("axis.routers.reports")
@@ -91,7 +92,7 @@ class ReportRequest:
         score_threshold: float = 0.5,
         max_issues: int = 100,
         data: list[dict[str, Any]] | None = None,
-        model: str = "gpt-4o-mini",
+        model: str | None = None,
         provider: str = "openai",
     ) -> None:
         """Initialize the report request with generation parameters."""
@@ -101,7 +102,7 @@ class ReportRequest:
         self.score_threshold = score_threshold
         self.max_issues = max_issues
         self.data = data or []
-        self.model = model
+        self.model = model or settings.llm_model_name
         self.provider = provider
 
 
@@ -126,7 +127,7 @@ async def generate_report_stream(request: dict[str, Any]) -> EventSourceResponse
             report_type_str = request.get("report_type", "summary")
             metric_filter = request.get("metric_filter")
             data = request.get("data", [])
-            model = request.get("model", "gpt-4o-mini")
+            model = request.get("model") or settings.llm_model_name
             provider = request.get("provider", "openai")
 
             # Parse extraction config
@@ -244,40 +245,33 @@ async def generate_report_stream(request: dict[str, Any]) -> EventSourceResponse
             await asyncio.sleep(0.1)
 
             # Run report generation and insight extraction concurrently
-            report_type = ReportType(report_type_str)
-            report_coro = service.generate_report(
-                issues=extraction_result,
-                report_type=report_type,
+            pipeline_result = await run_analysis_pipeline(
+                records=data,
+                mode=mode,
+                metric_filter=metric_filter,
+                threshold=extraction_config.score_threshold,
+                report_type=report_type_str,
                 model=model,
                 provider=provider,
-            )
-            insights_coro = generate_insights(
-                extraction_result=extraction_result,
-                model=model,
-                provider=provider,
+                max_issues=extraction_config.max_issues,
             )
 
-            results = await asyncio.gather(report_coro, insights_coro, return_exceptions=True)
+            report_text: str = pipeline_result["report"]
 
-            report_result = results[0]
-            insights_result = results[1]
-
-            # Handle report result
-            if isinstance(report_result, BaseException):
-                raise report_result
-            report_text: str = report_result
-
-            # Handle insights result (graceful degradation)
+            # Re-build insights schema from pipeline patterns for SSE emission
             insights_schema: InsightResultSchema | None = None
-            if isinstance(insights_result, Exception):
-                logger.warning(
-                    f"Insight extraction failed (report still succeeded): {insights_result}"
-                )
-            else:
+            raw_patterns = pipeline_result.get("insights", [])
+            if raw_patterns:
                 try:
-                    insights_schema = _insight_result_to_schema(insights_result)
+                    from app.models.report_schemas import InsightPatternSchema
+
+                    insights_schema = InsightResultSchema(
+                        patterns=[InsightPatternSchema(**p) for p in raw_patterns],
+                        learnings=[],
+                        total_issues_analyzed=pipeline_result["issues_found"],
+                    )
                 except Exception as e:
-                    logger.warning(f"Failed to convert insights to schema: {e}")
+                    logger.warning(f"Failed to build insights schema: {e}")
 
             # Emit: Complete
             thought_data = json.dumps(
@@ -308,8 +302,8 @@ async def generate_report_stream(request: dict[str, Any]) -> EventSourceResponse
             response_payload: dict[str, Any] = {
                 "success": True,
                 "report_text": report_text,
-                "issues_analyzed": extraction_result.issues_found,
-                "metrics_covered": extraction_result.metrics_covered,
+                "issues_analyzed": pipeline_result["issues_found"],
+                "metrics_covered": pipeline_result["metrics_covered"],
             }
             if insights_schema:
                 response_payload["insights"] = insights_schema.model_dump()
@@ -343,7 +337,7 @@ async def generate_report(request: dict[str, Any]) -> dict[str, Any]:
         report_type_str = request.get("report_type", "summary")
         metric_filter = request.get("metric_filter")
         data = request.get("data", [])
-        model = request.get("model", "gpt-4o-mini")
+        model = request.get("model") or settings.llm_model_name
         provider = request.get("provider", "openai")
 
         # Parse extraction config
@@ -377,61 +371,37 @@ async def generate_report(request: dict[str, Any]) -> dict[str, Any]:
                 detail=f"LLM provider '{provider}' is not configured. Available: {configured}",
             )
 
-        # Extract issues
-        service = IssueExtractorService(mode=mode, config=extraction_config)
-        extraction_result = service.extract_issues(
-            data=data,
-            metric_filter=metric_filter,
-        )
-
-        if extraction_result.issues_found == 0:
-            return {
-                "success": True,
-                "report_text": f"No {mode}-scoring issues found with threshold {extraction_config.score_threshold}.",
-                "issues_analyzed": 0,
-                "metrics_covered": [],
-                "insights": None,
-            }
-
         # Run report generation and insight extraction concurrently
-        report_type = ReportType(report_type_str)
-        report_coro = service.generate_report(
-            issues=extraction_result,
-            report_type=report_type,
+        pipeline_result = await run_analysis_pipeline(
+            records=data,
+            mode=mode,
+            metric_filter=metric_filter,
+            threshold=extraction_config.score_threshold,
+            report_type=report_type_str,
             model=model,
             provider=provider,
-        )
-        insights_coro = generate_insights(
-            extraction_result=extraction_result,
-            model=model,
-            provider=provider,
+            max_issues=extraction_config.max_issues,
         )
 
-        results = await asyncio.gather(report_coro, insights_coro, return_exceptions=True)
-
-        report_result = results[0]
-        insights_result = results[1]
-
-        # Handle report result
-        if isinstance(report_result, BaseException):
-            raise report_result
-        report_text: str = report_result
-
-        # Handle insights result (graceful degradation)
         insights_dict: dict[str, Any] | None = None
-        if isinstance(insights_result, Exception):
-            logger.warning(f"Insight extraction failed: {insights_result}")
-        else:
+        raw_patterns = pipeline_result.get("insights", [])
+        if raw_patterns:
             try:
-                insights_dict = _insight_result_to_schema(insights_result).model_dump()
+                from app.models.report_schemas import InsightPatternSchema
+
+                insights_dict = InsightResultSchema(
+                    patterns=[InsightPatternSchema(**p) for p in raw_patterns],
+                    learnings=[],
+                    total_issues_analyzed=pipeline_result["issues_found"],
+                ).model_dump()
             except Exception as e:
-                logger.warning(f"Failed to convert insights to schema: {e}")
+                logger.warning(f"Failed to build insights schema: {e}")
 
         return {
             "success": True,
-            "report_text": report_text,
-            "issues_analyzed": extraction_result.issues_found,
-            "metrics_covered": extraction_result.metrics_covered,
+            "report_text": pipeline_result["report"],
+            "issues_analyzed": pipeline_result["issues_found"],
+            "metrics_covered": pipeline_result["metrics_covered"],
             "insights": insights_dict,
         }
 

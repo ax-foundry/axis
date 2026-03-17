@@ -1,3 +1,5 @@
+import asyncio
+import contextlib
 import hashlib
 import logging
 import math
@@ -386,7 +388,7 @@ class IssueExtractorService:
         self,
         issues: IssueExtractionResult,
         report_type: ReportType = ReportType.SUMMARY,
-        model: str = "gpt-4o-mini",
+        model: str | None = None,
         provider: str = "openai",
     ) -> str:
         """Generate an LLM-powered report from extracted issues.
@@ -575,11 +577,12 @@ For each recommendation (4-6 items), use this structure:
 
 Generate the {report_type.value} report now. Follow the output format exactly."""
 
-        logger.info(f"Generating {report_type.value} report with {model} ({provider})")
+        effective_model = model or settings.llm_model_name
+        logger.info(f"Generating {report_type.value} report with {effective_model} ({provider})")
 
         try:
             registry = LLMRegistry(provider=provider)
-            llm = registry.get_llm(model)
+            llm = registry.get_llm(effective_model)
 
             messages = [
                 {"role": "system", "content": system_prompt},
@@ -667,7 +670,7 @@ Generate the {report_type.value} report now. Follow the output format exactly.""
 
 async def generate_insights(
     extraction_result: IssueExtractionResult,
-    model: str = "gpt-4o-mini",
+    model: str | None = None,
     provider: str = "openai",
 ) -> InsightResult:
     """Generate structured insights from extracted issues via axion InsightExtractor.
@@ -683,8 +686,64 @@ async def generate_insights(
     service = IssueExtractorService()
     axion_result = service.to_axion_extraction_result(extraction_result)
 
-    extractor = InsightExtractor(model_name=model, llm_provider=provider)
+    effective_model = model or settings.llm_model_name
+    extractor = InsightExtractor(model_name=effective_model, llm_provider=provider)
     return await extractor.analyze(axion_result)
+
+
+async def run_analysis_pipeline(
+    records: list[dict[str, Any]],
+    mode: str = "low",
+    metric_filter: str | None = None,
+    threshold: float = 0.5,
+    report_type: str = "recommendations",
+    model: str | None = None,
+    provider: str | None = None,
+    max_issues: int = 200,
+) -> dict[str, Any]:
+    """Extract issues + generate report + insights concurrently.
+
+    Returns dict with: report, insights, issues_found, records_checked, metrics_covered.
+    """
+    _model = model or settings.llm_model_name or "gpt-4o-mini"
+    _provider = provider or ("anthropic" if _model.startswith("claude") else "openai")
+
+    config = ExtractionConfig(
+        score_threshold=threshold,
+        max_issues=max_issues,
+        include_context_fields=["query", "actual_output", "signals", "critique"],
+    )
+    service = IssueExtractorService(mode=mode, config=config)  # type: ignore[arg-type]
+    issues = service.extract_issues(records, metric_filter=metric_filter)
+
+    if not issues.issues:
+        return {
+            "report": "No issues found matching the criteria.",
+            "insights": [],
+            "issues_found": 0,
+            "records_checked": issues.total_records_analyzed,
+            "metrics_covered": [],
+        }
+
+    report_coro = service.generate_report(issues, ReportType(report_type), _model, _provider)
+    insights_coro = generate_insights(issues, _model, _provider)
+    results = await asyncio.gather(report_coro, insights_coro, return_exceptions=True)
+
+    report_text = results[0] if not isinstance(results[0], BaseException) else str(results[0])
+    insight_result = results[1] if not isinstance(results[1], BaseException) else None
+
+    patterns = []
+    if insight_result is not None:
+        with contextlib.suppress(Exception):
+            patterns = [p.model_dump() for p in (insight_result.patterns or [])]
+
+    return {
+        "report": report_text,
+        "insights": patterns,
+        "issues_found": issues.issues_found,
+        "records_checked": issues.total_records_analyzed,
+        "metrics_covered": issues.metrics_covered,
+    }
 
 
 def get_configured_llm_info() -> dict[str, Any]:

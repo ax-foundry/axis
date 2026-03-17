@@ -277,6 +277,7 @@ async def copilot_stream(request: CopilotRequest, http_request: Request) -> Even
                     dataset_label=request.dataset_label,
                     data_context=data_context,
                     conversation_history=request.conversation_history,
+                    user_id=_resolve_user_id(http_request, request),
                 )
             )
 
@@ -289,7 +290,7 @@ async def copilot_stream(request: CopilotRequest, http_request: Request) -> Even
                     yield {"event": SSEEventType.THOUGHT.value, "data": thought_data}
 
                 # Wait for final response
-                response, chart = await task
+                response, chart, download = await task
                 logger.info("Task completed. Response length: %d", len(response) if response else 0)
 
                 _root_span.set_output(response or "")
@@ -299,6 +300,7 @@ async def copilot_stream(request: CopilotRequest, http_request: Request) -> Even
                     metadata={
                         "response_len": len(response or ""),
                         "has_chart": bool(chart),
+                        "has_download": bool(download),
                         "thoughts_count": len(thought_stream.thoughts),
                     },
                 )
@@ -310,6 +312,7 @@ async def copilot_stream(request: CopilotRequest, http_request: Request) -> Even
                         "response": response,
                         "thoughts_count": len(thought_stream.thoughts),
                         "chart": chart,
+                        "download": download,
                     }
                 )
                 yield {"event": SSEEventType.RESPONSE.value, "data": response_data}
@@ -408,6 +411,7 @@ async def copilot_stream_oai(request: CopilotRequest, http_request: Request) -> 
                     dataset_label=request.dataset_label,
                     data_context=data_context,
                     conversation_history=request.conversation_history,
+                    user_id=_resolve_user_id(http_request, request),
                 )
             )
 
@@ -417,7 +421,7 @@ async def copilot_stream_oai(request: CopilotRequest, http_request: Request) -> 
                 async for thought in subscriber:
                     yield {"event": SSEEventType.THOUGHT.value, "data": thought.to_json()}
 
-                response, chart = await task
+                response, chart, download = await task
                 logger.info(
                     "OAI task completed. Response length: %d", len(response) if response else 0
                 )
@@ -429,6 +433,7 @@ async def copilot_stream_oai(request: CopilotRequest, http_request: Request) -> 
                     metadata={
                         "response_len": len(response or ""),
                         "has_chart": bool(chart),
+                        "has_download": bool(download),
                         "thoughts_count": len(thought_stream.thoughts),
                     },
                 )
@@ -442,6 +447,7 @@ async def copilot_stream_oai(request: CopilotRequest, http_request: Request) -> 
                             "response": response,
                             "thoughts_count": len(thought_stream.thoughts),
                             "chart": chart,
+                            "download": download,
                         }
                     ),
                 }
@@ -514,11 +520,12 @@ async def copilot_chat(request: CopilotRequest, http_request: Request) -> Copilo
         ),
     ) as _root_span:
         try:
-            response, _chart = await agent.process(
+            response, _chart, _download = await agent.process(
                 message=request.message,
                 dataset_label=request.dataset_label,
                 data_context=data_context,
                 conversation_history=request.conversation_history,
+                user_id=_resolve_user_id(http_request, request),
             )
 
             # Convert thoughts to schema
@@ -587,3 +594,56 @@ async def list_copilot_tools() -> ToolsListResponse:
         tools=tool_infos,
         total=len(tool_infos),
     )
+
+
+@router.get("/copilot/schema-dump")
+async def schema_dump() -> dict[str, Any]:
+    """Return raw DuckDB table metadata and metric catalog for all loaded tables.
+
+    Used by scripts/generate_schema_hints.py and scripts/generate_metric_catalog.py
+    to generate config scaffolds without needing direct DuckDB file access
+    (which is blocked while the backend runs).
+    """
+    from app.copilot.metric_catalog import get_metric_catalog_store
+    from app.services.duckdb_store import DATASET_TABLE_MAP, get_store
+
+    store = get_store()
+    tables: dict[str, Any] = {}
+
+    seen: set[str] = set()
+    for table in DATASET_TABLE_MAP.values():
+        if table in seen:
+            continue
+        seen.add(table)
+        if not store.has_table(table):
+            continue
+        meta = store.get_metadata(table)
+        tables[table] = {
+            "columns": meta.get("columns", []),
+            "filter_values": meta.get("filter_values", {}),
+            "row_count": meta.get("row_count", 0),
+        }
+
+    # Include the rich human-signals metric schema KV
+    hs_schema = store.get_kv("human_signals_metric_schema")
+
+    # Include current metric catalog (what's loaded in memory)
+    catalog_store = get_metric_catalog_store()
+    catalog_summary: dict[str, Any] = {}
+    for domain in catalog_store.all_domains():
+        catalog_summary[domain] = [
+            {
+                "name": e.name,
+                "description": e.description,
+                "category": e.category,
+                "score_range": e.score_range,
+                "has_signals": e.signals is not None,
+            }
+            for e in catalog_store.list_entries(domain)
+        ]
+
+    return {
+        "tables": tables,
+        "human_signals_metric_schema": hs_schema,
+        "metric_catalog": catalog_summary,
+    }

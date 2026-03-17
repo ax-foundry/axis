@@ -22,6 +22,7 @@ from axion.caliber.pattern_discovery import (
     annotations_to_evidence,
 )
 
+from app.config.env import settings
 from app.models.align_schemas import (
     AlignmentMetrics,
     AlignmentResult,
@@ -293,7 +294,7 @@ async def cluster_annotation_patterns(
             f"(found {len(axion_annotations)}). Add more annotations with notes, or use the LLM method."
         )
 
-    model = config.model if config else "gpt-4o"
+    model = (config.model if config else None) or settings.llm_model_name
     provider = config.provider.value if config else "openai"
 
     # Map AXIS ClusteringMethod to axion ClusteringMethod
