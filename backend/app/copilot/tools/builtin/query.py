@@ -86,14 +86,17 @@ class QueryTool(BaseTool):
             id_columns = [
                 col
                 for col in df.columns
-                if "id" in col.lower() or col.lower() in ["id", "test_id", "record_id", "evaluation_id"]
+                if "id" in col.lower()
+                or col.lower() in ["id", "test_id", "record_id", "evaluation_id"]
             ]
 
             matching_records = []
             if found_ids and id_columns:
                 for id_col in id_columns:
                     for search_id in found_ids:
-                        matches = df[df[id_col].astype(str).str.contains(search_id, case=False, na=False)]
+                        matches = df[
+                            df[id_col].astype(str).str.contains(search_id, case=False, na=False)
+                        ]
                         if len(matches) > 0:
                             matching_records.extend(matches.to_dict("records"))
 
@@ -117,15 +120,24 @@ class QueryTool(BaseTool):
             numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
             message_lower = message.lower()
 
-            if any(word in message_lower for word in ["lowest", "minimum", "min", "worst", "smallest"]):
-                await self.emit_thought(thought_stream, "Looking for minimum values...", "observation")
+            if any(
+                word in message_lower for word in ["lowest", "minimum", "min", "worst", "smallest"]
+            ):
+                await self.emit_thought(
+                    thought_stream, "Looking for minimum values...", "observation"
+                )
                 analysis_df = pd.DataFrame(matching_records) if matching_records else df
-                numeric_analysis_cols = analysis_df.select_dtypes(include=[np.number]).columns.tolist()
+                numeric_analysis_cols = analysis_df.select_dtypes(
+                    include=[np.number]
+                ).columns.tolist()
                 min_values = {}
                 for col in numeric_analysis_cols[:10]:
                     values = analysis_df[col].dropna()
                     if len(values) > 0:
-                        min_values[col] = {"value": float(values.min()), "mean": float(values.mean())}
+                        min_values[col] = {
+                            "value": float(values.min()),
+                            "mean": float(values.mean()),
+                        }
                 if min_values:
                     lowest_metric = min(min_values.items(), key=lambda x: x[1]["mean"])
                     result["lowest_metric"] = {
@@ -138,14 +150,21 @@ class QueryTool(BaseTool):
             elif any(
                 word in message_lower for word in ["highest", "maximum", "max", "best", "largest"]
             ):
-                await self.emit_thought(thought_stream, "Looking for maximum values...", "observation")
+                await self.emit_thought(
+                    thought_stream, "Looking for maximum values...", "observation"
+                )
                 analysis_df = pd.DataFrame(matching_records) if matching_records else df
-                numeric_analysis_cols = analysis_df.select_dtypes(include=[np.number]).columns.tolist()
+                numeric_analysis_cols = analysis_df.select_dtypes(
+                    include=[np.number]
+                ).columns.tolist()
                 max_values = {}
                 for col in numeric_analysis_cols[:10]:
                     values = analysis_df[col].dropna()
                     if len(values) > 0:
-                        max_values[col] = {"value": float(values.max()), "mean": float(values.mean())}
+                        max_values[col] = {
+                            "value": float(values.max()),
+                            "mean": float(values.mean()),
+                        }
                 if max_values:
                     highest_metric = max(max_values.items(), key=lambda x: x[1]["mean"])
                     result["highest_metric"] = {
@@ -178,7 +197,9 @@ class QueryTool(BaseTool):
                         "counts_by_metric": counts,
                     }
 
-            result["data_sample"] = matching_records[:10] if matching_records else df.head(10).to_dict("records")
+            result["data_sample"] = (
+                matching_records[:10] if matching_records else df.head(10).to_dict("records")
+            )
             result["available_columns"] = list(df.columns)
             result["numeric_columns"] = numeric_cols
             await self.emit_thought(thought_stream, "Query complete", "observation")

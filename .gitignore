@@ -79,6 +79,7 @@ coverage_html_report
 
 # test results
 /reports
+docs/competitive/
 
 
 # SCM version info
@@ -113,5 +114,6 @@ frontend/public/agents
 
 CLAUDE.md
 AGENTS.md
+.cursor/
 
 venv/

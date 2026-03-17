@@ -1,0 +1,195 @@
+# schema_hints.yaml — Table and column STRUCTURE hints for the AI copilot across all data tables.
+#
+# The copilot injects these descriptions into its schema context so it understands what each
+# column means, valid values for categorical fields, and how to query them effectively.
+#
+# SCOPE: This file is for table/column structural information only.
+#        Per-metric semantic descriptions, score ranges, thresholds, and signal payload hints
+#        belong in metric_definitions.yaml (metric_catalog section) — not here.
+#        Keeping them separate means you can regenerate either layer independently.
+#
+# IMPORTANT:
+#   - Table names must match DuckDB table names exactly (monitoring_data, eval_data,
+#     human_signals_cases, kpi_data).
+#   - Column names must match the actual column names in the table.
+#   - For human_signals_cases, use the 'metrics' shorthand to describe {metric}__{signal}
+#     column families without listing every flattened column individually.
+#
+# Trust boundary: content is injected verbatim into the agent system prompt.
+#                 Only site admins should have write access to this file.
+
+tables:
+
+  # ─── Monitoring data (long-format metric rows) ────────────────────────────
+  - name: monitoring_data
+    description: >
+      Metric observations collected over time. Each row represents one metric result.
+      Group by metric_name to compare metrics; group by source_name or environment
+      to compare systems, sources, or deployments.
+    columns:
+      - name: metric_name
+        description: "Name of the metric being recorded"
+        # Metric descriptions and signal payload hints belong in metric_definitions.yaml (metric_catalog section).
+        # List values here only if you need query hints for specific metric names.
+        # values:
+        #   quality_score: "Overall quality metric"
+        #   safety_score: "Safety-related metric"
+
+      - name: metric_score
+        description: "Numeric score for this metric, typically 0.0-1.0 unless noted per metric"
+
+      - name: metric_category
+        description: "Output type of the metric"
+        values:
+          SCORE: "Numeric score — used for aggregations and pass/fail thresholds"
+          CLASSIFICATION: "Categorical label — used for distribution breakdowns"
+          ANALYSIS: "Structured JSON analysis — shown in detail views, not aggregated"
+
+      - name: source_name
+        description: "System, workflow, model, or process that produced this metric"
+
+      - name: environment
+        description: "Deployment environment"
+        # values: [production, staging, development]
+
+  # ─── Evaluation data (flat, one row per evaluation record) ────────────────
+  - name: eval_data
+    description: >
+      Evaluation results stored one row per record. Metric scores often appear as
+      separate columns (for example, quality_score or safety_score).
+    columns:
+      - name: evaluation_name
+        description: "Name of the evaluation batch or experiment"
+
+      # Add columns specific to your eval schema here
+      # - name: quality_score
+      #   description: "Overall quality score for the record (0.0-1.0)"
+      # - name: safety_score
+      #   description: "Safety score for the record (0.0-1.0)"
+
+  # ─── KPI data ─────────────────────────────────────────────────────────────
+  - name: kpi_data
+    description: >
+      Key performance indicators tracked over time. Each row is one KPI value at a
+      point in time. Use kpi_name to filter; aggregate kpi_value for trends.
+    columns:
+      - name: kpi_name
+        description: "Name of the KPI"
+        values:
+          success_rate: "Example KPI tracking a success percentage"
+          average_score: "Example KPI tracking an average score"
+          # Add your kpi_name values here
+
+      - name: kpi_value
+        description: "Numeric value of the KPI at this timestamp"
+
+      - name: kpi_category
+        description: "Grouping category for the KPI"
+
+  # ─── Human signals cases (derived, one row per case) ──────────────────────
+  - name: human_signals_cases
+    description: >
+      One row per case with all metric signal fields flattened as {metric_name}__{signal_key}.
+      The prefix before '__' is the metric; the suffix is the signal field within that metric.
+      Use metric-specific prefixes to select related signal columns together.
+    columns:
+      - name: metric_name
+        description: "Metric name associated with the row or signal family"
+
+    # 'metrics' is shorthand for {metric}__{signal} column families.
+    # Each entry here documents one metric's signals without listing every flattened column.
+    metrics:
+      - name: example_metric
+        description: >
+          Example metric showing how to document a metric-specific family of flattened
+          signal fields without including domain-specific semantics.
+        signals:
+          - name: status
+            description: "Example categorical outcome or label for this metric"
+            values:
+              PASS: "Example positive status"
+              FAIL: "Example negative status"
+              REVIEW: "Example status requiring manual review"
+              UNKNOWN: "Example fallback when no status is available"
+
+          - name: expected_status
+            description: "Expected or reference status used for comparison"
+            values: [PASS, FAIL, REVIEW]
+
+          - name: severity
+            description: "Example severity or priority level"
+            values:
+              high: "High severity example"
+              medium: "Medium severity example"
+              low: "Low severity example"
+
+          - name: finding_category
+            description: "Example quality classification for the metric result"
+            values:
+              match_strong: "Observed result strongly matches the expected result"
+              match_weak: "Observed result weakly matches the expected result"
+              mismatch: "Observed result does not match the expected result"
+              inconclusive: "Not enough evidence to classify the result"
+
+          - name: primary_label
+            description: "Primary label, category, or factor associated with the metric"
+
+          - name: all_labels
+            description: "List of related labels, categories, or tags"
+            query_hint: "Use text filtering if you need to match a specific label within this field"
+
+          - name: item_count
+            description: "Count of related items, labels, or findings"
+
+          - name: consistency_score
+            description: "Consistency or agreement score for this metric"
+
+          - name: summary
+            description: "Short free-text summary explaining the metric result"
+
+          - name: details
+            description: >
+              Longer free-text explanation with supporting details, rationale, or
+              evidence for the metric result.
+            query_hint: "Use text filtering to find rows mentioning specific phrases or categories"
+
+          - name: has_critical_item
+            description: "Whether at least one critical condition or item was present"
+
+          - name: processing_complete
+            description: "Whether processing for this metric completed successfully"
+
+          - name: retry_used
+            description: "Whether a retry was needed while producing this metric"
+
+          - name: warnings
+            description: "Warnings or non-fatal issues recorded during processing"
+
+          - name: fallback_used
+            description: "Whether a fallback path or degraded mode was used"
+
+          - name: shadow_check_used
+            description: "Whether a secondary or shadow evaluation path also ran"
+
+          - name: shadow_disagrees
+            description: "Whether the secondary result disagreed with the primary result"
+
+          - name: shadow_mode
+            description: "Operating mode of the secondary or shadow path"
+            values:
+              active: "Secondary path ran normally"
+              fallback: "Secondary path ran in fallback or degraded mode"
+
+          - name: suggested_label
+            description: "Suggested label or category from the secondary path"
+
+          - name: suggestion_merged
+            description: "Whether the secondary suggestion was merged into the final result"
+
+      # See metric_definitions.yaml for comprehensive metric descriptions.
+      # Add additional metric signal families here following the example_metric pattern above.
+      # - name: your_metric_name
+      #   description: "What this metric measures"
+      #   signals:
+      #     - name: signal_field
+      #       description: "..."

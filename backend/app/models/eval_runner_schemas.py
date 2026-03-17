@@ -101,7 +101,7 @@ class AgentAPIConfig(BaseModel):
 class PromptTemplateConfig(BaseModel):
     """Configuration for LLM prompt template."""
 
-    model: str = "gpt-4o"
+    model: str = "gpt-5.2"
     provider: LLMProvider = LLMProvider.OPENAI
     system_prompt: str = "You are a helpful assistant."
     user_prompt_template: str = "{{query}}"
@@ -145,7 +145,7 @@ class EvaluationRunRequest(BaseModel):
     dataset: DatasetConfig
     agent_config: AgentConfig | None = None
     metrics: list[str]  # metric keys
-    model_name: str = "gpt-4o"
+    model_name: str = "gpt-5.2"
     llm_provider: LLMProvider = LLMProvider.OPENAI
     max_concurrent: int = Field(default=5, ge=1, le=20)
     thresholds: dict[str, float] | None = None

@@ -9,6 +9,7 @@ export interface SSEHandlers {
     response: string;
     thoughts_count: number;
     chart?: Record<string, unknown> | null;
+    download?: { export_sql: string; filename: string; row_count: number } | null;
   }) => void;
   onError?: (error: { error: string }) => void;
   onDone?: () => void;
@@ -81,23 +82,27 @@ export function createCopilotStream(
 
       const decoder = new TextDecoder();
       let buffer = '';
+      // Persist across chunks — a single SSE message can span multiple read() calls
+      let currentEvent: string | null = null;
+      let currentData = '';
 
       while (true) {
         const { done, value } = await reader.read();
 
         if (done) {
+          // Flush any trailing buffered event
+          if (currentEvent && currentData) {
+            processSSEEvent(currentEvent as SSEEventType, currentData, handlers);
+          }
           break;
         }
 
         const chunk = decoder.decode(value, { stream: true });
         buffer += chunk;
 
-        // Process complete SSE messages
+        // Process complete lines, keep any partial trailing line in buffer
         const lines = buffer.split('\n');
-        buffer = lines.pop() || ''; // Keep incomplete line in buffer
-
-        let currentEvent: string | null = null;
-        let currentData = '';
+        buffer = lines.pop() || '';
 
         for (const line of lines) {
           const trimmedLine = line.trim();
@@ -105,15 +110,14 @@ export function createCopilotStream(
             currentEvent = trimmedLine.slice(6).trim();
           } else if (trimmedLine.startsWith('data:')) {
             currentData = trimmedLine.slice(5).trim();
-          } else if (trimmedLine === '' && currentEvent && currentData) {
-            processSSEEvent(currentEvent as SSEEventType, currentData, handlers);
+          } else if (trimmedLine === '') {
+            // Blank line = end of SSE message
+            if (currentEvent && currentData) {
+              processSSEEvent(currentEvent as SSEEventType, currentData, handlers);
+            }
             currentEvent = null;
             currentData = '';
           }
-        }
-
-        if (currentEvent && currentData) {
-          processSSEEvent(currentEvent as SSEEventType, currentData, handlers);
         }
       }
 
@@ -258,24 +262,25 @@ export function createReportStream(
       console.log('[Report SSE] Got reader, starting to read chunks...');
       const decoder = new TextDecoder();
       let buffer = '';
+      let currentEvent: string | null = null;
+      let currentData = '';
 
       while (true) {
         const { done, value } = await reader.read();
 
         if (done) {
           console.log('[Report SSE] Stream done');
+          if (currentEvent && currentData) {
+            processReportSSEEvent(currentEvent as SSEEventType, currentData, handlers);
+          }
           break;
         }
 
         const chunk = decoder.decode(value, { stream: true });
         buffer += chunk;
 
-        // Process complete SSE messages
         const lines = buffer.split('\n');
         buffer = lines.pop() || '';
-
-        let currentEvent: string | null = null;
-        let currentData = '';
 
         for (const line of lines) {
           const trimmedLine = line.trim();
@@ -283,15 +288,13 @@ export function createReportStream(
             currentEvent = trimmedLine.slice(6).trim();
           } else if (trimmedLine.startsWith('data:')) {
             currentData = trimmedLine.slice(5).trim();
-          } else if (trimmedLine === '' && currentEvent && currentData) {
-            processReportSSEEvent(currentEvent as SSEEventType, currentData, handlers);
+          } else if (trimmedLine === '') {
+            if (currentEvent && currentData) {
+              processReportSSEEvent(currentEvent as SSEEventType, currentData, handlers);
+            }
             currentEvent = null;
             currentData = '';
           }
-        }
-
-        if (currentEvent && currentData) {
-          processReportSSEEvent(currentEvent as SSEEventType, currentData, handlers);
         }
       }
 

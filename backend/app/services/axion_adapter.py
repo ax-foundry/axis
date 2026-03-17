@@ -15,6 +15,7 @@ from axion.dataset import DatasetItem
 from axion.llm_registry import LLMRegistry
 from axion.runners import MetricRunner
 
+from app.config.env import settings
 from app.models.align_schemas import (
     AlignmentMetrics,
     AlignmentResult,
@@ -291,7 +292,7 @@ async def run_axion_evaluation(
 
 async def run_analysis_completion(
     messages: list[dict[str, str]],
-    model: str = "gpt-4o",
+    model: str | None = None,
     provider: str = "openai",
 ) -> str:
     """Use Axion's LLMRegistry for analysis LLM calls.
@@ -304,8 +305,9 @@ async def run_analysis_completion(
     Returns:
         LLM response content as string
     """
+    effective_model = model or settings.llm_model_name
     logger.info("-" * 40)
-    logger.info(f"LLM Analysis Call: model={model}, provider={provider}")
+    logger.info(f"LLM Analysis Call: model={effective_model}, provider={provider}")
     logger.info("-" * 40)
 
     # Log the messages being sent
@@ -319,7 +321,7 @@ async def run_analysis_completion(
 
     try:
         registry = LLMRegistry(provider=provider)
-        llm = registry.get_llm(model)
+        llm = registry.get_llm(effective_model)
         response = await llm.achat(messages)
 
         logger.debug(f"Response type: {type(response)}")
@@ -405,6 +407,16 @@ AVAILABLE_MODELS: dict[str, list[ModelInfoDict]] = {
     ],
     "anthropic": [
         {
+            "id": "claude-opus-4-6",
+            "name": "Claude Opus 4.6",
+            "context_window": 200000,
+        },
+        {
+            "id": "claude-sonnet-4-6",
+            "name": "Claude Sonnet 4.6",
+            "context_window": 200000,
+        },
+        {
             "id": "claude-opus-4-5-20251101",
             "name": "Claude Opus 4.5",
             "context_window": 200000,
@@ -427,11 +439,6 @@ AVAILABLE_MODELS: dict[str, list[ModelInfoDict]] = {
         {
             "id": "claude-3-5-haiku-20241022",
             "name": "Claude 3.5 Haiku",
-            "context_window": 200000,
-        },
-        {
-            "id": "claude-3-opus-20240229",
-            "name": "Claude 3 Opus",
             "context_window": 200000,
         },
     ],

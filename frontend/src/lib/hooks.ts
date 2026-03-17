@@ -531,7 +531,7 @@ export function useCopilotStream() {
           },
           onResponse: (responseData) => {
             if (responseData.success) {
-              setFinalResponse(responseData.response, responseData.chart);
+              setFinalResponse(responseData.response, responseData.chart, responseData.download);
               appendToHistory({ role: 'assistant', content: responseData.response });
             } else {
               setError('Failed to get response');

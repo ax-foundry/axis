@@ -76,7 +76,10 @@ class Settings(BaseSettings):
         default=None, description="API key for the gateway or platform."
     )
     ai_toolkit_url: str | None = Field(default=None, description="Location of AI Toolkit Server")
-    llm_model_name: str = Field(default="gpt-4", description="Default language model name.")
+    llm_model_name: str = Field(
+        default="gpt-5.2",
+        description="Default language model name. Set LLM_MODEL_NAME in .env to override globally.",
+    )
     embedding_model_name: str = Field(
         default="text-embedding-ada-002", description="Default embedding model name."
     )

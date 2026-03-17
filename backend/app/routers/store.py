@@ -4,6 +4,8 @@ from typing import Any
 
 import anyio
 from fastapi import APIRouter, HTTPException, Query
+from fastapi.responses import Response
+from pydantic import BaseModel
 
 from app.services.duckdb_store import ALLOWED_TABLES, DATASET_TABLE_MAP, get_store
 
@@ -329,3 +331,56 @@ async def get_dataset_data(
         "page": page,
         "page_size": page_size,
     }
+
+
+# ------------------------------------------------------------------
+# Export endpoint (ephemeral CSV — no persistent table created)
+# ------------------------------------------------------------------
+
+
+class ExportRequest(BaseModel):
+    """Request body for a one-shot CSV export."""
+
+    sql: str
+    filename: str = "export.csv"
+    max_rows: int = 100_000
+
+
+@router.post("/export")
+async def export_sql_as_csv(req: ExportRequest) -> Response:
+    """Execute a SELECT and stream results as CSV without persisting a table.
+
+    Used by the copilot download_data tool to avoid creating throwaway ds_* tables.
+    """
+    import re
+
+    sql_stripped = req.sql.strip().rstrip(";")
+
+    # Safety: block DDL/DML
+    _SQL_UNSAFE_RE = re.compile(
+        r"\b(DROP|INSERT|UPDATE|DELETE|CREATE|ALTER|TRUNCATE|REPLACE|MERGE|"
+        r"GRANT|REVOKE|ATTACH|DETACH|COPY|EXPORT|IMPORT|INSTALL|LOAD)\b",
+        re.IGNORECASE,
+    )
+    if _SQL_UNSAFE_RE.search(
+        re.sub(r"--[^\n]*", " ", re.sub(r"/\*.*?\*/", " ", sql_stripped, flags=re.DOTALL))
+    ):
+        raise HTTPException(status_code=400, detail="Only SELECT statements are permitted.")
+    if not sql_stripped.upper().startswith("SELECT"):
+        raise HTTPException(status_code=400, detail="Only SELECT statements are permitted.")
+
+    store = get_store()
+    try:
+        csv = await anyio.to_thread.run_sync(
+            lambda: store.sql_to_csv(sql_stripped, max_rows=req.max_rows),
+            limiter=store.query_limiter,
+        )
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=f"Export failed: {exc}") from exc
+
+    safe_filename = req.filename if req.filename.endswith(".csv") else f"{req.filename}.csv"
+    return Response(
+        content=csv,
+        media_type="text/csv",
+        headers={"Content-Disposition": f'attachment; filename="{safe_filename}"'},
+    )

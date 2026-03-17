@@ -30,17 +30,24 @@ DATASET_TABLE_MAP = {
     "kpi": "kpi_data",
 }
 
-# Low-cardinality columns whose distinct values are cached during sync
+# Low-cardinality columns always included regardless of cardinality check
 FILTER_FIELDS = [
     "environment",
+    "evaluation_name",
+    "metric_name",
+    "metric_category",
+    "metric_type",
     "source_name",
     "source_component",
     "source_type",
-    "metric_name",
-    "metric_category",
     "kpi_name",
     "kpi_category",
 ]
+
+# Column name substrings that indicate free-text / ID columns — skip auto-discovery
+_FILTER_SKIP_PATTERNS = frozenset(
+    {"_id", "query", "output", "conversation", "text", "content", "explanation", "trace"}
+)
 
 
 @dataclass
@@ -270,13 +277,37 @@ class DuckDBStore:
 
             filter_values: dict[str, list[str]] = {}
             existing_cols = set(columns["column_name"])
+
+            # Phase 1: explicit allowlist — always include regardless of cardinality
             for fld in FILTER_FIELDS:
                 if fld in existing_cols:
                     vals = cur.execute(
-                        f"SELECT DISTINCT {fld} FROM {table_name} "
-                        f"WHERE {fld} IS NOT NULL ORDER BY {fld} LIMIT 200"
+                        f'SELECT DISTINCT "{fld}" FROM {table_name} '
+                        f'WHERE "{fld}" IS NOT NULL ORDER BY "{fld}" LIMIT 200'
                     ).fetchdf()
                     filter_values[fld] = vals[fld].tolist()
+
+            # Phase 2: auto-discover remaining VARCHAR/TEXT columns with low cardinality
+            str_cols = [
+                c["column_name"]
+                for c in col_info
+                if ("VARCHAR" in c.get("column_type", "") or "TEXT" in c.get("column_type", ""))
+                and c["column_name"] not in filter_values
+                and not any(p in c["column_name"].lower() for p in _FILTER_SKIP_PATTERNS)
+            ]
+            for col in str_cols:
+                try:
+                    n_distinct = cur.execute(
+                        f'SELECT approx_count_distinct("{col}") FROM {table_name}'
+                    ).fetchone()
+                    if n_distinct and n_distinct[0] <= 50:
+                        vals = cur.execute(
+                            f'SELECT DISTINCT "{col}" FROM {table_name} '
+                            f'WHERE "{col}" IS NOT NULL ORDER BY "{col}" LIMIT 50'
+                        ).fetchdf()
+                        filter_values[col] = vals[col].tolist()
+                except Exception:
+                    pass
 
             time_range = None
             if "timestamp" in existing_cols:
@@ -509,6 +540,211 @@ class DuckDBStore:
     def get_sync_status(self, table_name: str) -> SyncStatus:
         """Return sync status for a table."""
         return self._sync_status.get(table_name, SyncStatus())
+
+    # ------------------------------------------------------------------
+    # Saved datasets (axis_datasets registry)
+    # ------------------------------------------------------------------
+
+    def init_datasets_registry(self) -> None:
+        """Create the axis_datasets registry table if it doesn't exist, and migrate."""
+        with self._cursor() as cur:
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS axis_datasets (
+                    dataset_id TEXT PRIMARY KEY,
+                    name TEXT NOT NULL,
+                    description TEXT DEFAULT '',
+                    table_name TEXT NOT NULL,
+                    row_count INTEGER NOT NULL,
+                    columns_json TEXT NOT NULL,
+                    source_sql TEXT NOT NULL,
+                    created_at TIMESTAMP DEFAULT current_timestamp,
+                    tags_json TEXT DEFAULT '[]',
+                    user_id TEXT DEFAULT ''
+                )
+            """)
+            # Migrate existing installs that lack the user_id column
+            existing_cols = {
+                row[0]
+                for row in cur.execute(
+                    "SELECT column_name FROM information_schema.columns "
+                    "WHERE table_name = 'axis_datasets'"
+                ).fetchall()
+            }
+            if "user_id" not in existing_cols:
+                cur.execute("ALTER TABLE axis_datasets ADD COLUMN user_id TEXT DEFAULT ''")
+
+    @staticmethod
+    def _sanitize_user_prefix(user_id: str | None) -> str:
+        """Return a safe DuckDB identifier prefix from a user ID (max 12 chars)."""
+        import re
+
+        if not user_id:
+            return ""
+        sanitized = re.sub(r"[^a-z0-9]", "", user_id.lower())[:12]
+        return sanitized if sanitized else ""
+
+    def create_dataset_from_sql(
+        self,
+        name: str,
+        sql: str,
+        description: str | None = None,
+        tags: list[str] | None = None,
+        max_rows: int = 10_000,
+        user_id: str | None = None,
+    ) -> dict[str, Any]:
+        """Materialize SQL query results as a named, persisted dataset table.
+
+        Returns metadata dict with dataset_id, name, table, row_count, columns.
+        """
+        import uuid
+
+        dataset_id = uuid.uuid4().hex[:8]
+        prefix = self._sanitize_user_prefix(user_id)
+        table_name = f"ds_{prefix}_{dataset_id}" if prefix else f"ds_{dataset_id}"
+        capped_sql = f"SELECT * FROM ({sql}) __q LIMIT {max_rows}"
+
+        try:
+            with self._cursor() as cur:
+                cur.execute(f"CREATE TABLE {table_name} AS {capped_sql}")
+                row_count_row = cur.execute(f"SELECT COUNT(*) FROM {table_name}").fetchone()
+                row_count = row_count_row[0] if row_count_row else 0
+                cols_df = cur.execute(f"DESCRIBE {table_name}").fetchdf()
+                columns = cols_df[["column_name", "column_type"]].to_dict(orient="records")
+
+            self.init_datasets_registry()
+            with self._cursor() as cur:
+                cur.execute(
+                    """INSERT OR REPLACE INTO axis_datasets
+                           (dataset_id, name, description, table_name, row_count,
+                            columns_json, source_sql, tags_json, user_id)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    [
+                        dataset_id,
+                        name,
+                        description or "",
+                        table_name,
+                        row_count,
+                        json.dumps(columns),
+                        sql,
+                        json.dumps(tags or []),
+                        user_id or "",
+                    ],
+                )
+
+            return {
+                "dataset_id": dataset_id,
+                "name": name,
+                "table": table_name,
+                "row_count": row_count,
+                "columns": columns,
+                "description": description or "",
+                "tags": tags or [],
+                "user_id": user_id or "",
+            }
+        except Exception:
+            with contextlib.suppress(Exception), self._cursor() as cur:
+                cur.execute(f"DROP TABLE IF EXISTS {table_name}")
+            raise
+
+    def list_datasets(self, user_id: str | None = None) -> list[dict[str, Any]]:
+        """Return metadata for saved datasets, newest first. Optionally filter by user_id."""
+        try:
+            self.init_datasets_registry()
+            with self._cursor() as cur:
+                if user_id:
+                    rows = cur.execute(
+                        "SELECT dataset_id, name, description, table_name, row_count,"
+                        " columns_json, source_sql, created_at, tags_json, user_id"
+                        " FROM axis_datasets WHERE user_id = ? ORDER BY created_at DESC",
+                        [user_id],
+                    ).fetchall()
+                else:
+                    rows = cur.execute(
+                        "SELECT dataset_id, name, description, table_name, row_count,"
+                        " columns_json, source_sql, created_at, tags_json, user_id"
+                        " FROM axis_datasets ORDER BY created_at DESC"
+                    ).fetchall()
+            return [
+                {
+                    "dataset_id": row[0],
+                    "name": row[1],
+                    "description": row[2],
+                    "table_name": row[3],
+                    "row_count": row[4],
+                    "columns": json.loads(row[5]),
+                    "source_sql": row[6],
+                    "created_at": str(row[7]),
+                    "tags": json.loads(row[8]),
+                    "user_id": row[9] or "",
+                }
+                for row in rows
+            ]
+        except duckdb.CatalogException:
+            return []
+
+    def get_dataset(self, dataset_id: str) -> dict[str, Any] | None:
+        """Return metadata for one dataset by ID, or None if not found."""
+        try:
+            self.init_datasets_registry()
+            with self._cursor() as cur:
+                row = cur.execute(
+                    "SELECT dataset_id, name, description, table_name, row_count,"
+                    " columns_json, source_sql, created_at, tags_json, user_id"
+                    " FROM axis_datasets WHERE dataset_id = ?",
+                    [dataset_id],
+                ).fetchone()
+            if not row:
+                return None
+            return {
+                "dataset_id": row[0],
+                "name": row[1],
+                "description": row[2],
+                "table_name": row[3],
+                "row_count": row[4],
+                "columns": json.loads(row[5]),
+                "source_sql": row[6],
+                "created_at": str(row[7]),
+                "tags": json.loads(row[8]),
+                "user_id": row[9] or "",
+            }
+        except duckdb.CatalogException:
+            return None
+
+    def delete_dataset(self, dataset_id: str) -> bool:
+        """Delete a dataset table and its registry entry. Returns True if deleted."""
+        try:
+            self.init_datasets_registry()
+            ds = self.get_dataset(dataset_id)
+            if not ds:
+                return False
+            with self._cursor() as cur:
+                cur.execute(f"DROP TABLE IF EXISTS {ds['table_name']}")
+                cur.execute("DELETE FROM axis_datasets WHERE dataset_id = ?", [dataset_id])
+            return True
+        except duckdb.CatalogException:
+            return False
+
+    def get_dataset_as_csv(self, dataset_id: str) -> str | None:
+        """Return the full dataset as a CSV string, or None if not found."""
+        ds = self.get_dataset(dataset_id)
+        if not ds:
+            return None
+        try:
+            df = self.query_df(f"SELECT * FROM {ds['table_name']}")
+            csv: str = df.to_csv(index=False)
+            return csv
+        except Exception:
+            return None
+
+    def sql_to_csv(self, sql: str, max_rows: int = 100_000) -> str:
+        """Execute a SELECT and return results as a CSV string without persisting a table.
+
+        Used by the copilot download_data tool to avoid creating throwaway ds_* tables.
+        """
+        capped_sql = f"SELECT * FROM ({sql}) __q LIMIT {max_rows}"
+        df = self.query_df(capped_sql)
+        csv: str = df.to_csv(index=False)
+        return csv
 
     def get_all_sync_status(self) -> dict[str, dict[str, Any]]:
         """Return sync status for all known tables (excluding staging/internal).

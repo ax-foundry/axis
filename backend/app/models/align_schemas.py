@@ -24,7 +24,7 @@ class FewShotExample(BaseModel):
 class JudgeConfig(BaseModel):
     """Configuration for the LLM judge."""
 
-    model: str = "gpt-4"
+    model: str = "gpt-5.2"
     provider: LLMProvider = LLMProvider.OPENAI
     system_prompt: str = ""
     evaluation_criteria: str = ""

@@ -90,7 +90,9 @@ class EvaluateTool(BaseTool):
                         "min": float(values.min()),
                         "max": float(values.max()),
                         "median": float(values.median()),
-                        "passing_rate": float((values >= 0.5).mean()) if values.max() <= 1 else None,
+                        "passing_rate": float((values >= 0.5).mean())
+                        if values.max() <= 1
+                        else None,
                     }
 
             insights = []

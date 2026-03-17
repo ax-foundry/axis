@@ -49,7 +49,7 @@ class ToolLoader:
             metadata = ToolMetadata.from_dict(data)
 
             # Load optional instructions
-            instructions_file = tool_dir / "SKILL.md"
+            instructions_file = tool_dir / "TOOL.md"
             if instructions_file.exists():
                 with instructions_file.open() as f:
                     metadata.instructions = f.read()

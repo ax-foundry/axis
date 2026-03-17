@@ -81,13 +81,21 @@ class TestReplayRouter:
     @patch("app.config.env.settings.agent_replay_enabled", True)
     def test_traces_returns_503_when_not_configured(self, client):
         """GET /traces returns 503 when Langfuse creds are missing."""
-        response = client.get("/api/agent-replay/traces")
+        with (
+            patch("app.plugins.agent_replay.services._shared.settings.langfuse_public_key", None),
+            patch("app.plugins.agent_replay.services._shared.settings.langfuse_secret_key", None),
+        ):
+            response = client.get("/api/agent-replay/traces")
         assert response.status_code == 503
 
     @patch("app.config.env.settings.agent_replay_enabled", True)
     def test_trace_detail_returns_503_when_not_configured(self, client):
         """GET /traces/{id} returns 503 when Langfuse creds are missing."""
-        response = client.get("/api/agent-replay/traces/some-id")
+        with (
+            patch("app.plugins.agent_replay.services._shared.settings.langfuse_public_key", None),
+            patch("app.plugins.agent_replay.services._shared.settings.langfuse_secret_key", None),
+        ):
+            response = client.get("/api/agent-replay/traces/some-id")
         assert response.status_code == 503
 
     @patch("app.config.env.settings.agent_replay_enabled", True)
