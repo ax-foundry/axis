@@ -13,9 +13,9 @@ Usage:
 from __future__ import annotations
 
 import argparse
-from contextlib import suppress
 import json
 import sys
+from contextlib import suppress
 from pathlib import Path
 from urllib.error import URLError
 from urllib.request import urlopen

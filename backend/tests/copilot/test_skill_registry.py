@@ -204,9 +204,9 @@ async def test_pydantic_agent_injects_skills_in_system_prompt(tmp_path: Path) ->
         patch("app.copilot.skills.registry.get_custom_dir", return_value=Path("/nonexistent")),
         patch("app.copilot.skills.registry._registry_instance", None),
         patch.object(inner, "run", side_effect=fake_run),
+        suppress(Exception),
     ):
-        with suppress(Exception):
-            await copilot_agent.process("make a plot", dataset_label="evaluation")
+        await copilot_agent.process("make a plot", dataset_label="evaluation")
 
     assert captured_deps, "agent.run() was never called"
     deps = captured_deps[0]
@@ -247,10 +247,10 @@ async def test_oai_agent_injects_skills_in_instructions(tmp_path: Path) -> None:
         patch("app.copilot.oai_agent.Runner.run_streamed", return_value=mock_result),
         patch("app.copilot.oai_agent._build_schema_context", new=AsyncMock(return_value="")),
         patch.object(OAICopilotAgent, "_get_agent", patched_get_agent),
+        suppress(Exception),
     ):
         agent = OAICopilotAgent(thought_stream=ThoughtStream())
-        with suppress(Exception):
-            await agent.process("make a plot", dataset_label="evaluation")
+        await agent.process("make a plot", dataset_label="evaluation")
 
     assert captured_instructions, "_get_agent was never called"
     assert "OAI PLOT SKILL BODY" in captured_instructions[0]
