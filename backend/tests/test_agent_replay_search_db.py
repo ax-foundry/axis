@@ -278,7 +278,11 @@ class TestSearchByValidation:
     @patch("app.config.env.settings.agent_replay_enabled", True)
     def test_search_by_defaults_to_trace_id(self, client):
         """Default search_by is trace_id (returns 503 without Langfuse creds)."""
-        response = client.get("/api/agent-replay/search?query=test")
+        with (
+            patch("app.plugins.agent_replay.services._shared.settings.langfuse_public_key", None),
+            patch("app.plugins.agent_replay.services._shared.settings.langfuse_secret_key", None),
+        ):
+            response = client.get("/api/agent-replay/search?query=test")
         # Without Langfuse configured, trace_id mode returns 503
         assert response.status_code == 503
 

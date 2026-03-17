@@ -14,7 +14,7 @@ from pydantic_ai.models.test import TestModel
 
 @pytest.mark.asyncio
 async def test_oai_process_returns_tuple() -> None:
-    """OAICopilotAgent.process() must return (str, None) — not a bare str."""
+    """OAICopilotAgent.process() must return (response, chart, download)."""
     from app.copilot.oai_agent import OAICopilotAgent
 
     agent = OAICopilotAgent()
@@ -35,10 +35,11 @@ async def test_oai_process_returns_tuple() -> None:
         result = await agent.process("Hello", dataset_label="evaluation")
 
     assert isinstance(result, tuple), "process() must return a tuple"
-    assert len(result) == 2, "tuple must have 2 elements"
-    response, chart = result
+    assert len(result) == 3, "tuple must have 3 elements"
+    response, chart, download = result
     assert isinstance(response, str), "first element must be str"
-    assert chart is None, "second element must be None (no plot_data in OAI agent)"
+    assert chart is None, "second element must be None when no chart is created"
+    assert download is None, "third element must be None when no download is created"
 
 
 # ---------------------------------------------------------------------------
@@ -204,8 +205,10 @@ def _noop_tracer() -> MagicMock:
     tracer.fail = MagicMock()
 
     # async_span returns an async context manager that does nothing
+    span = MagicMock()
+    span.set_output = MagicMock()
     cm = AsyncMock()
-    cm.__aenter__ = AsyncMock(return_value=None)
+    cm.__aenter__ = AsyncMock(return_value=span)
     cm.__aexit__ = AsyncMock(return_value=False)
     tracer.async_span = MagicMock(return_value=cm)
     return tracer
@@ -234,27 +237,24 @@ def _noop_tracer_capturing() -> MagicMock:
 @pytest.mark.asyncio
 async def test_agent_tool_span_name_and_tool_name_attr() -> None:
     """CopilotAgent tool spans must be 'copilot.tool.call' with tool_name attribute."""
-    from app.copilot.thoughts import ThoughtStream
-
-    thought_stream = ThoughtStream()
     capturing = _noop_tracer_capturing()
 
     deps_mock = MagicMock()
     deps_mock.dataset_label = "evaluation"
     deps_mock.has_data = False  # short-circuits before DuckDB
+    deps_mock.get_cached.return_value = None
+    deps_mock.thought_stream = AsyncMock()
+    deps_mock.no_data_error.return_value = '{"error": "no data"}'
 
     ctx_mock = MagicMock()
     ctx_mock.deps = deps_mock
 
-    with patch("app.copilot.agent.get_copilot_tracer", return_value=capturing):
+    with patch("app.copilot.hooks.get_copilot_tracer", return_value=capturing):
         import app.copilot.agent as agent_mod
 
         llm_provider = MagicMock()
         llm_provider._get_model.return_value = TestModel()
-        copilot_agent = agent_mod.CopilotAgent(
-            thought_stream=thought_stream,
-            llm_provider=llm_provider,
-        )
+        copilot_agent = agent_mod.CopilotAgent(llm_provider=llm_provider)
         inner_agent = copilot_agent._get_agent()
         # pydantic-ai 1.x: tools live in _function_toolset.tools dict
         summarize_fn = inner_agent._function_toolset.tools["summarize_data"].function
@@ -274,9 +274,6 @@ async def test_agent_tool_span_name_and_tool_name_attr() -> None:
 @pytest.mark.asyncio
 async def test_agent_db_span_name_and_db_system_attr() -> None:
     """DB spans inside agent tools must be 'copilot.db.query' with db_system='duckdb'."""
-    from app.copilot.thoughts import ThoughtStream
-
-    thought_stream = ThoughtStream()
     capturing = _noop_tracer_capturing()
 
     store_mock = MagicMock()
@@ -290,19 +287,20 @@ async def test_agent_db_span_name_and_db_system_attr() -> None:
     deps_mock.table_name = "eval_data"
     deps_mock.store = store_mock
     deps_mock.thought_stream = ts_mock
+    deps_mock.get_cached.return_value = None
 
     ctx_mock = MagicMock()
     ctx_mock.deps = deps_mock
 
-    with patch("app.copilot.agent.get_copilot_tracer", return_value=capturing):
+    with (
+        patch("app.copilot.hooks.get_copilot_tracer", return_value=capturing),
+        patch("app.copilot.agent.get_copilot_tracer", return_value=capturing),
+    ):
         import app.copilot.agent as agent_mod
 
         llm_provider = MagicMock()
         llm_provider._get_model.return_value = TestModel()
-        copilot_agent = agent_mod.CopilotAgent(
-            thought_stream=thought_stream,
-            llm_provider=llm_provider,
-        )
+        copilot_agent = agent_mod.CopilotAgent(llm_provider=llm_provider)
         inner_agent = copilot_agent._get_agent()
         run_sql_fn = inner_agent._function_toolset.tools["run_sql"].function
         with patch("anyio.to_thread.run_sync", new_callable=AsyncMock, return_value=[]):

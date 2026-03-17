@@ -1,5 +1,4 @@
 """Tests for SkillRegistry — discovery, selection, injection, agent integration."""
-from contextlib import suppress
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -182,33 +181,54 @@ async def test_pydantic_agent_injects_skills_in_system_prompt(tmp_path: Path) ->
     """CopilotAgent.process() must set skills_injection on deps, which flows to system prompt."""
     _write_skill(tmp_path, "plot", body="PLOT SKILL BODY", triggers=["plot"])
 
+    from pydantic_ai.models.test import TestModel
+
     from app.copilot.thoughts import ThoughtStream
 
     thought_stream = ThoughtStream()
 
     captured_deps: list = []
 
-    async def fake_run(message: str, deps, **kw):  # type: ignore[no-untyped-def]
-        captured_deps.append(deps)
-        result = MagicMock()
-        result.output = "done"
-        return result
+    class _FakeAgentRun:
+        def __init__(self, deps: object) -> None:
+            self.result = MagicMock(output="done")
+            captured_deps.append(deps)
+
+        async def __aenter__(self) -> "_FakeAgentRun":
+            return self
+
+        async def __aexit__(self, *_args: object) -> bool:
+            return False
+
+        def __aiter__(self) -> "_FakeAgentRun":
+            return self
+
+        async def __anext__(self) -> object:
+            raise StopAsyncIteration
+
+    def fake_iter(message: str, deps, **kw):  # type: ignore[no-untyped-def]
+        return _FakeAgentRun(deps)
 
     import app.copilot.agent as agent_mod
 
-    copilot_agent = agent_mod.CopilotAgent(thought_stream=thought_stream)
+    llm_provider = MagicMock()
+    llm_provider._get_model.return_value = TestModel()
+    copilot_agent = agent_mod.CopilotAgent(
+        thought_stream=thought_stream,
+        llm_provider=llm_provider,
+    )
     inner = copilot_agent._get_agent()
 
     with (
         patch("app.copilot.skills.registry._BUILTIN_SKILLS_DIR", tmp_path),
         patch("app.copilot.skills.registry.get_custom_dir", return_value=Path("/nonexistent")),
         patch("app.copilot.skills.registry._registry_instance", None),
-        patch.object(inner, "run", side_effect=fake_run),
-        suppress(Exception),
+        patch("app.copilot.agent.get_copilot_tracer", return_value=_span_tracer()),
+        patch.object(inner, "iter", side_effect=fake_iter),
     ):
         await copilot_agent.process("make a plot", dataset_label="evaluation")
 
-    assert captured_deps, "agent.run() was never called"
+    assert captured_deps, "agent.iter() was never called"
     deps = captured_deps[0]
     assert "PLOT SKILL BODY" in deps.skills_injection
 
@@ -218,22 +238,21 @@ async def test_pydantic_agent_injects_skills_in_system_prompt(tmp_path: Path) ->
 
 @pytest.mark.asyncio
 async def test_oai_agent_injects_skills_in_instructions(tmp_path: Path) -> None:
-    """OAICopilotAgent._get_agent() must include matched skills in Agent instructions."""
+    """OAICopilotAgent.process() must pass matched skills into the runtime context."""
     _write_skill(tmp_path, "plot", body="OAI PLOT SKILL BODY", triggers=["plot"])
 
     from app.copilot.oai_agent import OAICopilotAgent
     from app.copilot.thoughts import ThoughtStream
 
-    captured_instructions: list[str] = []
-
-    def patched_get_agent(self, skills_injection: str = "") -> MagicMock:  # type: ignore[misc]
-        captured_instructions.append(skills_injection)
-        m = MagicMock()
-        return m
+    captured_skills_injection: list[str] = []
 
     async def _empty_events():  # async generator that immediately stops
         return
         yield  # make it a generator
+
+    def fake_run_streamed(*_args: object, **kwargs: object) -> MagicMock:
+        captured_skills_injection.append(kwargs["context"].skills_injection)  # type: ignore[index]
+        return mock_result
 
     mock_result = MagicMock()
     # stream_events() must return an async iterable (not a coroutine wrapping one)
@@ -244,13 +263,27 @@ async def test_oai_agent_injects_skills_in_instructions(tmp_path: Path) -> None:
         patch("app.copilot.skills.registry._BUILTIN_SKILLS_DIR", tmp_path),
         patch("app.copilot.skills.registry.get_custom_dir", return_value=Path("/nonexistent")),
         patch("app.copilot.skills.registry._registry_instance", None),
-        patch("app.copilot.oai_agent.Runner.run_streamed", return_value=mock_result),
+        patch("app.copilot.oai_agent.Runner.run_streamed", side_effect=fake_run_streamed),
         patch("app.copilot.oai_agent._build_schema_context", new=AsyncMock(return_value="")),
-        patch.object(OAICopilotAgent, "_get_agent", patched_get_agent),
-        suppress(Exception),
+        patch("app.copilot.oai_agent.get_copilot_tracer", return_value=_span_tracer()),
     ):
         agent = OAICopilotAgent(thought_stream=ThoughtStream())
         await agent.process("make a plot", dataset_label="evaluation")
 
-    assert captured_instructions, "_get_agent was never called"
-    assert "OAI PLOT SKILL BODY" in captured_instructions[0]
+    assert captured_skills_injection, "Runner.run_streamed() was never called"
+    assert "OAI PLOT SKILL BODY" in captured_skills_injection[0]
+
+
+def _span_tracer() -> MagicMock:
+    """Return a tracer whose spans expose set_output()."""
+    tracer = MagicMock()
+    tracer.add_trace = MagicMock()
+
+    span = MagicMock()
+    span.set_output = MagicMock()
+
+    cm = AsyncMock()
+    cm.__aenter__ = AsyncMock(return_value=span)
+    cm.__aexit__ = AsyncMock(return_value=False)
+    tracer.async_span = MagicMock(return_value=cm)
+    return tracer
