@@ -13,17 +13,18 @@ Usage:
 from __future__ import annotations
 
 import argparse
+from contextlib import suppress
 import json
 import sys
 from pathlib import Path
-from urllib.request import urlopen
 from urllib.error import URLError
+from urllib.request import urlopen
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-import yaml  # noqa: E402
+import yaml
 
-from app.config.paths import get_custom_dir  # noqa: E402
+from app.config.paths import get_custom_dir
 
 
 def _looks_like_json(v: str) -> bool:
@@ -71,10 +72,8 @@ def _build_human_signals_entry(table_data: dict, metric_schema_raw: str | None) 
 
     metric_schema: dict = {}
     if metric_schema_raw:
-        try:
+        with suppress(Exception):
             metric_schema = json.loads(metric_schema_raw) if isinstance(metric_schema_raw, str) else metric_schema_raw
-        except Exception:
-            pass
 
     metrics_section = []
     for metric_name, mdata in (metric_schema.get("metrics") or {}).items():
@@ -146,6 +145,7 @@ def _fetch_schema_dump(api_base: str) -> dict:
 
 
 def main() -> None:
+    """Generate and write the schema hints scaffold."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--api",

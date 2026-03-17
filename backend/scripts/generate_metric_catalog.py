@@ -12,17 +12,18 @@ Usage:
 from __future__ import annotations
 
 import argparse
+from contextlib import suppress
 import json
 import sys
 from pathlib import Path
-from urllib.request import urlopen
 from urllib.error import URLError
+from urllib.request import urlopen
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-import yaml  # noqa: E402
+import yaml
 
-from app.config.paths import get_custom_dir  # noqa: E402
+from app.config.paths import get_custom_dir
 
 
 def _fetch_schema_dump(api_base: str) -> dict:  # type: ignore[type-arg]
@@ -50,7 +51,7 @@ def _build_monitoring_domain(tables: dict) -> dict:  # type: ignore[type-arg]
         domain[name] = {
             "description": f"TODO: describe {name}",
             "category": "SCORE",
-            "score_range": "0.0–1.0",
+            "score_range": "0.0-1.0",
             # Uncomment and fill in if this metric has structured signals JSON:
             # "signals": {
             #     "payload_kind": "grouped_signal_dict",
@@ -143,6 +144,7 @@ def _try_echo_workbench_signals(metric_name: str) -> dict | None:  # type: ignor
 
 
 def main() -> None:
+    """Generate and write the metric catalog scaffold."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--api",
@@ -206,13 +208,11 @@ def main() -> None:
     # Check if file already exists — preserve metric_definitions section if so
     existing_metric_definitions: dict = {}
     if out_path.exists() and args.overwrite:
-        try:
+        with suppress(Exception):
             with out_path.open(encoding="utf-8") as f:
                 existing = yaml.safe_load(f) or {}
             existing_metric_definitions = existing.get("metric_definitions", {})
             print("  Preserving existing metric_definitions section")
-        except Exception:
-            pass
 
     doc: dict = {
         "_note": (

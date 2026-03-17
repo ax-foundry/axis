@@ -1532,9 +1532,8 @@ class CopilotAgent:
                 # Get row count without persisting a table
                 try:
                     row_count = await anyio.to_thread.run_sync(
-                        lambda: deps.store.query_value(
-                            f"SELECT COUNT(*) FROM ({sql_stripped}) __q"
-                        ) or 0,
+                        lambda: deps.store.query_value(f"SELECT COUNT(*) FROM ({sql_stripped}) __q")
+                        or 0,
                         limiter=deps.store.query_limiter,
                     )
                 except Exception as exc:
@@ -1749,7 +1748,11 @@ class CopilotAgent:
                 logger.error("Agent error: %s", e, exc_info=True)
                 await self.thought_stream.emit_error("Agent error", node_name="Agent")
                 tracer.add_trace("error", type(e).__name__)
-                return "I encountered an error processing your request. Please try again.", None, None
+                return (
+                    "I encountered an error processing your request. Please try again.",
+                    None,
+                    None,
+                )
 
             finally:
                 await self.thought_stream.close()

@@ -362,7 +362,9 @@ async def export_sql_as_csv(req: ExportRequest) -> Response:
         r"GRANT|REVOKE|ATTACH|DETACH|COPY|EXPORT|IMPORT|INSTALL|LOAD)\b",
         re.IGNORECASE,
     )
-    if _SQL_UNSAFE_RE.search(re.sub(r"--[^\n]*", " ", re.sub(r"/\*.*?\*/", " ", sql_stripped, flags=re.DOTALL))):
+    if _SQL_UNSAFE_RE.search(
+        re.sub(r"--[^\n]*", " ", re.sub(r"/\*.*?\*/", " ", sql_stripped, flags=re.DOTALL))
+    ):
         raise HTTPException(status_code=400, detail="Only SELECT statements are permitted.")
     if not sql_stripped.upper().startswith("SELECT"):
         raise HTTPException(status_code=400, detail="Only SELECT statements are permitted.")

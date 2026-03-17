@@ -1106,9 +1106,7 @@ async def download_data(
         # Get row count without persisting a table
         try:
             row_count = await anyio.to_thread.run_sync(
-                lambda: deps.store.query_value(
-                    f"SELECT COUNT(*) FROM ({sql_stripped}) __q"
-                ) or 0,
+                lambda: deps.store.query_value(f"SELECT COUNT(*) FROM ({sql_stripped}) __q") or 0,
                 limiter=deps.store.query_limiter,
             )
         except Exception as exc:
@@ -1127,7 +1125,9 @@ async def download_data(
         )
 
         tracer.add_trace("info", "tool_complete", metadata={"row_count": int(row_count)})
-        out = _safe_json({"status": "ready", "row_count": int(row_count), "filename": safe_filename})
+        out = _safe_json(
+            {"status": "ready", "row_count": int(row_count), "filename": safe_filename}
+        )
         _span.set_output(out)
         return out
 

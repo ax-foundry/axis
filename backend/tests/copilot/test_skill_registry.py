@@ -1,7 +1,9 @@
 """Tests for SkillRegistry — discovery, selection, injection, agent integration."""
-import pytest
+from contextlib import suppress
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 
 
 def _write_skill(
@@ -203,10 +205,8 @@ async def test_pydantic_agent_injects_skills_in_system_prompt(tmp_path: Path) ->
         patch("app.copilot.skills.registry._registry_instance", None),
         patch.object(inner, "run", side_effect=fake_run),
     ):
-        try:
+        with suppress(Exception):
             await copilot_agent.process("make a plot", dataset_label="evaluation")
-        except Exception:
-            pass
 
     assert captured_deps, "agent.run() was never called"
     deps = captured_deps[0]
@@ -221,8 +221,8 @@ async def test_oai_agent_injects_skills_in_instructions(tmp_path: Path) -> None:
     """OAICopilotAgent._get_agent() must include matched skills in Agent instructions."""
     _write_skill(tmp_path, "plot", body="OAI PLOT SKILL BODY", triggers=["plot"])
 
-    from app.copilot.thoughts import ThoughtStream
     from app.copilot.oai_agent import OAICopilotAgent
+    from app.copilot.thoughts import ThoughtStream
 
     captured_instructions: list[str] = []
 
@@ -249,10 +249,8 @@ async def test_oai_agent_injects_skills_in_instructions(tmp_path: Path) -> None:
         patch.object(OAICopilotAgent, "_get_agent", patched_get_agent),
     ):
         agent = OAICopilotAgent(thought_stream=ThoughtStream())
-        try:
+        with suppress(Exception):
             await agent.process("make a plot", dataset_label="evaluation")
-        except Exception:
-            pass
 
     assert captured_instructions, "_get_agent was never called"
     assert "OAI PLOT SKILL BODY" in captured_instructions[0]
