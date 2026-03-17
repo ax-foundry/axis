@@ -1,5 +1,3 @@
-"""Datasets router — CRUD and download for copilot-saved datasets."""
-
 import logging
 from typing import Any
 

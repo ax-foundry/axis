@@ -1,7 +1,6 @@
 """Schema hints — human-readable column/field descriptions for all copilot data tables.
 
-Loaded from ``custom/config/schema_hints.yaml`` (gitignored).
-A committed template lives in ``backend/config/schema_hints.yaml.example``.
+Loaded from ``custom/config/schema_hints.yaml`` .
 
 Lifecycle: lazy singleton, changes take effect on next process restart.
 Trust boundary: content is injected verbatim into the agent system prompt — treat as

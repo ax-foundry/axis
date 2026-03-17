@@ -1,6 +1,5 @@
 """Metric catalog — per-metric semantic descriptions and signal payload hints for copilot injection.
 
-Loaded from ``custom/config/metric_definitions.yaml`` (gitignored).
 The ``metric_catalog`` section extends the basic ``metric_definitions`` with
 signal payload structure, score ranges, category, and threshold — injected into
 the copilot's schema context alongside DDL schema hints.

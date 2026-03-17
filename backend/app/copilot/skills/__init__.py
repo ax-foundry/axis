@@ -1,5 +1,3 @@
-"""Copilot skill registry — expertise markdown injected into agent system prompts."""
-
 from app.copilot.skills.loader import SkillHeader, SkillLoader, SkillMeta
 from app.copilot.skills.registry import SkillRegistry, get_skill_registry
 

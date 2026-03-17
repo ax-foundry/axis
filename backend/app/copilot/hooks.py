@@ -1,5 +1,3 @@
-"""Copilot tool lifecycle hook — centralizes span + emit boilerplate."""
-
 from __future__ import annotations
 
 from contextlib import asynccontextmanager

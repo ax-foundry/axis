@@ -1,11 +1,3 @@
-"""Skill registry — L1/L2 hierarchy with trigger-based selection.
-
-Lifecycle: lazy singleton initialized on first access.
-Cache invalidation: process restart required (by design for v1).
-Trust boundary: custom/skills/ content is injected verbatim as system prompt — treat as
-trusted administrator input only (not user-supplied content).
-"""
-
 from __future__ import annotations
 
 import logging

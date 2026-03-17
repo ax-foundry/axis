@@ -23,19 +23,20 @@ tables:
   # ─── Monitoring data (long-format metric rows) ────────────────────────────
   - name: monitoring_data
     description: >
-      Real-time metric scores from production agent runs. Each row is one metric observation.
-      Group by metric_name to compare metrics; group by source_name/environment for agent comparison.
+      Metric observations collected over time. Each row represents one metric result.
+      Group by metric_name to compare metrics; group by source_name or environment
+      to compare systems, sources, or deployments.
     columns:
       - name: metric_name
-        description: "Name of the evaluation metric being scored"
+        description: "Name of the metric being recorded"
         # Metric descriptions and signal payload hints belong in metric_definitions.yaml (metric_catalog section).
         # List values here only if you need query hints for specific metric names.
         # values:
-        #   Faithfulness: "RAG faithfulness metric"
-        #   Relevance: "Query relevance metric"
+        #   quality_score: "Overall quality metric"
+        #   safety_score: "Safety-related metric"
 
       - name: metric_score
-        description: "Numeric score for this metric, typically 0.0–1.0 unless noted per-metric"
+        description: "Numeric score for this metric, typically 0.0-1.0 unless noted per metric"
 
       - name: metric_category
         description: "Output type of the metric"
@@ -45,38 +46,38 @@ tables:
           ANALYSIS: "Structured JSON analysis — shown in detail views, not aggregated"
 
       - name: source_name
-        description: "Agent or system that produced this evaluation (e.g. alpha_bot, beta_agent)"
+        description: "System, workflow, model, or process that produced this metric"
 
       - name: environment
         description: "Deployment environment"
-        values: [production, staging, development]
+        # values: [production, staging, development]
 
   # ─── Evaluation data (flat, one row per evaluation record) ────────────────
   - name: eval_data
     description: >
-      Offline evaluation runs for LLM agent quality assessment. Each row is one evaluated
-      query/response pair. Metric scores appear as separate columns (e.g. faithfulness_score).
+      Evaluation results stored one row per record. Metric scores often appear as
+      separate columns (for example, quality_score or safety_score).
     columns:
       - name: evaluation_name
         description: "Name of the evaluation batch or experiment"
 
       # Add columns specific to your eval schema here
-      # - name: faithfulness_score
-      #   description: "Faithfulness of the response to retrieved context (0.0–1.0)"
-      # - name: relevance_score
-      #   description: "Relevance of the response to the input query (0.0–1.0)"
+      # - name: quality_score
+      #   description: "Overall quality score for the record (0.0-1.0)"
+      # - name: safety_score
+      #   description: "Safety score for the record (0.0-1.0)"
 
   # ─── KPI data ─────────────────────────────────────────────────────────────
   - name: kpi_data
     description: >
-      Business and operational KPIs tracked over time. Each row is one KPI value at a point
-      in time. Use kpi_name to filter; aggregate kpi_value for trends.
+      Key performance indicators tracked over time. Each row is one KPI value at a
+      point in time. Use kpi_name to filter; aggregate kpi_value for trends.
     columns:
       - name: kpi_name
         description: "Name of the KPI"
         values:
-          pass_rate: "Percentage of cases passing quality threshold"
-          avg_score: "Average metric score across all cases"
+          success_rate: "Example KPI tracking a success percentage"
+          average_score: "Example KPI tracking an average score"
           # Add your kpi_name values here
 
       - name: kpi_value
@@ -90,104 +91,103 @@ tables:
     description: >
       One row per case with all metric signal fields flattened as {metric_name}__{signal_key}.
       The prefix before '__' is the metric; the suffix is the signal field within that metric.
-      Use metric_name column to filter to one metric's rows; use COLUMNS('metric__.*') to select
-      all signals for a metric.
+      Use metric-specific prefixes to select related signal columns together.
     columns:
       - name: metric_name
-        description: "The metric name for this case row — use for GROUP BY and WHERE filtering"
+        description: "Metric name associated with the row or signal family"
 
     # 'metrics' is shorthand for {metric}__{signal} column families.
     # Each entry here documents one metric's signals without listing every flattened column.
     metrics:
-      - name: trigger_analysis
+      - name: example_metric
         description: >
-          Detects which underwriting triggers fired on a case, their confidence, and whether
-          the trigger-driven outcome aligns with the expected UW decision.
+          Example metric showing how to document a metric-specific family of flattened
+          signal fields without including domain-specific semantics.
         signals:
-          - name: outcome
-            description: "Predicted underwriting outcome from trigger analysis"
+          - name: status
+            description: "Example categorical outcome or label for this metric"
             values:
-              DECLINE: "Case declined by trigger evidence"
-              APPROVE: "Case approved — no blocking triggers"
-              REFER: "Case referred for manual review"
-              UNKNOWN: "Outcome could not be determined"
+              PASS: "Example positive status"
+              FAIL: "Example negative status"
+              REVIEW: "Example status requiring manual review"
+              UNKNOWN: "Example fallback when no status is available"
 
-          - name: uw_expected_outcome
-            description: "Expected outcome from the UW rule engine — ground truth for alignment evaluation"
-            values: [DECLINE, APPROVE, REFER]
+          - name: expected_status
+            description: "Expected or reference status used for comparison"
+            values: [PASS, FAIL, REVIEW]
 
-          - name: uw_flag_level
-            description: "Severity level from the UW rule flag"
+          - name: severity
+            description: "Example severity or priority level"
             values:
-              decline: "Hard decline flag"
-              refer: "Refer to underwriter"
-              approve: "No flag — eligible"
+              high: "High severity example"
+              medium: "Medium severity example"
+              low: "Low severity example"
 
           - name: finding_category
-            description: "Quality classification of the trigger-outcome alignment"
+            description: "Example quality classification for the metric result"
             values:
-              true_positive_strong: "Trigger detected AND strongly backs the expected outcome"
-              true_positive_weak: "Trigger detected but weakly supports the outcome"
-              false_positive: "Trigger fired but does not support the actual outcome"
-              inconclusive: "Insufficient evidence to classify alignment"
+              match_strong: "Observed result strongly matches the expected result"
+              match_weak: "Observed result weakly matches the expected result"
+              mismatch: "Observed result does not match the expected result"
+              inconclusive: "Not enough evidence to classify the result"
 
-          - name: primary_trigger
-            description: "The trigger with the highest confidence score that most influenced the outcome"
+          - name: primary_label
+            description: "Primary label, category, or factor associated with the metric"
 
-          - name: all_triggers
-            description: "Comma-separated list of all triggers that fired on this case"
-            query_hint: "Use LIKE '%triggerName%' to filter cases where a specific trigger fired"
+          - name: all_labels
+            description: "List of related labels, categories, or tags"
+            query_hint: "Use text filtering if you need to match a specific label within this field"
 
-          - name: trigger_count
-            description: "Total number of distinct triggers that fired on this case"
+          - name: item_count
+            description: "Count of related items, labels, or findings"
 
-          - name: outcome_trigger_consistency
-            description: "Consistency between detected triggers and predicted outcome (0–100)"
+          - name: consistency_score
+            description: "Consistency or agreement score for this metric"
 
-          - name: decision_trigger_alignment
-            description: "Free-text summary of how well trigger evidence aligns with the decision"
+          - name: summary
+            description: "Short free-text summary explaining the metric result"
 
-          - name: reasoning
+          - name: details
             description: >
-              Detailed per-trigger reasoning explaining agent mention, data evidence, threshold
-              detail, and confidence rationale for each fired trigger. Long free-text.
-            query_hint: "Use WHERE \"trigger_analysis__reasoning\" LIKE '%triggerName%' to find cases mentioning a specific trigger"
+              Longer free-text explanation with supporting details, rationale, or
+              evidence for the metric result.
+            query_hint: "Use text filtering to find rows mentioning specific phrases or categories"
 
-          - name: has_hard_trigger
-            description: "Whether at least one hard (unconditional) trigger fired"
+          - name: has_critical_item
+            description: "Whether at least one critical condition or item was present"
 
-          - name: llm_assessment_complete
-            description: "Whether the LLM successfully completed its trigger assessment"
+          - name: processing_complete
+            description: "Whether processing for this metric completed successfully"
 
-          - name: llm_assessment_retry_used
-            description: "Whether a retry was needed to complete the LLM assessment"
+          - name: retry_used
+            description: "Whether a retry was needed while producing this metric"
 
-          - name: llm_assessment_warnings
-            description: "Any warnings generated during the LLM assessment step"
+          - name: warnings
+            description: "Warnings or non-fatal issues recorded during processing"
 
-          - name: llm_fallback_used
-            description: "Whether the LLM fell back to a simpler model or prompt"
+          - name: fallback_used
+            description: "Whether a fallback path or degraded mode was used"
 
-          - name: ghost_classifier_used
-            description: "Whether the ghost (shadow) classifier ran alongside the primary"
+          - name: shadow_check_used
+            description: "Whether a secondary or shadow evaluation path also ran"
 
-          - name: ghost_disagrees_with_detected
-            description: "Whether the ghost classifier reached a different outcome than primary"
+          - name: shadow_disagrees
+            description: "Whether the secondary result disagreed with the primary result"
 
-          - name: ghost_mode
-            description: "Operating mode of the ghost classifier"
+          - name: shadow_mode
+            description: "Operating mode of the secondary or shadow path"
             values:
-              active: "Ghost classifier actively ran and produced a result"
-              fallback: "Ghost ran in fallback/degraded mode"
+              active: "Secondary path ran normally"
+              fallback: "Secondary path ran in fallback or degraded mode"
 
-          - name: ghost_suggested_trigger
-            description: "Trigger the ghost classifier suggested as primary (may differ from detected)"
+          - name: suggested_label
+            description: "Suggested label or category from the secondary path"
 
-          - name: ghost_suggestion_merged
-            description: "Whether the ghost suggestion was merged into the final result"
+          - name: suggestion_merged
+            description: "Whether the secondary suggestion was merged into the final result"
 
       # See metric_definitions.yaml for comprehensive metric descriptions.
-      # Add additional metric signal families here following the trigger_analysis example above.
+      # Add additional metric signal families here following the example_metric pattern above.
       # - name: your_metric_name
       #   description: "What this metric measures"
       #   signals:

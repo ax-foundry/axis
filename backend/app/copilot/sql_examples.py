@@ -1,13 +1,3 @@
-"""Verified Q→SQL example store — site-specific examples injected into schema context.
-
-Examples live in ``custom/config/sql_examples.yaml`` (gitignored).
-A committed template lives in ``backend/config/sql_examples.yaml.example``.
-
-Lifecycle: lazy singleton, changes take effect on next process restart.
-Trust boundary: content is injected verbatim into the system prompt — treat as
-trusted administrator input only (not user-supplied content).
-"""
-
 from __future__ import annotations
 
 import logging
