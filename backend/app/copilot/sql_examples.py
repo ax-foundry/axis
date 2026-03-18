@@ -39,6 +39,7 @@ class SqlExampleStore:
     def __init__(self) -> None:
         """Initialize with an empty example list."""
         self._examples: list[SqlExample] = []
+        self._agent_examples: dict[str, list[SqlExample]] = {}
 
     @classmethod
     def reset_instance(cls) -> None:
@@ -73,25 +74,68 @@ class SqlExampleStore:
                     SqlExample(triggers=triggers, description=description, sql=sql)
                 )
 
+        # Load optional per-agent examples
+        raw_agent_ex = data.get("agent_examples", {})
+        if isinstance(raw_agent_ex, dict):
+            for agent_name, items in raw_agent_ex.items():
+                if not isinstance(items, list):
+                    continue
+                agent_list: list[SqlExample] = []
+                for item in items:
+                    if not isinstance(item, dict):
+                        continue
+                    sql = str(item.get("sql", "")).strip()
+                    description = str(item.get("description", "")).strip()
+                    raw_triggers = item.get("triggers", [])
+                    if not isinstance(raw_triggers, list):
+                        raw_triggers = [raw_triggers]
+                    triggers = [str(t).lower().strip() for t in raw_triggers if t]
+                    if sql and triggers:
+                        agent_list.append(
+                            SqlExample(triggers=triggers, description=description, sql=sql)
+                        )
+                if agent_list:
+                    self._agent_examples[str(agent_name)] = agent_list
+
         logger.info("SQL example store ready: %d examples loaded", len(self._examples))
 
-    def select(self, message: str, max_examples: int = _MAX_EXAMPLES) -> list[SqlExample]:
+    def _select_from(
+        self, examples: list[SqlExample], message: str, max_examples: int = _MAX_EXAMPLES
+    ) -> list[SqlExample]:
         """Return examples whose triggers word-boundary-match the message.
 
-        Preserves insertion order, caps at max_examples.
+        Preserves insertion order, caps at max_examples. Deduplicates by object id.
         """
         msg_lower = message.lower()
         matched: list[SqlExample] = []
         seen: set[int] = set()
 
-        for i, ex in enumerate(self._examples):
-            if any(_wb_pattern(t).search(msg_lower) for t in ex.triggers) and i not in seen:
+        for ex in examples:
+            eid = id(ex)
+            if eid not in seen and any(_wb_pattern(t).search(msg_lower) for t in ex.triggers):
                 matched.append(ex)
-                seen.add(i)
+                seen.add(eid)
                 if len(matched) >= max_examples:
                     break
 
         return matched
+
+    def select(self, message: str, max_examples: int = _MAX_EXAMPLES) -> list[SqlExample]:
+        """Return global examples whose triggers word-boundary-match the message."""
+        return self._select_from(self._examples, message, max_examples)
+
+    def select_for_agent(
+        self, message: str, agent_name: str | None, max_examples: int = _MAX_EXAMPLES
+    ) -> list[SqlExample]:
+        """Return examples for the given agent prepended before globals, capped at max_examples.
+
+        Per-agent examples are scored first so they win when the cap is hit.
+        """
+        candidates: list[SqlExample] = []
+        if agent_name and agent_name in self._agent_examples:
+            candidates = list(self._agent_examples[agent_name])
+        candidates += list(self._examples)
+        return self._select_from(candidates, message, max_examples)
 
     def get_injection(self, selected: list[SqlExample]) -> str:
         """Render selected examples as a SQL comment block for schema context injection."""

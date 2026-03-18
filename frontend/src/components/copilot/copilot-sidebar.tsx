@@ -20,6 +20,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
 import { PlotlyChart } from '@/components/charts/plotly-chart';
+import { getAgentRegistry } from '@/config/agents';
 import { useCopilotStream, useAIStatus, useStoreStatus } from '@/lib/hooks';
 import { useBranding, useCopilotIcon } from '@/lib/theme';
 import { cn } from '@/lib/utils';
@@ -290,7 +291,12 @@ export function CopilotSidebar({ isOpen, onClose }: CopilotSidebarProps) {
     provider,
     setProvider,
     startNewChat,
+    selectedAgent,
+    setSelectedAgent,
+    conversationResetKey,
   } = useCopilotStore();
+
+  const agents = getAgentRegistry().filter((agent) => agent.active !== false);
 
   const handleNewChat = useCallback(() => {
     cancel();
@@ -302,6 +308,14 @@ export function CopilotSidebar({ isOpen, onClose }: CopilotSidebarProps) {
   useEffect(() => {
     thoughtsRef.current = thoughts;
   }, [thoughts]);
+
+  // Clear local messages when agent changes (conversationResetKey increments)
+  useEffect(() => {
+    if (conversationResetKey > 0) {
+      setMessages([]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [conversationResetKey]);
 
   // ── Dataset options ──
   const duckdbDatasets = storeStatus?.datasets ?? {};
@@ -445,10 +459,10 @@ export function CopilotSidebar({ isOpen, onClose }: CopilotSidebarProps) {
   };
 
   const suggestedQueries = [
-    'Summarize this dataset',
+    'What tools do you have available?',
+    'Explain the datasets and what is the schema of the datasets?',
     'Which metrics are performing below average?',
-    'How does performance compare across groups?',
-    'What are the key statistics?',
+    'Plot a line chart of the metrics and scores by day',
   ];
 
   if (!isOpen) return null;
@@ -509,6 +523,34 @@ export function CopilotSidebar({ isOpen, onClose }: CopilotSidebarProps) {
 
       {/* Dataset + Engine controls */}
       <div className="flex-shrink-0 border-b border-border bg-[#FAFAF8]">
+        {/* Agent selector pills — only shown when registry has agents and one is selected */}
+        {agents.length > 0 && selectedAgent !== null && (
+          <div className="px-4 pb-1 pt-3">
+            <p className="mb-1.5 text-[11px] font-medium uppercase tracking-wide text-text-muted">
+              Agent
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {agents.map((a) => (
+                <button
+                  key={a.name}
+                  onClick={() => setSelectedAgent(a.name)}
+                  className={cn(
+                    'flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-colors',
+                    selectedAgent === a.name
+                      ? 'bg-primary text-white'
+                      : 'bg-muted hover:bg-muted/80 text-text-muted'
+                  )}
+                >
+                  {a.avatar && (
+                    <img src={a.avatar} alt="" className="h-3.5 w-3.5 rounded-full object-cover" />
+                  )}
+                  {a.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Dataset row */}
         <div className="flex items-center gap-2 px-4 pb-2 pt-3">
           <p className="text-[11px] font-medium text-text-muted">Dataset:</p>
@@ -617,42 +659,62 @@ export function CopilotSidebar({ isOpen, onClose }: CopilotSidebarProps) {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input bar */}
-      <div className="flex-shrink-0 border-t border-border bg-white px-3 py-3">
-        <div className="flex items-end gap-2 rounded-xl border border-border bg-gray-50 px-3 py-2 focus-within:border-primary/40 focus-within:bg-white focus-within:shadow-sm">
-          <textarea
-            ref={textareaRef}
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder={`Ask ${copilotName}…`}
-            rows={1}
-            className="placeholder:text-text-muted/60 flex-1 resize-none bg-transparent text-sm leading-relaxed text-text-primary outline-none"
-            style={{ maxHeight: '160px' }}
-            disabled={isStreaming}
-          />
-          {isStreaming ? (
-            <button
-              onClick={cancel}
-              className="bg-error/10 hover:bg-error/20 mb-0.5 flex-shrink-0 rounded-lg p-1.5 text-error transition-colors"
-              title="Cancel"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          ) : (
-            <button
-              onClick={handleSend}
-              disabled={!input.trim()}
-              className="mb-0.5 flex-shrink-0 rounded-lg bg-primary p-1.5 text-white transition-colors hover:bg-primary-dark disabled:opacity-30"
-            >
-              <Send className="h-4 w-4" />
-            </button>
-          )}
+      {/* Input bar — replaced by agent picker when no agent is selected */}
+      {agents.length > 0 && selectedAgent === null ? (
+        <div className="flex flex-shrink-0 flex-col items-center gap-3 border-t border-border bg-white p-6 text-center">
+          <p className="text-sm text-text-muted">Select an agent to start</p>
+          <div className="flex flex-wrap justify-center gap-2">
+            {agents.map((a) => (
+              <button
+                key={a.name}
+                onClick={() => setSelectedAgent(a.name)}
+                className="hover:bg-muted flex items-center gap-2 rounded-full border border-border px-4 py-2 text-sm font-medium transition-colors"
+              >
+                {a.avatar && (
+                  <img src={a.avatar} alt="" className="h-5 w-5 rounded-full object-cover" />
+                )}
+                {a.label}
+              </button>
+            ))}
+          </div>
         </div>
-        <p className="text-text-muted/50 mt-1.5 text-center text-[10px]">
-          Enter to send · Shift+Enter for new line
-        </p>
-      </div>
+      ) : (
+        <div className="flex-shrink-0 border-t border-border bg-white px-3 py-3">
+          <div className="flex items-end gap-2 rounded-xl border border-border bg-gray-50 px-3 py-2 focus-within:border-primary/40 focus-within:bg-white focus-within:shadow-sm">
+            <textarea
+              ref={textareaRef}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder={`Ask ${copilotName}…`}
+              rows={1}
+              className="placeholder:text-text-muted/60 flex-1 resize-none bg-transparent text-sm leading-relaxed text-text-primary outline-none"
+              style={{ maxHeight: '160px' }}
+              disabled={isStreaming}
+            />
+            {isStreaming ? (
+              <button
+                onClick={cancel}
+                className="bg-error/10 hover:bg-error/20 mb-0.5 flex-shrink-0 rounded-lg p-1.5 text-error transition-colors"
+                title="Cancel"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            ) : (
+              <button
+                onClick={handleSend}
+                disabled={!input.trim()}
+                className="mb-0.5 flex-shrink-0 rounded-lg bg-primary p-1.5 text-white transition-colors hover:bg-primary-dark disabled:opacity-30"
+              >
+                <Send className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+          <p className="text-text-muted/50 mt-1.5 text-center text-[10px]">
+            Enter to send · Shift+Enter for new line
+          </p>
+        </div>
+      )}
     </>
   );
 

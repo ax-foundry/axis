@@ -54,6 +54,9 @@ class CopilotRequest(BaseModel):
     user_id: str | None = Field(
         default=None, description="Fallback user ID for non-proxied callers"
     )
+    agent_name: str | None = Field(
+        default=None, description="source_name to scope all queries to a specific agent"
+    )
 
 
 class CopilotResponse(BaseModel):

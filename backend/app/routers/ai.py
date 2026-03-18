@@ -10,6 +10,7 @@ from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 from sse_starlette.sse import EventSourceResponse
 
+from app.config.agents import agents_config
 from app.config.constants import Headers
 from app.config.env import settings
 from app.copilot.agent import CopilotAgent
@@ -29,6 +30,18 @@ from app.models.copilot_schemas import (
 logger = logging.getLogger("axis.routers.ai")
 
 router = APIRouter()
+
+
+def _validate_agent_name(agent_name: str | None) -> None:
+    """Raise HTTP 400 if agent_name is set but not in the agent registry."""
+    if agent_name is None:
+        return
+    known = {a.name for a in agents_config}
+    if known and agent_name not in known:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unknown agent '{agent_name}'. Available: {sorted(known)}",
+        )
 
 
 def _resolve_user_id(http_request: Request, copilot_request: CopilotRequest) -> str | None:
@@ -222,6 +235,7 @@ async def copilot_stream(request: CopilotRequest, http_request: Request) -> Even
       -d '{"message": "Summarize my evaluation data"}'
     ```
     """
+    _validate_agent_name(request.agent_name)
 
     async def event_generator() -> AsyncGenerator[dict[str, str], None]:
         logger.info("=== COPILOT STREAM START ===")
@@ -278,6 +292,7 @@ async def copilot_stream(request: CopilotRequest, http_request: Request) -> Even
                     data_context=data_context,
                     conversation_history=request.conversation_history,
                     user_id=_resolve_user_id(http_request, request),
+                    agent_name=request.agent_name,
                 )
             )
 
@@ -354,6 +369,7 @@ async def copilot_stream_oai(request: CopilotRequest, http_request: Request) -> 
     - ``error``: Error occurred during processing
     - ``done``: Stream is complete
     """
+    _validate_agent_name(request.agent_name)
 
     async def event_generator() -> AsyncGenerator[dict[str, str], None]:
         logger.info("=== OAI COPILOT STREAM START ===")
@@ -412,6 +428,7 @@ async def copilot_stream_oai(request: CopilotRequest, http_request: Request) -> 
                     data_context=data_context,
                     conversation_history=request.conversation_history,
                     user_id=_resolve_user_id(http_request, request),
+                    agent_name=request.agent_name,
                 )
             )
 
@@ -481,6 +498,8 @@ async def copilot_chat(request: CopilotRequest, http_request: Request) -> Copilo
     Returns the complete response with all thoughts after processing.
     Use /copilot/stream for real-time thought streaming.
     """
+    _validate_agent_name(request.agent_name)
+
     thought_stream = ThoughtStream()
     agent = CopilotAgent(thought_stream=thought_stream)
 
@@ -526,6 +545,7 @@ async def copilot_chat(request: CopilotRequest, http_request: Request) -> Copilo
                 data_context=data_context,
                 conversation_history=request.conversation_history,
                 user_id=_resolve_user_id(http_request, request),
+                agent_name=request.agent_name,
             )
 
             # Convert thoughts to schema

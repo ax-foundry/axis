@@ -454,6 +454,7 @@ export function useCopilotStream() {
     appendToHistory,
     ensureSessionId,
     provider,
+    selectedAgent,
   } = useCopilotStore();
 
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -524,6 +525,7 @@ export function useCopilotStream() {
           conversation_history: nextHistory,
           stream_url: streamUrl,
           session_id: sessionId,
+          ...(selectedAgent ? { agent_name: selectedAgent } : {}),
         },
         {
           onThought: (thought: Thought) => {
@@ -561,6 +563,7 @@ export function useCopilotStream() {
       setError,
       appendToHistory,
       ensureSessionId,
+      selectedAgent,
     ]
   );
 

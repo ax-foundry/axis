@@ -17,6 +17,8 @@ from agents import Agent, FunctionTool, RunContextWrapper, RunHooks, RunItemStre
 from agents import function_tool as ft
 
 from app.copilot.agent import (
+    _agent_where,
+    _apply_agent_scope,
     _build_schema_ddl,
     _check_sql_safety,
     _is_numeric,
@@ -51,6 +53,7 @@ class OAIContext:
     last_sql: str = ""  # last successfully executed SQL (persisted across turns via agent instance)
     sql_examples_injection: str = ""  # verified Q→SQL examples matched to this request
     skills_injection: str = ""  # pre-computed skill bodies for this request
+    agent_name: str | None = None  # source_name filter applied to all queries
 
     @property
     def table_name(self) -> str:
@@ -196,7 +199,9 @@ async def summarize_data(
                 )
                 try:
                     rows = await anyio.to_thread.run_sync(
-                        lambda: store.query_list(f"SELECT {agg} FROM {table}"),
+                        lambda: store.query_list(
+                            f"SELECT {agg} FROM {table}{_agent_where(deps.agent_name)}"
+                        ),
                         limiter=store.query_limiter,
                     )
                     if rows:
@@ -281,6 +286,10 @@ async def query_data(
         result: dict[str, Any] = {"table": table}
         conditions: list[str] = []
 
+        if deps.agent_name:
+            _safe_agent = deps.agent_name.replace("'", "''")
+            conditions.append(f"source_name = '{_safe_agent}'")
+
         if filter_column and filter_value:
             if filter_column not in available_cols:
                 similar = [c for c in available_cols if filter_column.lower() in c.lower()]
@@ -334,7 +343,8 @@ async def query_data(
                 try:
                     min_row = await anyio.to_thread.run_sync(
                         lambda: store.query_list(
-                            f'SELECT * FROM {table} ORDER BY CAST("{col}" AS DOUBLE) ASC NULLS LAST LIMIT 1'
+                            f"SELECT * FROM {table}{_agent_where(deps.agent_name)}"
+                            f' ORDER BY CAST("{col}" AS DOUBLE) ASC NULLS LAST LIMIT 1'
                         ),
                         limiter=store.query_limiter,
                     )
@@ -351,7 +361,8 @@ async def query_data(
                 try:
                     max_row = await anyio.to_thread.run_sync(
                         lambda: store.query_list(
-                            f'SELECT * FROM {table} ORDER BY CAST("{col}" AS DOUBLE) DESC NULLS LAST LIMIT 1'
+                            f"SELECT * FROM {table}{_agent_where(deps.agent_name)}"
+                            f' ORDER BY CAST("{col}" AS DOUBLE) DESC NULLS LAST LIMIT 1'
                         ),
                         limiter=store.query_limiter,
                     )
@@ -431,7 +442,7 @@ async def analyze_data(
                 ]
             )
 
-        sql = f"SELECT {', '.join(agg_parts)} FROM {table}"
+        sql = f"SELECT {', '.join(agg_parts)} FROM {table}" f"{_agent_where(deps.agent_name)}"
         try:
             rows = await anyio.to_thread.run_sync(
                 lambda: store.query_list(sql), limiter=store.query_limiter
@@ -552,7 +563,8 @@ async def compare_data(
             f'ROUND(AVG(CAST("{c}" AS DOUBLE)), 4) AS "{c}_avg"' for c in num_cols
         ]
         sql = (
-            f'SELECT "{group_by}", {", ".join(agg_parts)} FROM {table} '
+            f'SELECT "{group_by}", {", ".join(agg_parts)} FROM {table}'
+            f"{_agent_where(deps.agent_name)} "
             f'GROUP BY "{group_by}" ORDER BY _count DESC LIMIT 30'
         )
 
@@ -684,7 +696,7 @@ async def run_sql(
 
         tracer.add_trace("info", "cache_miss")
 
-        if not sql_stripped.upper().startswith("SELECT"):
+        if not sql_stripped.upper().lstrip().startswith(("SELECT", "WITH")):
             return _safe_json({"error": "Only SELECT statements are permitted."})
 
         limit_n = min(int(limit), 500)
@@ -784,8 +796,9 @@ async def plot_data(
         sql_err = _check_sql_safety(sql_stripped)
         if sql_err:
             return _safe_json({"error": sql_err})
-        if not sql_stripped.upper().startswith("SELECT"):
+        if not sql_stripped.upper().lstrip().startswith(("SELECT", "WITH")):
             return _safe_json({"error": "Only SELECT statements are permitted."})
+        sql_stripped = _apply_agent_scope(sql_stripped, deps.agent_name)
         if "LIMIT" not in sql_stripped.upper():
             sql_stripped = f"{sql_stripped} LIMIT 500"
 
@@ -936,8 +949,9 @@ async def analyze_patterns(
         sql_err = _check_sql_safety(sql_stripped)
         if sql_err:
             return _safe_json({"error": sql_err})
-        if not sql_stripped.upper().startswith("SELECT"):
+        if not sql_stripped.upper().lstrip().startswith(("SELECT", "WITH")):
             return _safe_json({"error": "Only SELECT statements are permitted."})
+        sql_stripped = _apply_agent_scope(sql_stripped, deps.agent_name)
 
         try:
             records = await anyio.to_thread.run_sync(
@@ -1031,7 +1045,7 @@ async def save_as_dataset(
         sql_err = _check_sql_safety(sql_stripped)
         if sql_err:
             return _safe_json({"error": sql_err})
-        if not sql_stripped.upper().startswith("SELECT"):
+        if not sql_stripped.upper().lstrip().startswith(("SELECT", "WITH")):
             return _safe_json({"error": "Only SELECT statements are permitted."})
 
         try:
@@ -1098,8 +1112,9 @@ async def download_data(
         sql_err = _check_sql_safety(sql_stripped)
         if sql_err:
             return _safe_json({"error": sql_err})
-        if not sql_stripped.upper().startswith("SELECT"):
+        if not sql_stripped.upper().lstrip().startswith(("SELECT", "WITH")):
             return _safe_json({"error": "Only SELECT statements are permitted."})
+        sql_stripped = _apply_agent_scope(sql_stripped, deps.agent_name)
 
         safe_filename = filename if filename.endswith(".csv") else f"{filename}.csv"
 
@@ -1132,6 +1147,50 @@ async def download_data(
         return out
 
 
+@ft
+async def describe_metric_signals(
+    ctx: RunContextWrapper[OAIContext],
+    metric_name: str,
+) -> str:
+    """Get the detailed JSON field schema for the signals column for a specific metric.
+
+    Call this BEFORE writing SQL that filters, groups, or extracts sub-fields
+    from the signals JSON column in monitoring_data.  Returns field paths,
+    types, allowed values, and ready-to-use DuckDB extraction examples.
+
+    Args:
+        ctx: Run context.
+        metric_name: The metric_name value as it appears in monitoring_data
+                     (e.g. 'Trigger Analysis', 'UW Faithfulness',
+                     'Ranking Grounding', 'Tool Reliability').
+
+    Returns:
+        Formatted schema string with field paths, types, values, and SQL examples.
+    """
+    deps = ctx.context
+    tracer = get_copilot_tracer()
+    async with tracer.async_span(
+        "copilot.tool.call",
+        input={"metric_name": metric_name},
+        **safe_span_attrs(tool_name="describe_metric_signals", dataset=deps.dataset_label),
+    ) as _span:
+        cached = deps.get_cached("describe_metric_signals", metric_name)
+        tracer.add_trace("info", "cache_hit" if cached else "cache_miss")
+        if cached:
+            return cached
+
+        from app.copilot.signal_schemas import get_signal_schema_store
+
+        result = get_signal_schema_store().format_for_prompt(metric_name)
+        await deps.thought_stream.emit_observation(
+            f"Loaded signal schema for '{metric_name}'",
+            tool_name="describe_metric_signals",
+        )
+        deps.set_cached("describe_metric_signals", metric_name, result)
+        _span.set_output(result[:200])
+        return result
+
+
 COPILOT_TOOLS: list[FunctionTool] = [
     summarize_data,
     query_data,
@@ -1143,6 +1202,7 @@ COPILOT_TOOLS: list[FunctionTool] = [
     analyze_patterns,
     save_as_dataset,
     download_data,
+    describe_metric_signals,
 ]
 
 SYSTEM_PROMPT = (
@@ -1154,9 +1214,13 @@ SYSTEM_PROMPT = (
     "run_sql for any custom aggregation, date grouping, HAVING, subquery, "
     "or anything the other tools cannot express, "
     "analyze_patterns when the user asks about failure patterns, root causes, improvement "
-    "opportunities, what's going wrong, why scores are low, or success drivers, "
+    "opportunities, what's going wrong, why scores are low, or success drivers "
+    "(but for monitoring data with a specific metric_name, prefer describe_metric_signals "
+    "then run_sql to get actual counts/distributions from signals sub-fields first — "
+    "analyze_patterns is best for text-field interpretation, not structured signals), "
     "save_as_dataset when the user wants to save or persist query results as a named dataset for later use, "
     "download_data when the user wants to download, export to CSV, or get a file of data, "
+    "describe_metric_signals before writing SQL that extracts sub-fields from the signals JSON column, "
     "and plot_data when the user asks to plot, chart, visualize, or graph data. "
     "With plot_data YOU write the full Plotly traces and layout — "
     "use any chart type (scatter/line, bar, heatmap, box, histogram, etc.), "
@@ -1171,6 +1235,11 @@ SYSTEM_PROMPT = (
     "which column, which time range, which group), do NOT guess — ask a short, "
     "specific clarifying question before calling any tool. "
     "Only ask one question at a time and keep it concise.\n\n"
+    "When asked what you can do or what your capabilities are, describe ONLY what "
+    "your tools enable: querying and summarizing the loaded dataset, running SQL, "
+    "computing statistics, comparing groups, finding failure patterns, plotting charts, "
+    "and exporting data. Do not suggest capabilities outside these tools — no writing "
+    "docs, no coding help, no general advice, no planning. Keep the answer short.\n\n"
     "SAFETY RULES (always enforced):\n"
     "1. SCOPE: Only answer questions about the loaded dataset or general data analysis. "
     "Politely decline requests unrelated to data analysis (e.g. writing code for "
@@ -1235,7 +1304,7 @@ async def _build_schema_context(oai_ctx: "OAIContext") -> str:
     from app.copilot.metric_catalog import get_metric_catalog_store
     from app.copilot.schema_hints import get_schema_hints_store
 
-    _hints_injection = get_schema_hints_store().get_injection(table)
+    _hints_injection = get_schema_hints_store().get_injection(table, agent_name=oai_ctx.agent_name)
     if _hints_injection:
         extra.append(_hints_injection)
 
@@ -1250,6 +1319,25 @@ async def _build_schema_context(oai_ctx: "OAIContext") -> str:
     if _catalog_injection:
         extra.append(_catalog_injection)
 
+    if table == "monitoring_data":
+        extra.append(
+            "-- CONTEXT: This is evaluation data produced by running LLM judge metrics\n"
+            "-- against a production AI agent's outputs. Each row = one metric evaluation\n"
+            "-- for one agent interaction. Low metric_score means the agent underperformed\n"
+            "-- on that metric for that interaction.\n"
+            "-- ANALYSIS APPROACH: When asked about patterns in low/high scoring cases,\n"
+            "-- report what the DATA shows — counts, distributions, breakdowns by\n"
+            "-- metric_name, evaluation_name, source_component, time, and signals sub-fields.\n"
+            "-- Do NOT reason about how the metric is designed or implemented.\n"
+            "-- For signals sub-fields: call describe_metric_signals(metric_name) first,\n"
+            "-- then run_sql with the coercion CTE to get actual grouped counts."
+        )
+
+    if oai_ctx.agent_name:
+        extra.append(
+            f"-- IMPORTANT: Active agent filter — source_name = '{oai_ctx.agent_name}'\n"
+            f"-- All queries are automatically scoped; always include this filter in your SQL."
+        )
     if oai_ctx.last_sql:
         extra.append(f"-- Last executed SQL (for multi-turn refinement):\n{oai_ctx.last_sql}")
     if oai_ctx.sql_examples_injection:
@@ -1346,6 +1434,7 @@ class OAICopilotAgent:
         data_context: dict[str, Any] | None = None,
         conversation_history: list[dict[str, Any]] | None = None,
         user_id: str | None = None,
+        agent_name: str | None = None,
     ) -> tuple[str, dict[str, Any] | None, dict[str, Any] | None]:
         """Process a user message and return the agent's response.
 
@@ -1355,6 +1444,7 @@ class OAICopilotAgent:
             data_context: Optional schema hints (columns, format, row_count).
             conversation_history: Prior conversation turns for multi-turn context.
             user_id: Resolved user identifier for per-user dataset scoping.
+            agent_name: source_name to scope all queries to a specific agent.
 
         Returns:
             Tuple of (response string, chart spec or None, download spec or None).
@@ -1379,7 +1469,7 @@ class OAICopilotAgent:
             )
 
         _example_store = get_sql_example_store()
-        _sql_examples = _example_store.select(message)
+        _sql_examples = _example_store.select_for_agent(message, agent_name)
         _sql_examples_injection = _example_store.get_injection(_sql_examples)
 
         oai_ctx = OAIContext(
@@ -1390,6 +1480,7 @@ class OAICopilotAgent:
             sql_examples_injection=_sql_examples_injection,
             skills_injection=_skills_injection,
             user_id=user_id,
+            agent_name=agent_name,
         )
 
         schema_ctx = await _build_schema_context(oai_ctx)
