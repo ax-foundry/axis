@@ -257,7 +257,7 @@ async def auto_import_from_database(request: Request) -> dict[str, Any]:
         logger.info("Startup sync in progress, waiting for completion...")
         try:
             await asyncio.wait_for(asyncio.shield(startup_task), timeout=120)
-        except asyncio.TimeoutError:
+        except TimeoutError:
             raise HTTPException(
                 status_code=503,
                 detail="Startup sync timed out, please retry in a moment.",

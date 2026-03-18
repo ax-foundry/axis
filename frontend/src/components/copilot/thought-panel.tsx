@@ -32,7 +32,12 @@ interface StepStyle {
 }
 
 const TYPE_MAP: Record<ThoughtType, StepStyle> = {
-  reasoning: { icon: Brain, label: 'Analyzing', iconClass: 'text-blue-500', bgClass: 'bg-blue-50 dark:bg-blue-900/30' },
+  reasoning: {
+    icon: Brain,
+    label: 'Analyzing',
+    iconClass: 'text-blue-500',
+    bgClass: 'bg-blue-50 dark:bg-blue-900/30',
+  },
   tool_use: {
     icon: Zap,
     label: 'Using Tool',
@@ -69,7 +74,12 @@ const TYPE_MAP: Record<ThoughtType, StepStyle> = {
     iconClass: 'text-green-500',
     bgClass: 'bg-green-50 dark:bg-green-900/30',
   },
-  error: { icon: AlertCircle, label: 'Error', iconClass: 'text-red-500', bgClass: 'bg-red-50 dark:bg-red-900/30' },
+  error: {
+    icon: AlertCircle,
+    label: 'Error',
+    iconClass: 'text-red-500',
+    bgClass: 'bg-red-50 dark:bg-red-900/30',
+  },
 };
 
 function getStepStyle(thought: Thought): StepStyle {
@@ -132,7 +142,9 @@ function StepRow({
     <div
       className={cn(
         'flex cursor-pointer items-start gap-3 px-4 py-2 transition-colors',
-        isLatest && isStreaming ? 'bg-white/60 dark:bg-white/10' : 'hover:bg-black/[0.025] dark:hover:bg-white/5',
+        isLatest && isStreaming
+          ? 'bg-white/60 dark:bg-white/10'
+          : 'hover:bg-black/[0.025] dark:hover:bg-white/5',
         !isLong && 'cursor-default'
       )}
       onClick={() => isLong && setExpanded((v) => !v)}
@@ -212,9 +224,9 @@ export function ThoughtSteps({
   // ── Live streaming card ──────────────────────────────────────────────────
   if (isStreaming) {
     return (
-      <div className="overflow-hidden rounded-xl border border-blue-100 dark:border-blue-900/40 bg-blue-50/40 dark:bg-blue-900/20">
+      <div className="overflow-hidden rounded-xl border border-blue-100 bg-blue-50/40 dark:border-blue-900/40 dark:bg-blue-900/20">
         {/* Header */}
-        <div className="flex items-center gap-2 border-b border-blue-100/60 dark:border-blue-900/30 px-4 py-2">
+        <div className="flex items-center gap-2 border-b border-blue-100/60 px-4 py-2 dark:border-blue-900/30">
           <Loader2 className="h-3 w-3 flex-shrink-0 animate-spin text-blue-500" />
           <span className="text-xs font-semibold text-text-primary">Thinking…</span>
           {thoughts.length > 0 && (
@@ -231,7 +243,10 @@ export function ThoughtSteps({
 
         {/* Steps */}
         {thoughts.length > 0 ? (
-          <div ref={scrollRef} className="max-h-[180px] divide-y divide-blue-50/80 dark:divide-blue-900/30 overflow-y-auto">
+          <div
+            ref={scrollRef}
+            className="max-h-[180px] divide-y divide-blue-50/80 overflow-y-auto dark:divide-blue-900/30"
+          >
             {thoughts.map((t, i) => (
               <StepRow
                 key={t.id}

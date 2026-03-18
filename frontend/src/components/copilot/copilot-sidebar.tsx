@@ -83,7 +83,10 @@ const MD_COMPONENTS: Components = {
         {children}
       </code>
     ) : (
-      <code className="rounded bg-gray-200 dark:bg-gray-700 px-1 py-0.5 font-mono text-xs text-gray-800 dark:text-gray-200" {...props}>
+      <code
+        className="rounded bg-gray-200 px-1 py-0.5 font-mono text-xs text-gray-800 dark:bg-gray-700 dark:text-gray-200"
+        {...props}
+      >
         {children}
       </code>
     );
@@ -132,7 +135,7 @@ function MessageBubble({ message }: { message: Message }) {
 
         {/* Chart (if agent produced one) */}
         {message.chart && (
-          <div className="mb-2 overflow-hidden rounded-xl border border-border bg-white dark:bg-gray-800 shadow-sm">
+          <div className="mb-2 overflow-hidden rounded-xl border border-border bg-white shadow-sm dark:bg-gray-800">
             <PlotlyChart
               data={(message.chart.data as Plotly.Data[]) ?? []}
               layout={(message.chart.layout as Partial<Plotly.Layout>) ?? {}}
@@ -143,7 +146,7 @@ function MessageBubble({ message }: { message: Message }) {
 
         {/* Download button (if agent produced a downloadable export) */}
         {message.download && (
-          <div className="mb-2 flex items-center gap-3 rounded-xl border border-border bg-white dark:bg-gray-800 px-4 py-3 shadow-sm">
+          <div className="mb-2 flex items-center gap-3 rounded-xl border border-border bg-white px-4 py-3 shadow-sm dark:bg-gray-800">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
               <Download className="h-4 w-4 text-primary" />
             </div>
@@ -183,7 +186,7 @@ function MessageBubble({ message }: { message: Message }) {
         )}
 
         {/* Response card */}
-        <div className="border-border/60 rounded-2xl border bg-white dark:bg-gray-800 px-4 py-3 shadow-sm">
+        <div className="border-border/60 rounded-2xl border bg-white px-4 py-3 shadow-sm dark:bg-gray-800">
           {/* Content */}
           <div className={cn('relative', isLong && !isExpanded && 'max-h-[300px] overflow-hidden')}>
             <div className="prose prose-sm max-w-none text-text-primary prose-headings:font-semibold prose-headings:text-text-primary prose-p:leading-relaxed prose-strong:text-text-primary prose-ul:my-1 prose-li:my-0">
@@ -192,7 +195,7 @@ function MessageBubble({ message }: { message: Message }) {
               </ReactMarkdown>
             </div>
             {isLong && !isExpanded && (
-              <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-white dark:from-gray-800 to-transparent" />
+              <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-white to-transparent dark:from-gray-800" />
             )}
           </div>
 
@@ -218,7 +221,7 @@ function MessageBubble({ message }: { message: Message }) {
           <div className="border-border/40 mt-2.5 flex items-center gap-0.5 border-t pt-2">
             <button
               onClick={handleCopy}
-              className="flex items-center gap-1 rounded-md px-2 py-1 text-[11px] text-text-muted transition-colors hover:bg-gray-100 dark:hover:bg-white/10 hover:text-text-primary"
+              className="flex items-center gap-1 rounded-md px-2 py-1 text-[11px] text-text-muted transition-colors hover:bg-gray-100 hover:text-text-primary dark:hover:bg-white/10"
             >
               {copied ? (
                 <>
@@ -232,7 +235,7 @@ function MessageBubble({ message }: { message: Message }) {
             </button>
             <button
               onClick={() => setShowModal(true)}
-              className="flex items-center gap-1 rounded-md px-2 py-1 text-[11px] text-text-muted transition-colors hover:bg-gray-100 dark:hover:bg-white/10 hover:text-text-primary"
+              className="flex items-center gap-1 rounded-md px-2 py-1 text-[11px] text-text-muted transition-colors hover:bg-gray-100 hover:text-text-primary dark:hover:bg-white/10"
             >
               <Maximize2 className="h-3 w-3" /> Expand
             </button>
@@ -479,7 +482,7 @@ export function CopilotSidebar({ isOpen, onClose }: CopilotSidebarProps) {
       )}
 
       {/* Header */}
-      <div className="flex flex-shrink-0 items-center justify-between border-b border-border bg-[#FAFAF8] dark:bg-gray-900 px-4 py-3">
+      <div className="flex flex-shrink-0 items-center justify-between border-b border-border bg-[#FAFAF8] px-4 py-3 dark:bg-gray-900">
         <div className="flex items-center gap-2">
           <p className="text-base font-semibold leading-tight text-text-primary">
             Ask {copilotName}
@@ -491,20 +494,20 @@ export function CopilotSidebar({ isOpen, onClose }: CopilotSidebarProps) {
           <button
             onClick={handleNewChat}
             title="New chat"
-            className="rounded-lg p-1.5 text-text-muted transition-colors hover:bg-black/5 dark:hover:bg-white/10 hover:text-text-primary"
+            className="rounded-lg p-1.5 text-text-muted transition-colors hover:bg-black/5 hover:text-text-primary dark:hover:bg-white/10"
           >
             <SquarePen className="h-4 w-4" />
           </button>
           <button
             onClick={() => setIsDetached((v) => !v)}
             title={isDetached ? 'Re-attach' : 'Float panel'}
-            className="rounded-lg p-1.5 text-text-muted transition-colors hover:bg-black/5 dark:hover:bg-white/10 hover:text-text-primary"
+            className="rounded-lg p-1.5 text-text-muted transition-colors hover:bg-black/5 hover:text-text-primary dark:hover:bg-white/10"
           >
             {isDetached ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
           </button>
           <button
             onClick={onClose}
-            className="rounded-lg p-1.5 text-text-muted transition-colors hover:bg-black/5 dark:hover:bg-white/10 hover:text-text-primary"
+            className="rounded-lg p-1.5 text-text-muted transition-colors hover:bg-black/5 hover:text-text-primary dark:hover:bg-white/10"
           >
             <X className="h-4 w-4" />
           </button>
@@ -554,7 +557,7 @@ export function CopilotSidebar({ isOpen, onClose }: CopilotSidebarProps) {
         {/* Dataset row */}
         <div className="flex items-center gap-2 px-4 pb-2 pt-3">
           <p className="text-[11px] font-medium text-text-muted">Dataset:</p>
-          <div className="border-border/60 flex items-center rounded-full border bg-white dark:bg-gray-800 px-0.5 py-0.5 shadow-sm">
+          <div className="border-border/60 flex items-center rounded-full border bg-white px-0.5 py-0.5 shadow-sm dark:bg-gray-800">
             {datasetOptions.map((opt) => (
               <button
                 key={opt.label}
@@ -587,7 +590,7 @@ export function CopilotSidebar({ isOpen, onClose }: CopilotSidebarProps) {
                 'rounded-full px-3 py-1 text-xs font-medium transition-all',
                 provider === p
                   ? 'bg-[#6B7FA3] text-white shadow-sm'
-                  : 'bg-gray-100 dark:bg-gray-700 text-text-secondary hover:bg-gray-200 dark:hover:bg-gray-600'
+                  : 'bg-gray-100 text-text-secondary hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600'
               )}
             >
               {p === 'pydantic-ai' ? 'Pydantic AI' : 'OAI Agents'}
@@ -621,7 +624,7 @@ export function CopilotSidebar({ isOpen, onClose }: CopilotSidebarProps) {
             </p>
 
             {availableDatasets.length === 0 && (
-              <div className="mb-4 w-full rounded-xl border border-border bg-gray-50 dark:bg-gray-800 p-3 text-left">
+              <div className="mb-4 w-full rounded-xl border border-border bg-gray-50 p-3 text-left dark:bg-gray-800">
                 <p className="text-xs text-text-muted">
                   No data loaded yet. Upload a CSV or connect a database.
                 </p>
@@ -633,7 +636,7 @@ export function CopilotSidebar({ isOpen, onClose }: CopilotSidebarProps) {
                 <button
                   key={i}
                   onClick={() => setInput(query)}
-                  className="border-border/60 w-full rounded-xl border bg-gray-50/80 dark:bg-gray-800/80 px-3 py-2 text-left text-xs text-text-secondary transition-colors hover:border-border hover:bg-gray-100 dark:hover:bg-gray-700"
+                  className="border-border/60 w-full rounded-xl border bg-gray-50/80 px-3 py-2 text-left text-xs text-text-secondary transition-colors hover:border-border hover:bg-gray-100 dark:bg-gray-800/80 dark:hover:bg-gray-700"
                 >
                   {query}
                 </button>
@@ -661,7 +664,7 @@ export function CopilotSidebar({ isOpen, onClose }: CopilotSidebarProps) {
 
       {/* Input bar — replaced by agent picker when no agent is selected */}
       {agents.length > 0 && selectedAgent === null ? (
-        <div className="flex flex-shrink-0 flex-col items-center gap-3 border-t border-border bg-white dark:bg-gray-900 p-6 text-center">
+        <div className="flex flex-shrink-0 flex-col items-center gap-3 border-t border-border bg-white p-6 text-center dark:bg-gray-900">
           <p className="text-sm text-text-muted">Select an agent to start</p>
           <div className="flex flex-wrap justify-center gap-2">
             {agents.map((a) => (
@@ -679,8 +682,8 @@ export function CopilotSidebar({ isOpen, onClose }: CopilotSidebarProps) {
           </div>
         </div>
       ) : (
-        <div className="flex-shrink-0 border-t border-border bg-white dark:bg-gray-900 px-3 py-3">
-          <div className="flex items-end gap-2 rounded-xl border border-border bg-gray-50 dark:bg-gray-800 px-3 py-2 focus-within:border-primary/40 focus-within:bg-white dark:focus-within:bg-gray-700 focus-within:shadow-sm">
+        <div className="flex-shrink-0 border-t border-border bg-white px-3 py-3 dark:bg-gray-900">
+          <div className="flex items-end gap-2 rounded-xl border border-border bg-gray-50 px-3 py-2 focus-within:border-primary/40 focus-within:bg-white focus-within:shadow-sm dark:bg-gray-800 dark:focus-within:bg-gray-700">
             <textarea
               ref={textareaRef}
               value={input}
@@ -727,7 +730,7 @@ export function CopilotSidebar({ isOpen, onClose }: CopilotSidebarProps) {
           onClick={() => setIsDetached(false)}
         />
         <aside
-          className="fixed inset-y-4 right-4 z-50 flex flex-col overflow-hidden rounded-2xl bg-white dark:bg-gray-900 shadow-2xl ring-1 ring-black/5 dark:ring-white/10"
+          className="fixed inset-y-4 right-4 z-50 flex flex-col overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-black/5 dark:bg-gray-900 dark:ring-white/10"
           style={{ width: Math.max(sidebarWidth, 680) }}
         >
           {inner}
