@@ -1,10 +1,3 @@
-"""Signal schema store — per-metric JSON field documentation for monitoring_data.signals.
-
-The copilot calls describe_metric_signals(metric_name) when a user question
-requires drilling into sub-fields of the signals JSON blob.  This module loads
-the YAML config and formats the schema as a prompt-ready string.
-"""
-
 from __future__ import annotations
 
 import logging
