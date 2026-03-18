@@ -225,7 +225,7 @@ export function Sidebar() {
               onClick={() => setCopilotOpen(!copilotOpen)}
               className={cn(
                 'flex w-full items-center gap-2.5 rounded-lg px-3 py-[10px] text-[13px] font-semibold transition-all duration-150',
-                copilotOpen ? 'bg-gray-100' : 'bg-gray-100/70 hover:bg-gray-100',
+                copilotOpen ? 'bg-gray-100 dark:bg-white/15' : 'bg-gray-100/70 dark:bg-white/10 hover:bg-gray-100 dark:hover:bg-white/15',
                 collapsed && 'justify-center px-2'
               )}
               title={collapsed ? `Ask ${branding.copilot_name}` : undefined}
