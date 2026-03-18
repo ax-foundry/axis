@@ -47,6 +47,10 @@ interface CopilotState {
   // Provider selection
   provider: CopilotProvider;
 
+  // Agent selection
+  selectedAgent: string | null;
+  conversationResetKey: number;
+
   // Actions
   startStreaming: () => void;
   stopStreaming: () => void;
@@ -69,6 +73,9 @@ interface CopilotState {
 
   // Provider actions
   setProvider: (provider: CopilotProvider) => void;
+
+  // Agent actions
+  setSelectedAgent: (agent: string | null) => void;
 
   // History actions
   appendToHistory: (message: HistoryMessage) => void;
@@ -94,6 +101,8 @@ export const useCopilotStore = create<CopilotState>()((set, get) => ({
   selectedDataset: null,
   conversationHistory: [],
   provider: 'pydantic-ai',
+  selectedAgent: null,
+  conversationResetKey: 0,
 
   // Actions
   startStreaming: () =>
@@ -159,6 +168,18 @@ export const useCopilotStore = create<CopilotState>()((set, get) => ({
 
   // Provider actions
   setProvider: (provider) => set({ provider }),
+
+  // Agent actions
+  setSelectedAgent: (agent) =>
+    set((state) => ({
+      selectedAgent: agent,
+      conversationResetKey: state.conversationResetKey + 1,
+      conversationHistory: [],
+      sessionId: null,
+      finalResponse: null,
+      finalChart: null,
+      finalDownload: null,
+    })),
 
   // History actions
   appendToHistory: (message) =>

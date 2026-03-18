@@ -76,6 +76,7 @@ class SchemaHintsStore:
     def __init__(self) -> None:
         """Initialize with an empty table map."""
         self._tables: dict[str, TableDef] = {}
+        self._agent_context: dict[str, str] = {}
 
     @classmethod
     def reset_instance(cls) -> None:
@@ -136,12 +137,18 @@ class SchemaHintsStore:
                 metrics=metrics,
             )
 
+        # Load optional per-agent context hints
+        raw_agent_ctx = data.get("agent_context", {})
+        if isinstance(raw_agent_ctx, dict):
+            self._agent_context = {str(k): str(v) for k, v in raw_agent_ctx.items() if k and v}
+
         logger.info("Schema hints ready: %d tables (%s)", len(self._tables), sorted(self._tables))
 
-    def get_injection(self, table: str) -> str:
+    def get_injection(self, table: str, agent_name: str | None = None) -> str:
         """Return a DDL comment block describing columns/signals for the given table.
 
         Returns empty string if no hints are defined for this table.
+        Appends an agent context comment when agent_name is provided and a hint exists.
         """
         tdef = self._tables.get(table)
         if tdef is None:
@@ -182,7 +189,10 @@ class SchemaHintsStore:
                 if sig.query_hint:
                     parts.append(f"--     hint: {sig.query_hint}")
 
-        return "\n".join(parts)
+        base = "\n".join(parts)
+        if agent_name and agent_name in self._agent_context:
+            base += f"\n-- Agent context ({agent_name}): {self._agent_context[agent_name]}"
+        return base
 
 
 def get_schema_hints_store() -> SchemaHintsStore:

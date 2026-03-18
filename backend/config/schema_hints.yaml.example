@@ -193,3 +193,12 @@ tables:
       #   signals:
       #     - name: signal_field
       #       description: "..."
+
+# ─── Per-agent context hints (optional) ───────────────────────────────────────
+# Free-text notes about each agent injected as SQL comments when that agent is
+# selected in the copilot sidebar. Keyed by source_name (must match exactly).
+# Helps the LLM understand what each agent measures without listing every metric.
+#
+# agent_context:
+#   alpha_bot: "alpha_bot captures RAG pipeline metrics: Faithfulness, Relevance, Groundedness"
+#   beta_agent: "beta_agent captures generation quality: Coherence, Fluency, Accuracy"

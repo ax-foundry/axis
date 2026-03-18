@@ -75,3 +75,21 @@ examples:
       FROM eval_data
       GROUP BY "source_name"
       ORDER BY avg_score DESC
+
+# ─── Per-agent SQL examples (optional) ────────────────────────────────────────
+# Examples prepended before global examples when the matching agent is selected.
+# Trigger matching and scoring works identically to global examples; these just
+# rank first so they win when the 3-example cap is hit.
+#
+# agent_examples:
+#   alpha_bot:
+#     - triggers:
+#         - faithfulness trend
+#         - alpha weekly
+#       description: "alpha_bot Faithfulness trend by week"
+#       sql: |
+#         SELECT DATE_TRUNC('week', CAST("timestamp" AS TIMESTAMP)) AS week,
+#                ROUND(AVG(TRY_CAST("metric_score" AS DOUBLE)), 3) AS avg_score
+#         FROM monitoring_data
+#         WHERE source_name = 'alpha_bot' AND metric_name = 'Faithfulness'
+#         GROUP BY 1 ORDER BY 1
