@@ -254,11 +254,17 @@ async def auto_import_from_database(request: Request) -> dict[str, Any]:
     """
     startup_task = getattr(request.app.state, "startup_sync_task", None)
     if startup_task and not startup_task.done():
-        raise HTTPException(
-            status_code=503,
-            detail="Startup sync in progress, please retry in a moment.",
-            headers={"Retry-After": "5"},
-        )
+        logger.info("Startup sync in progress, waiting for completion...")
+        try:
+            await asyncio.wait_for(asyncio.shield(startup_task), timeout=120)
+        except TimeoutError:
+            raise HTTPException(
+                status_code=503,
+                detail="Startup sync timed out, please retry in a moment.",
+                headers={"Retry-After": "5"},
+            )
+        except Exception:
+            logger.warning("Startup sync task failed, proceeding with db-import anyway")
 
     from app.config.db.duckdb import duckdb_config
     from app.config.db.human_signals import human_signals_db_config

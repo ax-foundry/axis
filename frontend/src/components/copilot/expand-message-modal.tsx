@@ -21,7 +21,7 @@ const MODAL_COMPONENTS: Components = {
       <table className="min-w-full divide-y divide-border">{children}</table>
     </div>
   ),
-  thead: ({ children }) => <thead className="bg-gray-50">{children}</thead>,
+  thead: ({ children }) => <thead className="bg-gray-50 dark:bg-gray-800">{children}</thead>,
   th: ({ children }) => (
     <th className="px-4 py-2 text-left text-xs font-semibold text-text-primary">{children}</th>
   ),
@@ -40,7 +40,7 @@ const MODAL_COMPONENTS: Components = {
       </code>
     ) : (
       <code
-        className="rounded bg-gray-100 px-1.5 py-0.5 font-mono text-xs text-gray-800"
+        className="rounded bg-gray-100 px-1.5 py-0.5 font-mono text-xs text-gray-800 dark:bg-gray-700 dark:text-gray-200"
         {...props}
       >
         {children}
@@ -81,7 +81,7 @@ export function ExpandMessageModal({ content, timestamp, onClose }: ExpandMessag
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
 
       {/* Modal */}
-      <div className="relative z-10 flex max-h-[85vh] w-full max-w-3xl flex-col rounded-xl border border-border bg-white shadow-2xl">
+      <div className="relative z-10 flex max-h-[85vh] w-full max-w-3xl flex-col rounded-xl border border-border bg-white shadow-2xl dark:bg-gray-900">
         {/* Header */}
         <div className="flex flex-shrink-0 items-center justify-between border-b border-border px-5 py-3">
           <p className="text-sm text-text-muted">
@@ -94,7 +94,7 @@ export function ExpandMessageModal({ content, timestamp, onClose }: ExpandMessag
                 'flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors',
                 copied
                   ? 'bg-success/10 text-success'
-                  : 'bg-gray-100 text-text-muted hover:bg-gray-200 hover:text-text-primary'
+                  : 'bg-gray-100 text-text-muted hover:bg-gray-200 hover:text-text-primary dark:bg-gray-700 dark:hover:bg-gray-600'
               )}
             >
               {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
@@ -102,7 +102,7 @@ export function ExpandMessageModal({ content, timestamp, onClose }: ExpandMessag
             </button>
             <button
               onClick={onClose}
-              className="rounded-lg p-1.5 text-text-muted transition-colors hover:bg-gray-100 hover:text-text-primary"
+              className="rounded-lg p-1.5 text-text-muted transition-colors hover:bg-gray-100 hover:text-text-primary dark:hover:bg-gray-700"
             >
               <X className="h-4 w-4" />
             </button>

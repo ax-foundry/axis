@@ -32,44 +32,54 @@ interface StepStyle {
 }
 
 const TYPE_MAP: Record<ThoughtType, StepStyle> = {
-  reasoning: { icon: Brain, label: 'Analyzing', iconClass: 'text-blue-500', bgClass: 'bg-blue-50' },
+  reasoning: {
+    icon: Brain,
+    label: 'Analyzing',
+    iconClass: 'text-blue-500',
+    bgClass: 'bg-blue-50 dark:bg-blue-900/30',
+  },
   tool_use: {
     icon: Zap,
     label: 'Using Tool',
     iconClass: 'text-violet-500',
-    bgClass: 'bg-violet-50',
+    bgClass: 'bg-violet-50 dark:bg-violet-900/30',
   },
   observation: {
     icon: Eye,
     label: 'Observing',
     iconClass: 'text-emerald-500',
-    bgClass: 'bg-emerald-50',
+    bgClass: 'bg-emerald-50 dark:bg-emerald-900/30',
   },
   planning: {
     icon: ListTodo,
     label: 'Planning',
     iconClass: 'text-amber-500',
-    bgClass: 'bg-amber-50',
+    bgClass: 'bg-amber-50 dark:bg-amber-900/30',
   },
   reflection: {
     icon: Lightbulb,
     label: 'Reflecting',
     iconClass: 'text-yellow-500',
-    bgClass: 'bg-yellow-50',
+    bgClass: 'bg-yellow-50 dark:bg-yellow-900/30',
   },
   decision: {
     icon: GitBranch,
     label: 'Deciding',
     iconClass: 'text-purple-500',
-    bgClass: 'bg-purple-50',
+    bgClass: 'bg-purple-50 dark:bg-purple-900/30',
   },
   success: {
     icon: CheckCircle2,
     label: 'Complete',
     iconClass: 'text-green-500',
-    bgClass: 'bg-green-50',
+    bgClass: 'bg-green-50 dark:bg-green-900/30',
   },
-  error: { icon: AlertCircle, label: 'Error', iconClass: 'text-red-500', bgClass: 'bg-red-50' },
+  error: {
+    icon: AlertCircle,
+    label: 'Error',
+    iconClass: 'text-red-500',
+    bgClass: 'bg-red-50 dark:bg-red-900/30',
+  },
 };
 
 function getStepStyle(thought: Thought): StepStyle {
@@ -80,7 +90,7 @@ function getStepStyle(thought: Thought): StepStyle {
         icon: Database,
         label: tool.includes('kpi') ? 'Fetching KPIs' : 'Querying Data',
         iconClass: 'text-violet-500',
-        bgClass: 'bg-violet-50',
+        bgClass: 'bg-violet-50 dark:bg-violet-900/30',
       };
     }
     if (tool.includes('summarize')) {
@@ -88,7 +98,7 @@ function getStepStyle(thought: Thought): StepStyle {
         icon: LayoutList,
         label: 'Summarizing',
         iconClass: 'text-cyan-600',
-        bgClass: 'bg-cyan-50',
+        bgClass: 'bg-cyan-50 dark:bg-cyan-900/30',
       };
     }
     if (tool.includes('analyze')) {
@@ -96,7 +106,7 @@ function getStepStyle(thought: Thought): StepStyle {
         icon: Activity,
         label: 'Analyzing Data',
         iconClass: 'text-orange-500',
-        bgClass: 'bg-orange-50',
+        bgClass: 'bg-orange-50 dark:bg-orange-900/30',
       };
     }
     if (tool.includes('compare')) {
@@ -104,7 +114,7 @@ function getStepStyle(thought: Thought): StepStyle {
         icon: TrendingUp,
         label: 'Comparing',
         iconClass: 'text-indigo-500',
-        bgClass: 'bg-indigo-50',
+        bgClass: 'bg-indigo-50 dark:bg-indigo-900/30',
       };
     }
   }
@@ -132,7 +142,9 @@ function StepRow({
     <div
       className={cn(
         'flex cursor-pointer items-start gap-3 px-4 py-2 transition-colors',
-        isLatest && isStreaming ? 'bg-white/60' : 'hover:bg-black/[0.025]',
+        isLatest && isStreaming
+          ? 'bg-white/60 dark:bg-white/10'
+          : 'hover:bg-black/[0.025] dark:hover:bg-white/5',
         !isLong && 'cursor-default'
       )}
       onClick={() => isLong && setExpanded((v) => !v)}
@@ -212,16 +224,16 @@ export function ThoughtSteps({
   // ── Live streaming card ──────────────────────────────────────────────────
   if (isStreaming) {
     return (
-      <div className="overflow-hidden rounded-xl border border-blue-100 bg-blue-50/40">
+      <div className="overflow-hidden rounded-xl border border-blue-100 bg-blue-50/40 dark:border-blue-900/40 dark:bg-blue-900/20">
         {/* Header */}
-        <div className="flex items-center gap-2 border-b border-blue-100/60 px-4 py-2">
+        <div className="flex items-center gap-2 border-b border-blue-100/60 px-4 py-2 dark:border-blue-900/30">
           <Loader2 className="h-3 w-3 flex-shrink-0 animate-spin text-blue-500" />
           <span className="text-xs font-semibold text-text-primary">Thinking…</span>
           {thoughts.length > 0 && (
             <span className="text-xs text-text-muted">{thoughts.length} steps</span>
           )}
           {/* progress bar */}
-          <div className="ml-auto h-1 w-14 overflow-hidden rounded-full bg-blue-100">
+          <div className="ml-auto h-1 w-14 overflow-hidden rounded-full bg-blue-100 dark:bg-blue-900/40">
             <div
               className="h-full rounded-full bg-blue-400 transition-all duration-700"
               style={{ width: `${Math.min(15 + thoughts.length * 9, 88)}%` }}
@@ -231,7 +243,10 @@ export function ThoughtSteps({
 
         {/* Steps */}
         {thoughts.length > 0 ? (
-          <div ref={scrollRef} className="max-h-[180px] divide-y divide-blue-50/80 overflow-y-auto">
+          <div
+            ref={scrollRef}
+            className="max-h-[180px] divide-y divide-blue-50/80 overflow-y-auto dark:divide-blue-900/30"
+          >
             {thoughts.map((t, i) => (
               <StepRow
                 key={t.id}
@@ -267,7 +282,7 @@ export function ThoughtSteps({
         </button>
 
         {isExpanded && (
-          <div className="mt-1.5 overflow-hidden rounded-lg border border-border bg-gray-50/60">
+          <div className="mt-1.5 overflow-hidden rounded-lg border border-border bg-gray-50/60 dark:bg-gray-800/60">
             <div className="divide-y divide-border">
               {thoughts.map((t, i) => (
                 <StepRow key={t.id} thought={t} index={i} isLatest={false} isStreaming={false} />
