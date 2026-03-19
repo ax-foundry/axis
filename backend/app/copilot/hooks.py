@@ -19,7 +19,8 @@ async def tool_span(
     start_msg: str,
     input_dict: dict[str, Any] | None = None,
 ) -> AsyncGenerator[tuple[Any, Any, str | None], None]:
-    """Span + cache check + emit_tool_use. Yields (_tracer, _span, cached_result).
+    """
+    Span + cache check + emit_tool_use. Yields (_tracer, _span, cached_result).
 
     Usage::
 
