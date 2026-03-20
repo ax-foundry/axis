@@ -30,6 +30,7 @@ openai-agents>=0.0.14
 psycopg[binary]>=3.1.0
 psycopg-pool>=3.1.0
 duckdb>=1.1.0
+pytz>=2024.1
 
 # Graph database ([graph] optional extra in pyproject.toml)
 falkordb>=1.0.0
