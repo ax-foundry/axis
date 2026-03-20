@@ -68,6 +68,8 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
               : 'Unknown error'
             : 'Failed to load theme configuration';
         console.warn('Failed to fetch theme config, using defaults:', reason);
+        // Apply default palette so dark mode CSS vars + class are set from OS preference
+        useThemeStore.getState().applyPalette(useThemeStore.getState().palette);
         setError(reason);
       }
 

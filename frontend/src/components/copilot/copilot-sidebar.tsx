@@ -22,7 +22,7 @@ import remarkGfm from 'remark-gfm';
 import { PlotlyChart } from '@/components/charts/plotly-chart';
 import { getAgentRegistry } from '@/config/agents';
 import { useCopilotStream, useAIStatus, useStoreStatus } from '@/lib/hooks';
-import { useBranding, useCopilotIcon } from '@/lib/theme';
+import { useAppIconUrl, useBranding, useCopilotIcon } from '@/lib/theme';
 import { cn } from '@/lib/utils';
 import { useCopilotStore, type DatasetLabel } from '@/stores/copilot-store';
 
@@ -271,7 +271,8 @@ export function CopilotSidebar({ isOpen, onClose }: CopilotSidebarProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const thoughtsRef = useRef<Thought[]>([]);
-  const { url: copilotIcon } = useCopilotIcon();
+  const { url: copilotIcon, isDedicated } = useCopilotIcon();
+  const appIconUrl = useAppIconUrl();
   const { copilot_name: copilotName } = useBranding();
 
   // Resize drag state
@@ -605,15 +606,23 @@ export function CopilotSidebar({ isOpen, onClose }: CopilotSidebarProps) {
           /* ── Empty state ── */
           <div className="flex flex-col items-center py-10 text-center">
             <div className="relative mb-5 flex h-64 w-64 items-center justify-center overflow-hidden rounded-3xl">
-              {copilotIcon ? (
+              {isDedicated && copilotIcon ? (
                 <Image
                   src={copilotIcon}
                   alt={copilotName}
                   fill
                   className="object-cover opacity-30"
+                  unoptimized
                 />
               ) : (
-                <Sparkles className="h-10 w-10 text-accent-gold/70" />
+                <Image
+                  src={appIconUrl || '/images/ax-icon.png'}
+                  alt={copilotName}
+                  width={96}
+                  height={96}
+                  className="opacity-40"
+                  unoptimized
+                />
               )}
             </div>
             <p className="mb-1 text-sm font-medium text-text-primary">Ask {copilotName}</p>

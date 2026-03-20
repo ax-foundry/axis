@@ -156,7 +156,7 @@ export function Sidebar() {
                   width={32}
                   height={32}
                   className="h-full w-full object-cover"
-                  unoptimized={!!appIconUrl}
+                  unoptimized
                 />
               </div>
               <span className="bg-gradient-to-r from-primary to-primary-dark bg-clip-text text-xl font-bold text-transparent">
@@ -172,7 +172,7 @@ export function Sidebar() {
                   width={32}
                   height={32}
                   className="h-full w-full object-cover"
-                  unoptimized={!!appIconUrl}
+                  unoptimized
                 />
               </Link>
             </div>
