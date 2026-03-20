@@ -10,7 +10,6 @@ import {
   Maximize2,
   Minimize2,
   Send,
-  Sparkles,
   SquarePen,
   X,
 } from 'lucide-react';
