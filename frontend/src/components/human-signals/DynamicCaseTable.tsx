@@ -426,7 +426,7 @@ export function DynamicCaseTable({
           <select
             value={pageSize}
             onChange={(e) => setPageSize(Number(e.target.value))}
-            className="rounded border border-border px-2 py-1 text-xs"
+            className="rounded border border-border bg-surface px-2 py-1 text-xs text-text-primary"
           >
             {[10, 25, 50, 100].map((s) => (
               <option key={s} value={s}>
