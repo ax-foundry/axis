@@ -1024,15 +1024,49 @@ async def sync_dataset(
     table_name: str,
     store: DuckDBStore,
     force_full: bool = False,
+    max_retries: int = 3,
+    retry_delay: float = 5.0,
 ) -> SyncResult:
-    """Sync one dataset to DuckDB.
+    """Sync one dataset to DuckDB with retry on connection errors.
 
     Split datasets (monitoring, eval, human_signals) use the two-table split path.
     Non-split datasets (kpi) use a direct single-table sync.
+
+    Retries up to max_retries times with exponential backoff when the error
+    looks like a transient connection failure (timeout, refused, reset).
     """
-    if table_name in _SPLIT_TABLE_MAP:
-        return await _sync_split(config, table_name, store, force_full=force_full)
-    return await _sync_single_table(config, table_name, store)
+    _CONNECTION_ERROR_PATTERNS = (
+        "timeout",
+        "connection refused",
+        "connection reset",
+        "could not connect",
+    )
+
+    last_result: SyncResult | None = None
+    for attempt in range(1, max_retries + 1):
+        if table_name in _SPLIT_TABLE_MAP:
+            result = await _sync_split(config, table_name, store, force_full=force_full)
+        else:
+            result = await _sync_single_table(config, table_name, store)
+
+        if result.status != "error":
+            return result
+
+        last_result = result
+        error_lower = (result.error or "").lower()
+        is_connection_error = any(p in error_lower for p in _CONNECTION_ERROR_PATTERNS)
+
+        if not is_connection_error or attempt == max_retries:
+            break
+
+        delay = retry_delay * (2 ** (attempt - 1))
+        logger.warning(
+            f"[{table_name}] Sync attempt {attempt}/{max_retries} failed "
+            f"(connection error), retrying in {delay:.0f}s: {result.error}"
+        )
+        await asyncio.sleep(delay)
+
+    return last_result  # type: ignore[return-value]
 
 
 # ------------------------------------------------------------------

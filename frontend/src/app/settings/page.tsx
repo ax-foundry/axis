@@ -4,10 +4,9 @@ import { CheckCircle, Loader2, Monitor, Moon, Settings, Sun, XCircle } from 'luc
 import { useState, useEffect } from 'react';
 
 import { PageHeader } from '@/components/ui/PageHeader';
+import { API_BASE_URL } from '@/lib/api';
 import { useBranding } from '@/lib/theme';
 import { useThemeStore } from '@/stores/theme-store';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8500';
 
 type ColorScheme = 'light' | 'dark' | 'system';
 
@@ -17,7 +16,8 @@ function BackendStatus() {
   useEffect(() => {
     const check = async () => {
       try {
-        const res = await fetch(`${API_BASE_URL}/health`, { signal: AbortSignal.timeout(5000) });
+        const url = API_BASE_URL ? `${API_BASE_URL}/health` : '/api/config/theme';
+        const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
         setStatus(res.ok ? 'connected' : 'error');
       } catch {
         setStatus('error');
