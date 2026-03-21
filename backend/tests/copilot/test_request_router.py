@@ -1,5 +1,3 @@
-"""Tests for request_router — run_copilot_request orchestration."""
-
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -36,10 +34,6 @@ def _make_prepared(**overrides) -> PreparedRequest:
     defaults.update(overrides)
     return PreparedRequest(**defaults)
 
-
-# ---------------------------------------------------------------------------
-# Core orchestration
-# ---------------------------------------------------------------------------
 
 
 @pytest.mark.asyncio

@@ -1,13 +1,3 @@
-"""Request-time and tool-time guardrails for the copilot layer.
-
-Request-time guardrails:
-  - ``sanitize_input()`` — null-byte stripping, length truncation, prompt-injection detection
-  - ``sanitize_output()`` — credential redaction, traceback stripping
-
-Tool-time guardrails (shared by ``run_sql``, ``plot_data``, etc.):
-  - ``check_sql_safety()`` — blocks DDL/DML keywords in user-supplied SQL
-"""
-
 import re
 from dataclasses import dataclass
 

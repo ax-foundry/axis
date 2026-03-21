@@ -1,14 +1,3 @@
-"""Request understanding: preparation, skill selection, SQL examples, classification.
-
-Provides ``prepare_request()`` — a pure function that sanitizes input, selects
-skills and SQL examples, and returns a ``PreparedRequest`` dataclass.  No side
-effects, no ThoughtStream dependency.
-
-``RequestClass`` and ``classify_request()`` define the classification contract.
-The stub implementation always returns ``DATA_QUESTION``; future phases will
-wire an LLM-based classifier.
-"""
-
 from __future__ import annotations
 
 from dataclasses import dataclass

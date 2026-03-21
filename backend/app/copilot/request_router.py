@@ -1,13 +1,3 @@
-"""Shared request orchestration for both agent implementations.
-
-Provides ``run_copilot_request()`` which encapsulates the full lifecycle:
-guardrails → prepare → tracing → context build → execute → sanitize → return.
-
-Each agent implementation supplies two callbacks:
-  - ``build_context`` — constructs framework-specific deps/context from a PreparedRequest
-  - ``execute`` — runs the agent and returns raw output (before sanitization)
-"""
-
 from __future__ import annotations
 
 import logging
@@ -23,10 +13,6 @@ if TYPE_CHECKING:
     from app.copilot.thoughts import ThoughtStream
 
 logger = logging.getLogger("axis.copilot.request_router")
-
-# ---------------------------------------------------------------------------
-# Public types
-# ---------------------------------------------------------------------------
 
 ContextFactory = Callable[
     [PreparedRequest, str | None, dict[str, Any] | None, str | None, str | None],
@@ -46,10 +32,6 @@ class RequestResult:
     chart_spec: dict[str, Any] | None = None
     download_spec: dict[str, Any] | None = None
 
-
-# ---------------------------------------------------------------------------
-# Orchestrator
-# ---------------------------------------------------------------------------
 
 _GENERIC_ERROR = "I encountered an error processing your request. Please try again."
 

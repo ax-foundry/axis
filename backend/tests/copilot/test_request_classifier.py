@@ -1,5 +1,3 @@
-"""Tests for request_classifier — prepare_request, build_context_snippets, classification stub."""
-
 from pathlib import Path
 from unittest.mock import patch
 
@@ -14,10 +12,6 @@ from app.copilot.request_classifier import (
     prepare_request,
     select_skills_for_request,
 )
-
-# ---------------------------------------------------------------------------
-# build_context_snippets
-# ---------------------------------------------------------------------------
 
 
 class TestBuildContextSnippets:
@@ -42,10 +36,6 @@ class TestBuildContextSnippets:
         assert build_context_snippets(history) == ["hello"]
 
 
-# ---------------------------------------------------------------------------
-# select_skills_for_request
-# ---------------------------------------------------------------------------
-
 
 def _write_skill(base: Path, name: str, triggers: list[str]) -> None:
     d = base / name
@@ -69,10 +59,6 @@ class TestSelectSkillsForRequest:
         assert any(s.name == "plot" for s in skills)
         assert "<skills>" in injection
 
-
-# ---------------------------------------------------------------------------
-# prepare_request
-# ---------------------------------------------------------------------------
 
 
 class TestPrepareRequest:
@@ -109,10 +95,6 @@ class TestPrepareRequest:
         with pytest.raises(RequestBlocked):
             prepare_request("", None, None)
 
-
-# ---------------------------------------------------------------------------
-# classify_request (stub)
-# ---------------------------------------------------------------------------
 
 
 class TestClassifyRequest:
