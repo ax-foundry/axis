@@ -1,8 +1,7 @@
-import json
 import logging
 import math
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any
 
 import anyio
@@ -17,8 +16,12 @@ from pydantic_ai import (
     UserPromptPart,
 )
 
+from app.copilot.context import BaseCopilotContext, _safe_json
+from app.copilot.guardrails import check_sql_safety
 from app.copilot.hooks import tool_span
 from app.copilot.llm.provider import LLMProvider
+from app.copilot.request_classifier import PreparedRequest
+from app.copilot.request_router import run_copilot_request
 from app.copilot.thoughts import ThoughtStream
 from app.copilot.tracing import get_copilot_tracer, safe_span_attrs, sql_fingerprint
 
@@ -29,99 +32,10 @@ _NUMERIC_TYPES = frozenset(
 )
 
 
-def _safe_json(obj: Any) -> str:
-    """JSON serializer that handles dates and other non-native types."""
-
-    def _default(o: Any) -> Any:
-        if hasattr(o, "isoformat"):
-            return o.isoformat()
-        return str(o)
-
-    return json.dumps(obj, default=_default)
-
-
 _MAX_RESULT_CHARS = 6_000  # Cap individual tool result size sent to LLM
-_MAX_INPUT_CHARS = 2_000  # Max user message length accepted
 
-# DDL / DML keywords that must never reach DuckDB
-_SQL_UNSAFE_RE = re.compile(
-    r"\b(DROP|INSERT|UPDATE|DELETE|CREATE|ALTER|TRUNCATE|REPLACE|MERGE|"
-    r"GRANT|REVOKE|ATTACH|DETACH|COPY|EXPORT|IMPORT|INSTALL|LOAD)\b",
-    re.IGNORECASE,
-)
-
-# Prompt-injection patterns in user input
-_INJECTION_RE = re.compile(
-    r"ignore\s+(previous|above|all)\s+instructions|"
-    r"forget\s+your\s+(previous|system)\s+prompt|"
-    r"you\s+are\s+now\s+|pretend\s+you\s+are\s+|act\s+as\s+(?:if\s+)?you\s+are\s+|"
-    r"disregard\s+.*instructions|override\s+.*system\s+prompt|"
-    r"new\s+instructions\s*:|<\s*system\s*>",
-    re.IGNORECASE,
-)
-
-# Patterns that should never appear in outbound responses
-_SENSITIVE_OUT_RE = re.compile(
-    r"(password|api[_\-]?key|secret[_\-]?key|auth[_\-]?token)\s*[:=]\s*\S+|"
-    r'File "[^"]+", line \d+|'  # Python traceback lines
-    r"Traceback \(most recent call last\)",
-    re.IGNORECASE,
-)
-
-
-def _check_sql_safety(sql: str) -> str | None:
-    """Return an error message if *sql* contains disallowed statements, else None.
-
-    Strips line comments and block comments before checking so that injected
-    keywords buried inside comment text are also caught.
-    """
-    # Remove -- line comments
-    cleaned = re.sub(r"--[^\n]*", " ", sql)
-    # Remove /* block comments */
-    cleaned = re.sub(r"/\*.*?\*/", " ", cleaned, flags=re.DOTALL)
-    if _SQL_UNSAFE_RE.search(cleaned):
-        return "Only SELECT statements are permitted. Data-modification queries are blocked."
-    return None
-
-
-def _sanitize_input(message: str) -> tuple[str, str | None]:
-    """Clean and validate a user message.
-
-    Returns:
-        (sanitized_message, error) — error is non-None when the message is blocked.
-    """
-    # Strip null bytes
-    message = message.replace("\x00", "").strip()
-    if not message:
-        return "", "Empty message."
-    if len(message) > _MAX_INPUT_CHARS:
-        message = message[:_MAX_INPUT_CHARS]
-    if _INJECTION_RE.search(message):
-        return message, (
-            "I'm not able to process that request. "
-            "If you have a data question, feel free to ask!"
-        )
-    return message, None
-
-
-def _sanitize_output(response: str) -> str:
-    """Redact sensitive patterns from the agent's final response text."""
-    # Redact credential-like key=value pairs
-    cleaned = re.sub(
-        r"(password|api[_\-]?key|secret[_\-]?key|auth[_\-]?token)\s*[:=]\s*\S+",
-        r"\1=[REDACTED]",
-        response,
-        flags=re.IGNORECASE,
-    )
-    # Strip Python traceback snippets
-    cleaned = re.sub(r'File "[^"]+", line \d+.*', "[internal error details omitted]", cleaned)
-    cleaned = re.sub(
-        r"Traceback \(most recent call last\).*",
-        "[internal error details omitted]",
-        cleaned,
-        flags=re.DOTALL,
-    )
-    return cleaned
+# Backward-compat aliases — internal tools reference underscore-prefixed names
+_check_sql_safety = check_sql_safety
 
 
 def _is_numeric(col_info: dict[str, Any]) -> bool:
@@ -455,63 +369,8 @@ def _build_sample_sql(
 
 
 @dataclass
-class CopilotDeps:
-    """Dependencies for copilot tools — DuckDB-powered, no in-memory DataFrames."""
-
-    thought_stream: ThoughtStream
-    dataset_label: str = "evaluation"
-    data_context: dict[str, Any] = field(default_factory=dict)
-    _cache: dict[str, str] = field(default_factory=dict)
-    chart_spec: dict[str, Any] | None = None
-    download_spec: dict[str, Any] | None = None  # set by download_data tool
-    user_id: str | None = None  # resolved from request header / body
-    skills_injection: str = ""  # pre-computed skill bodies for this request
-    last_sql: str = ""  # last successfully executed SQL (persisted across turns via agent instance)
-    sql_examples_injection: str = ""  # verified Q→SQL examples matched to this request
-    agent_name: str | None = None  # source_name filter applied to all queries
-
-    @property
-    def table_name(self) -> str:
-        """DuckDB table name for the current dataset label."""
-        from app.services.duckdb_store import DATASET_TABLE_MAP
-
-        return DATASET_TABLE_MAP.get(self.dataset_label, "eval_data")
-
-    @property
-    def store(self):
-        """DuckDB store singleton."""
-        from app.services.duckdb_store import get_store
-
-        return get_store()
-
-    @property
-    def has_data(self) -> bool:
-        """True if the dataset table exists in DuckDB."""
-        return self.store.has_table(self.table_name)
-
-    def _cache_key(self, tool: str, params: str) -> str:
-        """Generate a cache key incorporating table name and current row count."""
-        rc = self.store.get_metadata(self.table_name).get("row_count", 0)
-        return f"{tool}:{hash(params)}:{self.table_name}:{rc}"
-
-    def get_cached(self, tool: str, params: str) -> str | None:
-        """Return cached tool result or None if not cached."""
-        return self._cache.get(self._cache_key(tool, params))
-
-    def set_cached(self, tool: str, params: str, result: str) -> None:
-        """Store a tool result in the in-session cache."""
-        self._cache[self._cache_key(tool, params)] = result
-
-    def no_data_error(self) -> str:
-        """Return a standard JSON error message when dataset is not available."""
-        return _safe_json(
-            {
-                "error": (
-                    f"No {self.dataset_label} data available. "
-                    "Upload a CSV or trigger a sync first."
-                )
-            }
-        )
+class CopilotDeps(BaseCopilotContext):
+    """Pydantic-AI copilot dependencies — inherits all shared fields from BaseCopilotContext."""
 
 
 def _build_message_history(history: list[dict[str, Any]]) -> list[Any]:
@@ -1762,119 +1621,73 @@ class CopilotAgent:
     ) -> tuple[str, dict[str, Any] | None, dict[str, Any] | None]:
         """Process a user message using DuckDB-powered tools.
 
-        Args:
-            message: User's message/query.
-            dataset_label: Dataset to query (evaluation, monitoring, human_signals, kpi).
-            data_context: Optional schema hints (columns, format, row_count).
-            conversation_history: Prior conversation turns for multi-turn context.
-            user_id: Resolved user identifier for per-user dataset scoping.
-            agent_name: source_name to scope all queries to a specific agent.
-
-        Returns:
-            Agent's response string.
+        Delegates to ``run_copilot_request()`` which handles guardrails,
+        preparation, tracing, and output sanitization.
         """
-        # --- Input guardrails ---
-        message, input_error = _sanitize_input(message)
-        if input_error:
-            logger.warning("Input blocked by guardrail: %s", input_error)
-            await self.thought_stream.close()
-            return input_error, None, None
-
-        logger.info("Processing: %s... (dataset=%s)", message[:100], dataset_label)
-
-        # Compute skill injection and SQL examples before building deps
-        from app.copilot.skills import get_skill_registry
-        from app.copilot.sql_examples import get_sql_example_store
-
-        _registry = get_skill_registry()
-        _ctx_snippets = [
-            m["content"]
-            for m in (conversation_history or [])[-3:]
-            if isinstance(m, dict) and "content" in m
-        ]
-        _selected = _registry.select_skills(message, conversation_context=_ctx_snippets)
-        _skills_injection = _registry.get_system_prompt_injection(_selected)
-        if _selected:
-            skill_names = ", ".join(s.name for s in _selected)
-            await self.thought_stream.emit_planning(
-                f"Applying skills: {skill_names}", node_name="Agent"
-            )
-
-        _example_store = get_sql_example_store()
-        _sql_examples = _example_store.select_for_agent(message, agent_name)
-        _sql_examples_injection = _example_store.get_injection(_sql_examples)
-
-        message_history = (
-            _build_message_history(conversation_history) if conversation_history else None
+        result = await run_copilot_request(
+            message=message,
+            thought_stream=self.thought_stream,
+            build_context=self._build_deps,
+            execute=self._execute,
+            dataset_label=dataset_label,
+            data_context=data_context,
+            conversation_history=conversation_history,
+            user_id=user_id,
+            agent_name=agent_name,
+            provider_label="pydantic_ai",
+            agent_framework="pydantic_ai",
         )
+        return result.response, result.chart_spec, result.download_spec
 
-        deps = CopilotDeps(
+    def _build_deps(
+        self,
+        prepared: PreparedRequest,
+        dataset_label: str | None,
+        data_context: dict[str, Any] | None,
+        user_id: str | None,
+        agent_name: str | None,
+    ) -> CopilotDeps:
+        """Construct pydantic-ai CopilotDeps from a PreparedRequest."""
+        return CopilotDeps(
             thought_stream=self.thought_stream,
             dataset_label=dataset_label or "evaluation",
             data_context=data_context or {},
-            skills_injection=_skills_injection,
+            skills_injection=prepared.skills_injection,
             last_sql=self._last_sql,
-            sql_examples_injection=_sql_examples_injection,
+            sql_examples_injection=prepared.sql_examples_injection,
             user_id=user_id,
             agent_name=agent_name,
         )
 
-        await self.thought_stream.emit_reasoning(
-            f"Processing: {message[:100]}...",
-            node_name="Agent",
+    async def _execute(self, prepared: PreparedRequest, deps: CopilotDeps) -> str:
+        """Run the pydantic-ai agent and return raw output.
+
+        Responsible for: framework-specific streaming, inner tracer span,
+        and persisting ``last_sql`` back to ``self._last_sql``.
+        """
+        message_history = (
+            _build_message_history(prepared.conversation_history)
+            if prepared.conversation_history
+            else None
         )
-
+        agent = self._get_agent()
         tracer = get_copilot_tracer()
-        async with tracer.async_span(
-            "copilot.agent.run",
-            input=message,
-            **safe_span_attrs(
-                provider="pydantic_ai",
-                agent_framework="pydantic_ai",
-                dataset_label=dataset_label,
-                msg_len=len(message),
-            ),
-        ) as _proc_span:
-            try:
-                agent = self._get_agent()
-                async with tracer.async_span("copilot.agent.execute", input=message) as _llm_span:
-                    async with agent.iter(
-                        message, deps=deps, message_history=message_history
-                    ) as agent_run:
-                        async for node in agent_run:
-                            if isinstance(node, CallToolsNode):
-                                for part in node.model_response.parts:
-                                    if isinstance(part, ThinkingPart) and part.thinking:
-                                        await deps.thought_stream.emit_reasoning(
-                                            part.thinking, node_name="Model"
-                                        )
-                    result = agent_run.result
-                await self.thought_stream.emit_success("Request completed", node_name="Agent")
-                # Persist last SQL for the next turn's multi-turn refinement
-                if deps.last_sql:
-                    self._last_sql = deps.last_sql
-                # --- Output guardrails ---
-                safe_response = _sanitize_output(result.output)
-                _llm_span.set_output(
-                    safe_response[:500] if len(safe_response) > 500 else safe_response
-                )
-                _proc_span.set_output(
-                    safe_response[:500] if len(safe_response) > 500 else safe_response
-                )
-                return safe_response, deps.chart_spec, deps.download_spec
-
-            except Exception as e:
-                logger.error("Agent error: %s", e, exc_info=True)
-                await self.thought_stream.emit_error("Agent error", node_name="Agent")
-                tracer.add_trace("error", type(e).__name__)
-                return (
-                    "I encountered an error processing your request. Please try again.",
-                    None,
-                    None,
-                )
-
-            finally:
-                await self.thought_stream.close()
+        async with tracer.async_span("copilot.agent.execute", input=prepared.message) as _span:
+            async with agent.iter(
+                prepared.message, deps=deps, message_history=message_history
+            ) as agent_run:
+                async for node in agent_run:
+                    if isinstance(node, CallToolsNode):
+                        for part in node.model_response.parts:
+                            if isinstance(part, ThinkingPart) and part.thinking:
+                                await deps.thought_stream.emit_reasoning(
+                                    part.thinking, node_name="Model"
+                                )
+            result = agent_run.result
+        if deps.last_sql:
+            self._last_sql = deps.last_sql
+        _span.set_output(str(result.output)[:500])
+        return result.output
 
     @property
     def is_configured(self) -> bool:

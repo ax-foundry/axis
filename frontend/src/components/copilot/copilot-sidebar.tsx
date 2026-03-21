@@ -463,9 +463,8 @@ export function CopilotSidebar({ isOpen, onClose }: CopilotSidebarProps) {
 
   const suggestedQueries = [
     'What tools do you have available?',
-    'Explain the datasets and what is the schema of the datasets?',
-    'Which metrics are performing below average?',
-    'Plot a line chart of the metrics and scores by day',
+    'Explain the current dataset options and the schemas',
+    'Plot a line chart of the lowest scoring metrics scores by day',
   ];
 
   if (!isOpen) return null;

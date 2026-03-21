@@ -337,7 +337,7 @@ async def test_oai_agent_tool_span_name_and_tool_name_attr() -> None:
     tool_ctx = MagicMock()
     tool_ctx.context = oai_ctx_mock
 
-    with patch("app.copilot.oai_agent.get_copilot_tracer", return_value=capturing):
+    with patch("app.copilot.hooks.get_copilot_tracer", return_value=capturing):
         await summarize_data.on_invoke_tool(tool_ctx, '{"include_numeric_stats": false}')
 
     span_names = [n for n, _ in capturing.span_calls]

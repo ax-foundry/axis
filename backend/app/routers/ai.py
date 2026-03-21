@@ -215,113 +215,111 @@ async def ai_status() -> dict[str, object]:
 # ============================================
 
 
-@router.post("/copilot/stream")
-async def copilot_stream(request: CopilotRequest, http_request: Request) -> EventSourceResponse:
-    r"""Stream copilot responses with real-time thoughts via Server-Sent Events.
+async def _copilot_stream_generator(
+    agent_class: type,
+    route_name: str,
+    request: CopilotRequest,
+    http_request: Request,
+) -> AsyncGenerator[dict[str, str], None]:
+    """Shared SSE generator for both pydantic-ai and OAI copilot streams.
 
-    This endpoint provides transparency into the AI's reasoning process
-    by streaming thoughts as they occur, followed by the final response.
+    Differences between the two endpoints are parameterized:
+    - ``agent_class``: ``CopilotAgent`` or ``OAICopilotAgent``
+    - ``route_name``: ``"copilot.stream"`` or ``"copilot.stream.oai"``
 
-    Events:
-    - `thought`: Individual thought from the copilot (reasoning, tool_use, etc.)
-    - `response`: Final response when processing is complete
-    - `error`: Error occurred during processing
-    - `done`: Stream is complete
-
-    Example usage with curl:
-    ```
-    curl -N -X POST http://localhost:8500/api/ai/copilot/stream \
-      -H "Content-Type: application/json" \
-      -d '{"message": "Summarize my evaluation data"}'
-    ```
+    Provider/framework labels are NOT router concerns — each agent wrapper
+    passes them into ``run_copilot_request()`` internally.
     """
-    _validate_agent_name(request.agent_name)
+    logger.info("=== %s START ===", route_name.upper().replace(".", " "))
+    logger.info("Message: %s...", request.message[:100])
+    logger.info("Dataset: %s", request.dataset_label)
 
-    async def event_generator() -> AsyncGenerator[dict[str, str], None]:
-        logger.info("=== COPILOT STREAM START ===")
-        logger.info("Message: %s...", request.message[:100])
-        logger.info("Dataset: %s", request.dataset_label)
+    # Resolve provider label from route name for the pipeline span
+    provider = "oai_agents" if "oai" in route_name else "pydantic_ai"
 
-        tracer = get_request_tracer(
-            route_name="copilot.stream",
-            environment=getattr(settings, "environment", None),
-            session_id=request.session_id,
-            user_id=_resolve_user_id(http_request, request),
+    tracer = get_request_tracer(
+        route_name=route_name,
+        environment=getattr(settings, "environment", None),
+        session_id=request.session_id,
+        user_id=_resolve_user_id(http_request, request),
+    )
+
+    thought_stream = ThoughtStream()
+    agent = agent_class(thought_stream=thought_stream)
+
+    if not agent.is_configured:
+        logger.warning("Ask Copilot not configured - no API credentials")
+        yield {
+            "event": SSEEventType.ERROR.value,
+            "data": json.dumps(
+                {
+                    "error": (
+                        "Ask Copilot is not configured. "
+                        "Please set up OpenAI or Anthropic API credentials."
+                    )
+                }
+            ),
+        }
+        yield {"event": SSEEventType.DONE.value, "data": ""}
+        return
+
+    # Prepare data context (schema hints only — data lives in DuckDB)
+    data_context: dict[str, object] = {}
+    if request.data_context:
+        data_context = {
+            "format": request.data_context.format,
+            "row_count": request.data_context.row_count,
+            "metric_columns": request.data_context.metric_columns,
+            "columns": request.data_context.columns,
+        }
+
+    async with tracer.async_span(
+        "copilot.pipeline",
+        input=request.message,
+        **safe_span_attrs(
+            route_name=route_name,
+            provider=provider,
+            dataset_label=request.dataset_label,
+            msg_len=len(request.message),
+            history_len=len(request.conversation_history or []),
+        ),
+    ) as _root_span:
+        task = asyncio.create_task(
+            agent.process(
+                message=request.message,
+                dataset_label=request.dataset_label,
+                data_context=data_context,
+                conversation_history=request.conversation_history,
+                user_id=_resolve_user_id(http_request, request),
+                agent_name=request.agent_name,
+            )
         )
 
-        thought_stream = ThoughtStream()
-        agent = CopilotAgent(thought_stream=thought_stream)
+        try:
+            subscriber = await thought_stream.subscribe()
 
-        # Check if copilot is configured
-        if not agent.is_configured:
-            logger.warning("Ask Copilot not configured - no API credentials")
-            error_data = json.dumps(
-                {
-                    "error": "Ask Copilot is not configured. Please set up OpenAI or Anthropic API credentials.",
-                }
+            async for thought in subscriber:
+                yield {"event": SSEEventType.THOUGHT.value, "data": thought.to_json()}
+
+            response, chart, download = await task
+            logger.info("Task completed. Response length: %d", len(response) if response else 0)
+
+            _root_span.set_output(response or "")
+            tracer.add_trace(
+                "info",
+                "response_ready",
+                metadata={
+                    "response_len": len(response or ""),
+                    "has_chart": bool(chart),
+                    "has_download": bool(download),
+                    "thoughts_count": len(thought_stream.thoughts),
+                },
             )
-            yield {"event": SSEEventType.ERROR.value, "data": error_data}
-            yield {"event": SSEEventType.DONE.value, "data": ""}
-            return
+            tracer.complete(output_data={"response_len": len(response or "")})
 
-        # Prepare data context (schema hints only — data lives in DuckDB)
-        data_context: dict[str, object] = {}
-        if request.data_context:
-            data_context = {
-                "format": request.data_context.format,
-                "row_count": request.data_context.row_count,
-                "metric_columns": request.data_context.metric_columns,
-                "columns": request.data_context.columns,
-            }
-        async with tracer.async_span(
-            "copilot.pipeline",
-            input=request.message,
-            **safe_span_attrs(
-                route_name="copilot.stream",
-                provider="pydantic_ai",
-                dataset_label=request.dataset_label,
-                msg_len=len(request.message),
-                history_len=len(request.conversation_history or []),
-            ),
-        ) as _root_span:
-            # Start processing in a task (context copied here)
-            task = asyncio.create_task(
-                agent.process(
-                    message=request.message,
-                    dataset_label=request.dataset_label,
-                    data_context=data_context,
-                    conversation_history=request.conversation_history,
-                    user_id=_resolve_user_id(http_request, request),
-                    agent_name=request.agent_name,
-                )
-            )
-
-            # Stream thoughts as they arrive
-            try:
-                subscriber = await thought_stream.subscribe()
-
-                async for thought in subscriber:
-                    thought_data = thought.to_json()
-                    yield {"event": SSEEventType.THOUGHT.value, "data": thought_data}
-
-                # Wait for final response
-                response, chart, download = await task
-                logger.info("Task completed. Response length: %d", len(response) if response else 0)
-
-                _root_span.set_output(response or "")
-                tracer.add_trace(
-                    "info",
-                    "response_ready",
-                    metadata={
-                        "response_len": len(response or ""),
-                        "has_chart": bool(chart),
-                        "has_download": bool(download),
-                        "thoughts_count": len(thought_stream.thoughts),
-                    },
-                )
-                tracer.complete(output_data={"response_len": len(response or "")})
-
-                response_data = json.dumps(
+            yield {
+                "event": SSEEventType.RESPONSE.value,
+                "data": json.dumps(
                     {
                         "success": True,
                         "response": response,
@@ -329,166 +327,52 @@ async def copilot_stream(request: CopilotRequest, http_request: Request) -> Even
                         "chart": chart,
                         "download": download,
                     }
-                )
-                yield {"event": SSEEventType.RESPONSE.value, "data": response_data}
+                ),
+            }
 
-            except asyncio.CancelledError:
-                tracer.add_trace("info", "client_disconnected")
-                if not task.done():
-                    task.cancel()
-                    with contextlib.suppress(asyncio.CancelledError, Exception):
-                        await task
-                raise
+        except asyncio.CancelledError:
+            tracer.add_trace("info", "client_disconnected")
+            if not task.done():
+                task.cancel()
+                with contextlib.suppress(asyncio.CancelledError, Exception):
+                    await task
+            raise
 
-            except Exception as e:
-                logger.error(f"Copilot stream error: {e}", exc_info=True)
-                tracer.fail(error=type(e).__name__)
-                error_data = json.dumps({"error": str(e)})
-                yield {"event": SSEEventType.ERROR.value, "data": error_data}
+        except Exception as e:
+            logger.error("%s error: %s", route_name, e, exc_info=True)
+            tracer.fail(error=type(e).__name__)
+            yield {"event": SSEEventType.ERROR.value, "data": json.dumps({"error": str(e)})}
+            if not task.done():
+                task.cancel()
 
-                if not task.done():
-                    task.cancel()
+        finally:
+            logger.info("=== %s END ===", route_name.upper().replace(".", " "))
+            yield {"event": SSEEventType.DONE.value, "data": ""}
 
-            finally:
-                logger.info("=== COPILOT STREAM END ===")
-                yield {"event": SSEEventType.DONE.value, "data": ""}
 
-    return EventSourceResponse(event_generator())
+@router.post("/copilot/stream")
+async def copilot_stream(request: CopilotRequest, http_request: Request) -> EventSourceResponse:
+    r"""Stream copilot responses with real-time thoughts via Server-Sent Events.
+
+    Events: ``thought``, ``response``, ``error``, ``done``.
+    """
+    _validate_agent_name(request.agent_name)
+    return EventSourceResponse(
+        _copilot_stream_generator(CopilotAgent, "copilot.stream", request, http_request)
+    )
 
 
 @router.post("/copilot/stream/oai")
 async def copilot_stream_oai(request: CopilotRequest, http_request: Request) -> EventSourceResponse:
     r"""Stream copilot responses using the OpenAI Agents SDK.
 
-    Same SSE contract as ``/copilot/stream`` but uses the ``openai-agents`` package.
-    Toggle between the two via the frontend provider selector.
-
-    Events:
-    - ``thought``: Individual thought (reasoning, tool_use, etc.)
-    - ``response``: Final response when processing is complete
-    - ``error``: Error occurred during processing
-    - ``done``: Stream is complete
+    Same SSE contract as ``/copilot/stream``.
+    Events: ``thought``, ``response``, ``error``, ``done``.
     """
     _validate_agent_name(request.agent_name)
-
-    async def event_generator() -> AsyncGenerator[dict[str, str], None]:
-        logger.info("=== OAI COPILOT STREAM START ===")
-        logger.info("Message: %s...", request.message[:100])
-        logger.info("Dataset: %s", request.dataset_label)
-
-        tracer = get_request_tracer(
-            route_name="copilot.stream.oai",
-            environment=getattr(settings, "environment", None),
-            session_id=request.session_id,
-            user_id=_resolve_user_id(http_request, request),
-        )
-
-        thought_stream = ThoughtStream()
-        agent = OAICopilotAgent(thought_stream=thought_stream)
-
-        if not agent.is_configured:
-            logger.warning("OAI Ask Copilot not configured - no API credentials")
-            yield {
-                "event": SSEEventType.ERROR.value,
-                "data": json.dumps(
-                    {
-                        "error": (
-                            "Ask Copilot is not configured. "
-                            "Please set up OpenAI or Anthropic API credentials."
-                        )
-                    }
-                ),
-            }
-            yield {"event": SSEEventType.DONE.value, "data": ""}
-            return
-
-        data_context: dict[str, object] = {}
-        if request.data_context:
-            data_context = {
-                "format": request.data_context.format,
-                "row_count": request.data_context.row_count,
-                "metric_columns": request.data_context.metric_columns,
-                "columns": request.data_context.columns,
-            }
-        async with tracer.async_span(
-            "copilot.pipeline",
-            input=request.message,
-            **safe_span_attrs(
-                route_name="copilot.stream.oai",
-                provider="oai_agents",
-                dataset_label=request.dataset_label,
-                msg_len=len(request.message),
-                history_len=len(request.conversation_history or []),
-            ),
-        ) as _root_span:
-            task = asyncio.create_task(
-                agent.process(
-                    message=request.message,
-                    dataset_label=request.dataset_label,
-                    data_context=data_context,
-                    conversation_history=request.conversation_history,
-                    user_id=_resolve_user_id(http_request, request),
-                    agent_name=request.agent_name,
-                )
-            )
-
-            try:
-                subscriber = await thought_stream.subscribe()
-
-                async for thought in subscriber:
-                    yield {"event": SSEEventType.THOUGHT.value, "data": thought.to_json()}
-
-                response, chart, download = await task
-                logger.info(
-                    "OAI task completed. Response length: %d", len(response) if response else 0
-                )
-
-                _root_span.set_output(response or "")
-                tracer.add_trace(
-                    "info",
-                    "response_ready",
-                    metadata={
-                        "response_len": len(response or ""),
-                        "has_chart": bool(chart),
-                        "has_download": bool(download),
-                        "thoughts_count": len(thought_stream.thoughts),
-                    },
-                )
-                tracer.complete(output_data={"response_len": len(response or "")})
-
-                yield {
-                    "event": SSEEventType.RESPONSE.value,
-                    "data": json.dumps(
-                        {
-                            "success": True,
-                            "response": response,
-                            "thoughts_count": len(thought_stream.thoughts),
-                            "chart": chart,
-                            "download": download,
-                        }
-                    ),
-                }
-
-            except asyncio.CancelledError:
-                tracer.add_trace("info", "client_disconnected")
-                if not task.done():
-                    task.cancel()
-                    with contextlib.suppress(asyncio.CancelledError, Exception):
-                        await task
-                raise
-
-            except Exception as e:
-                logger.error("OAI copilot stream error: %s", e, exc_info=True)
-                tracer.fail(error=type(e).__name__)
-                yield {"event": SSEEventType.ERROR.value, "data": json.dumps({"error": str(e)})}
-                if not task.done():
-                    task.cancel()
-
-            finally:
-                logger.info("=== OAI COPILOT STREAM END ===")
-                yield {"event": SSEEventType.DONE.value, "data": ""}
-
-    return EventSourceResponse(event_generator())
+    return EventSourceResponse(
+        _copilot_stream_generator(OAICopilotAgent, "copilot.stream.oai", request, http_request)
+    )
 
 
 @router.post("/copilot/chat")
