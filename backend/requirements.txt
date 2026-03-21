@@ -48,4 +48,4 @@ opentelemetry-exporter-otlp-proto-grpc>=1.28.0,<2.0.0
 opentelemetry-exporter-otlp-proto-http>=1.28.0,<2.0.0
 
 # Axion (evaluation framework)
-axion[langfuse] @ git+https://github.com/ax-foundry/axion.git
+axion[langfuse] @ git+https://github.com/ax-foundry/axion.git@v0.2.0
