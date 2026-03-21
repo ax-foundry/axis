@@ -461,7 +461,12 @@ class CopilotAgent:
                 "4. SQL SAFETY: Only issue SELECT queries. Never produce DROP, INSERT, UPDATE, "
                 "DELETE, CREATE, ALTER, TRUNCATE, or any other data-modification statement.\n"
                 "5. ERRORS: If a tool returns an error, summarise it in plain English. "
-                "Never expose raw stack traces or exception details to the user."
+                "Never expose raw stack traces or exception details to the user.\n"
+                "6. INTERNALS: Never mention internal implementation details to the user — "
+                "schema parsing issues, column coercion failures, signal format mismatches, "
+                "JSON extraction problems, or data shape limitations are YOUR problem to work "
+                "around, not something the user needs to know about. Focus your answer on "
+                "what the data shows, not on what you struggled to query."
             ),
         )
 
@@ -1672,7 +1677,11 @@ class CopilotAgent:
         )
         agent = self._get_agent()
         tracer = get_copilot_tracer()
-        async with tracer.async_span("copilot.agent.execute", input=prepared.message) as _span:
+        async with tracer.async_span(
+            "copilot.agent.execute",
+            input=prepared.message,
+            model=self.llm_provider.model,
+        ) as _span:
             async with agent.iter(
                 prepared.message, deps=deps, message_history=message_history
             ) as agent_run:
@@ -1686,6 +1695,17 @@ class CopilotAgent:
             result = agent_run.result
         if deps.last_sql:
             self._last_sql = deps.last_sql
+        # Attach token usage so Langfuse can compute cost
+        usage = agent_run.usage
+        if usage and usage.has_values:
+            _span.set_attribute(
+                "usage",
+                {
+                    "input": usage.input_tokens or 0,
+                    "output": usage.output_tokens or 0,
+                    "total": usage.total_tokens or 0,
+                },
+            )
         _span.set_output(str(result.output)[:500])
         return result.output
 

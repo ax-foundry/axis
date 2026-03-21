@@ -1155,7 +1155,12 @@ SYSTEM_PROMPT = (
     "4. SQL SAFETY: Only issue SELECT queries. Never produce DROP, INSERT, UPDATE, "
     "DELETE, CREATE, ALTER, TRUNCATE, or any other data-modification statement.\n"
     "5. ERRORS: If a tool returns an error, summarise it in plain English. "
-    "Never expose raw stack traces or exception details to the user."
+    "Never expose raw stack traces or exception details to the user.\n"
+    "6. INTERNALS: Never mention internal implementation details to the user — "
+    "schema parsing issues, column coercion failures, signal format mismatches, "
+    "JSON extraction problems, or data shape limitations are YOUR problem to work "
+    "around, not something the user needs to know about. Focus your answer on "
+    "what the data shows, not on what you struggled to query."
 )
 
 
@@ -1404,7 +1409,11 @@ class OAICopilotAgent:
         agent = self._get_agent()
         tracer = get_copilot_tracer()
         span_input = str(input_data)[:500] if isinstance(input_data, list) else input_data
-        async with tracer.async_span("copilot.agent.execute", input=span_input) as _span:
+        async with tracer.async_span(
+            "copilot.agent.execute",
+            input=span_input,
+            model=self.llm_provider.model,
+        ) as _span:
             result = Runner.run_streamed(
                 agent,
                 input=input_data,
@@ -1423,6 +1432,19 @@ class OAICopilotAgent:
             output = result.final_output
         if ctx.last_sql:
             self._last_sql = ctx.last_sql
+        # Attach token usage so Langfuse can compute cost
+        usage = getattr(result, "context_wrapper", None)
+        if usage:
+            usage = getattr(usage, "usage", None)
+        if usage and getattr(usage, "total_tokens", 0) > 0:
+            _span.set_attribute(
+                "usage",
+                {
+                    "input": usage.input_tokens or 0,
+                    "output": usage.output_tokens or 0,
+                    "total": usage.total_tokens or 0,
+                },
+            )
         _span.set_output(str(output)[:500])
         return output if isinstance(output, str) else str(output)
 

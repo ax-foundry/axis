@@ -123,15 +123,15 @@ class SignalSchemaStore:
                 desc = field.get("description", "")
                 values = field.get("values") or []
 
-                # Build extraction hint
+                # Build extraction hint — use `sig` (the coerced JSON column from the CTE)
                 if ftype in ("integer",):
-                    extract = f"CAST(json_extract(signals, '{path}') AS INTEGER)"
+                    extract = f"CAST(json_extract(sig, '{path}') AS INTEGER)"
                 elif ftype in ("float",):
-                    extract = f"CAST(json_extract(signals, '{path}') AS DOUBLE)"
+                    extract = f"CAST(json_extract(sig, '{path}') AS DOUBLE)"
                 elif ftype in ("boolean",):
-                    extract = f"json_extract_string(signals, '{path}')  -- returns 'true'/'false'"
+                    extract = f"json_extract_string(sig, '{path}')  -- returns 'true'/'false'"
                 else:
-                    extract = f"json_extract_string(signals, '{path}')"
+                    extract = f"json_extract_string(sig, '{path}')"
 
                 lines.append(f"  {path}")
                 lines.append(f"    type: {ftype}")
@@ -147,7 +147,17 @@ class SignalSchemaStore:
         arrays = schema.get("arrays") or []
         if arrays:
             lines.append("")
-            lines.append("Array fields (use UNNEST or per-row json_extract with array index):")
+            lines.append(
+                "Array fields (use json_array_length + generate_series to expand, "
+                "NOT UNNEST — DuckDB cannot UNNEST JSON values):"
+            )
+            lines.append(
+                "  Example pattern to expand a JSON array:\n"
+                "    SELECT json_extract_string(sig, '$.path[' || i || '].field') AS val\n"
+                "    FROM base, generate_series(0, json_array_length(json_extract(sig, '$.path')) - 1) AS t(i)\n"
+                "    WHERE sig IS NOT NULL AND json_array_length(json_extract(sig, '$.path')) > 0"
+            )
+            lines.append("")
             for arr in arrays:
                 path = arr.get("path", "")
                 desc = arr.get("description", "")
