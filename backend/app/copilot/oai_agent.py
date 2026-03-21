@@ -609,7 +609,7 @@ async def run_sql(
         cache_str,
         f"Running SQL: {sql.strip()[:120]}{'…' if len(sql.strip()) > 120 else ''}",
         {"sql": sql_fingerprint(sql.strip()), "limit": limit},
-    ) as (_tracer, _span, cached):
+    ) as (_tracer, _span, _cached):
         sql_stripped = sql.strip().rstrip(";")
 
         if not sql_stripped.upper().lstrip().startswith(("SELECT", "WITH")):
@@ -699,7 +699,7 @@ async def plot_data(
             "sql": sql_fingerprint(sql.strip()),
             "layout_title": (layout or {}).get("title", ""),
         },
-    ) as (_tracer, _span, cached):
+    ) as (_tracer, _span, _cached):
         if not deps.has_data:
             return deps.no_data_error()
 
@@ -849,7 +849,7 @@ async def analyze_patterns(
         cache_str,
         "Analyzing patterns...",
         {"sql": sql_fingerprint(sql.strip()), "mode": mode, "report_type": report_type},
-    ) as (_tracer, _span, cached):
+    ) as (_tracer, _span, _cached):
         if not deps.has_data:
             return deps.no_data_error()
 
@@ -942,7 +942,7 @@ async def save_as_dataset(
         cache_str,
         f"Saving dataset: {name}",
         {"sql": sql_fingerprint(sql.strip()), "name": name},
-    ) as (_tracer, _span, cached):
+    ) as (_tracer, _span, _cached):
         if not deps.has_data:
             return deps.no_data_error()
 
@@ -1006,7 +1006,7 @@ async def download_data(
         cache_str,
         "Preparing download\u2026",
         {"sql": sql_fingerprint(sql.strip()), "filename": filename},
-    ) as (_tracer, _span, cached):
+    ) as (_tracer, _span, _cached):
         if not deps.has_data:
             return deps.no_data_error()
 
