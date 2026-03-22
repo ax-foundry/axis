@@ -138,7 +138,7 @@ export function FewShotBuilder({ examples, onAddExample, onRemoveExample }: FewS
                 value={newExample.query}
                 onChange={(e) => setNewExample({ ...newExample, query: e.target.value })}
                 rows={2}
-                className="w-full rounded-lg border border-border p-3 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                className="w-full rounded-lg border border-border bg-surface p-3 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                 placeholder="Enter the user query..."
               />
             </div>
@@ -149,7 +149,7 @@ export function FewShotBuilder({ examples, onAddExample, onRemoveExample }: FewS
                 value={newExample.actual_output}
                 onChange={(e) => setNewExample({ ...newExample, actual_output: e.target.value })}
                 rows={3}
-                className="w-full rounded-lg border border-border p-3 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                className="w-full rounded-lg border border-border bg-surface p-3 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                 placeholder="Enter the AI response..."
               />
             </div>
@@ -171,7 +171,7 @@ export function FewShotBuilder({ examples, onAddExample, onRemoveExample }: FewS
                 value={newExample.reasoning}
                 onChange={(e) => setNewExample({ ...newExample, reasoning: e.target.value })}
                 rows={2}
-                className="w-full rounded-lg border border-border p-3 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                className="w-full rounded-lg border border-border bg-surface p-3 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                 placeholder="Explain why this is accepted or rejected..."
               />
             </div>

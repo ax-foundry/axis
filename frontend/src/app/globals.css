@@ -49,7 +49,7 @@
     --radius-lg: 8px;
     --radius-xl: 12px;
 
-    color-scheme: light dark;
+    color-scheme: light;
   }
 
   * {

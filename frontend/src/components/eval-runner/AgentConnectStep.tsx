@@ -247,7 +247,7 @@ export function AgentConnectStep() {
                       value={apiEndpoint}
                       onChange={(e) => setApiEndpoint(e.target.value)}
                       placeholder="https://api.example.com/chat"
-                      className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                      className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                     />
                   </div>
                   <div>
@@ -259,7 +259,7 @@ export function AgentConnectStep() {
                       onChange={(e) => setApiHeaders(e.target.value)}
                       placeholder='{"Authorization": "Bearer xxx"}'
                       rows={3}
-                      className="w-full rounded-lg border border-border px-3 py-2 font-mono text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                      className="w-full rounded-lg border border-border bg-surface px-3 py-2 font-mono text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                     />
                   </div>
                   <div>
@@ -271,7 +271,7 @@ export function AgentConnectStep() {
                       value={apiRequestTemplate}
                       onChange={(e) => setApiRequestTemplate(e.target.value)}
                       placeholder='{"message": "{{query}}"}'
-                      className="w-full rounded-lg border border-border px-3 py-2 font-mono text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                      className="w-full rounded-lg border border-border bg-surface px-3 py-2 font-mono text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                     />
                     <p className="mt-1 text-xs text-text-muted">
                       Use {'{{query}}'} as placeholder for the query value
@@ -286,7 +286,7 @@ export function AgentConnectStep() {
                       value={apiResponsePath}
                       onChange={(e) => setApiResponsePath(e.target.value)}
                       placeholder=".response.content"
-                      className="w-full rounded-lg border border-border px-3 py-2 font-mono text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                      className="w-full rounded-lg border border-border bg-surface px-3 py-2 font-mono text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                     />
                     <p className="mt-1 text-xs text-text-muted">
                       JSON path to extract the response (e.g., .data.message)
@@ -316,7 +316,7 @@ export function AgentConnectStep() {
                         setPromptModel(e.target.value);
                         if (selected) setPromptProvider(selected.provider);
                       }}
-                      className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                      className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                     >
                       {MODEL_OPTIONS.map((model) => (
                         <option key={model.value} value={model.value}>
@@ -333,7 +333,7 @@ export function AgentConnectStep() {
                       value={promptSystem}
                       onChange={(e) => setPromptSystem(e.target.value)}
                       rows={3}
-                      className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                      className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                     />
                   </div>
                   <div>
@@ -344,7 +344,7 @@ export function AgentConnectStep() {
                       value={promptUser}
                       onChange={(e) => setPromptUser(e.target.value)}
                       rows={2}
-                      className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                      className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                     />
                     <p className="mt-1 text-xs text-text-muted">
                       Use {'{{query}}'} as placeholder for the query value

@@ -211,7 +211,7 @@ export function MetricTradeoffsTab() {
               <select
                 value={selectedXMetric || ''}
                 onChange={(e) => setSelectedXMetric(e.target.value)}
-                className="rounded-lg border border-border px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                className="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/50"
               >
                 {availableMetrics.map((metric) => (
                   <option key={metric} value={metric}>
@@ -227,7 +227,7 @@ export function MetricTradeoffsTab() {
               <select
                 value={selectedYMetric || ''}
                 onChange={(e) => setSelectedYMetric(e.target.value)}
-                className="rounded-lg border border-border px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                className="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/50"
               >
                 {availableMetrics.map((metric) => (
                   <option key={metric} value={metric}>
@@ -243,7 +243,7 @@ export function MetricTradeoffsTab() {
                 type="checkbox"
                 checked={showTrendline}
                 onChange={(e) => setShowTrendline(e.target.checked)}
-                className="h-4 w-4 rounded border-border text-primary focus:ring-primary/50"
+                className="h-4 w-4 rounded border-border bg-surface text-primary accent-primary focus:ring-primary/50"
               />
               <span className="text-sm text-text-muted">Show Trendline</span>
             </label>

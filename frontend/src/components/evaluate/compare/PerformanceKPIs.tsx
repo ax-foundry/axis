@@ -40,7 +40,15 @@ function KPICard({
       </div>
       <div className="min-w-0 flex-1">
         <p className="text-sm text-text-muted">{label}</p>
-        <p className="truncate text-2xl font-bold text-text-primary">{value}</p>
+        <p
+          className={cn(
+            'truncate font-bold text-text-primary',
+            typeof value === 'string' && value.length > 6 ? 'text-lg' : 'text-2xl'
+          )}
+          title={String(value)}
+        >
+          {value}
+        </p>
         {subtext && (
           <div className="mt-0.5 flex items-center gap-1">
             {trend === 'up' && <TrendingUp className="h-3.5 w-3.5 text-success" />}
