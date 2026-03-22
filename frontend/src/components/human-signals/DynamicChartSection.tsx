@@ -4,17 +4,6 @@ import { ChevronDown } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
 import {
-  BarChart,
-  DonutChart,
-  HorizontalBarChart,
-  RankedListView,
-  SingleStatCard,
-  StackedBarChart,
-  TextListView,
-} from './charts';
-import { SignalsTrendChart } from './SignalsTrendChart';
-
-import {
   computeClassificationDistribution,
   computeRankedList,
   computeTextList,
@@ -28,6 +17,17 @@ import {
   type SignalsChartSection,
   type SignalsDisplayConfig,
 } from '@/types';
+
+import {
+  BarChart,
+  DonutChart,
+  HorizontalBarChart,
+  RankedListView,
+  SingleStatCard,
+  StackedBarChart,
+  TextListView,
+} from './charts';
+import { SignalsTrendChart } from './SignalsTrendChart';
 
 interface DynamicChartSectionProps {
   cases: SignalsCaseRecord[];
