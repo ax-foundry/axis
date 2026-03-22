@@ -129,7 +129,7 @@ export function TimeRangeSelector({
                       type="date"
                       value={customStart}
                       onChange={(e) => setCustomStart(e.target.value)}
-                      className="w-full rounded border border-border px-2 py-1.5 text-sm"
+                      className="w-full rounded border border-border bg-surface px-2 py-1.5 text-sm"
                     />
                   </div>
                   <div>
@@ -140,7 +140,7 @@ export function TimeRangeSelector({
                       type="date"
                       value={customEnd}
                       onChange={(e) => setCustomEnd(e.target.value)}
-                      className="w-full rounded border border-border px-2 py-1.5 text-sm"
+                      className="w-full rounded border border-border bg-surface px-2 py-1.5 text-sm"
                     />
                   </div>
                 </div>

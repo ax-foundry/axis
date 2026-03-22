@@ -81,7 +81,7 @@ export function AnnotationControls({
           onChange={(e) => onCritiqueChange(e.target.value)}
           placeholder="Add detailed feedback..."
           rows={2}
-          className="placeholder:text-text-muted/40 w-full rounded-lg border border-border p-2.5 text-xs leading-relaxed text-text-secondary transition-all focus:border-primary focus:shadow-[0_0_0_3px_rgba(139,159,79,0.12)] focus:outline-none"
+          className="placeholder:text-text-muted/40 w-full rounded-lg border border-border bg-surface p-2.5 text-xs leading-relaxed text-text-secondary transition-all focus:border-primary focus:shadow-[0_0_0_3px_rgba(139,159,79,0.12)] focus:outline-none"
         />
         <p className="text-text-muted/70 mt-1 text-[10px]">
           Critique is exported with your annotations and helps reviewers understand your reasoning.
