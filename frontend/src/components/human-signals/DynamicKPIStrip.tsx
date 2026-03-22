@@ -55,18 +55,17 @@ function Sparkline({ data, className }: { data: { value: number }[]; className?:
 
 function getTrendFromSparkline(sparkline?: { value: number }[]): {
   direction: 'up' | 'down' | 'flat';
-  isPositive: boolean;
 } {
-  if (!sparkline || sparkline.length < 2) return { direction: 'flat', isPositive: false };
+  if (!sparkline || sparkline.length < 2) return { direction: 'flat' };
 
   const first = sparkline[0].value;
   const last = sparkline[sparkline.length - 1].value;
   const diff = last - first;
   const threshold = Math.abs(first) * 0.01;
 
-  if (Math.abs(diff) < threshold) return { direction: 'flat', isPositive: false };
+  if (Math.abs(diff) < threshold) return { direction: 'flat' };
   const direction = diff > 0 ? 'up' : 'down';
-  return { direction, isPositive: direction === 'up' };
+  return { direction };
 }
 
 // ---------------------------------------------------------------------------
@@ -183,9 +182,10 @@ export function DynamicKPIStrip({ kpis }: DynamicKPIStripProps) {
         {kpis.map((kpi) => {
           const isSelected = selectedSignalKpi === kpi.key;
           const hasSparkline = kpi.sparkline && kpi.sparkline.length >= 2;
-          const { direction, isPositive } = getTrendFromSparkline(kpi.sparkline);
-          const isGood = isPositive;
-          const isBad = direction !== 'flat' && !isPositive;
+          const { direction } = getTrendFromSparkline(kpi.sparkline);
+          const polarity = kpi.polarity ?? 'higher_better';
+          const isGood = polarity === 'higher_better' ? direction === 'up' : direction === 'down';
+          const isBad = polarity === 'higher_better' ? direction === 'down' : direction === 'up';
 
           const TrendIcon =
             direction === 'up' ? TrendingUp : direction === 'down' ? TrendingDown : Minus;

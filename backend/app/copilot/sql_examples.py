@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 import re
 from dataclasses import dataclass
+from pathlib import Path
 
 import yaml
 
@@ -13,6 +14,9 @@ logger = logging.getLogger("axis.copilot.sql_examples")
 _store_instance: SqlExampleStore | None = None
 _MAX_EXAMPLES = 3
 _WB_RE_CACHE: dict[str, re.Pattern[str]] = {}
+
+# Built-in examples shipped with AXIS (committed to repo)
+_BUILTIN_EXAMPLES_PATH = Path(__file__).parent / "builtin_sql_examples.yaml"
 
 
 @dataclass
@@ -48,16 +52,35 @@ class SqlExampleStore:
         _store_instance = None
 
     def discover(self) -> None:
-        """Load examples from custom/config/sql_examples.yaml if it exists."""
-        yaml_path = get_custom_dir() / "config" / "sql_examples.yaml"
+        """Load built-in examples, then custom examples on top.
+
+        Built-in examples ship with AXIS (``builtin_sql_examples.yaml``).
+        Custom examples in ``custom/config/sql_examples.yaml`` extend them.
+        Both are scored together — the top ``_MAX_EXAMPLES`` by match quality win.
+        """
+        # 1. Built-in examples (shipped with repo)
+        self._load_yaml(_BUILTIN_EXAMPLES_PATH, label="builtin")
+
+        # 2. Custom deployment examples (extend, not replace)
+        custom_path = get_custom_dir() / "config" / "sql_examples.yaml"
+        self._load_yaml(custom_path, label="custom")
+
+        logger.info(
+            "SQL example store ready: %d global + %d agent-specific examples",
+            len(self._examples),
+            sum(len(v) for v in self._agent_examples.values()),
+        )
+
+    def _load_yaml(self, yaml_path: Path, label: str) -> None:
+        """Parse a single YAML file and append its examples to the store."""
         if not yaml_path.exists():
-            logger.debug("No sql_examples.yaml found at %s — skipping", yaml_path)
+            logger.debug("No %s sql_examples at %s — skipping", label, yaml_path)
             return
         try:
             raw = yaml_path.read_bytes().decode("utf-8-sig")
             data = yaml.safe_load(raw) or {}
         except Exception as exc:
-            logger.warning("Failed to load sql_examples.yaml: %s", exc)
+            logger.warning("Failed to load %s sql_examples (%s): %s", label, yaml_path, exc)
             return
 
         for item in data.get("examples", []):
@@ -80,7 +103,7 @@ class SqlExampleStore:
             for agent_name, items in raw_agent_ex.items():
                 if not isinstance(items, list):
                     continue
-                agent_list: list[SqlExample] = []
+                agent_list = self._agent_examples.setdefault(str(agent_name), [])
                 for item in items:
                     if not isinstance(item, dict):
                         continue
@@ -94,10 +117,6 @@ class SqlExampleStore:
                         agent_list.append(
                             SqlExample(triggers=triggers, description=description, sql=sql)
                         )
-                if agent_list:
-                    self._agent_examples[str(agent_name)] = agent_list
-
-        logger.info("SQL example store ready: %d examples loaded", len(self._examples))
 
     def _select_from(
         self, examples: list[SqlExample], message: str, max_examples: int = _MAX_EXAMPLES

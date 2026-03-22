@@ -581,7 +581,7 @@ export function CopilotSidebar({ isOpen, onClose }: CopilotSidebarProps) {
         {/* Engine row */}
         <div className="flex items-center gap-2 px-4 pb-2.5 pt-1">
           <span className="text-xs font-medium text-text-muted">Engine:</span>
-          {(['pydantic-ai', 'oai-agents'] as const).map((p) => (
+          {(['oai-agents'] as const).map((p) => (
             <button
               key={p}
               onClick={() => setProvider(p)}
@@ -592,7 +592,7 @@ export function CopilotSidebar({ isOpen, onClose }: CopilotSidebarProps) {
                   : 'bg-gray-100 text-text-secondary hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600'
               )}
             >
-              {p === 'pydantic-ai' ? 'Pydantic AI' : 'OAI Agents'}
+              {p === 'oai-agents' ? 'OpenAI Agents' : p}
             </button>
           ))}
         </div>

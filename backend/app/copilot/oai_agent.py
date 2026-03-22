@@ -19,7 +19,9 @@ from agents import function_tool as ft
 from app.copilot.agent import (
     _agent_where,
     _apply_agent_scope,
+    _attempt_sql_fix,
     _build_schema_ddl,
+    _compute_column_stats,
     _is_numeric,
     _parse_sql_error_hint,
     _trim_filter_values,
@@ -612,6 +614,9 @@ async def run_sql(
     ) as (_tracer, _span, _cached):
         sql_stripped = sql.strip().rstrip(";")
 
+        sql_err = check_sql_safety(sql_stripped)
+        if sql_err:
+            return _safe_json({"error": sql_err})
         if not sql_stripped.upper().lstrip().startswith(("SELECT", "WITH")):
             return _safe_json({"error": "Only SELECT statements are permitted."})
 
@@ -619,29 +624,46 @@ async def run_sql(
         if "LIMIT" not in sql_stripped.upper():
             sql_stripped = f"{sql_stripped} LIMIT {limit_n}"
 
-        try:
-            async with _tracer.async_span(
-                "copilot.db.query",
-                **safe_span_attrs(
-                    table=deps.table_name,
-                    sql=sql_fingerprint(sql_stripped),
-                    db_system="duckdb",
-                    query_kind="select",
-                ),
-            ) as _sql_span:
-                rows = await anyio.to_thread.run_sync(
-                    lambda: deps.store.query_list(sql_stripped),
-                    limiter=deps.store.query_limiter,
-                )
-                _sql_span.set_output({"row_count": len(rows)})
-            _tracer.add_trace("info", "query_done", metadata={"row_count": len(rows)})
-        except Exception as exc:
-            await deps.thought_stream.emit_observation(f"SQL error: {exc}", tool_name="run_sql")
-            available_cols = list(deps.store.get_table_columns(deps.table_name))
-            hint = _parse_sql_error_hint(str(exc), available_cols, deps.table_name)
-            return _safe_json({"error": hint, "sql_attempted": sql_stripped})
+        sql_to_run = sql_stripped
+        available_cols: list[str] = []
+        for attempt in range(2):  # max 2 attempts
+            try:
+                _current_sql = sql_to_run
+                async with _tracer.async_span(
+                    "copilot.db.query",
+                    **safe_span_attrs(
+                        table=deps.table_name,
+                        sql=sql_fingerprint(_current_sql),
+                        db_system="duckdb",
+                        query_kind="select",
+                    ),
+                ) as _sql_span:
+                    rows = await anyio.to_thread.run_sync(
+                        lambda _s=_current_sql: deps.store.query_list(_s),
+                        limiter=deps.store.query_limiter,
+                    )
+                    _sql_span.set_output({"row_count": len(rows)})
+                _tracer.add_trace("info", "query_done", metadata={"row_count": len(rows)})
+                break  # success
+            except Exception as exc:
+                if attempt == 0:
+                    available_cols = list(deps.store.get_table_columns(deps.table_name))
+                    fixed = _attempt_sql_fix(sql_to_run, str(exc), available_cols)
+                    if fixed:
+                        await deps.thought_stream.emit_observation(
+                            f"SQL error, auto-correcting: {exc}",
+                            tool_name="run_sql",
+                        )
+                        sql_to_run = fixed
+                        continue
+                # No fix or second attempt failed — return error
+                if not available_cols:
+                    available_cols = list(deps.store.get_table_columns(deps.table_name))
+                await deps.thought_stream.emit_observation(f"SQL error: {exc}", tool_name="run_sql")
+                hint = _parse_sql_error_hint(str(exc), available_cols, deps.table_name)
+                return _safe_json({"error": hint, "sql_attempted": sql_to_run})
 
-        deps.last_sql = sql_stripped  # persist for multi-turn refinement
+        deps.last_sql = sql_to_run  # persist for multi-turn refinement
         await deps.thought_stream.emit_observation(
             f"SQL returned {len(rows)} rows",
             tool_name="run_sql",
@@ -1062,9 +1084,8 @@ async def describe_metric_signals(
 
     Args:
         ctx: Run context.
-        metric_name: The metric_name value as it appears in monitoring_data
-                     (e.g. 'Trigger Analysis', 'UW Faithfulness',
-                     'Ranking Grounding', 'Tool Reliability').
+        metric_name: The exact metric_name value as it appears in monitoring_data.
+                     Check the schema context or use summarize_data to see available metric names.
 
     Returns:
         Formatted schema string with field paths, types, values, and SQL examples.
@@ -1110,6 +1131,12 @@ COPILOT_TOOLS: list[FunctionTool] = [
 SYSTEM_PROMPT = (
     "You are an AI assistant that analyzes data stored in DuckDB. "
     "Always use tools to answer data questions — never fabricate numbers. "
+    "You are scoped to one dataset at a time (shown in schema context). "
+    "If a user asks about data that isn't in your current dataset "
+    "(e.g. asks about human conversations when you have monitoring data, "
+    "or asks about KPIs when you have evaluation data), tell them to "
+    "switch to the relevant dataset view and try again. "
+    "Available datasets: monitoring, evaluation, human_signals, kpi. "
     "Use summarize_data for overviews, query_data for record lookups and filtering, "
     "analyze_data for statistics, compare_data for group comparisons, "
     "query_kpi_data when the dataset is kpi, "
@@ -1137,6 +1164,22 @@ SYSTEM_PROMPT = (
     "which column, which time range, which group), do NOT guess — ask a short, "
     "specific clarifying question before calling any tool. "
     "Only ask one question at a time and keep it concise.\n\n"
+    "DUCKDB SQL NOTES (common pitfalls):\n"
+    '- Always double-quote column names: "metric_name", "metric_score"\n'
+    "- Use TRY_CAST(col AS DOUBLE) for numeric aggregations — returns NULL on failure.\n"
+    "- Timestamps may be VARCHAR — wrap with CAST(col AS TIMESTAMP) before DATE_TRUNC.\n"
+    "- json_array_length() returns UBIGINT — always CAST to BIGINT before generate_series:\n"
+    "    generate_series(0, CAST(json_array_length(...) AS BIGINT) - 1)\n"
+    "- Guard empty arrays: WHERE json_array_length(TRY_CAST(col AS JSON)) > 0\n"
+    "  (UBIGINT 0 - 1 causes overflow error)\n"
+    "- Use json_extract_string(col, '$.key') for string fields, "
+    "json_extract(col, '$.key') for nested objects.\n"
+    "- To expand JSON arrays stored in VARCHAR columns:\n"
+    "    SELECT json_extract_string(TRY_CAST(col AS JSON), '$[' || i || ']') AS val\n"
+    "    FROM table, generate_series(0, CAST(json_array_length(TRY_CAST(col AS JSON)) AS BIGINT) - 1) AS t(i)\n"
+    "    WHERE json_array_length(TRY_CAST(col AS JSON)) > 0\n"
+    "- DuckDB does NOT support UNNEST on JSON values — only on native LIST columns.\n"
+    "- Use ILIKE for case-insensitive string matching (not LIKE).\n\n"
     "When asked what you can do or what your capabilities are, describe ONLY what "
     "your tools enable: querying and summarizing the loaded dataset, running SQL, "
     "computing statistics, comparing groups, finding failure patterns, plotting charts, "
@@ -1205,7 +1248,16 @@ async def _build_schema_context(oai_ctx: "OAIContext") -> str:
         except Exception:
             pass
 
-    ddl = _build_schema_ddl(table, oai_ctx.dataset_label, meta, num_ranges)
+    # Compute per-column stats (cardinality, null%)
+    row_count = meta.get("row_count", 0)
+    col_stats = await anyio.to_thread.run_sync(
+        lambda: _compute_column_stats(
+            store, table, all_cols, int(row_count) if isinstance(row_count, int) else 0
+        ),
+        limiter=store.query_limiter,
+    )
+
+    ddl = _build_schema_ddl(table, oai_ctx.dataset_label, meta, num_ranges, col_stats)
 
     extra: list[str] = []
     from app.copilot.metric_catalog import get_metric_catalog_store
@@ -1408,10 +1460,17 @@ class OAICopilotAgent:
 
         agent = self._get_agent()
         tracer = get_copilot_tracer()
-        span_input = str(input_data)[:500] if isinstance(input_data, list) else input_data
+        # Build rich input for Langfuse — shows system prompt + schema + user message
+        prompt_for_trace: list[dict[str, str]] = [
+            {"role": "system", "content": (SYSTEM_PROMPT + ctx.skills_injection)[:3000]},
+        ]
+        if isinstance(input_data, list):
+            prompt_for_trace.extend(input_data)
+        else:
+            prompt_for_trace.append({"role": "user", "content": str(input_data)[:3000]})
         async with tracer.async_span(
             "copilot.agent.execute",
-            input=span_input,
+            input=prompt_for_trace,
             model=self.llm_provider.model,
         ) as _span:
             result = Runner.run_streamed(

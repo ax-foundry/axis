@@ -1,0 +1,301 @@
+# Built-in Q→SQL examples shipped with AXIS.
+#
+# These cover the most common query patterns for evaluation and monitoring data.
+# Custom examples in custom/config/sql_examples.yaml extend (not replace) these.
+# If a custom example has the same triggers, it will be scored and ranked alongside
+# built-in examples — the top 3 by match quality win.
+
+examples:
+  # ── Score overview ──────────────────────────────────────────────────────
+
+  - triggers:
+      - average score
+      - avg score
+      - mean score
+      - overall score
+      - score summary
+    description: "Average score per metric"
+    sql: |
+      SELECT "metric_name",
+             ROUND(AVG(TRY_CAST("metric_score" AS DOUBLE)), 3) AS avg_score,
+             COUNT(*) AS n
+      FROM monitoring_data
+      GROUP BY "metric_name"
+      ORDER BY avg_score
+
+  - triggers:
+      - pass rate
+      - passing
+      - pass fail
+      - threshold
+      - success rate
+      - failure rate
+    description: "Pass rate per metric (score >= threshold or >= 0.8 default)"
+    sql: |
+      SELECT "metric_name",
+             ROUND(100.0 * COUNT(*) FILTER (
+               WHERE TRY_CAST("metric_score" AS DOUBLE) >= COALESCE(TRY_CAST("threshold" AS DOUBLE), 0.8)
+             ) / NULLIF(COUNT(*), 0), 1) AS pass_pct,
+             COUNT(*) AS total
+      FROM monitoring_data
+      GROUP BY "metric_name"
+      ORDER BY pass_pct
+
+  - triggers:
+      - score distribution
+      - histogram
+      - score breakdown
+      - distribution
+    description: "Score distribution in buckets per metric"
+    sql: |
+      SELECT "metric_name",
+             CASE
+               WHEN TRY_CAST("metric_score" AS DOUBLE) >= 0.9 THEN '0.9-1.0'
+               WHEN TRY_CAST("metric_score" AS DOUBLE) >= 0.7 THEN '0.7-0.9'
+               WHEN TRY_CAST("metric_score" AS DOUBLE) >= 0.5 THEN '0.5-0.7'
+               ELSE '0.0-0.5'
+             END AS score_bucket,
+             COUNT(*) AS n
+      FROM monitoring_data
+      GROUP BY "metric_name", score_bucket
+      ORDER BY "metric_name", score_bucket DESC
+
+  # ── Time-based analysis ─────────────────────────────────────────────────
+
+  - triggers:
+      - daily
+      - per day
+      - day over day
+      - daily trend
+      - trend by day
+    description: "Daily average score trend"
+    sql: |
+      SELECT DATE_TRUNC('day', CAST("timestamp" AS TIMESTAMP)) AS day,
+             ROUND(AVG(TRY_CAST("metric_score" AS DOUBLE)), 3) AS avg_score,
+             COUNT(*) AS n
+      FROM monitoring_data
+      GROUP BY day
+      ORDER BY day
+
+  - triggers:
+      - weekly
+      - week over week
+      - trend by week
+      - weekly trend
+    description: "Weekly average score trend"
+    sql: |
+      SELECT DATE_TRUNC('week', CAST("timestamp" AS TIMESTAMP)) AS week,
+             ROUND(AVG(TRY_CAST("metric_score" AS DOUBLE)), 3) AS avg_score,
+             COUNT(*) AS n
+      FROM monitoring_data
+      GROUP BY week
+      ORDER BY week
+
+  - triggers:
+      - latest
+      - most recent
+      - last run
+      - newest
+      - today
+    description: "Most recent day — average score per metric"
+    sql: |
+      SELECT "metric_name",
+             ROUND(AVG(TRY_CAST("metric_score" AS DOUBLE)), 3) AS avg_score,
+             COUNT(*) AS n
+      FROM monitoring_data
+      WHERE DATE_TRUNC('day', CAST("timestamp" AS TIMESTAMP)) = (
+          SELECT MAX(DATE_TRUNC('day', CAST("timestamp" AS TIMESTAMP))) FROM monitoring_data
+      )
+      GROUP BY "metric_name"
+      ORDER BY avg_score DESC
+
+  - triggers:
+      - last week
+      - past week
+      - this week
+      - recent week
+    description: "Last 7 days — daily average scores"
+    sql: |
+      SELECT DATE_TRUNC('day', CAST("timestamp" AS TIMESTAMP)) AS day,
+             "metric_name",
+             ROUND(AVG(TRY_CAST("metric_score" AS DOUBLE)), 3) AS avg_score,
+             COUNT(*) AS n
+      FROM monitoring_data
+      WHERE CAST("timestamp" AS TIMESTAMP) >= CURRENT_DATE - INTERVAL 7 DAY
+      GROUP BY day, "metric_name"
+      ORDER BY day, "metric_name"
+
+  # ── Group comparisons ───────────────────────────────────────────────────
+
+  - triggers:
+      - by agent
+      - per agent
+      - by source
+      - compare agents
+      - source comparison
+    description: "Average score by source/agent"
+    sql: |
+      SELECT "source_name",
+             ROUND(AVG(TRY_CAST("metric_score" AS DOUBLE)), 3) AS avg_score,
+             COUNT(*) AS n
+      FROM monitoring_data
+      GROUP BY "source_name"
+      ORDER BY avg_score DESC
+
+  - triggers:
+      - by environment
+      - per environment
+      - environment comparison
+      - prod vs staging
+    description: "Average score by environment"
+    sql: |
+      SELECT "environment",
+             ROUND(AVG(TRY_CAST("metric_score" AS DOUBLE)), 3) AS avg_score,
+             COUNT(*) AS n
+      FROM monitoring_data
+      GROUP BY "environment"
+      ORDER BY avg_score DESC
+
+  - triggers:
+      - by component
+      - per component
+      - component breakdown
+    description: "Average score by source component"
+    sql: |
+      SELECT "source_component",
+             "metric_name",
+             ROUND(AVG(TRY_CAST("metric_score" AS DOUBLE)), 3) AS avg_score,
+             COUNT(*) AS n
+      FROM monitoring_data
+      GROUP BY "source_component", "metric_name"
+      ORDER BY "source_component", avg_score
+
+  # ── Low score investigation ─────────────────────────────────────────────
+
+  - triggers:
+      - low scores
+      - lowest
+      - worst
+      - failing
+      - poor performance
+      - bottom
+    description: "Records with the lowest scores"
+    sql: |
+      SELECT "metric_name", "metric_score", "query", "actual_output", "explanation", "timestamp"
+      FROM monitoring_data
+      WHERE TRY_CAST("metric_score" AS DOUBLE) < 0.5
+      ORDER BY TRY_CAST("metric_score" AS DOUBLE) ASC
+      LIMIT 20
+
+  - triggers:
+      - high scores
+      - highest
+      - best
+      - top performing
+    description: "Records with the highest scores"
+    sql: |
+      SELECT "metric_name", "metric_score", "query", "actual_output", "timestamp"
+      FROM monitoring_data
+      WHERE TRY_CAST("metric_score" AS DOUBLE) >= 0.9
+      ORDER BY TRY_CAST("metric_score" AS DOUBLE) DESC
+      LIMIT 20
+
+  - triggers:
+      - why low
+      - root cause
+      - failure reason
+      - explain low
+      - what went wrong
+    description: "Low-scoring records with explanations for root-cause analysis"
+    sql: |
+      SELECT "metric_name",
+             ROUND(TRY_CAST("metric_score" AS DOUBLE), 3) AS score,
+             LEFT("explanation", 200) AS explanation_preview,
+             LEFT("query", 100) AS query_preview,
+             "source_name",
+             "timestamp"
+      FROM monitoring_data
+      WHERE TRY_CAST("metric_score" AS DOUBLE) < 0.5
+      ORDER BY "metric_score" ASC
+      LIMIT 30
+
+  # ── Count and volume ────────────────────────────────────────────────────
+
+  - triggers:
+      - count
+      - how many
+      - total records
+      - volume
+      - number of
+    description: "Record count per metric"
+    sql: |
+      SELECT "metric_name",
+             COUNT(*) AS total,
+             MIN(CAST("timestamp" AS TIMESTAMP)) AS earliest,
+             MAX(CAST("timestamp" AS TIMESTAMP)) AS latest
+      FROM monitoring_data
+      GROUP BY "metric_name"
+      ORDER BY total DESC
+
+  - triggers:
+      - count by day
+      - volume by day
+      - daily volume
+      - records per day
+    description: "Daily record volume"
+    sql: |
+      SELECT DATE_TRUNC('day', CAST("timestamp" AS TIMESTAMP)) AS day,
+             COUNT(*) AS n
+      FROM monitoring_data
+      GROUP BY day
+      ORDER BY day
+
+  # ── Evaluation-specific patterns ────────────────────────────────────────
+
+  - triggers:
+      - eval comparison
+      - compare evaluations
+      - evaluation runs
+      - by evaluation
+      - evaluation name
+    description: "Score comparison across evaluation runs"
+    sql: |
+      SELECT "evaluation_name",
+             "metric_name",
+             ROUND(AVG(TRY_CAST("metric_score" AS DOUBLE)), 3) AS avg_score,
+             COUNT(*) AS n
+      FROM monitoring_data
+      GROUP BY "evaluation_name", "metric_name"
+      ORDER BY "evaluation_name", avg_score
+
+  # ── Signals / JSON sub-field patterns ───────────────────────────────────
+
+  - triggers:
+      - signals
+      - signal fields
+      - json fields
+      - sub-fields
+      - verdict
+    description: "Extract scalar signal fields (requires coercion CTE — call describe_metric_signals first)"
+    sql: |
+      WITH base AS (
+        SELECT *,
+          TRY_CAST(
+            regexp_replace(
+              regexp_replace(
+                regexp_replace(
+                  replace(signals, '''', '"'),
+                'None', 'null', 'g'),
+              '\bTrue\b', 'true', 'g'),
+            '\bFalse\b', 'false', 'g')
+          AS JSON) AS sig
+        FROM monitoring_data
+        WHERE metric_name = 'YOUR_METRIC_NAME'
+      )
+      SELECT json_extract_string(sig, '$.signals.verdict') AS verdict,
+             COUNT(*) AS n,
+             ROUND(AVG(TRY_CAST(metric_score AS DOUBLE)), 3) AS avg_score
+      FROM base
+      WHERE sig IS NOT NULL
+      GROUP BY verdict
+      ORDER BY n DESC

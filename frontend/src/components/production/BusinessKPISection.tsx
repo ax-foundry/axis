@@ -42,20 +42,17 @@ function Sparkline({ data, className }: { data: { value: number }[]; className?:
 /** Derive trend direction from sparkline data (last value vs first value) */
 function getTrendFromSparkline(sparkline?: { value: number }[]): {
   direction: 'up' | 'down' | 'flat';
-  isPositive: boolean;
 } {
-  if (!sparkline || sparkline.length < 2) return { direction: 'flat', isPositive: false };
+  if (!sparkline || sparkline.length < 2) return { direction: 'flat' };
 
   const first = sparkline[0].value;
   const last = sparkline[sparkline.length - 1].value;
   const diff = last - first;
   const threshold = Math.abs(first) * 0.01; // 1% threshold
 
-  if (Math.abs(diff) < threshold) return { direction: 'flat', isPositive: false };
+  if (Math.abs(diff) < threshold) return { direction: 'flat' };
   const direction = diff > 0 ? 'up' : 'down';
-  // For rates like compliance/approval, higher is better
-  const isPositive = direction === 'up';
-  return { direction, isPositive };
+  return { direction };
 }
 
 interface BusinessKPISectionProps {
@@ -70,13 +67,14 @@ export function BusinessKPISection({ signalsKPIs, totalCases }: BusinessKPISecti
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
       {signalsKPIs.slice(0, 5).map((kpi) => {
         const hasSparkline = kpi.sparkline && kpi.sparkline.length >= 2;
-        const { direction, isPositive } = getTrendFromSparkline(kpi.sparkline);
+        const { direction } = getTrendFromSparkline(kpi.sparkline);
+        const polarity = kpi.polarity ?? 'higher_better';
 
         const TrendIcon =
           direction === 'up' ? TrendingUp : direction === 'down' ? TrendingDown : Minus;
 
-        const isGood = direction !== 'flat' && isPositive;
-        const isBad = direction !== 'flat' && !isPositive;
+        const isGood = polarity === 'higher_better' ? direction === 'up' : direction === 'down';
+        const isBad = polarity === 'higher_better' ? direction === 'down' : direction === 'up';
 
         return (
           <Link key={kpi.key} href="/human-signals">

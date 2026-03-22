@@ -60,8 +60,7 @@ class SignalSchemaStore:
         """Return a prompt-ready description of the signals JSON schema for a metric.
 
         Args:
-            metric_name: Exact metric_name value from monitoring_data
-                         (e.g. 'Trigger Analysis').
+            metric_name: Exact metric_name value from monitoring_data.
 
         Returns:
             Formatted string with field paths, types, values, and SQL examples.
@@ -154,7 +153,7 @@ class SignalSchemaStore:
             lines.append(
                 "  Example pattern to expand a JSON array:\n"
                 "    SELECT json_extract_string(sig, '$.path[' || i || '].field') AS val\n"
-                "    FROM base, generate_series(0, json_array_length(json_extract(sig, '$.path')) - 1) AS t(i)\n"
+                "    FROM base, generate_series(0, CAST(json_array_length(json_extract(sig, '$.path')) AS BIGINT) - 1) AS t(i)\n"
                 "    WHERE sig IS NOT NULL AND json_array_length(json_extract(sig, '$.path')) > 0"
             )
             lines.append("")

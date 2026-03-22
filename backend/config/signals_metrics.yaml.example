@@ -18,7 +18,16 @@ signals_metrics:
     #   label: "Compliance Rate"
     #   format: percent
     #   icon: shield-check
+    #   polarity: higher_better     # higher_better | lower_better
     #   highlight: true
+    #
+    # Example: metric where a lower percentage trend is good
+    # - metric: escalation_type
+    #   signal: is_escalated
+    #   label: "Escalation Rate"
+    #   format: percent
+    #   icon: alert-triangle
+    #   polarity: lower_better
 
     # Example: numeric signal with aggregation (displayed as duration)
     # - metric: operational_metrics
@@ -27,6 +36,7 @@ signals_metrics:
     #   aggregation: median        # mean | median | sum | min | max | count | p95
     #   format: duration           # duration | number | compact | percent
     #   icon: clock
+    #   polarity: lower_better     # optional, defaults to higher_better
 
     # Example: numeric signal with compact formatting
     # - metric: operational_metrics
@@ -35,6 +45,7 @@ signals_metrics:
     #   aggregation: sum
     #   format: compact            # 1,162 → "1.2K"
     #   icon: hash
+    #   polarity: higher_better    # optional, defaults to higher_better
 
     # Aggregate metrics (computed from case data)
     - aggregate: avg_message_count
@@ -66,6 +77,20 @@ signals_metrics:
     #       signal: failure_step
     #       type: horizontal_bar
     #       title: "Top Failure Modes"
+    #
+    # - title: "Learnings & Feedback"
+    #   layout: grid_2
+    #   charts:
+    #     - metric: learnings_count
+    #       signal: learnings
+    #       type: text_list
+    #       title: "Key Learnings"
+    #       limit: 25              # optional for text_list / ranked_list; newest items shown first for text_list
+    #     - metric: feature_request_count
+    #       signal: feature_requests
+    #       type: text_list
+    #       title: "Feature Requests"
+    #       limit: 25
     []
 
   # Color maps — map signal values to hex colors

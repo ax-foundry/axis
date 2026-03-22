@@ -4,16 +4,6 @@ import { ChevronDown } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
 import {
-  computeClassificationDistribution,
-  computeRankedList,
-  computeTextList,
-  computeBooleanStat,
-  computeSignalTrend,
-  extractTrendSignals,
-} from '@/lib/human-signals-utils';
-import { cn } from '@/lib/utils';
-
-import {
   BarChart,
   DonutChart,
   HorizontalBarChart,
@@ -24,7 +14,20 @@ import {
 } from './charts';
 import { SignalsTrendChart } from './SignalsTrendChart';
 
-import type { SignalsCaseRecord, SignalsChartSection, SignalsDisplayConfig } from '@/types';
+import {
+  computeClassificationDistribution,
+  computeRankedList,
+  computeTextList,
+  computeBooleanStat,
+  computeSignalTrend,
+  extractTrendSignals,
+} from '@/lib/human-signals-utils';
+import { cn } from '@/lib/utils';
+import {
+  type SignalsCaseRecord,
+  type SignalsChartSection,
+  type SignalsDisplayConfig,
+} from '@/types';
 
 interface DynamicChartSectionProps {
   cases: SignalsCaseRecord[];
@@ -124,6 +127,7 @@ function ChartSectionBlock({ section, cases, colorMaps }: ChartSectionBlockProps
               signal={chart.signal}
               type={chart.type}
               title={chart.title}
+              limit={chart.limit}
               cases={cases}
               colorMaps={colorMaps}
             />
@@ -139,11 +143,12 @@ interface ChartCardProps {
   signal: string;
   type: string;
   title: string;
+  limit?: number;
   cases: SignalsCaseRecord[];
   colorMaps: Record<string, Record<string, string>>;
 }
 
-function ChartCard({ metric, signal, type, title, cases, colorMaps }: ChartCardProps) {
+function ChartCard({ metric, signal, type, title, limit, cases, colorMaps }: ChartCardProps) {
   const colorMapKey = `${metric}__${signal}`;
   const colorMap = colorMaps[colorMapKey];
 
@@ -154,13 +159,13 @@ function ChartCard({ metric, signal, type, title, cases, colorMaps }: ChartCardP
 
   const rankedData = useMemo(() => {
     if (type !== 'ranked_list') return [];
-    return computeRankedList(cases, metric, signal, 8);
-  }, [cases, metric, signal, type]);
+    return computeRankedList(cases, metric, signal, limit ?? 8);
+  }, [cases, metric, signal, type, limit]);
 
   const textListData = useMemo(() => {
     if (type !== 'text_list') return [];
-    return computeTextList(cases, metric, signal, 15);
-  }, [cases, metric, signal, type]);
+    return computeTextList(cases, metric, signal, limit ?? 15);
+  }, [cases, metric, signal, type, limit]);
 
   const boolStat = useMemo(() => {
     if (type !== 'single_stat') return null;

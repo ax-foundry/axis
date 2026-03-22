@@ -33,7 +33,7 @@ class RequestResult:
     download_spec: dict[str, Any] | None = None
 
 
-_GENERIC_ERROR = "I encountered an error processing your request. Please try again."
+_GENERIC_ERROR = "I encountered an error processing your request. Please make sure you are asking about the current dataset and try again."
 
 
 async def run_copilot_request(
