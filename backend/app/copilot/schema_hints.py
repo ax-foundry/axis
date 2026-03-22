@@ -29,6 +29,7 @@ class ColumnDef:
     description: str
     values: dict[str, str] | list[str] | None = None
     query_hint: str | None = None
+    format: str | None = None  # e.g. "json_array", "json_object", "boolean_string"
 
 
 @dataclass
@@ -67,6 +68,7 @@ def _parse_column(raw: dict) -> ColumnDef | None:  # type: ignore[type-arg]
         description=str(raw.get("description", "")).strip(),
         values=values,
         query_hint=str(raw.get("query_hint", "")).strip() or None,
+        format=str(raw.get("format", "")).strip() or None,
     )
 
 
@@ -161,7 +163,10 @@ class SchemaHintsStore:
 
         # Flat column descriptions
         for col in tdef.columns:
-            line = f"-- column {col.name}: {col.description}"
+            line = f"-- column {col.name}"
+            if col.format:
+                line += f" (format: {col.format})"
+            line += f": {col.description}"
             if isinstance(col.values, dict):
                 val_str = "; ".join(f"{k}={v[:60]}" for k, v in list(col.values.items())[:6])
                 line += f" [{val_str}]"
@@ -179,7 +184,10 @@ class SchemaHintsStore:
                 parts.append(f"--   {desc}")
             for sig in metric.signals:
                 col_name = f"{metric.name}__{sig.name}"
-                line = f"--   {col_name}: {sig.description}"
+                line = f"--   {col_name}"
+                if sig.format:
+                    line += f" (format: {sig.format})"
+                line += f": {sig.description}"
                 if isinstance(sig.values, dict):
                     val_str = "; ".join(f"{k}={v[:60]}" for k, v in list(sig.values.items())[:6])
                     line += f" [{val_str}]"

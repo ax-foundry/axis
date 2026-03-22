@@ -8,12 +8,12 @@ from app.copilot.tracing import get_copilot_tracer, safe_span_attrs
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator
 
-    from app.copilot.agent import CopilotDeps
+    from app.copilot.context import BaseCopilotContext
 
 
 @asynccontextmanager
 async def tool_span(
-    deps: CopilotDeps,
+    deps: BaseCopilotContext,
     tool_name: str,
     cache_key: str,
     start_msg: str,

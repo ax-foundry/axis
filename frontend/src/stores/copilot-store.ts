@@ -100,7 +100,7 @@ export const useCopilotStore = create<CopilotState>()((set, get) => ({
   sessionId: null,
   selectedDataset: null,
   conversationHistory: [],
-  provider: 'pydantic-ai',
+  provider: 'oai-agents',
   selectedAgent: null,
   conversationResetKey: 0,
 

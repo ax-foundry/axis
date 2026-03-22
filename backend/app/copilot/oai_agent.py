@@ -9,7 +9,7 @@ Run side-by-side with the pydantic-ai agent via ``POST /copilot/stream/oai``.
 
 import logging
 import math
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any
 
 import anyio
@@ -19,15 +19,20 @@ from agents import function_tool as ft
 from app.copilot.agent import (
     _agent_where,
     _apply_agent_scope,
+    _attempt_sql_fix,
     _build_schema_ddl,
-    _check_sql_safety,
+    _compute_column_stats,
     _is_numeric,
     _parse_sql_error_hint,
-    _safe_json,
     _trim_filter_values,
     _truncate_result,
 )
+from app.copilot.context import BaseCopilotContext, _safe_json
+from app.copilot.guardrails import check_sql_safety
+from app.copilot.hooks import tool_span
 from app.copilot.llm.provider import LLMProvider
+from app.copilot.request_classifier import PreparedRequest
+from app.copilot.request_router import run_copilot_request
 from app.copilot.thoughts import ThoughtStream
 from app.copilot.tracing import get_copilot_tracer, safe_span_attrs, sql_fingerprint
 
@@ -40,62 +45,8 @@ logger = logging.getLogger("axis.copilot.oai_agent")
 
 
 @dataclass
-class OAIContext:
-    """Runtime context for OAI Copilot tools — mirrors CopilotDeps."""
-
-    thought_stream: ThoughtStream
-    dataset_label: str = "evaluation"
-    data_context: dict[str, Any] = field(default_factory=dict)
-    _cache: dict[str, str] = field(default_factory=dict)
-    chart_spec: dict[str, Any] | None = None
-    download_spec: dict[str, Any] | None = None  # set by download_data tool
-    user_id: str | None = None  # resolved from request header / body
-    last_sql: str = ""  # last successfully executed SQL (persisted across turns via agent instance)
-    sql_examples_injection: str = ""  # verified Q→SQL examples matched to this request
-    skills_injection: str = ""  # pre-computed skill bodies for this request
-    agent_name: str | None = None  # source_name filter applied to all queries
-
-    @property
-    def table_name(self) -> str:
-        """DuckDB table name for the current dataset label."""
-        from app.services.duckdb_store import DATASET_TABLE_MAP
-
-        return DATASET_TABLE_MAP.get(self.dataset_label, "eval_data")
-
-    @property
-    def store(self):
-        """DuckDB store singleton."""
-        from app.services.duckdb_store import get_store
-
-        return get_store()
-
-    @property
-    def has_data(self) -> bool:
-        """True if the dataset table exists in DuckDB."""
-        return self.store.has_table(self.table_name)
-
-    def _cache_key(self, tool: str, params: str) -> str:
-        rc = self.store.get_metadata(self.table_name).get("row_count", 0)
-        return f"{tool}:{hash(params)}:{self.table_name}:{rc}"
-
-    def get_cached(self, tool: str, params: str) -> str | None:
-        """Return cached tool result or None."""
-        return self._cache.get(self._cache_key(tool, params))
-
-    def set_cached(self, tool: str, params: str, result: str) -> None:
-        """Store a tool result in the in-session cache."""
-        self._cache[self._cache_key(tool, params)] = result
-
-    def no_data_error(self) -> str:
-        """Return a standard JSON error message when dataset is not available."""
-        return _safe_json(
-            {
-                "error": (
-                    f"No {self.dataset_label} data available. "
-                    "Upload a CSV or trigger a sync first."
-                )
-            }
-        )
+class OAIContext(BaseCopilotContext):
+    """OpenAI Agents SDK copilot context — inherits all shared fields from BaseCopilotContext."""
 
 
 # ---------------------------------------------------------------------------
@@ -104,34 +55,11 @@ class OAIContext:
 
 
 class CopilotRunHooks(RunHooks[OAIContext]):
-    """Lifecycle hooks that emit ThoughtStream events during the agent run."""
+    """Lifecycle hooks for the OAI agent run.
 
-    async def on_tool_start(
-        self,
-        context: RunContextWrapper[OAIContext],
-        agent: Any,
-        tool: Any,
-    ) -> None:
-        """Emit a tool-use thought when a tool is about to be called."""
-        tool_name = getattr(tool, "name", str(tool))
-        await context.context.thought_stream.emit_tool_use(
-            f"Using tool: {tool_name}",
-            tool_name=tool_name,
-        )
-
-    async def on_tool_end(
-        self,
-        context: RunContextWrapper[OAIContext],
-        agent: Any,
-        tool: Any,
-        result: str,
-    ) -> None:
-        """Emit an observation thought when a tool finishes."""
-        tool_name = getattr(tool, "name", str(tool))
-        await context.context.thought_stream.emit_observation(
-            f"Tool {tool_name} completed",
-            tool_name=tool_name,
-        )
+    Tool-level thought emission is handled by ``tool_span()`` — no
+    ``on_tool_start``/``on_tool_end`` needed here.
+    """
 
 
 # ---------------------------------------------------------------------------
@@ -154,15 +82,14 @@ async def summarize_data(
         JSON with dataset overview.
     """
     deps = ctx.context
-    tracer = get_copilot_tracer()
-    async with tracer.async_span(
-        "copilot.tool.call",
-        input={"include_numeric_stats": include_numeric_stats},
-        **safe_span_attrs(tool_name="summarize_data", dataset=deps.dataset_label),
-    ) as _span:
-        cache_str = f"summarize:{include_numeric_stats}"
-        cached = deps.get_cached("summarize_data", cache_str)
-        tracer.add_trace("info", "cache_hit" if cached else "cache_miss")
+    cache_str = f"summarize:{include_numeric_stats}"
+    async with tool_span(
+        deps,
+        "summarize_data",
+        cache_str,
+        f"Summarizing {deps.dataset_label} dataset...",
+        {"include_numeric_stats": include_numeric_stats},
+    ) as (_tracer, _span, cached):
         if cached:
             return cached
 
@@ -222,7 +149,7 @@ async def summarize_data(
         )
         out = _truncate_result(_safe_json(result))
         deps.set_cached("summarize_data", cache_str, out)
-        tracer.add_trace("info", "tool_complete", metadata={"result_len": len(out)})
+        _tracer.add_trace("info", "tool_complete", metadata={"result_len": len(out)})
         _span.set_output(out[:500] if len(out) > 500 else out)
         return out
 
@@ -252,10 +179,16 @@ async def query_data(
         JSON with matching records and total count.
     """
     deps = ctx.context
-    tracer = get_copilot_tracer()
-    async with tracer.async_span(
-        "copilot.tool.call",
-        input={
+    cache_str = (
+        f"query:{filter_column}:{filter_value}:{find_min_column}"
+        f":{find_max_column}:{search_text}:{limit}"
+    )
+    async with tool_span(
+        deps,
+        "query_data",
+        cache_str,
+        f"Querying {deps.dataset_label} dataset...",
+        {
             "filter_column": filter_column,
             "filter_value": filter_value,
             "find_min_column": find_min_column,
@@ -263,14 +196,7 @@ async def query_data(
             "search_text": search_text,
             "limit": limit,
         },
-        **safe_span_attrs(tool_name="query_data", dataset=deps.dataset_label),
-    ) as _span:
-        cache_str = (
-            f"query:{filter_column}:{filter_value}:{find_min_column}"
-            f":{find_max_column}:{search_text}:{limit}"
-        )
-        cached = deps.get_cached("query_data", cache_str)
-        tracer.add_trace("info", "cache_hit" if cached else "cache_miss")
+    ) as (_tracer, _span, cached):
         if cached:
             return cached
 
@@ -376,7 +302,7 @@ async def query_data(
         )
         out = _truncate_result(_safe_json(result))
         deps.set_cached("query_data", cache_str, out)
-        tracer.add_trace("info", "tool_complete", metadata={"result_len": len(out)})
+        _tracer.add_trace("info", "tool_complete", metadata={"result_len": len(out)})
         _span.set_output(out[:500] if len(out) > 500 else out)
         return out
 
@@ -396,15 +322,14 @@ async def analyze_data(
         JSON with per-column distribution statistics and insights.
     """
     deps = ctx.context
-    tracer = get_copilot_tracer()
-    async with tracer.async_span(
-        "copilot.tool.call",
-        input={"columns": columns},
-        **safe_span_attrs(tool_name="analyze_data", dataset=deps.dataset_label),
-    ) as _span:
-        cache_str = f"analyze:{sorted(columns) if columns else 'all'}"
-        cached = deps.get_cached("analyze_data", cache_str)
-        tracer.add_trace("info", "cache_hit" if cached else "cache_miss")
+    cache_str = f"analyze:{sorted(columns) if columns else 'all'}"
+    async with tool_span(
+        deps,
+        "analyze_data",
+        cache_str,
+        f"Analyzing {deps.dataset_label} statistics...",
+        {"columns": columns},
+    ) as (_tracer, _span, cached):
         if cached:
             return cached
 
@@ -486,7 +411,7 @@ async def analyze_data(
         )
         out = _truncate_result(_safe_json(result))
         deps.set_cached("analyze_data", cache_str, out)
-        tracer.add_trace("info", "tool_complete", metadata={"result_len": len(out)})
+        _tracer.add_trace("info", "tool_complete", metadata={"result_len": len(out)})
         _span.set_output(out[:500] if len(out) > 500 else out)
         return out
 
@@ -508,15 +433,14 @@ async def compare_data(
         JSON with per-group averages and row counts.
     """
     deps = ctx.context
-    tracer = get_copilot_tracer()
-    async with tracer.async_span(
-        "copilot.tool.call",
-        input={"group_by": group_by, "metric_column": metric_column},
-        **safe_span_attrs(tool_name="compare_data", dataset=deps.dataset_label),
-    ) as _span:
-        cache_str = f"compare:{group_by}:{metric_column}"
-        cached = deps.get_cached("compare_data", cache_str)
-        tracer.add_trace("info", "cache_hit" if cached else "cache_miss")
+    cache_str = f"compare:{group_by}:{metric_column}"
+    async with tool_span(
+        deps,
+        "compare_data",
+        cache_str,
+        f"Comparing groups in {deps.dataset_label}...",
+        {"group_by": group_by, "metric_column": metric_column},
+    ) as (_tracer, _span, cached):
         if cached:
             return cached
 
@@ -587,7 +511,7 @@ async def compare_data(
         )
         out = _truncate_result(_safe_json(result))
         deps.set_cached("compare_data", cache_str, out)
-        tracer.add_trace("info", "tool_complete", metadata={"result_len": len(out)})
+        _tracer.add_trace("info", "tool_complete", metadata={"result_len": len(out)})
         _span.set_output(out[:500] if len(out) > 500 else out)
         return out
 
@@ -609,15 +533,14 @@ async def query_kpi_data(
         JSON with KPI records.
     """
     deps = ctx.context
-    tracer = get_copilot_tracer()
-    async with tracer.async_span(
-        "copilot.tool.call",
-        input={"filter_category": filter_category, "limit": limit},
-        **safe_span_attrs(tool_name="query_kpi_data", dataset=deps.dataset_label),
-    ) as _span:
-        cache_str = f"kpi:{filter_category}:{limit}"
-        cached = deps.get_cached("query_kpi_data", cache_str)
-        tracer.add_trace("info", "cache_hit" if cached else "cache_miss")
+    cache_str = f"kpi:{filter_category}:{limit}"
+    async with tool_span(
+        deps,
+        "query_kpi_data",
+        cache_str,
+        "Querying KPI data...",
+        {"filter_category": filter_category, "limit": limit},
+    ) as (_tracer, _span, cached):
         if cached:
             return cached
 
@@ -653,7 +576,7 @@ async def query_kpi_data(
         )
         out = _truncate_result(_safe_json(result))
         deps.set_cached("query_kpi_data", cache_str, out)
-        tracer.add_trace("info", "tool_complete", metadata={"result_len": len(out)})
+        _tracer.add_trace("info", "tool_complete", metadata={"result_len": len(out)})
         _span.set_output(out[:500] if len(out) > 500 else out)
         return out
 
@@ -681,21 +604,19 @@ async def run_sql(
         JSON with rows and row count.
     """
     deps = ctx.context
-    tracer = get_copilot_tracer()
-    async with tracer.async_span(
-        "copilot.tool.call",
-        input={"sql": sql_fingerprint(sql.strip()), "limit": limit},
-        **safe_span_attrs(tool_name="run_sql", dataset=deps.dataset_label),
-    ) as _span:
+    cache_str = ""
+    async with tool_span(
+        deps,
+        "run_sql",
+        cache_str,
+        f"Running SQL: {sql.strip()[:120]}{'…' if len(sql.strip()) > 120 else ''}",
+        {"sql": sql_fingerprint(sql.strip()), "limit": limit},
+    ) as (_tracer, _span, _cached):
         sql_stripped = sql.strip().rstrip(";")
 
-        await deps.thought_stream.emit_tool_use(
-            f"Running SQL: {sql_stripped[:120]}{'…' if len(sql_stripped) > 120 else ''}",
-            tool_name="run_sql",
-        )
-
-        tracer.add_trace("info", "cache_miss")
-
+        sql_err = check_sql_safety(sql_stripped)
+        if sql_err:
+            return _safe_json({"error": sql_err})
         if not sql_stripped.upper().lstrip().startswith(("SELECT", "WITH")):
             return _safe_json({"error": "Only SELECT statements are permitted."})
 
@@ -703,35 +624,52 @@ async def run_sql(
         if "LIMIT" not in sql_stripped.upper():
             sql_stripped = f"{sql_stripped} LIMIT {limit_n}"
 
-        try:
-            async with tracer.async_span(
-                "copilot.db.query",
-                **safe_span_attrs(
-                    table=deps.table_name,
-                    sql=sql_fingerprint(sql_stripped),
-                    db_system="duckdb",
-                    query_kind="select",
-                ),
-            ) as _sql_span:
-                rows = await anyio.to_thread.run_sync(
-                    lambda: deps.store.query_list(sql_stripped),
-                    limiter=deps.store.query_limiter,
-                )
-                _sql_span.set_output({"row_count": len(rows)})
-            tracer.add_trace("info", "query_done", metadata={"row_count": len(rows)})
-        except Exception as exc:
-            await deps.thought_stream.emit_observation(f"SQL error: {exc}", tool_name="run_sql")
-            available_cols = list(deps.store.get_table_columns(deps.table_name))
-            hint = _parse_sql_error_hint(str(exc), available_cols, deps.table_name)
-            return _safe_json({"error": hint, "sql_attempted": sql_stripped})
+        sql_to_run = sql_stripped
+        available_cols: list[str] = []
+        for attempt in range(2):  # max 2 attempts
+            try:
+                _current_sql = sql_to_run
+                async with _tracer.async_span(
+                    "copilot.db.query",
+                    **safe_span_attrs(
+                        table=deps.table_name,
+                        sql=sql_fingerprint(_current_sql),
+                        db_system="duckdb",
+                        query_kind="select",
+                    ),
+                ) as _sql_span:
+                    rows = await anyio.to_thread.run_sync(
+                        lambda _s=_current_sql: deps.store.query_list(_s),
+                        limiter=deps.store.query_limiter,
+                    )
+                    _sql_span.set_output({"row_count": len(rows)})
+                _tracer.add_trace("info", "query_done", metadata={"row_count": len(rows)})
+                break  # success
+            except Exception as exc:
+                if attempt == 0:
+                    available_cols = list(deps.store.get_table_columns(deps.table_name))
+                    fixed = _attempt_sql_fix(sql_to_run, str(exc), available_cols)
+                    if fixed:
+                        await deps.thought_stream.emit_observation(
+                            f"SQL error, auto-correcting: {exc}",
+                            tool_name="run_sql",
+                        )
+                        sql_to_run = fixed
+                        continue
+                # No fix or second attempt failed — return error
+                if not available_cols:
+                    available_cols = list(deps.store.get_table_columns(deps.table_name))
+                await deps.thought_stream.emit_observation(f"SQL error: {exc}", tool_name="run_sql")
+                hint = _parse_sql_error_hint(str(exc), available_cols, deps.table_name)
+                return _safe_json({"error": hint, "sql_attempted": sql_to_run})
 
-        deps.last_sql = sql_stripped  # persist for multi-turn refinement
+        deps.last_sql = sql_to_run  # persist for multi-turn refinement
         await deps.thought_stream.emit_observation(
             f"SQL returned {len(rows)} rows",
             tool_name="run_sql",
         )
         out = _truncate_result(_safe_json({"rows": rows, "count": len(rows)}))
-        tracer.add_trace("info", "tool_complete", metadata={"result_len": len(out)})
+        _tracer.add_trace("info", "tool_complete", metadata={"result_len": len(out)})
         _span.set_output(out[:500] if len(out) > 500 else out)
         return out
 
@@ -770,30 +708,25 @@ async def plot_data(
         Confirmation that the chart was created.
     """
     deps = ctx.context
-    tracer = get_copilot_tracer()
-    async with tracer.async_span(
-        "copilot.tool.call",
-        input={
+    title_text = (layout or {}).get("title", {})
+    if isinstance(title_text, dict):
+        title_text = title_text.get("text", "chart")
+    cache_str = ""
+    async with tool_span(
+        deps,
+        "plot_data",
+        cache_str,
+        f"Building chart: {title_text}",
+        {
             "sql": sql_fingerprint(sql.strip()),
             "layout_title": (layout or {}).get("title", ""),
         },
-        **safe_span_attrs(tool_name="plot_data", dataset=deps.dataset_label),
-    ) as _span:
-        tracer.add_trace("info", "cache_miss")
-
-        title_text = (layout or {}).get("title", {})
-        if isinstance(title_text, dict):
-            title_text = title_text.get("text", "chart")
-        await deps.thought_stream.emit_tool_use(
-            f"Building chart: {title_text}",
-            tool_name="plot_data",
-        )
-
+    ) as (_tracer, _span, _cached):
         if not deps.has_data:
             return deps.no_data_error()
 
         sql_stripped = sql.strip().rstrip(";")
-        sql_err = _check_sql_safety(sql_stripped)
+        sql_err = check_sql_safety(sql_stripped)
         if sql_err:
             return _safe_json({"error": sql_err})
         if not sql_stripped.upper().lstrip().startswith(("SELECT", "WITH")):
@@ -803,7 +736,7 @@ async def plot_data(
             sql_stripped = f"{sql_stripped} LIMIT 500"
 
         try:
-            async with tracer.async_span(
+            async with _tracer.async_span(
                 "copilot.db.query",
                 **safe_span_attrs(
                     table=deps.table_name,
@@ -817,7 +750,7 @@ async def plot_data(
                     limiter=deps.store.query_limiter,
                 )
                 _sql_span.set_output({"row_count": len(rows)})
-            tracer.add_trace("info", "query_done", metadata={"row_count": len(rows)})
+            _tracer.add_trace("info", "query_done", metadata={"row_count": len(rows)})
         except Exception as exc:
             return _safe_json({"error": f"Query failed: {exc}"})
 
@@ -894,7 +827,7 @@ async def plot_data(
             f"Chart ready: {title_text} ({n_points} points, {len(resolved_traces)} series)",
             tool_name="plot_data",
         )
-        tracer.add_trace("info", "tool_complete", metadata={"result_len": n_points})
+        _tracer.add_trace("info", "tool_complete", metadata={"result_len": n_points})
         out = f"Chart created: '{title_text}' — {n_points} data points, {len(resolved_traces)} series."
         _span.set_output(out[:200] if len(out) > 200 else out)
         return out
@@ -931,22 +864,19 @@ async def analyze_patterns(
     from app.services.issue_extractor_service import run_analysis_pipeline
 
     deps = ctx.context
-    tracer = get_copilot_tracer()
-    async with tracer.async_span(
-        "copilot.tool.call",
-        input={"sql": sql_fingerprint(sql.strip()), "mode": mode, "report_type": report_type},
-        **safe_span_attrs(tool_name="analyze_patterns", dataset=deps.dataset_label),
-    ) as _span:
-        await deps.thought_stream.emit_tool_use(
-            "Analyzing patterns...",
-            tool_name="analyze_patterns",
-        )
-
+    cache_str = ""
+    async with tool_span(
+        deps,
+        "analyze_patterns",
+        cache_str,
+        "Analyzing patterns...",
+        {"sql": sql_fingerprint(sql.strip()), "mode": mode, "report_type": report_type},
+    ) as (_tracer, _span, _cached):
         if not deps.has_data:
             return deps.no_data_error()
 
         sql_stripped = sql.strip().rstrip(";")
-        sql_err = _check_sql_safety(sql_stripped)
+        sql_err = check_sql_safety(sql_stripped)
         if sql_err:
             return _safe_json({"error": sql_err})
         if not sql_stripped.upper().lstrip().startswith(("SELECT", "WITH")):
@@ -994,7 +924,7 @@ async def analyze_patterns(
             tool_name="analyze_patterns",
         )
 
-        tracer.add_trace(
+        _tracer.add_trace(
             "info", "tool_complete", metadata={"issues_found": result.get("issues_found", 0)}
         )
         out = _truncate_result(_safe_json(result))
@@ -1027,22 +957,19 @@ async def save_as_dataset(
         JSON with dataset_id, name, table, row_count, columns.
     """
     deps = ctx.context
-    tracer = get_copilot_tracer()
-    async with tracer.async_span(
-        "copilot.tool.call",
-        input={"sql": sql_fingerprint(sql.strip()), "name": name},
-        **safe_span_attrs(tool_name="save_as_dataset", dataset=deps.dataset_label),
-    ) as _span:
-        await deps.thought_stream.emit_tool_use(
-            f"Saving dataset: {name}",
-            tool_name="save_as_dataset",
-        )
-
+    cache_str = ""
+    async with tool_span(
+        deps,
+        "save_as_dataset",
+        cache_str,
+        f"Saving dataset: {name}",
+        {"sql": sql_fingerprint(sql.strip()), "name": name},
+    ) as (_tracer, _span, _cached):
         if not deps.has_data:
             return deps.no_data_error()
 
         sql_stripped = sql.strip().rstrip(";")
-        sql_err = _check_sql_safety(sql_stripped)
+        sql_err = check_sql_safety(sql_stripped)
         if sql_err:
             return _safe_json({"error": sql_err})
         if not sql_stripped.upper().lstrip().startswith(("SELECT", "WITH")):
@@ -1067,7 +994,7 @@ async def save_as_dataset(
             tool_name="save_as_dataset",
         )
 
-        tracer.add_trace("info", "tool_complete", metadata={"row_count": result["row_count"]})
+        _tracer.add_trace("info", "tool_complete", metadata={"row_count": result["row_count"]})
         out = _safe_json(result)
         _span.set_output(out[:200] if len(out) > 200 else out)
         return out
@@ -1094,22 +1021,19 @@ async def download_data(
         Confirmation with row count.
     """
     deps = ctx.context
-    tracer = get_copilot_tracer()
-    async with tracer.async_span(
-        "copilot.tool.call",
-        input={"sql": sql_fingerprint(sql.strip()), "filename": filename},
-        **safe_span_attrs(tool_name="download_data", dataset=deps.dataset_label),
-    ) as _span:
-        await deps.thought_stream.emit_tool_use(
-            "Preparing download…",
-            tool_name="download_data",
-        )
-
+    cache_str = ""
+    async with tool_span(
+        deps,
+        "download_data",
+        cache_str,
+        "Preparing download\u2026",
+        {"sql": sql_fingerprint(sql.strip()), "filename": filename},
+    ) as (_tracer, _span, _cached):
         if not deps.has_data:
             return deps.no_data_error()
 
         sql_stripped = sql.strip().rstrip(";")
-        sql_err = _check_sql_safety(sql_stripped)
+        sql_err = check_sql_safety(sql_stripped)
         if sql_err:
             return _safe_json({"error": sql_err})
         if not sql_stripped.upper().lstrip().startswith(("SELECT", "WITH")):
@@ -1139,7 +1063,7 @@ async def download_data(
             tool_name="download_data",
         )
 
-        tracer.add_trace("info", "tool_complete", metadata={"row_count": int(row_count)})
+        _tracer.add_trace("info", "tool_complete", metadata={"row_count": int(row_count)})
         out = _safe_json(
             {"status": "ready", "row_count": int(row_count), "filename": safe_filename}
         )
@@ -1160,22 +1084,21 @@ async def describe_metric_signals(
 
     Args:
         ctx: Run context.
-        metric_name: The metric_name value as it appears in monitoring_data
-                     (e.g. 'Trigger Analysis', 'UW Faithfulness',
-                     'Ranking Grounding', 'Tool Reliability').
+        metric_name: The exact metric_name value as it appears in monitoring_data.
+                     Check the schema context or use summarize_data to see available metric names.
 
     Returns:
         Formatted schema string with field paths, types, values, and SQL examples.
     """
     deps = ctx.context
-    tracer = get_copilot_tracer()
-    async with tracer.async_span(
-        "copilot.tool.call",
-        input={"metric_name": metric_name},
-        **safe_span_attrs(tool_name="describe_metric_signals", dataset=deps.dataset_label),
-    ) as _span:
-        cached = deps.get_cached("describe_metric_signals", metric_name)
-        tracer.add_trace("info", "cache_hit" if cached else "cache_miss")
+    cache_str = metric_name
+    async with tool_span(
+        deps,
+        "describe_metric_signals",
+        cache_str,
+        f"Loading signal schema for '{metric_name}'...",
+        {"metric_name": metric_name},
+    ) as (_tracer, _span, cached):
         if cached:
             return cached
 
@@ -1208,6 +1131,12 @@ COPILOT_TOOLS: list[FunctionTool] = [
 SYSTEM_PROMPT = (
     "You are an AI assistant that analyzes data stored in DuckDB. "
     "Always use tools to answer data questions — never fabricate numbers. "
+    "You are scoped to one dataset at a time (shown in schema context). "
+    "If a user asks about data that isn't in your current dataset "
+    "(e.g. asks about human conversations when you have monitoring data, "
+    "or asks about KPIs when you have evaluation data), tell them to "
+    "switch to the relevant dataset view and try again. "
+    "Available datasets: monitoring, evaluation, human_signals, kpi. "
     "Use summarize_data for overviews, query_data for record lookups and filtering, "
     "analyze_data for statistics, compare_data for group comparisons, "
     "query_kpi_data when the dataset is kpi, "
@@ -1235,6 +1164,22 @@ SYSTEM_PROMPT = (
     "which column, which time range, which group), do NOT guess — ask a short, "
     "specific clarifying question before calling any tool. "
     "Only ask one question at a time and keep it concise.\n\n"
+    "DUCKDB SQL NOTES (common pitfalls):\n"
+    '- Always double-quote column names: "metric_name", "metric_score"\n'
+    "- Use TRY_CAST(col AS DOUBLE) for numeric aggregations — returns NULL on failure.\n"
+    "- Timestamps may be VARCHAR — wrap with CAST(col AS TIMESTAMP) before DATE_TRUNC.\n"
+    "- json_array_length() returns UBIGINT — always CAST to BIGINT before generate_series:\n"
+    "    generate_series(0, CAST(json_array_length(...) AS BIGINT) - 1)\n"
+    "- Guard empty arrays: WHERE json_array_length(TRY_CAST(col AS JSON)) > 0\n"
+    "  (UBIGINT 0 - 1 causes overflow error)\n"
+    "- Use json_extract_string(col, '$.key') for string fields, "
+    "json_extract(col, '$.key') for nested objects.\n"
+    "- To expand JSON arrays stored in VARCHAR columns:\n"
+    "    SELECT json_extract_string(TRY_CAST(col AS JSON), '$[' || i || ']') AS val\n"
+    "    FROM table, generate_series(0, CAST(json_array_length(TRY_CAST(col AS JSON)) AS BIGINT) - 1) AS t(i)\n"
+    "    WHERE json_array_length(TRY_CAST(col AS JSON)) > 0\n"
+    "- DuckDB does NOT support UNNEST on JSON values — only on native LIST columns.\n"
+    "- Use ILIKE for case-insensitive string matching (not LIKE).\n\n"
     "When asked what you can do or what your capabilities are, describe ONLY what "
     "your tools enable: querying and summarizing the loaded dataset, running SQL, "
     "computing statistics, comparing groups, finding failure patterns, plotting charts, "
@@ -1253,7 +1198,12 @@ SYSTEM_PROMPT = (
     "4. SQL SAFETY: Only issue SELECT queries. Never produce DROP, INSERT, UPDATE, "
     "DELETE, CREATE, ALTER, TRUNCATE, or any other data-modification statement.\n"
     "5. ERRORS: If a tool returns an error, summarise it in plain English. "
-    "Never expose raw stack traces or exception details to the user."
+    "Never expose raw stack traces or exception details to the user.\n"
+    "6. INTERNALS: Never mention internal implementation details to the user — "
+    "schema parsing issues, column coercion failures, signal format mismatches, "
+    "JSON extraction problems, or data shape limitations are YOUR problem to work "
+    "around, not something the user needs to know about. Focus your answer on "
+    "what the data shows, not on what you struggled to query."
 )
 
 
@@ -1298,7 +1248,16 @@ async def _build_schema_context(oai_ctx: "OAIContext") -> str:
         except Exception:
             pass
 
-    ddl = _build_schema_ddl(table, oai_ctx.dataset_label, meta, num_ranges)
+    # Compute per-column stats (cardinality, null%)
+    row_count = meta.get("row_count", 0)
+    col_stats = await anyio.to_thread.run_sync(
+        lambda: _compute_column_stats(
+            store, table, all_cols, int(row_count) if isinstance(row_count, int) else 0
+        ),
+        limiter=store.query_limiter,
+    )
+
+    ddl = _build_schema_ddl(table, oai_ctx.dataset_label, meta, num_ranges, col_stats)
 
     extra: list[str] = []
     from app.copilot.metric_catalog import get_metric_catalog_store
@@ -1351,23 +1310,32 @@ async def _build_schema_context(oai_ctx: "OAIContext") -> str:
 # ---------------------------------------------------------------------------
 
 
-def _build_message_with_history(
+def _build_structured_input(
     message: str,
     conversation_history: list[dict[str, Any]] | None,
-) -> str:
-    """Embed prior turns into the message string (same pattern as CopilotAgent)."""
+) -> str | list[dict[str, str]]:
+    """Build structured message input for the OpenAI Agents SDK.
+
+    Returns a plain string for single-turn, or a list of role/content dicts
+    preserving conversation structure for multi-turn. This gives the model
+    proper role boundaries instead of flattening everything into one string.
+    """
     if not conversation_history:
         return message
-    history_lines = [
-        f"{m['role'].upper()}: {m['content']}"
-        for m in conversation_history[-6:]
-        if isinstance(m, dict) and "role" in m and "content" in m
-    ]
-    if not history_lines:
+
+    messages: list[dict[str, str]] = []
+    for m in conversation_history[-6:]:
+        if isinstance(m, dict) and "role" in m and "content" in m:
+            role = m["role"]
+            if role not in ("user", "assistant"):
+                continue
+            messages.append({"role": role, "content": m["content"]})
+
+    if not messages:
         return message
-    return (
-        "Previous conversation:\n" + "\n".join(history_lines) + f"\n\nCurrent question: {message}"
-    )
+
+    messages.append({"role": "user", "content": message})
+    return messages
 
 
 class OAICopilotAgent:
@@ -1438,124 +1406,106 @@ class OAICopilotAgent:
     ) -> tuple[str, dict[str, Any] | None, dict[str, Any] | None]:
         """Process a user message and return the agent's response.
 
-        Args:
-            message: User's message/query.
-            dataset_label: Dataset to query (evaluation, monitoring, human_signals, kpi).
-            data_context: Optional schema hints (columns, format, row_count).
-            conversation_history: Prior conversation turns for multi-turn context.
-            user_id: Resolved user identifier for per-user dataset scoping.
-            agent_name: source_name to scope all queries to a specific agent.
-
-        Returns:
-            Tuple of (response string, chart spec or None, download spec or None).
+        Delegates to ``run_copilot_request()`` which handles guardrails,
+        preparation, tracing, and output sanitization.
         """
-        logger.info("OAI: Processing: %s... (dataset=%s)", message[:100], dataset_label)
+        result = await run_copilot_request(
+            message=message,
+            thought_stream=self.thought_stream,
+            build_context=self._build_context,
+            execute=self._execute,
+            dataset_label=dataset_label,
+            data_context=data_context,
+            conversation_history=conversation_history,
+            user_id=user_id,
+            agent_name=agent_name,
+            provider_label="oai_agents",
+            agent_framework="openai_agents",
+        )
+        return result.response, result.chart_spec, result.download_spec
 
-        from app.copilot.skills import get_skill_registry
-        from app.copilot.sql_examples import get_sql_example_store
-
-        _registry = get_skill_registry()
-        _ctx_snippets = [
-            m["content"]
-            for m in (conversation_history or [])[-3:]
-            if isinstance(m, dict) and "content" in m
-        ]
-        _selected = _registry.select_skills(message, conversation_context=_ctx_snippets)
-        _skills_injection = _registry.get_system_prompt_injection(_selected)
-        if _selected:
-            skill_names = ", ".join(s.name for s in _selected)
-            await self.thought_stream.emit_planning(
-                f"Applying skills: {skill_names}", node_name="Agent"
-            )
-
-        _example_store = get_sql_example_store()
-        _sql_examples = _example_store.select_for_agent(message, agent_name)
-        _sql_examples_injection = _example_store.get_injection(_sql_examples)
-
-        oai_ctx = OAIContext(
+    def _build_context(
+        self,
+        prepared: PreparedRequest,
+        dataset_label: str | None,
+        data_context: dict[str, Any] | None,
+        user_id: str | None,
+        agent_name: str | None,
+    ) -> OAIContext:
+        """Construct OAI context from a PreparedRequest."""
+        return OAIContext(
             thought_stream=self.thought_stream,
             dataset_label=dataset_label or "evaluation",
             data_context=data_context or {},
             last_sql=self._last_sql,
-            sql_examples_injection=_sql_examples_injection,
-            skills_injection=_skills_injection,
+            sql_examples_injection=prepared.sql_examples_injection,
+            skills_injection=prepared.skills_injection,
             user_id=user_id,
             agent_name=agent_name,
         )
 
-        schema_ctx = await _build_schema_context(oai_ctx)
-        base_message = f"<schema>\n{schema_ctx}</schema>\n\n{message}" if schema_ctx else message
-        full_message = _build_message_with_history(base_message, conversation_history)
+    async def _execute(self, prepared: PreparedRequest, ctx: OAIContext) -> str:
+        """Run the OAI agent and return raw output.
 
-        await self.thought_stream.emit_reasoning(
-            f"Processing: {message[:100]}...",
-            node_name="OAIAgent",
+        Responsible for: schema context, message formatting, framework-specific
+        streaming, inner tracer span, and persisting ``last_sql``.
+        """
+        schema_ctx = await _build_schema_context(ctx)
+        current_message = (
+            f"<schema>\n{schema_ctx}</schema>\n\n{prepared.message}"
+            if schema_ctx
+            else prepared.message
         )
+        input_data = _build_structured_input(current_message, prepared.conversation_history)
 
+        agent = self._get_agent()
         tracer = get_copilot_tracer()
+        # Build rich input for Langfuse — shows system prompt + schema + user message
+        prompt_for_trace: list[dict[str, str]] = [
+            {"role": "system", "content": (SYSTEM_PROMPT + ctx.skills_injection)[:3000]},
+        ]
+        if isinstance(input_data, list):
+            prompt_for_trace.extend(input_data)
+        else:
+            prompt_for_trace.append({"role": "user", "content": str(input_data)[:3000]})
         async with tracer.async_span(
-            "copilot.agent.run",
-            input=message,
-            **safe_span_attrs(
-                provider="oai_agents",
-                agent_framework="openai_agents",
-                dataset_label=dataset_label,
-                msg_len=len(message),
-            ),
-        ) as _proc_span:
-            try:
-                agent = self._get_agent()
-                async with tracer.async_span(
-                    "copilot.agent.execute", input=full_message
-                ) as _stream_span:
-                    result = Runner.run_streamed(
-                        agent,
-                        input=full_message,
-                        context=oai_ctx,
-                        hooks=CopilotRunHooks(),
+            "copilot.agent.execute",
+            input=prompt_for_trace,
+            model=self.llm_provider.model,
+        ) as _span:
+            result = Runner.run_streamed(
+                agent,
+                input=input_data,
+                context=ctx,
+                hooks=CopilotRunHooks(),
+            )
+            async for event in result.stream_events():
+                if isinstance(event, RunItemStreamEvent) and event.name == "reasoning_item_created":
+                    raw = event.item
+                    text = getattr(raw, "text", None) or getattr(
+                        getattr(raw, "raw_item", None), "text", ""
                     )
+                    if text:
+                        await ctx.thought_stream.emit_reasoning(text, node_name="OAIAgent")
 
-                    async for event in result.stream_events():
-                        # Capture reasoning items from o-series models
-                        if (
-                            isinstance(event, RunItemStreamEvent)
-                            and event.name == "reasoning_item_created"
-                        ):
-                            raw = event.item
-                            text = getattr(raw, "text", None) or getattr(
-                                getattr(raw, "raw_item", None), "text", ""
-                            )
-                            if text:
-                                await self.thought_stream.emit_reasoning(text, node_name="OAIAgent")
-
-                output = result.final_output
-                _stream_span.set_output(
-                    str(output)[:500] if len(str(output)) > 500 else str(output)
-                )
-                _proc_span.set_output(str(output)[:500] if len(str(output)) > 500 else str(output))
-                await self.thought_stream.emit_success("Request completed", node_name="OAIAgent")
-                # Persist last SQL for the next turn's multi-turn refinement
-                if oai_ctx.last_sql:
-                    self._last_sql = oai_ctx.last_sql
-                tracer.add_trace(
-                    "info",
-                    "oai_complete",
-                    metadata={"response_len": len(str(output))},
-                )
-                return (
-                    output if isinstance(output, str) else str(output),
-                    oai_ctx.chart_spec,
-                    oai_ctx.download_spec,
-                )
-
-            except Exception as e:
-                logger.error("OAI agent error: %s", e, exc_info=True)
-                await self.thought_stream.emit_error(f"Error: {e}", node_name="OAIAgent")
-                tracer.add_trace("error", type(e).__name__)
-                return f"I encountered an error: {e}", None, None
-
-            finally:
-                await self.thought_stream.close()
+            output = result.final_output
+        if ctx.last_sql:
+            self._last_sql = ctx.last_sql
+        # Attach token usage so Langfuse can compute cost
+        usage = getattr(result, "context_wrapper", None)
+        if usage:
+            usage = getattr(usage, "usage", None)
+        if usage and getattr(usage, "total_tokens", 0) > 0:
+            _span.set_attribute(
+                "usage",
+                {
+                    "input": usage.input_tokens or 0,
+                    "output": usage.output_tokens or 0,
+                    "total": usage.total_tokens or 0,
+                },
+            )
+        _span.set_output(str(output)[:500])
+        return output if isinstance(output, str) else str(output)
 
     @property
     def is_configured(self) -> bool:

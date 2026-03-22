@@ -189,6 +189,8 @@ export function computeKPIs(
   const total = cases.length;
 
   return kpiConfig.map((kpi) => {
+    const polarity = kpi.polarity ?? 'higher_better';
+
     if (kpi.aggregate) {
       // Aggregate KPIs
       if (kpi.aggregate === 'total_cases') {
@@ -198,6 +200,7 @@ export function computeKPIs(
           value: total.toLocaleString(),
           icon: kpi.icon,
           highlight: kpi.highlight,
+          polarity,
           rawValue: total,
           totalCases: total,
         };
@@ -211,11 +214,12 @@ export function computeKPIs(
           value: avg.toFixed(1),
           icon: kpi.icon,
           highlight: kpi.highlight,
+          polarity,
           rawValue: avg,
           totalCases: total,
         };
       }
-      return { key: kpi.aggregate, label: kpi.label, value: '—', icon: kpi.icon };
+      return { key: kpi.aggregate, label: kpi.label, value: '—', icon: kpi.icon, polarity };
     }
 
     // Numeric aggregation KPIs (discriminant: kpi.aggregation is present)
@@ -232,6 +236,7 @@ export function computeKPIs(
         value: formatNumericValue(agg, kpi.format),
         icon: kpi.icon,
         highlight: kpi.highlight,
+        polarity,
         rawValue: agg,
         format: kpi.format,
         aggregation: kpi.aggregation,
@@ -260,6 +265,7 @@ export function computeKPIs(
           value: `${rate.toFixed(1)}%`,
           icon: kpi.icon,
           highlight: kpi.highlight,
+          polarity,
           rawValue: rate,
           format: 'percent',
           sparkline,
@@ -273,6 +279,7 @@ export function computeKPIs(
         value: trueCount.toLocaleString(),
         icon: kpi.icon,
         highlight: kpi.highlight,
+        polarity,
         rawValue: trueCount,
         sparkline,
         totalCases: total,
@@ -280,7 +287,7 @@ export function computeKPIs(
       };
     }
 
-    return { key: kpi.label, label: kpi.label, value: '—', icon: kpi.icon };
+    return { key: kpi.label, label: kpi.label, value: '—', icon: kpi.icon, polarity };
   });
 }
 
@@ -440,8 +447,17 @@ export function computeTextList(
   const key = `${metric}__${signal}`;
   const seen = new Set<string>();
   const items: string[] = [];
+  const sortedCases = [...cases].sort((a, b) => {
+    const aTime = Date.parse(a.Timestamp);
+    const bTime = Date.parse(b.Timestamp);
 
-  cases.forEach((c) => {
+    if (Number.isNaN(aTime) && Number.isNaN(bTime)) return 0;
+    if (Number.isNaN(aTime)) return 1;
+    if (Number.isNaN(bTime)) return -1;
+    return bTime - aTime;
+  });
+
+  sortedCases.forEach((c) => {
     const parsed = tryParseArray(c[key]);
     if (parsed) {
       parsed.forEach((item) => {

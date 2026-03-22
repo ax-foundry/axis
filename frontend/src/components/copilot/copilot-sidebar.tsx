@@ -463,9 +463,8 @@ export function CopilotSidebar({ isOpen, onClose }: CopilotSidebarProps) {
 
   const suggestedQueries = [
     'What tools do you have available?',
-    'Explain the datasets and what is the schema of the datasets?',
-    'Which metrics are performing below average?',
-    'Plot a line chart of the metrics and scores by day',
+    'Explain the current dataset options and the schemas',
+    'Plot a line chart of the lowest scoring metrics scores by day',
   ];
 
   if (!isOpen) return null;
@@ -582,7 +581,7 @@ export function CopilotSidebar({ isOpen, onClose }: CopilotSidebarProps) {
         {/* Engine row */}
         <div className="flex items-center gap-2 px-4 pb-2.5 pt-1">
           <span className="text-xs font-medium text-text-muted">Engine:</span>
-          {(['pydantic-ai', 'oai-agents'] as const).map((p) => (
+          {(['oai-agents'] as const).map((p) => (
             <button
               key={p}
               onClick={() => setProvider(p)}
@@ -593,7 +592,7 @@ export function CopilotSidebar({ isOpen, onClose }: CopilotSidebarProps) {
                   : 'bg-gray-100 text-text-secondary hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600'
               )}
             >
-              {p === 'pydantic-ai' ? 'Pydantic AI' : 'OAI Agents'}
+              {p === 'oai-agents' ? 'OpenAI Agents' : p}
             </button>
           ))}
         </div>

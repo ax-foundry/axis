@@ -1,8 +1,7 @@
-import json
 import logging
 import math
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any
 
 import anyio
@@ -17,8 +16,12 @@ from pydantic_ai import (
     UserPromptPart,
 )
 
+from app.copilot.context import BaseCopilotContext, _safe_json
+from app.copilot.guardrails import check_sql_safety
 from app.copilot.hooks import tool_span
 from app.copilot.llm.provider import LLMProvider
+from app.copilot.request_classifier import PreparedRequest
+from app.copilot.request_router import run_copilot_request
 from app.copilot.thoughts import ThoughtStream
 from app.copilot.tracing import get_copilot_tracer, safe_span_attrs, sql_fingerprint
 
@@ -29,99 +32,10 @@ _NUMERIC_TYPES = frozenset(
 )
 
 
-def _safe_json(obj: Any) -> str:
-    """JSON serializer that handles dates and other non-native types."""
-
-    def _default(o: Any) -> Any:
-        if hasattr(o, "isoformat"):
-            return o.isoformat()
-        return str(o)
-
-    return json.dumps(obj, default=_default)
-
-
 _MAX_RESULT_CHARS = 6_000  # Cap individual tool result size sent to LLM
-_MAX_INPUT_CHARS = 2_000  # Max user message length accepted
 
-# DDL / DML keywords that must never reach DuckDB
-_SQL_UNSAFE_RE = re.compile(
-    r"\b(DROP|INSERT|UPDATE|DELETE|CREATE|ALTER|TRUNCATE|REPLACE|MERGE|"
-    r"GRANT|REVOKE|ATTACH|DETACH|COPY|EXPORT|IMPORT|INSTALL|LOAD)\b",
-    re.IGNORECASE,
-)
-
-# Prompt-injection patterns in user input
-_INJECTION_RE = re.compile(
-    r"ignore\s+(previous|above|all)\s+instructions|"
-    r"forget\s+your\s+(previous|system)\s+prompt|"
-    r"you\s+are\s+now\s+|pretend\s+you\s+are\s+|act\s+as\s+(?:if\s+)?you\s+are\s+|"
-    r"disregard\s+.*instructions|override\s+.*system\s+prompt|"
-    r"new\s+instructions\s*:|<\s*system\s*>",
-    re.IGNORECASE,
-)
-
-# Patterns that should never appear in outbound responses
-_SENSITIVE_OUT_RE = re.compile(
-    r"(password|api[_\-]?key|secret[_\-]?key|auth[_\-]?token)\s*[:=]\s*\S+|"
-    r'File "[^"]+", line \d+|'  # Python traceback lines
-    r"Traceback \(most recent call last\)",
-    re.IGNORECASE,
-)
-
-
-def _check_sql_safety(sql: str) -> str | None:
-    """Return an error message if *sql* contains disallowed statements, else None.
-
-    Strips line comments and block comments before checking so that injected
-    keywords buried inside comment text are also caught.
-    """
-    # Remove -- line comments
-    cleaned = re.sub(r"--[^\n]*", " ", sql)
-    # Remove /* block comments */
-    cleaned = re.sub(r"/\*.*?\*/", " ", cleaned, flags=re.DOTALL)
-    if _SQL_UNSAFE_RE.search(cleaned):
-        return "Only SELECT statements are permitted. Data-modification queries are blocked."
-    return None
-
-
-def _sanitize_input(message: str) -> tuple[str, str | None]:
-    """Clean and validate a user message.
-
-    Returns:
-        (sanitized_message, error) — error is non-None when the message is blocked.
-    """
-    # Strip null bytes
-    message = message.replace("\x00", "").strip()
-    if not message:
-        return "", "Empty message."
-    if len(message) > _MAX_INPUT_CHARS:
-        message = message[:_MAX_INPUT_CHARS]
-    if _INJECTION_RE.search(message):
-        return message, (
-            "I'm not able to process that request. "
-            "If you have a data question, feel free to ask!"
-        )
-    return message, None
-
-
-def _sanitize_output(response: str) -> str:
-    """Redact sensitive patterns from the agent's final response text."""
-    # Redact credential-like key=value pairs
-    cleaned = re.sub(
-        r"(password|api[_\-]?key|secret[_\-]?key|auth[_\-]?token)\s*[:=]\s*\S+",
-        r"\1=[REDACTED]",
-        response,
-        flags=re.IGNORECASE,
-    )
-    # Strip Python traceback snippets
-    cleaned = re.sub(r'File "[^"]+", line \d+.*', "[internal error details omitted]", cleaned)
-    cleaned = re.sub(
-        r"Traceback \(most recent call last\).*",
-        "[internal error details omitted]",
-        cleaned,
-        flags=re.DOTALL,
-    )
-    return cleaned
+# Backward-compat aliases — internal tools reference underscore-prefixed names
+_check_sql_safety = check_sql_safety
 
 
 def _is_numeric(col_info: dict[str, Any]) -> bool:
@@ -253,6 +167,68 @@ def _parse_sql_error_hint(
     return " | ".join(hint_parts)
 
 
+def _attempt_sql_fix(sql: str, error_msg: str, available_columns: list[str]) -> str | None:
+    """Try to auto-correct a failed SQL query based on the error message.
+
+    Handles column-not-found (fuzzy match) and type/cast errors (TRY_CAST).
+    Returns the corrected SQL string, or ``None`` if no automatic fix is possible.
+    """
+    msg_lower = error_msg.lower()
+
+    # ── Column not found — try to replace bad column with best match ───────
+    col_match = re.search(r'[Cc]olumn[^"\'`]*["\']?`?([A-Za-z_]\w*)["\']?`?', error_msg)
+    if col_match or ("binder error" in msg_lower and "not found" in msg_lower):
+        bad_col = col_match.group(1) if col_match else None
+        if bad_col:
+            # Find best match: exact case-insensitive, then substring
+            best: str | None = None
+            for c in available_columns:
+                if c.lower() == bad_col.lower():
+                    best = c
+                    break
+            if not best:
+                for c in available_columns:
+                    if bad_col.lower() in c.lower():
+                        best = c
+                        break
+            if not best:
+                # Check synonyms
+                for real_col, syns in _COLUMN_SYNONYMS.items():
+                    if bad_col.lower() in syns and real_col in available_columns:
+                        best = real_col
+                        break
+            if best and best != bad_col:
+                # Replace in SQL — handle both quoted and unquoted references
+                fixed = re.sub(
+                    rf'(?<!")(?<!\w){re.escape(bad_col)}(?!\w)(?!")',
+                    f'"{best}"',
+                    sql,
+                )
+                # Also handle already-quoted references
+                fixed = fixed.replace(f'"{bad_col}"', f'"{best}"')
+                if fixed != sql:
+                    return fixed
+
+    # ── Type/cast error — wrap in TRY_CAST ─────────────────────────────────
+    if any(k in msg_lower for k in ("cannot cast", "conversion error", "invalid type")):
+        col_match2 = re.search(r'"(\w+)"', error_msg)
+        if col_match2:
+            col = col_match2.group(1)
+            # Replace CAST("col" AS DOUBLE) with TRY_CAST("col" AS DOUBLE)
+            fixed = sql.replace(f'CAST("{col}"', f'TRY_CAST("{col}"')
+            # Also handle bare column references in AVG/SUM etc
+            if fixed == sql:
+                fixed = re.sub(
+                    rf'AVG\("{re.escape(col)}"\)',
+                    f'AVG(TRY_CAST("{col}" AS DOUBLE))',
+                    sql,
+                )
+            if fixed != sql:
+                return fixed
+
+    return None
+
+
 _KNOWN_TABLES = frozenset({"monitoring_data", "eval_data", "human_signals_cases", "kpi_data"})
 
 
@@ -309,11 +285,56 @@ def _trim_filter_values(
     return trimmed
 
 
+def _compute_column_stats(
+    store: Any,
+    table: str,
+    columns: list[dict[str, Any]],
+    row_count: int,
+) -> dict[str, dict[str, int]]:
+    """Compute NULL% and approximate cardinality for each column in one query.
+
+    Uses ``APPROX_COUNT_DISTINCT`` (HyperLogLog) instead of exact ``COUNT(DISTINCT)``
+    because exact counts on 50 columns with high-cardinality text fields can be slow.
+    The LLM only needs order-of-magnitude cardinality, not exact numbers.
+    """
+    if not columns or row_count == 0:
+        return {}
+
+    # Cap to first 50 columns (matching the DDL cap)
+    cols = columns[:50]
+    parts: list[str] = []
+    for c in cols:
+        name = c["column_name"]
+        parts.append(f'APPROX_COUNT_DISTINCT("{name}") AS "{name}__uniq"')
+        parts.append(f'COUNT(*) FILTER (WHERE "{name}" IS NULL) AS "{name}__nulls"')
+
+    sql = f"SELECT {', '.join(parts)} FROM {table}"
+    try:
+        rows = store.query_list(sql)
+    except Exception:
+        return {}
+
+    if not rows:
+        return {}
+
+    row = rows[0]
+    stats: dict[str, dict[str, int]] = {}
+    for c in cols:
+        name = c["column_name"]
+        n_unique = row.get(f"{name}__uniq", 0) or 0
+        n_nulls = row.get(f"{name}__nulls", 0) or 0
+        null_pct = round(100 * n_nulls / row_count) if row_count > 0 else 0
+        stats[name] = {"n_unique": int(n_unique), "null_pct": int(null_pct)}
+
+    return stats
+
+
 def _build_schema_ddl(
     table: str,
     dataset_label: str,
     meta: dict[str, Any],
     num_ranges: dict[str, tuple[Any, Any]],
+    column_stats: dict[str, dict[str, int]] | None = None,
 ) -> str:
     """Render schema context as a DDL CREATE TABLE with inline annotations.
 
@@ -347,11 +368,26 @@ def _build_schema_ddl(
         lines.insert(
             1,
             (
-                "-- Schema note: columns named {metric}__{signal} are flattened from a JSON "
-                "'signals' blob. The prefix before '__' is the metric_name; the suffix is the "
-                "signal key within that metric. To query one metric's signals use "
-                "COLUMNS('metric_name__.*') or WHERE ... LIKE 'metric_name__%'. "
-                "The metric_name column holds the raw metric name string for grouping."
+                "-- Schema note: columns named {metric}__{signal} are flattened from a JSON\n"
+                "-- 'signals' blob. The prefix before '__' is the metric_name; the suffix is the\n"
+                "-- signal key within that metric.\n"
+                "--\n"
+                "-- DATA TYPES: Signal values are stored as VARCHAR. They may contain:\n"
+                "--   - Plain strings: 'billing inquiry'\n"
+                '--   - JSON arrays: \'["billing", "account access"]\'  (use json_extract)\n'
+                '--   - JSON objects: \'{"key": "value"}\'  (use json_extract_string)\n'
+                "--   - Booleans/numbers stored as text: 'true', '42'\n"
+                "--\n"
+                "-- For JSON array columns, to count individual values:\n"
+                "--   SELECT val, COUNT(*) FROM (\n"
+                "--     SELECT json_extract_string(TRY_CAST(col AS JSON), '$[' || i || ']') AS val\n"
+                "--     FROM human_signals_cases,\n"
+                "--          generate_series(0, CAST(json_array_length(TRY_CAST(col AS JSON)) AS BIGINT) - 1) AS t(i)\n"
+                "--     WHERE json_array_length(TRY_CAST(col AS JSON)) > 0\n"
+                "--   ) GROUP BY val ORDER BY COUNT(*) DESC\n"
+                "--\n"
+                "-- For simple string columns, use GROUP BY directly.\n"
+                "-- Full_Conversation is a JSON array of chat messages — not suitable for SQL filtering."
             ),
         )
 
@@ -378,6 +414,22 @@ def _build_schema_ddl(
         if synonyms:
             alias_str = f"alias: {', '.join(synonyms)}"
             comment = f"{comment} | {alias_str}" if comment else alias_str
+
+        # Prepend column statistics (cardinality, null%) when available
+        col_stat = column_stats.get(col_name) if column_stats else None
+        if col_stat:
+            stats_parts: list[str] = []
+            if col_stat["n_unique"] > 0:
+                stats_parts.append(f"{col_stat['n_unique']} unique")
+            if col_stat["null_pct"] > 0:
+                stats_parts.append(f"{col_stat['null_pct']}% null")
+            elif col_stat["null_pct"] == 0:
+                stats_parts.append("0% null")
+            stats_prefix = ", ".join(stats_parts)
+            if stats_prefix and comment:
+                comment = f"{stats_prefix} | {comment}"
+            elif stats_prefix:
+                comment = stats_prefix
 
         line = f'    "{col_name}" {col_type},'
         if comment:
@@ -455,63 +507,8 @@ def _build_sample_sql(
 
 
 @dataclass
-class CopilotDeps:
-    """Dependencies for copilot tools — DuckDB-powered, no in-memory DataFrames."""
-
-    thought_stream: ThoughtStream
-    dataset_label: str = "evaluation"
-    data_context: dict[str, Any] = field(default_factory=dict)
-    _cache: dict[str, str] = field(default_factory=dict)
-    chart_spec: dict[str, Any] | None = None
-    download_spec: dict[str, Any] | None = None  # set by download_data tool
-    user_id: str | None = None  # resolved from request header / body
-    skills_injection: str = ""  # pre-computed skill bodies for this request
-    last_sql: str = ""  # last successfully executed SQL (persisted across turns via agent instance)
-    sql_examples_injection: str = ""  # verified Q→SQL examples matched to this request
-    agent_name: str | None = None  # source_name filter applied to all queries
-
-    @property
-    def table_name(self) -> str:
-        """DuckDB table name for the current dataset label."""
-        from app.services.duckdb_store import DATASET_TABLE_MAP
-
-        return DATASET_TABLE_MAP.get(self.dataset_label, "eval_data")
-
-    @property
-    def store(self):
-        """DuckDB store singleton."""
-        from app.services.duckdb_store import get_store
-
-        return get_store()
-
-    @property
-    def has_data(self) -> bool:
-        """True if the dataset table exists in DuckDB."""
-        return self.store.has_table(self.table_name)
-
-    def _cache_key(self, tool: str, params: str) -> str:
-        """Generate a cache key incorporating table name and current row count."""
-        rc = self.store.get_metadata(self.table_name).get("row_count", 0)
-        return f"{tool}:{hash(params)}:{self.table_name}:{rc}"
-
-    def get_cached(self, tool: str, params: str) -> str | None:
-        """Return cached tool result or None if not cached."""
-        return self._cache.get(self._cache_key(tool, params))
-
-    def set_cached(self, tool: str, params: str, result: str) -> None:
-        """Store a tool result in the in-session cache."""
-        self._cache[self._cache_key(tool, params)] = result
-
-    def no_data_error(self) -> str:
-        """Return a standard JSON error message when dataset is not available."""
-        return _safe_json(
-            {
-                "error": (
-                    f"No {self.dataset_label} data available. "
-                    "Upload a CSV or trigger a sync first."
-                )
-            }
-        )
+class CopilotDeps(BaseCopilotContext):
+    """Pydantic-AI copilot dependencies — inherits all shared fields from BaseCopilotContext."""
 
 
 def _build_message_history(history: list[dict[str, Any]]) -> list[Any]:
@@ -559,6 +556,12 @@ class CopilotAgent:
             system_prompt=(
                 "You are an AI assistant that analyzes data stored in DuckDB. "
                 "Always use tools to answer data questions — never fabricate numbers. "
+                "You are scoped to one dataset at a time (shown in schema context). "
+                "If a user asks about data that isn't in your current dataset "
+                "(e.g. asks about human conversations when you have monitoring data, "
+                "or asks about KPIs when you have evaluation data), tell them to "
+                "switch to the relevant dataset view and try again. "
+                "Available datasets: monitoring, evaluation, human_signals, kpi. "
                 "Use summarize_data for overviews, query_data for record lookups and filtering, "
                 "analyze_data for statistics, compare_data for group comparisons, "
                 "query_kpi_data when the dataset is kpi, "
@@ -584,6 +587,22 @@ class CopilotAgent:
                 "which column, which time range, which group), do NOT guess — ask a short, "
                 "specific clarifying question before calling any tool. "
                 "Only ask one question at a time and keep it concise.\n\n"
+                "DUCKDB SQL NOTES (common pitfalls):\n"
+                '- Always double-quote column names: "metric_name", "metric_score"\n'
+                "- Use TRY_CAST(col AS DOUBLE) for numeric aggregations — returns NULL on failure.\n"
+                "- Timestamps may be VARCHAR — wrap with CAST(col AS TIMESTAMP) before DATE_TRUNC.\n"
+                "- json_array_length() returns UBIGINT — always CAST to BIGINT before generate_series:\n"
+                "    generate_series(0, CAST(json_array_length(...) AS BIGINT) - 1)\n"
+                "- Guard empty arrays: WHERE json_array_length(TRY_CAST(col AS JSON)) > 0\n"
+                "  (UBIGINT 0 - 1 causes overflow error)\n"
+                "- Use json_extract_string(col, '$.key') for string fields, "
+                "json_extract(col, '$.key') for nested objects.\n"
+                "- To expand JSON arrays stored in VARCHAR columns:\n"
+                "    SELECT json_extract_string(TRY_CAST(col AS JSON), '$[' || i || ']') AS val\n"
+                "    FROM table, generate_series(0, CAST(json_array_length(TRY_CAST(col AS JSON)) AS BIGINT) - 1) AS t(i)\n"
+                "    WHERE json_array_length(TRY_CAST(col AS JSON)) > 0\n"
+                "- DuckDB does NOT support UNNEST on JSON values — only on native LIST columns.\n"
+                "- Use ILIKE for case-insensitive string matching (not LIKE).\n\n"
                 "When asked what you can do or what your capabilities are, describe ONLY what "
                 "your tools enable: querying and summarizing the loaded dataset, running SQL, "
                 "computing statistics, comparing groups, finding failure patterns, plotting charts, "
@@ -602,7 +621,12 @@ class CopilotAgent:
                 "4. SQL SAFETY: Only issue SELECT queries. Never produce DROP, INSERT, UPDATE, "
                 "DELETE, CREATE, ALTER, TRUNCATE, or any other data-modification statement.\n"
                 "5. ERRORS: If a tool returns an error, summarise it in plain English. "
-                "Never expose raw stack traces or exception details to the user."
+                "Never expose raw stack traces or exception details to the user.\n"
+                "6. INTERNALS: Never mention internal implementation details to the user — "
+                "schema parsing issues, column coercion failures, signal format mismatches, "
+                "JSON extraction problems, or data shape limitations are YOUR problem to work "
+                "around, not something the user needs to know about. Focus your answer on "
+                "what the data shows, not on what you struggled to query."
             ),
         )
 
@@ -635,7 +659,13 @@ class CopilotAgent:
                 except Exception:
                     pass
 
-            ddl = _build_schema_ddl(table, deps.dataset_label, meta, num_ranges)
+            # Compute per-column stats (cardinality, null%)
+            row_count = meta.get("row_count", 0)
+            col_stats = _compute_column_stats(
+                store, table, all_cols, int(row_count) if isinstance(row_count, int) else 0
+            )
+
+            ddl = _build_schema_ddl(table, deps.dataset_label, meta, num_ranges, col_stats)
 
             extra: list[str] = []
             from app.copilot.metric_catalog import get_metric_catalog_store
@@ -1676,31 +1706,48 @@ class CopilotAgent:
                 if "LIMIT" not in sql_upper:
                     sql_stripped = f"{sql_stripped} LIMIT {limit_n}"
 
-                try:
-                    async with _tracer.async_span(
-                        "copilot.db.query",
-                        **safe_span_attrs(
-                            table=deps.table_name,
-                            sql=sql_fingerprint(sql_stripped),
-                            db_system="duckdb",
-                            query_kind="select",
-                        ),
-                    ) as _sql_span:
-                        rows = await anyio.to_thread.run_sync(
-                            lambda: deps.store.query_list(sql_stripped),
-                            limiter=deps.store.query_limiter,
+                sql_to_run = sql_stripped
+                available_cols: list[str] = []
+                for attempt in range(2):  # max 2 attempts
+                    try:
+                        _current_sql = sql_to_run
+                        async with _tracer.async_span(
+                            "copilot.db.query",
+                            **safe_span_attrs(
+                                table=deps.table_name,
+                                sql=sql_fingerprint(_current_sql),
+                                db_system="duckdb",
+                                query_kind="select",
+                            ),
+                        ) as _sql_span:
+                            rows = await anyio.to_thread.run_sync(
+                                lambda _s=_current_sql: deps.store.query_list(_s),
+                                limiter=deps.store.query_limiter,
+                            )
+                            _sql_span.set_output({"row_count": len(rows)})
+                        _tracer.add_trace("info", "query_done", metadata={"row_count": len(rows)})
+                        break  # success
+                    except Exception as exc:
+                        if attempt == 0:
+                            available_cols = list(deps.store.get_table_columns(deps.table_name))
+                            fixed = _attempt_sql_fix(sql_to_run, str(exc), available_cols)
+                            if fixed:
+                                await deps.thought_stream.emit_observation(
+                                    f"SQL error, auto-correcting: {exc}",
+                                    tool_name="run_sql",
+                                )
+                                sql_to_run = fixed
+                                continue
+                        # No fix or second attempt failed — return error
+                        if not available_cols:
+                            available_cols = list(deps.store.get_table_columns(deps.table_name))
+                        await deps.thought_stream.emit_observation(
+                            f"SQL error: {exc}", tool_name="run_sql"
                         )
-                        _sql_span.set_output({"row_count": len(rows)})
-                    _tracer.add_trace("info", "query_done", metadata={"row_count": len(rows)})
-                except Exception as exc:
-                    await deps.thought_stream.emit_observation(
-                        f"SQL error: {exc}", tool_name="run_sql"
-                    )
-                    available_cols = list(deps.store.get_table_columns(deps.table_name))
-                    hint = _parse_sql_error_hint(str(exc), available_cols, deps.table_name)
-                    return _safe_json({"error": hint, "sql_attempted": sql_stripped})
+                        hint = _parse_sql_error_hint(str(exc), available_cols, deps.table_name)
+                        return _safe_json({"error": hint, "sql_attempted": sql_to_run})
 
-                deps.last_sql = sql_stripped  # persist for multi-turn refinement
+                deps.last_sql = sql_to_run  # persist for multi-turn refinement
                 await deps.thought_stream.emit_observation(
                     f"SQL returned {len(rows)} rows",
                     tool_name="run_sql",
@@ -1723,9 +1770,8 @@ class CopilotAgent:
 
             Args:
                 ctx: Run context.
-                metric_name: The metric_name value as it appears in monitoring_data
-                             (e.g. 'Trigger Analysis', 'UW Faithfulness',
-                             'Ranking Grounding', 'Tool Reliability').
+                metric_name: The exact metric_name value as it appears in monitoring_data.
+                             Check the schema context or use summarize_data to see available metric names.
 
             Returns:
                 Formatted schema string with field paths, types, values, and SQL examples.
@@ -1762,119 +1808,107 @@ class CopilotAgent:
     ) -> tuple[str, dict[str, Any] | None, dict[str, Any] | None]:
         """Process a user message using DuckDB-powered tools.
 
-        Args:
-            message: User's message/query.
-            dataset_label: Dataset to query (evaluation, monitoring, human_signals, kpi).
-            data_context: Optional schema hints (columns, format, row_count).
-            conversation_history: Prior conversation turns for multi-turn context.
-            user_id: Resolved user identifier for per-user dataset scoping.
-            agent_name: source_name to scope all queries to a specific agent.
-
-        Returns:
-            Agent's response string.
+        Delegates to ``run_copilot_request()`` which handles guardrails,
+        preparation, tracing, and output sanitization.
         """
-        # --- Input guardrails ---
-        message, input_error = _sanitize_input(message)
-        if input_error:
-            logger.warning("Input blocked by guardrail: %s", input_error)
-            await self.thought_stream.close()
-            return input_error, None, None
-
-        logger.info("Processing: %s... (dataset=%s)", message[:100], dataset_label)
-
-        # Compute skill injection and SQL examples before building deps
-        from app.copilot.skills import get_skill_registry
-        from app.copilot.sql_examples import get_sql_example_store
-
-        _registry = get_skill_registry()
-        _ctx_snippets = [
-            m["content"]
-            for m in (conversation_history or [])[-3:]
-            if isinstance(m, dict) and "content" in m
-        ]
-        _selected = _registry.select_skills(message, conversation_context=_ctx_snippets)
-        _skills_injection = _registry.get_system_prompt_injection(_selected)
-        if _selected:
-            skill_names = ", ".join(s.name for s in _selected)
-            await self.thought_stream.emit_planning(
-                f"Applying skills: {skill_names}", node_name="Agent"
-            )
-
-        _example_store = get_sql_example_store()
-        _sql_examples = _example_store.select_for_agent(message, agent_name)
-        _sql_examples_injection = _example_store.get_injection(_sql_examples)
-
-        message_history = (
-            _build_message_history(conversation_history) if conversation_history else None
+        result = await run_copilot_request(
+            message=message,
+            thought_stream=self.thought_stream,
+            build_context=self._build_deps,
+            execute=self._execute,
+            dataset_label=dataset_label,
+            data_context=data_context,
+            conversation_history=conversation_history,
+            user_id=user_id,
+            agent_name=agent_name,
+            provider_label="pydantic_ai",
+            agent_framework="pydantic_ai",
         )
+        return result.response, result.chart_spec, result.download_spec
 
-        deps = CopilotDeps(
+    def _build_deps(
+        self,
+        prepared: PreparedRequest,
+        dataset_label: str | None,
+        data_context: dict[str, Any] | None,
+        user_id: str | None,
+        agent_name: str | None,
+    ) -> CopilotDeps:
+        """Construct pydantic-ai CopilotDeps from a PreparedRequest."""
+        return CopilotDeps(
             thought_stream=self.thought_stream,
             dataset_label=dataset_label or "evaluation",
             data_context=data_context or {},
-            skills_injection=_skills_injection,
+            skills_injection=prepared.skills_injection,
             last_sql=self._last_sql,
-            sql_examples_injection=_sql_examples_injection,
+            sql_examples_injection=prepared.sql_examples_injection,
             user_id=user_id,
             agent_name=agent_name,
         )
 
-        await self.thought_stream.emit_reasoning(
-            f"Processing: {message[:100]}...",
-            node_name="Agent",
-        )
+    async def _execute(self, prepared: PreparedRequest, deps: CopilotDeps) -> str:
+        """Run the pydantic-ai agent and return raw output.
 
+        Responsible for: framework-specific streaming, inner tracer span,
+        and persisting ``last_sql`` back to ``self._last_sql``.
+        """
+        message_history = (
+            _build_message_history(prepared.conversation_history)
+            if prepared.conversation_history
+            else None
+        )
+        agent = self._get_agent()
         tracer = get_copilot_tracer()
         async with tracer.async_span(
-            "copilot.agent.run",
-            input=message,
-            **safe_span_attrs(
-                provider="pydantic_ai",
-                agent_framework="pydantic_ai",
-                dataset_label=dataset_label,
-                msg_len=len(message),
-            ),
-        ) as _proc_span:
-            try:
-                agent = self._get_agent()
-                async with tracer.async_span("copilot.agent.execute", input=message) as _llm_span:
-                    async with agent.iter(
-                        message, deps=deps, message_history=message_history
-                    ) as agent_run:
-                        async for node in agent_run:
-                            if isinstance(node, CallToolsNode):
-                                for part in node.model_response.parts:
-                                    if isinstance(part, ThinkingPart) and part.thinking:
-                                        await deps.thought_stream.emit_reasoning(
-                                            part.thinking, node_name="Model"
-                                        )
-                    result = agent_run.result
-                await self.thought_stream.emit_success("Request completed", node_name="Agent")
-                # Persist last SQL for the next turn's multi-turn refinement
-                if deps.last_sql:
-                    self._last_sql = deps.last_sql
-                # --- Output guardrails ---
-                safe_response = _sanitize_output(result.output)
-                _llm_span.set_output(
-                    safe_response[:500] if len(safe_response) > 500 else safe_response
-                )
-                _proc_span.set_output(
-                    safe_response[:500] if len(safe_response) > 500 else safe_response
-                )
-                return safe_response, deps.chart_spec, deps.download_spec
-
-            except Exception as e:
-                logger.error("Agent error: %s", e, exc_info=True)
-                await self.thought_stream.emit_error("Agent error", node_name="Agent")
-                tracer.add_trace("error", type(e).__name__)
-                return (
-                    "I encountered an error processing your request. Please try again.",
-                    None,
-                    None,
-                )
-
-            finally:
-                await self.thought_stream.close()
+            "copilot.agent.execute",
+            input=prepared.message,
+            model=self.llm_provider.model,
+        ) as _span:
+            async with agent.iter(
+                prepared.message, deps=deps, message_history=message_history
+            ) as agent_run:
+                async for node in agent_run:
+                    if isinstance(node, CallToolsNode):
+                        for part in node.model_response.parts:
+                            if isinstance(part, ThinkingPart) and part.thinking:
+                                await deps.thought_stream.emit_reasoning(
+                                    part.thinking, node_name="Model"
+                                )
+            result = agent_run.result
+        if deps.last_sql:
+            self._last_sql = deps.last_sql
+        # Attach full prompt context for Langfuse visibility — shows what the LLM
+        # actually saw (system prompt + schema DDL + skills + user message)
+        try:
+            all_msgs = agent_run.all_messages()
+            prompt_parts: list[dict[str, str]] = []
+            for msg in all_msgs:
+                for part in getattr(msg, "parts", []):
+                    content = getattr(part, "content", None)
+                    if isinstance(content, str) and content.strip():
+                        prompt_parts.append(
+                            {
+                                "role": type(part).__name__,
+                                "content": content[:2000],
+                            }
+                        )
+            if prompt_parts:
+                _span.set_input(prompt_parts)
+        except Exception:
+            pass  # best-effort — don't break execution
+        # Attach token usage so Langfuse can compute cost
+        usage = agent_run.usage
+        if usage and usage.has_values:
+            _span.set_attribute(
+                "usage",
+                {
+                    "input": usage.input_tokens or 0,
+                    "output": usage.output_tokens or 0,
+                    "total": usage.total_tokens or 0,
+                },
+            )
+        _span.set_output(str(result.output)[:500])
+        return result.output
 
     @property
     def is_configured(self) -> bool:

@@ -799,6 +799,7 @@ export interface SignalsKPIConfig {
   format?: string; // 'percent' | 'number' | 'duration' | 'compact'
   icon: string;
   highlight?: boolean;
+  polarity?: 'higher_better' | 'lower_better';
 }
 
 export interface SignalsChartConfig {
@@ -806,6 +807,7 @@ export interface SignalsChartConfig {
   signal: string;
   type: string; // 'bar' | 'donut' | 'horizontal_bar' | 'stacked_bar' | 'ranked_list' | 'single_stat'
   title: string;
+  limit?: number; // optional item cap for ranked_list/text_list charts
 }
 
 export interface SignalsChartSection {
@@ -844,6 +846,7 @@ export interface SignalsKPIResult {
   value: string;
   icon: string;
   highlight?: boolean;
+  polarity?: 'higher_better' | 'lower_better';
   rawValue?: number;
   format?: string; // 'percent' | 'number' | 'duration' | 'compact'
   aggregation?: string; // 'mean' | 'median' | 'sum' | 'min' | 'max' | 'count' | 'p95'

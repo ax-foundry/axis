@@ -19,7 +19,7 @@ class LLMProviderType(StrEnum):
 class DEFAULT_MODELS(StrEnum):
     """Default model names by provider."""
 
-    OPENAI = "gpt-5.2"
+    OPENAI = "gpt-5.4"
     ANTHROPIC = "claude-sonnet-4-6"
 
 
