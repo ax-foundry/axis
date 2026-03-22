@@ -366,7 +366,7 @@ async def export_sql_as_csv(req: ExportRequest) -> Response:
         re.sub(r"--[^\n]*", " ", re.sub(r"/\*.*?\*/", " ", sql_stripped, flags=re.DOTALL))
     ):
         raise HTTPException(status_code=400, detail="Only SELECT statements are permitted.")
-    if not sql_stripped.upper().startswith("SELECT"):
+    if not sql_stripped.upper().lstrip().startswith(("SELECT", "WITH")):
         raise HTTPException(status_code=400, detail="Only SELECT statements are permitted.")
 
     store = get_store()
