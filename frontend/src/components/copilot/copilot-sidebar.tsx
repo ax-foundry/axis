@@ -159,8 +159,7 @@ function MessageBubble({ message }: { message: Message }) {
             </div>
             <button
               onClick={async () => {
-                const apiBase = process.env.NEXT_PUBLIC_API_URL ?? '';
-                const res = await fetch(`${apiBase}/api/store/export`, {
+                const res = await fetch('/api/store/export', {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({
