@@ -8,6 +8,7 @@ import {
   getMonitoringTrends,
   getStoreData,
 } from '@/lib/api';
+import { SYNC_RETRY_CONFIG } from '@/lib/hooks/sync-retry';
 
 import type {
   MonitoringLatencyDistResponse,
@@ -58,6 +59,7 @@ export function useMonitoringTrends(
     },
     staleTime: MONITORING_STALE_TIME,
     enabled,
+    ...SYNC_RETRY_CONFIG,
   });
 }
 
@@ -78,6 +80,7 @@ export function useMonitoringLatencyDist(
     },
     staleTime: MONITORING_STALE_TIME,
     enabled,
+    ...SYNC_RETRY_CONFIG,
   });
 }
 
@@ -130,6 +133,7 @@ export function useMonitoringMetricBreakdown(
     },
     staleTime: MONITORING_STALE_TIME,
     enabled,
+    ...SYNC_RETRY_CONFIG,
   });
 }
 
@@ -171,6 +175,7 @@ export function useMonitoringTraces(
     staleTime: MONITORING_STALE_TIME,
     placeholderData: keepPreviousData,
     enabled,
+    ...SYNC_RETRY_CONFIG,
   });
 }
 
@@ -190,6 +195,7 @@ export function useMonitoringFailingOutputs(filters: MonitoringFilters, enabled:
       }),
     staleTime: MONITORING_STALE_TIME,
     enabled,
+    ...SYNC_RETRY_CONFIG,
   });
 }
 
@@ -205,5 +211,6 @@ export function useMonitoringSummary(filters: MonitoringFilters, enabled: boolea
     },
     staleTime: MONITORING_STALE_TIME,
     enabled,
+    ...SYNC_RETRY_CONFIG,
   });
 }

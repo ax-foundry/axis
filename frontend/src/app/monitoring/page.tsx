@@ -18,7 +18,7 @@ import {
   TrendingUp,
   Upload,
 } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { FileUpload } from '@/components/file-upload';
 import {
@@ -41,6 +41,7 @@ import {
   generateThresholdAlerts,
 } from '@/lib/anomaly-detection';
 import { getDatasetMetadata, getStoreStatus } from '@/lib/api';
+import { MAX_STORE_STATUS_POLLS } from '@/lib/hooks/sync-retry';
 import {
   useMonitoringFailingOutputs,
   useMonitoringLatencyDist,
@@ -625,43 +626,61 @@ export default function MonitoringPage() {
 
   // Track whether the DuckDB store status check has completed
   const [storeStatusChecked, setStoreStatusChecked] = useState(false);
+  // Track whether DuckDB is actively syncing (for UI banner)
+  const [isSyncing, setIsSyncing] = useState(false);
+  // Avoid re-populating filters after the first successful metadata fetch
+  const metadataPopulated = useRef(false);
 
-  // Poll DuckDB store status on mount → wait for startup sync if needed
+  // Stable reference to populateFiltersFromMetadata to avoid re-renders
+  const populateFiltersRef = useRef(populateFiltersFromMetadata);
+  populateFiltersRef.current = populateFiltersFromMetadata;
+
+  // Poll DuckDB store status on mount → keep polling until sync completes.
+  // Handles cold starts where DuckDB may be in "syncing" or "not_synced" state
+  // for several minutes before becoming "ready".
+  // Capped at MAX_STORE_STATUS_POLLS to avoid infinite polling if sync is stuck.
   useEffect(() => {
     let cancelled = false;
-    const checkStore = async () => {
+    let timeoutId: ReturnType<typeof setTimeout>;
+    let pollCount = 0;
+
+    const poll = async () => {
       try {
-        let status = await getStoreStatus();
+        const status = await getStoreStatus();
         if (cancelled) return;
-        let monStatus = status.datasets?.monitoring_data;
+        const monStatus = status.datasets?.monitoring_data;
 
-        // If startup sync is still running, poll until it completes
-        while (!cancelled && monStatus?.state === 'syncing') {
-          await new Promise((resolve) => setTimeout(resolve, 2000));
-          if (cancelled) return;
-          status = await getStoreStatus();
-          monStatus = status.datasets?.monitoring_data;
-        }
-
-        if (cancelled) return;
         if (monStatus) {
           setSyncStatus(monStatus);
-          if (monStatus.state === 'ready') {
+          const syncing = monStatus.state === 'syncing' || monStatus.state === 'not_synced';
+          setIsSyncing(syncing);
+
+          if (monStatus.state === 'ready' && !metadataPopulated.current) {
+            metadataPopulated.current = true;
             const meta = await getDatasetMetadata('monitoring');
             if (!cancelled && meta.metadata) {
-              populateFiltersFromMetadata(meta.metadata);
+              populateFiltersRef.current(meta.metadata);
             }
           }
+
+          // Keep polling while sync is in progress (every 5s, capped)
+          if (syncing && ++pollCount < MAX_STORE_STATUS_POLLS) {
+            timeoutId = setTimeout(poll, 5000);
+            if (!storeStatusChecked) setStoreStatusChecked(true);
+            return;
+          }
+          if (syncing) setIsSyncing(false); // give up — stop showing banner
         }
       } catch {
         // Store not available — fallback to CSV mode
-      } finally {
-        if (!cancelled) setStoreStatusChecked(true);
       }
+      if (!cancelled) setStoreStatusChecked(true);
     };
-    checkStore();
+
+    poll();
     return () => {
       cancelled = true;
+      clearTimeout(timeoutId);
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -1141,6 +1160,41 @@ export default function MonitoringPage() {
 
   // If no data loaded and DuckDB not ready, show empty state with upload
   if (data.length === 0 && !datasetReady) {
+    // Show syncing banner while DuckDB startup sync is in progress
+    if (isSyncing && !isAutoConnecting) {
+      return (
+        <div className="min-h-screen">
+          <PageHeader
+            icon={Activity}
+            title="Monitor"
+            subtitle="Real-time performance monitoring and alerts"
+          />
+          <div className="mx-auto max-w-7xl px-6 py-8">
+            <div className="mx-auto max-w-2xl">
+              <div className="card p-8">
+                <div className="flex flex-col items-center text-center">
+                  <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-primary/10">
+                    <Loader2 className="h-7 w-7 animate-spin text-primary" />
+                  </div>
+                  <h2 className="mb-2 text-lg font-semibold text-text-primary">
+                    Data Store Syncing
+                  </h2>
+                  <p className="max-w-md text-sm text-text-muted">
+                    The data store is initializing. This typically takes a few minutes after a cold
+                    start. The dashboard will load automatically once sync completes.
+                  </p>
+                  <div className="mt-4 flex items-center gap-2 text-sm text-text-muted">
+                    <Database className="h-4 w-4" />
+                    <span>Syncing in progress...</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <EmptyState
         isAutoConnecting={isAutoConnecting}

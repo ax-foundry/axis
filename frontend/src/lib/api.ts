@@ -63,6 +63,20 @@ import type {
 
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? '';
 
+/**
+ * Error class that preserves HTTP status codes from API responses.
+ * Enables React Query retry logic to distinguish transient errors (503/404 during sync)
+ * from permanent failures.
+ */
+export class ApiError extends Error {
+  status: number;
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+  }
+}
+
 export async function fetchApi<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`;
 
@@ -77,7 +91,7 @@ export async function fetchApi<T>(endpoint: string, options: RequestInit = {}): 
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({}));
-      throw new Error(error.detail || `API error: ${response.status}`);
+      throw new ApiError(error.detail || `API error: ${response.status}`, response.status);
     }
 
     return response.json();

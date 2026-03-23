@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 
 import { getStoreData } from '@/lib/api';
+import { SYNC_RETRY_CONFIG } from '@/lib/hooks/sync-retry';
 import { computeKPIs } from '@/lib/human-signals-utils';
 import { useHumanSignalsStore, useMonitoringStore } from '@/stores';
 
@@ -41,6 +42,7 @@ export function useProductionOverview(): ProductionOverviewData {
       }),
     staleTime: 5 * 60 * 1000, // 5 minutes
     enabled: datasetReady,
+    ...SYNC_RETRY_CONFIG,
   });
 
   const duckdbData = useMemo(

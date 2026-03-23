@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useEffect } from 'react';
 
 import * as api from '@/lib/api';
+import { SYNC_RETRY_CONFIG } from '@/lib/hooks/sync-retry';
 import { useKpiStore, useMonitoringStore } from '@/stores';
 
 import type { KpiFilters } from '@/types';
@@ -45,6 +46,7 @@ export function useKpiData() {
     queryKey: ['kpi-categories', filters],
     queryFn: () => api.getKpiCategories(filters),
     staleTime: 60_000,
+    ...SYNC_RETRY_CONFIG,
   });
 
   // Fetch filter options (source names, segments, etc.) and populate the KPI store.
@@ -54,6 +56,7 @@ export function useKpiData() {
     queryKey: ['kpi-filters', selectedSourceComponent || ''],
     queryFn: () => api.getKpiFilters(selectedSourceComponent || undefined),
     staleTime: 60_000,
+    ...SYNC_RETRY_CONFIG,
   });
 
   useEffect(() => {
@@ -109,6 +112,7 @@ export function useKpiTrends(kpiName: string | null, enabled: boolean) {
     queryFn: () => api.getKpiTrends(filters, kpiNames),
     enabled: enabled && kpiName !== null,
     staleTime: 60_000,
+    ...SYNC_RETRY_CONFIG,
   });
 }
 
@@ -123,6 +127,7 @@ export function useKpiSankey(enabled: boolean) {
     queryFn: () => api.getKpiSankey(filters),
     enabled,
     staleTime: 60_000,
+    ...SYNC_RETRY_CONFIG,
   });
 }
 
@@ -137,5 +142,6 @@ export function useKpiTrendsMulti(kpiNames: string[], enabled: boolean) {
     queryFn: () => api.getKpiTrends(filters, kpiNames),
     enabled: enabled && kpiNames.length > 0,
     staleTime: 60_000,
+    ...SYNC_RETRY_CONFIG,
   });
 }

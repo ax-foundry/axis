@@ -3,6 +3,7 @@
 import { type ReactNode, useEffect, useRef } from 'react';
 
 import { getStoreStatus } from '@/lib/api';
+import { MAX_STORE_STATUS_POLLS } from '@/lib/hooks/sync-retry';
 import { useEvalDBConfig, useEvalAutoImport } from '@/lib/hooks/useEvalAutoImport';
 import { useDataStore } from '@/stores';
 
@@ -32,21 +33,37 @@ export function EvalDataInitializer({ children }: EvalDataInitializerProps) {
   // Track if we've already attempted auto-import to prevent multiple attempts
   const hasAttemptedImport = useRef(false);
 
-  // Check DuckDB status on mount for observability
-  const duckdbChecked = useRef(false);
+  // Poll DuckDB status on mount — keep polling while sync is in progress (capped)
   useEffect(() => {
-    if (duckdbChecked.current) return;
-    duckdbChecked.current = true;
-    getStoreStatus()
-      .then((status) => {
+    let cancelled = false;
+    let timeoutId: ReturnType<typeof setTimeout>;
+    let pollCount = 0;
+
+    const poll = async () => {
+      try {
+        const status = await getStoreStatus();
+        if (cancelled) return;
         const ds = status.datasets?.eval_data;
+
         if (ds && ds.state === 'ready' && ds.rows > 0) {
           console.log(`[EvalDataInitializer] DuckDB has ${ds.rows} rows in eval_data`);
+        } else if (
+          (ds?.state === 'syncing' || ds?.state === 'not_synced') &&
+          ++pollCount < MAX_STORE_STATUS_POLLS
+        ) {
+          timeoutId = setTimeout(poll, 5000);
+          return;
         }
-      })
-      .catch(() => {
+      } catch {
         // DuckDB status check failed — non-critical, continue
-      });
+      }
+    };
+
+    poll();
+    return () => {
+      cancelled = true;
+      clearTimeout(timeoutId);
+    };
   }, []);
 
   useEffect(() => {
