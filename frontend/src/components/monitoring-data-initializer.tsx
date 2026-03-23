@@ -3,6 +3,7 @@
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 
 import { getStoreStatus, getDatasetMetadata } from '@/lib/api';
+import { MAX_STORE_STATUS_POLLS } from '@/lib/hooks/sync-retry';
 import { useMonitoringDBConfig, useMonitoringAutoImport } from '@/lib/hooks/useMonitoringUpload';
 import { useMonitoringStore } from '@/stores';
 
@@ -39,14 +40,17 @@ export function MonitoringDataInitializer({ children }: MonitoringDataInitialize
 
   useEffect(() => {
     let cancelled = false;
-    getStoreStatus()
-      .then(async (status) => {
+    let timeoutId: ReturnType<typeof setTimeout>;
+    let pollCount = 0;
+
+    const poll = async () => {
+      try {
+        const status = await getStoreStatus();
         if (cancelled) return;
         const monStatus = status.datasets?.monitoring_data;
+
         if (monStatus?.state === 'ready' && monStatus.rows > 0) {
           setDuckdbReady(true);
-          // Populate store metadata so datasetReady=true is set globally,
-          // allowing pages like /production to show data without visiting /monitoring first.
           try {
             const meta = await getDatasetMetadata('monitoring');
             if (!cancelled && meta.metadata) {
@@ -55,18 +59,26 @@ export function MonitoringDataInitializer({ children }: MonitoringDataInitialize
           } catch {
             // Non-fatal: metadata population is best-effort
           }
+        } else if (
+          (monStatus?.state === 'syncing' || monStatus?.state === 'not_synced') &&
+          ++pollCount < MAX_STORE_STATUS_POLLS
+        ) {
+          timeoutId = setTimeout(poll, 5000);
+          if (!duckdbChecked) setDuckdbChecked(true);
+          return;
         }
-      })
-      .catch(() => {
+      } catch {
         // Store not available — will fall through to legacy import
-      })
-      .finally(() => {
-        if (!cancelled) setDuckdbChecked(true);
-      });
+      }
+      if (!cancelled) setDuckdbChecked(true);
+    };
+
+    poll();
     return () => {
       cancelled = true;
+      clearTimeout(timeoutId);
     };
-  }, [populateFiltersFromMetadata]);
+  }, [populateFiltersFromMetadata]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     // Skip if:

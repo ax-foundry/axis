@@ -3,6 +3,7 @@
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 
 import { getStoreStatus } from '@/lib/api';
+import { MAX_STORE_STATUS_POLLS } from '@/lib/hooks/sync-retry';
 import {
   useHumanSignalsDBConfig,
   useHumanSignalsAutoImport,
@@ -40,23 +41,39 @@ export function HumanSignalsDataInitializer({ children }: HumanSignalsDataInitia
   const [duckdbChecked, setDuckdbChecked] = useState(false);
   useEffect(() => {
     let cancelled = false;
-    getStoreStatus()
-      .then((status) => {
+    let timeoutId: ReturnType<typeof setTimeout>;
+
+    let pollCount = 0;
+
+    const poll = async () => {
+      try {
+        const status = await getStoreStatus();
         if (cancelled) return;
         const ds = status.datasets?.human_signals_data;
+
         if (ds && ds.state === 'ready' && ds.rows > 0) {
           console.log(
             `[HumanSignalsDataInitializer] DuckDB has ${ds.rows} rows in human_signals_data`
           );
           setSyncStatus(ds);
+        } else if (
+          (ds?.state === 'syncing' || ds?.state === 'not_synced') &&
+          ++pollCount < MAX_STORE_STATUS_POLLS
+        ) {
+          timeoutId = setTimeout(poll, 5000);
+          if (!duckdbChecked) setDuckdbChecked(true);
+          return;
         }
-        setDuckdbChecked(true);
-      })
-      .catch(() => {
-        if (!cancelled) setDuckdbChecked(true);
-      });
+      } catch {
+        // Store not available — fallback
+      }
+      if (!cancelled) setDuckdbChecked(true);
+    };
+
+    poll();
     return () => {
       cancelled = true;
+      clearTimeout(timeoutId);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

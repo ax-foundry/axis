@@ -15,6 +15,7 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { SourceSelector } from '@/components/ui/SourceSelector';
 import { TimeRangeSelector } from '@/components/ui/TimeRangeSelector';
 import { getStoreStatus } from '@/lib/api';
+import { MAX_STORE_STATUS_POLLS } from '@/lib/hooks/sync-retry';
 import {
   useHumanSignalsAutoImport,
   useHumanSignalsDBConfig,
@@ -274,32 +275,38 @@ export default function HumanSignalsPage() {
   const [autoConnectError, setAutoConnectError] = useState<string | null>(null);
   const [storeStatusChecked, setStoreStatusChecked] = useState(false);
 
-  // Check DuckDB store status on mount — wait for startup sync if needed
+  // Poll DuckDB store status on mount — keep polling while sync is in progress (capped)
   useEffect(() => {
     let cancelled = false;
-    const checkStore = async () => {
+    let timeoutId: ReturnType<typeof setTimeout>;
+    let pollCount = 0;
+
+    const poll = async () => {
       try {
-        let status = await getStoreStatus();
+        const status = await getStoreStatus();
         if (cancelled) return;
-        let ds = status.datasets?.human_signals_data;
+        const ds = status.datasets?.human_signals_data;
 
-        while (!cancelled && ds?.state === 'syncing') {
-          await new Promise((resolve) => setTimeout(resolve, 2000));
-          if (cancelled) return;
-          status = await getStoreStatus();
-          ds = status.datasets?.human_signals_data;
+        if (ds) setSyncStatus(ds);
+
+        if (
+          (ds?.state === 'syncing' || ds?.state === 'not_synced') &&
+          ++pollCount < MAX_STORE_STATUS_POLLS
+        ) {
+          timeoutId = setTimeout(poll, 5000);
+          if (!storeStatusChecked) setStoreStatusChecked(true);
+          return;
         }
-
-        if (!cancelled && ds) setSyncStatus(ds);
       } catch {
         // Store not available — fallback
-      } finally {
-        if (!cancelled) setStoreStatusChecked(true);
       }
+      if (!cancelled) setStoreStatusChecked(true);
     };
-    checkStore();
+
+    poll();
     return () => {
       cancelled = true;
+      clearTimeout(timeoutId);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
