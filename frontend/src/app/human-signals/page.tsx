@@ -289,7 +289,10 @@ export default function HumanSignalsPage() {
 
         if (ds) setSyncStatus(ds);
 
-        if ((ds?.state === 'syncing' || ds?.state === 'not_synced') && ++pollCount < MAX_STORE_STATUS_POLLS) {
+        if (
+          (ds?.state === 'syncing' || ds?.state === 'not_synced') &&
+          ++pollCount < MAX_STORE_STATUS_POLLS
+        ) {
           timeoutId = setTimeout(poll, 5000);
           if (!storeStatusChecked) setStoreStatusChecked(true);
           return;
