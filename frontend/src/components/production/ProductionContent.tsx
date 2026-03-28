@@ -61,7 +61,7 @@ export function ProductionContent() {
       <div className="mx-auto max-w-7xl space-y-8 px-6 py-8">
         {/* Agent KPIs */}
         <CollapsibleSection icon={BarChart3} title="Agent KPIs">
-          <AgentKPISection />
+          <AgentKPISection viewMode="summary" />
         </CollapsibleSection>
 
         {/* AI Quality Monitoring */}

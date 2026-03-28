@@ -19,17 +19,36 @@ export function SourceSelector({ className, scope }: SourceSelectorProps) {
   const monitoringSourceNames = useMonitoringStore((s) => s.availableSourceNames);
   const humanSignalsSourceNames = useHumanSignalsStore((s) => s.availableSourceNames);
   const kpiSourceNames = useKpiStore((s) => s.availableSourceNames);
-  const selectedSourceName = useMonitoringStore((s) => s.selectedSourceName);
+  const monitoringSelected = useMonitoringStore((s) => s.selectedSourceName);
+  const kpiSelected = useKpiStore((s) => s.selectedSourceName);
+  const hsSelected = useHumanSignalsStore((s) => s.selectedSourceName);
   const setMonitoringSource = useMonitoringStore((s) => s.setSelectedSourceName);
   const setHumanSignalsSource = useHumanSignalsStore((s) => s.setSelectedSourceName);
+  const setKpiSource = useKpiStore((s) => s.setSelectedSourceName);
+
+  // Normalize scope once so it stays referentially stable for deps
+  const effectiveScope = useMemo(
+    () => scope ?? (['monitoring', 'human_signals', 'kpi'] as SourceScope[]),
+    [scope]
+  );
+
+  // Scope-aware read: pick the right store for the active selection
+  const isKpiOnly = effectiveScope.length === 1 && effectiveScope.includes('kpi');
+  const isHumanSignalsOnly =
+    effectiveScope.length === 1 && effectiveScope.includes('human_signals');
+
+  const selectedSourceName = useMemo(() => {
+    if (isKpiOnly) return kpiSelected;
+    if (isHumanSignalsOnly) return hsSelected;
+    return monitoringSelected;
+  }, [isKpiOnly, isHumanSignalsOnly, kpiSelected, hsSelected, monitoringSelected]);
 
   // Build ordered source list from scoped stores only
   const sources = useMemo(() => {
     const names: string[][] = [];
-    const include = (s: SourceScope) => !scope || scope.includes(s);
-    if (include('monitoring')) names.push(monitoringSourceNames);
-    if (include('human_signals')) names.push(humanSignalsSourceNames);
-    if (include('kpi')) names.push(kpiSourceNames);
+    if (effectiveScope.includes('monitoring')) names.push(monitoringSourceNames);
+    if (effectiveScope.includes('human_signals')) names.push(humanSignalsSourceNames);
+    if (effectiveScope.includes('kpi')) names.push(kpiSourceNames);
 
     const all = new Set(names.flat());
     const registeredNames = getAgentRegistry()
@@ -39,19 +58,21 @@ export function SourceSelector({ className, scope }: SourceSelectorProps) {
       .filter((n) => !registeredNames.includes(n))
       .sort();
     return [...registeredNames, ...unregistered];
-  }, [monitoringSourceNames, humanSignalsSourceNames, kpiSourceNames, scope]);
+  }, [monitoringSourceNames, humanSignalsSourceNames, kpiSourceNames, effectiveScope]);
 
+  // Scope-aware write: only update stores in the current scope
   const handleSelect = useCallback(
     (name: string) => {
-      setMonitoringSource(name);
-      setHumanSignalsSource(name);
+      if (effectiveScope.includes('monitoring')) setMonitoringSource(name);
+      if (effectiveScope.includes('human_signals')) setHumanSignalsSource(name);
+      if (effectiveScope.includes('kpi')) setKpiSource(name);
     },
-    [setMonitoringSource, setHumanSignalsSource]
+    [effectiveScope, setMonitoringSource, setHumanSignalsSource, setKpiSource]
   );
 
-  // Auto-select first source when none is selected
+  // Auto-select first source when none is selected or selection is stale/invalid
   useEffect(() => {
-    if (sources.length > 0 && !selectedSourceName) {
+    if (sources.length > 0 && (!selectedSourceName || !sources.includes(selectedSourceName))) {
       handleSelect(sources[0]);
     }
   }, [sources, selectedSourceName, handleSelect]);

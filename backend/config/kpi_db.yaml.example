@@ -206,6 +206,18 @@ kpi_db:
   #   - decision_flow_engine_to_athena__
   #   - decision_flow_athena_to_final__
 
+  # --- Production Page KPI Subset ---
+  # Show only a curated subset of KPIs on the Production overview page
+  # (executive summary view). The dedicated Agent KPIs page always shows all.
+  # When empty or omitted, the Production page shows all KPIs.
+  #
+  # production_kpis:               # Exact KPI names for the Production page
+  #   - auto_resolve_rate
+  #   - escalation_rate
+  #   - avg_response_time
+  # production_kpi_prefixes:       # Prefix-based inclusion on Production page
+  #   - key_metric_
+
   # --- Sankey Charts ---
   # Optional Sankey flow diagrams built from count-type KPIs.
   # Each chart visualizes flow across multiple stages (columns).

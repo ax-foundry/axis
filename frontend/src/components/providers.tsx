@@ -7,6 +7,7 @@ import { type ReactNode, useState } from 'react';
 import { EvalDataInitializer } from '@/components/eval-data-initializer';
 import { FaviconManager } from '@/components/favicon-manager';
 import { HumanSignalsDataInitializer } from '@/components/human-signals-data-initializer';
+import { KpiDataInitializer } from '@/components/kpi-data-initializer';
 import { MonitoringDataInitializer } from '@/components/monitoring-data-initializer';
 import { ThemeProvider } from '@/components/theme-provider';
 import { fetchApi } from '@/lib/api';
@@ -36,7 +37,9 @@ export function Providers({ children }: { children: ReactNode }) {
           <FaviconManager />
           <EvalDataInitializer>
             <MonitoringDataInitializer>
-              <HumanSignalsDataInitializer>{children}</HumanSignalsDataInitializer>
+              <HumanSignalsDataInitializer>
+                <KpiDataInitializer>{children}</KpiDataInitializer>
+              </HumanSignalsDataInitializer>
             </MonitoringDataInitializer>
           </EvalDataInitializer>
         </ThemeProvider>

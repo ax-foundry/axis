@@ -99,6 +99,7 @@ class KpiFiltersResponse(BaseModel):
     composition_charts: list[KpiCompositionChartConfig] = []
     has_sankey_charts: bool = False
     card_hidden_kpi_names: list[str] = []
+    production_kpi_names: list[str] = []
 
 
 class KpiSankeyNode(BaseModel):
