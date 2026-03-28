@@ -1742,6 +1742,7 @@ export interface KpiFiltersResponse {
   composition_charts?: KpiCompositionChartConfig[];
   has_sankey_charts?: boolean;
   card_hidden_kpi_names?: string[];
+  production_kpi_names?: string[];
 }
 
 export interface KpiSankeyNode {

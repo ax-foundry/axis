@@ -5,15 +5,15 @@ import { useEffect } from 'react';
 
 import * as api from '@/lib/api';
 import { SYNC_RETRY_CONFIG } from '@/lib/hooks/sync-retry';
-import { useKpiStore, useMonitoringStore } from '@/stores';
+import { useKpiStore } from '@/stores';
 
 import type { KpiFilters } from '@/types';
 
 /**
- * Build filter params from the shared source selector and segment.
+ * Build filter params from the kpi store source selector and segment.
  */
 function useKpiFilters(): KpiFilters {
-  const selectedSourceName = useMonitoringStore((s) => s.selectedSourceName);
+  const selectedSourceName = useKpiStore((s) => s.selectedSourceName);
   const selectedSegment = useKpiStore((s) => s.selectedSegment);
   const selectedSourceComponent = useKpiStore((s) => s.selectedSourceComponent);
   const kpiTimeStart = useKpiStore((s) => s.kpiTimeStart);
@@ -41,6 +41,7 @@ export function useKpiData() {
   const setCompositionCharts = useKpiStore((s) => s.setCompositionCharts);
   const setHasSankeyCharts = useKpiStore((s) => s.setHasSankeyCharts);
   const setCardHiddenKpiNames = useKpiStore((s) => s.setCardHiddenKpiNames);
+  const setProductionKpiNames = useKpiStore((s) => s.setProductionKpiNames);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['kpi-categories', filters],
@@ -81,6 +82,9 @@ export function useKpiData() {
     if (filtersData?.card_hidden_kpi_names) {
       setCardHiddenKpiNames(filtersData.card_hidden_kpi_names);
     }
+    if (filtersData?.production_kpi_names) {
+      setProductionKpiNames(filtersData.production_kpi_names);
+    }
   }, [
     filtersData,
     setAvailableSourceNames,
@@ -90,6 +94,7 @@ export function useKpiData() {
     setCompositionCharts,
     setHasSankeyCharts,
     setCardHiddenKpiNames,
+    setProductionKpiNames,
   ]);
 
   return {

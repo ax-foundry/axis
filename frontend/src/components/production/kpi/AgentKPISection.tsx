@@ -7,7 +7,7 @@ import { FilterDropdown } from '@/components/ui/FilterDropdown';
 import { TimeRangeSelector } from '@/components/ui/TimeRangeSelector';
 import { useKpiData, useKpiSankey, useKpiTrends } from '@/lib/hooks/useKpiData';
 import { formatLocalDate } from '@/lib/utils';
-import { useKpiStore, useMonitoringStore } from '@/stores';
+import { useKpiStore } from '@/stores';
 
 import { KPICategoryStrip } from './KPICategoryStrip';
 import { KPICompositionChart } from './KPICompositionChart';
@@ -43,7 +43,17 @@ export interface FlatKpiItem extends KpiCategoryItem {
   categoryIcon: string;
 }
 
-export function AgentKPISection() {
+interface AgentKPISectionProps {
+  /** When true, skip internal loading spinner and empty-state null return — let the parent page own those states */
+  hideInternalLoadingStates?: boolean;
+  /** 'summary' shows only production_kpis subset (Production page), 'detail' shows all (KPI page). Default: 'detail'. */
+  viewMode?: 'summary' | 'detail';
+}
+
+export function AgentKPISection({
+  hideInternalLoadingStates = false,
+  viewMode = 'detail',
+}: AgentKPISectionProps) {
   const { categories, dateRange, isLoading } = useKpiData();
   const selectedKpi = useKpiStore((s) => s.selectedKpi);
   const selectKpi = useKpiStore((s) => s.selectKpi);
@@ -54,6 +64,7 @@ export function AgentKPISection() {
   const compositionCharts = useKpiStore((s) => s.compositionCharts);
   const hasSankeyCharts = useKpiStore((s) => s.hasSankeyCharts);
   const cardHiddenKpiNames = useKpiStore((s) => s.cardHiddenKpiNames);
+  const productionKpiNames = useKpiStore((s) => s.productionKpiNames);
   const selectedSourceComponent = useKpiStore((s) => s.selectedSourceComponent);
   const setSelectedSourceComponent = useKpiStore((s) => s.setSelectedSourceComponent);
   const availableSourceComponents = useKpiStore((s) => s.availableSourceComponents);
@@ -62,7 +73,7 @@ export function AgentKPISection() {
   const kpiTimeEnd = useKpiStore((s) => s.kpiTimeEnd);
   const setKpiTimePreset = useKpiStore((s) => s.setKpiTimePreset);
   const setKpiTimeRange = useKpiStore((s) => s.setKpiTimeRange);
-  const selectedSourceName = useMonitoringStore((s) => s.selectedSourceName);
+  const selectedSourceName = useKpiStore((s) => s.selectedSourceName);
 
   const dateLabel = useMemo(() => (dateRange ? formatDateRange(dateRange) : null), [dateRange]);
 
@@ -129,11 +140,16 @@ export function AgentKPISection() {
     }
   }, [availableSegments, selectedSegment, setSelectedSegment]);
 
-  // KPIs for the card grid (excludes card-hidden ones)
-  const cardKpis = useMemo(
-    () => flatKpis.filter((k) => !cardHiddenKpiNames.has(k.kpi_name)),
-    [flatKpis, cardHiddenKpiNames]
-  );
+  // KPIs for the card grid:
+  // - Always exclude card-hidden KPIs
+  // - In summary mode (Production page), further filter to production_kpis subset (if configured)
+  const cardKpis = useMemo(() => {
+    let filtered = flatKpis.filter((k) => !cardHiddenKpiNames.has(k.kpi_name));
+    if (viewMode === 'summary' && productionKpiNames.size > 0) {
+      filtered = filtered.filter((k) => productionKpiNames.has(k.kpi_name));
+    }
+    return filtered;
+  }, [flatKpis, cardHiddenKpiNames, viewMode, productionKpiNames]);
 
   // Find the selected KPI item for the trend chart
   const selectedItem = useMemo(
@@ -141,8 +157,10 @@ export function AgentKPISection() {
     [flatKpis, selectedKpi]
   );
 
-  // Sankey chart data (lazy-loaded when config enables it)
-  const { data: sankeyData, isLoading: sankeyLoading } = useKpiSankey(hasSankeyCharts);
+  // Sankey chart data (lazy-loaded when config enables it, skipped in summary mode)
+  const { data: sankeyData, isLoading: sankeyLoading } = useKpiSankey(
+    hasSankeyCharts && viewMode !== 'summary'
+  );
 
   // Lazy-load trend data for the selected KPI
   const { data: trendsData, isLoading: trendsLoading } = useKpiTrends(
@@ -155,16 +173,18 @@ export function AgentKPISection() {
     return trendsData.data.filter((p) => p.kpi_name === selectedKpi);
   }, [trendsData, selectedKpi]);
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center rounded-lg border border-border bg-surface py-12">
-        <Loader2 className="h-5 w-5 animate-spin text-primary" />
-        <span className="ml-2 text-sm text-text-muted">Loading KPI data...</span>
-      </div>
-    );
-  }
+  if (!hideInternalLoadingStates) {
+    if (isLoading) {
+      return (
+        <div className="flex items-center justify-center rounded-lg border border-border bg-surface py-12">
+          <Loader2 className="h-5 w-5 animate-spin text-primary" />
+          <span className="ml-2 text-sm text-text-muted">Loading KPI data...</span>
+        </div>
+      );
+    }
 
-  if (flatKpis.length === 0) return null;
+    if (flatKpis.length === 0) return null;
+  }
 
   return (
     <div className="space-y-3">
@@ -224,8 +244,8 @@ export function AgentKPISection() {
         </div>
       )}
 
-      {/* Composition charts (optional, config-driven) */}
-      {compositionCharts.length > 0 && flatKpis.length > 0 && (
+      {/* Composition charts (optional, config-driven) — hidden in summary mode */}
+      {viewMode !== 'summary' && compositionCharts.length > 0 && flatKpis.length > 0 && (
         <div className="space-y-3">
           {compositionCharts.map((chart) => (
             <KPICompositionChart key={chart.title} config={chart} kpis={flatKpis} />
@@ -233,8 +253,8 @@ export function AgentKPISection() {
         </div>
       )}
 
-      {/* Sankey charts (optional, config-driven) */}
-      {sankeyData?.charts && sankeyData.charts.length > 0 && (
+      {/* Sankey charts (optional, config-driven) — hidden in summary mode */}
+      {viewMode !== 'summary' && sankeyData?.charts && sankeyData.charts.length > 0 && (
         <div className="space-y-3">
           {sankeyData.charts.map((chart) => (
             <KPISankeyChart key={chart.title} chart={chart} isLoading={sankeyLoading} />

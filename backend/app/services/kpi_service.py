@@ -749,6 +749,13 @@ def get_kpi_filters(
         n for n in all_kpi_names if n in hidden_exact or _matches_prefix(n, hidden_prefixes)
     ]
 
+    # Resolve production page KPI subset (exact + prefix match against known names)
+    prod_exact = set(kpi_db_config.production_kpis)
+    prod_prefixes = kpi_db_config.production_kpi_prefixes
+    production_kpi_names = [
+        n for n in all_kpi_names if n in prod_exact or _matches_prefix(n, prod_prefixes)
+    ]
+
     try:
         source_components = _distinct("source_component")
     except Exception:
@@ -766,6 +773,7 @@ def get_kpi_filters(
         composition_charts=composition_charts,
         has_sankey_charts=bool(kpi_db_config.sankey_charts),
         card_hidden_kpi_names=card_hidden_kpi_names,
+        production_kpi_names=production_kpi_names,
     )
 
 

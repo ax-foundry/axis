@@ -9,6 +9,7 @@ import {
   Target,
   BookOpen,
   Activity,
+  TrendingUp,
   Users,
   ChevronLeft,
   ChevronRight,
@@ -50,6 +51,7 @@ const resolveIcon = (name: string): LucideIcon => {
 const coreMainNav = [
   { name: 'Home', href: '/', icon: Home },
   { name: 'Production', href: '/production', icon: LayoutDashboard },
+  { name: 'Agent KPIs', href: '/kpi', icon: TrendingUp },
   { name: 'Evaluate', href: '/evaluate/upload', icon: BarChart3 },
   { name: 'Monitor', href: '/monitoring', icon: Activity },
   { name: 'Human Signals', href: '/human-signals', icon: MessageSquareText },

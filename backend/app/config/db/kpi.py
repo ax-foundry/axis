@@ -66,6 +66,9 @@ class KpiDBConfig:
     # Hide KPIs from card grid (still queryable by charts)
     card_hidden_kpis: list[str] = field(default_factory=list)
     card_hidden_kpi_prefixes: list[str] = field(default_factory=list)
+    # Production page KPI subset (exec summary view). Empty = show all.
+    production_kpis: list[str] = field(default_factory=list)
+    production_kpi_prefixes: list[str] = field(default_factory=list)
 
     @property
     def is_configured(self) -> bool:
@@ -377,6 +380,10 @@ def load_kpi_db_config() -> KpiDBConfig:
                     card_hidden_kpis=_parse_prefix_list(db_config.get("card_hidden_kpis")),
                     card_hidden_kpi_prefixes=_parse_prefix_list(
                         db_config.get("card_hidden_kpi_prefixes")
+                    ),
+                    production_kpis=_parse_prefix_list(db_config.get("production_kpis")),
+                    production_kpi_prefixes=_parse_prefix_list(
+                        db_config.get("production_kpi_prefixes")
                     ),
                 )
                 logger.info("Loaded KPI DB config from %s", KPI_DB_CONFIG_PATH)

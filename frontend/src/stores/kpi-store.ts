@@ -5,7 +5,7 @@ import { persist } from 'zustand/middleware';
 
 import { formatLocalDate } from '@/lib/utils';
 
-import type { KpiCompositionChartConfig } from '@/types';
+import type { DatasetSyncStatus, KpiCompositionChartConfig } from '@/types';
 
 function getKpiDateRange(preset: string): { start: string | null; end: string | null } {
   if (preset === 'all') return { start: null, end: null };
@@ -19,8 +19,14 @@ function getKpiDateRange(preset: string): { start: string | null; end: string | 
 interface KpiStoreState {
   /** Whether kpi_data is synced and available in DuckDB */
   datasetReady: boolean;
+  /** DuckDB sync status for kpi_data (set by KpiDataInitializer) */
+  syncStatus: DatasetSyncStatus | null;
+  /** Whether the initializer has finished checking DuckDB status */
+  storeStatusChecked: boolean;
   /** The kpi_name whose trend chart is currently expanded (null = none) */
   selectedKpi: string | null;
+  /** Currently selected source name filter (empty string = all) */
+  selectedSourceName: string;
   /** Available source names from KPI data */
   availableSourceNames: string[];
   /** Currently selected segment filter (empty string = all) */
@@ -35,6 +41,8 @@ interface KpiStoreState {
   hasSankeyCharts: boolean;
   /** KPI names hidden from card grid (still used by composition/sankey charts) */
   cardHiddenKpiNames: Set<string>;
+  /** KPI names to show on the Production page (exec summary). Empty = show all. */
+  productionKpiNames: Set<string>;
   /** Currently selected source_component filter (empty string = all) */
   selectedSourceComponent: string;
   /** Available source_component values from KPI data */
@@ -49,8 +57,11 @@ interface KpiStoreState {
 
   // Actions
   setDatasetReady: (ready: boolean) => void;
+  setSyncStatus: (status: DatasetSyncStatus | null) => void;
+  setStoreStatusChecked: (checked: boolean) => void;
   selectKpi: (kpiName: string) => void;
   clearSelectedKpi: () => void;
+  setSelectedSourceName: (name: string) => void;
   setAvailableSourceNames: (names: string[]) => void;
   setSelectedSegment: (segment: string) => void;
   setAvailableSegments: (segments: string[]) => void;
@@ -58,6 +69,7 @@ interface KpiStoreState {
   setCompositionCharts: (charts: KpiCompositionChartConfig[]) => void;
   setHasSankeyCharts: (has: boolean) => void;
   setCardHiddenKpiNames: (names: string[]) => void;
+  setProductionKpiNames: (names: string[]) => void;
   setSelectedSourceComponent: (component: string) => void;
   setAvailableSourceComponents: (components: string[]) => void;
   setKpiTimePreset: (preset: string) => void;
@@ -68,7 +80,10 @@ export const useKpiStore = create<KpiStoreState>()(
   persist(
     (set) => ({
       datasetReady: false,
+      syncStatus: null,
+      storeStatusChecked: false,
       selectedKpi: null,
+      selectedSourceName: '',
       availableSourceNames: [],
       selectedSegment: '',
       availableSegments: [],
@@ -76,6 +91,7 @@ export const useKpiStore = create<KpiStoreState>()(
       compositionCharts: [],
       hasSankeyCharts: false,
       cardHiddenKpiNames: new Set<string>(),
+      productionKpiNames: new Set<string>(),
       selectedSourceComponent: '',
       availableSourceComponents: [],
       kpiTimePreset: 'all',
@@ -84,12 +100,18 @@ export const useKpiStore = create<KpiStoreState>()(
 
       setDatasetReady: (ready) => set({ datasetReady: ready }),
 
+      setSyncStatus: (status) => set({ syncStatus: status }),
+
+      setStoreStatusChecked: (checked) => set({ storeStatusChecked: checked }),
+
       selectKpi: (kpiName) =>
         set((state) => ({
           selectedKpi: state.selectedKpi === kpiName ? null : kpiName,
         })),
 
       clearSelectedKpi: () => set({ selectedKpi: null }),
+
+      setSelectedSourceName: (name) => set({ selectedSourceName: name }),
 
       setAvailableSourceNames: (names) => set({ availableSourceNames: names }),
 
@@ -105,6 +127,8 @@ export const useKpiStore = create<KpiStoreState>()(
 
       setCardHiddenKpiNames: (names) => set({ cardHiddenKpiNames: new Set(names) }),
 
+      setProductionKpiNames: (names) => set({ productionKpiNames: new Set(names) }),
+
       setSelectedSourceComponent: (component) => set({ selectedSourceComponent: component }),
 
       setAvailableSourceComponents: (components) => set({ availableSourceComponents: components }),
@@ -119,8 +143,18 @@ export const useKpiStore = create<KpiStoreState>()(
     }),
     {
       name: 'axis-kpi-store',
+      version: 2,
+      migrate: (persisted: unknown, version: number) => {
+        const state = persisted as Record<string, unknown>;
+        if (version < 2) {
+          // v1 → v2: added selectedSourceName for kpi-store decoupling
+          state.selectedSourceName = '';
+        }
+        return state as unknown as KpiStoreState;
+      },
       partialize: (state) => ({
         selectedKpi: state.selectedKpi,
+        selectedSourceName: state.selectedSourceName,
         selectedSegment: state.selectedSegment,
         kpiTimePreset: state.kpiTimePreset,
         kpiTimeStart: state.kpiTimeStart,
