@@ -82,6 +82,11 @@ TOOL_INSTRUCTIONS: dict[str, str] = {
         "Call describe_metric_signals BEFORE writing SQL that extracts sub-fields "
         "from the signals JSON column in monitoring_data."
     ),
+    "recall_memory": (
+        "Call recall_memory BEFORE writing complex SQL to check what query patterns "
+        "and column usage have worked in past sessions. Especially useful when you're "
+        "unsure which columns to use or how to structure a query."
+    ),
 }
 
 # ---------------------------------------------------------------------------
@@ -122,7 +127,8 @@ CAPABILITIES_NOTICE = (
     "When asked what you can do or what your capabilities are, describe ONLY what "
     "your tools enable: querying and summarizing the loaded dataset, running SQL, "
     "computing statistics, comparing groups, finding failure patterns, plotting charts, "
-    "and exporting data. Do not suggest capabilities outside these tools — no writing "
+    "exporting data, and recalling learned patterns from past sessions. "
+    "Do not suggest capabilities outside these tools — no writing "
     "docs, no coding help, no general advice, no planning. Keep the answer short."
 )
 

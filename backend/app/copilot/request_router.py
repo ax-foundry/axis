@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+import asyncio
 import logging
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
+
+import anyio
 
 from app.copilot.guardrails import RequestBlocked, sanitize_output
 from app.copilot.request_classifier import PreparedRequest, prepare_request
@@ -123,6 +126,11 @@ async def run_copilot_request(
             _proc_span.set_output(
                 safe_response[:500] if len(safe_response) > 500 else safe_response
             )
+
+            # Fire-and-forget memory extraction (stored to satisfy RUF006)
+            _mem_task = asyncio.create_task(_extract_memory_bg(ctx))
+            _mem_task.add_done_callback(lambda _: None)  # prevent GC before completion
+
             return RequestResult(
                 response=safe_response,
                 chart_spec=chart_spec,
@@ -137,3 +145,37 @@ async def run_copilot_request(
 
         finally:
             await thought_stream.close()
+
+
+async def _extract_memory_bg(ctx: Any) -> None:
+    """Fire-and-forget memory extraction. Never raises."""
+    try:
+        if not getattr(ctx, "sql_executed_this_turn", False):
+            return
+        from app.config.env import settings
+
+        if not settings.copilot_memory_enabled:
+            return
+
+        from app.copilot.memory import get_copilot_memory_store, schema_fingerprint
+
+        table = ctx.table_name
+        store = ctx.store
+        schema_fp = schema_fingerprint(store, table)
+        known_cols = set(store.get_table_columns(table))
+
+        agent_name = getattr(ctx, "agent_name", None)
+
+        with anyio.fail_after(5):  # hard 5s timeout
+            await anyio.to_thread.run_sync(
+                lambda: get_copilot_memory_store().record(
+                    table_name=table,
+                    schema_fp=schema_fp,
+                    turn_sql=ctx.turn_sql,
+                    error_fixes=ctx.error_fixes,
+                    known_columns=known_cols,
+                    agent_name=agent_name,
+                ),
+            )
+    except Exception:
+        logger.debug("Memory extraction failed (non-fatal)", exc_info=True)

@@ -42,6 +42,9 @@ class Settings(BaseSettings):
     copilot_enabled: bool = Field(
         default=True, description="Enable/disable the AI Copilot sidebar in the frontend."
     )
+    copilot_memory_enabled: bool = Field(
+        default=True, description="Enable cross-session copilot memory (learned SQL patterns)."
+    )
 
     # Plugins
     AXIS_PLUGINS_ENABLED: str = Field(

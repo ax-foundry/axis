@@ -665,6 +665,7 @@ async def run_sql(
                             "sql_auto_fix",
                             metadata={"attempt": attempt + 1, "diff": diff},
                         )
+                        deps.error_fixes.append({"error": str(exc)[:200], "fix": diff})
                         sql_to_run = fixed
                         continue
                 # No fix available or final attempt failed
@@ -675,6 +676,8 @@ async def run_sql(
                 return _safe_json({"error": hint, "sql_attempted": sql_to_run})
 
         deps.last_sql = sql_to_run  # persist for multi-turn refinement
+        deps.sql_executed_this_turn = True
+        deps.turn_sql = sql_to_run
         await deps.thought_stream.emit_observation(
             f"SQL returned {len(rows)} rows",
             tool_name="run_sql",
@@ -766,6 +769,8 @@ async def plot_data(
             return _safe_json({"error": f"Query failed: {exc}"})
 
         deps.last_sql = sql_stripped  # persist for multi-turn chart refinement
+        deps.sql_executed_this_turn = True
+        deps.turn_sql = sql_stripped
 
         if not rows:
             return "No data returned for the chart."
@@ -902,6 +907,9 @@ async def analyze_patterns(
         except Exception as exc:
             return _safe_json({"error": f"Query failed: {exc}"})
 
+        deps.sql_executed_this_turn = True
+        deps.turn_sql = sql_stripped
+
         if records and "metric_name" not in records[0] and "metric_score" not in records[0]:
             return _safe_json(
                 {
@@ -1000,6 +1008,9 @@ async def save_as_dataset(
         except Exception as exc:
             return _safe_json({"error": f"Failed to save dataset: {exc}"})
 
+        deps.sql_executed_this_turn = True
+        deps.turn_sql = sql_stripped
+
         await deps.thought_stream.emit_observation(
             f"Dataset '{name}' saved — {result['row_count']} rows" f" (id: {result['dataset_id']})",
             tool_name="save_as_dataset",
@@ -1061,6 +1072,9 @@ async def download_data(
             )
         except Exception as exc:
             return _safe_json({"error": f"Failed to count rows: {exc}"})
+
+        deps.sql_executed_this_turn = True
+        deps.turn_sql = sql_stripped
 
         # Pass SQL + filename to the frontend — it POSTs to /api/store/export
         deps.download_spec = {
@@ -1125,6 +1139,45 @@ async def describe_metric_signals(
         return result
 
 
+@ft
+async def recall_memory(ctx: RunContextWrapper[OAIContext]) -> str:
+    """Recall learned SQL patterns and column usage from past sessions.
+
+    Call this before writing complex SQL to see what query patterns have
+    worked previously for this dataset. Returns successful SQL patterns,
+    frequently queried columns, and known error fixes.
+
+    Args:
+        ctx: Run context.
+
+    Returns:
+        Formatted memory with patterns, column frequency, and fixes.
+    """
+    deps = ctx.context
+    async with tool_span(
+        deps,
+        "recall_memory",
+        "",
+        "Recalling session memory...",
+        {},
+    ) as (_tracer, _span, _cached):
+        from app.copilot.memory import get_copilot_memory_store, schema_fingerprint
+
+        store = deps.store
+        table = deps.table_name
+        schema_fp = schema_fingerprint(store, table)
+
+        result = get_copilot_memory_store().get_full_memory(
+            table, schema_fp, agent_name=deps.agent_name
+        )
+        await deps.thought_stream.emit_observation(
+            "Session memory loaded",
+            tool_name="recall_memory",
+        )
+        _span.set_output(result[:200])
+        return result
+
+
 COPILOT_TOOLS: list[FunctionTool] = [
     summarize_data,
     query_data,
@@ -1137,6 +1190,7 @@ COPILOT_TOOLS: list[FunctionTool] = [
     save_as_dataset,
     download_data,
     describe_metric_signals,
+    recall_memory,
 ]
 
 SYSTEM_PROMPT = compose_system_prompt()
@@ -1212,6 +1266,17 @@ async def _build_schema_context(oai_ctx: "OAIContext") -> str:
     )
     if _catalog_injection:
         extra.append(_catalog_injection)
+
+    # Cross-session memory: inject learned SQL patterns, column usage, error fixes
+    from app.config.env import settings as _settings
+    from app.copilot.memory import get_copilot_memory_store, schema_fingerprint
+
+    if _settings.copilot_memory_enabled:
+        _mem_injection = get_copilot_memory_store().get_compact_injection(
+            table, schema_fingerprint(store, table), agent_name=oai_ctx.agent_name
+        )
+        if _mem_injection:
+            extra.append(_mem_injection)
 
     if table == "monitoring_data":
         extra.append(

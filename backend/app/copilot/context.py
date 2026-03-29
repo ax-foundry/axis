@@ -45,6 +45,10 @@ class BaseCopilotContext:
     last_sql: str = ""
     sql_examples_injection: str = ""
     agent_name: str | None = None
+    # Per-turn tracking for cross-session memory extraction
+    sql_executed_this_turn: bool = False
+    turn_sql: str = ""
+    error_fixes: list[dict[str, str]] = field(default_factory=list)
 
     @property
     def table_name(self) -> str:
