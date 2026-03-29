@@ -1,0 +1,1459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Copilot Agent Architecture - AXIS Documentation</title>
+<style>
+  /* ── Reset & Base ── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --primary: #4f46e5;
+    --primary-light: #eef2ff;
+    --primary-dark: #3730a3;
+    --green: #16a34a;
+    --green-light: #f0fdf4;
+    --green-border: #bbf7d0;
+    --yellow: #ca8a04;
+    --yellow-light: #fefce8;
+    --yellow-border: #fef08a;
+    --red: #dc2626;
+    --red-light: #fef2f2;
+    --red-border: #fecaca;
+    --blue: #2563eb;
+    --blue-light: #eff6ff;
+    --blue-border: #bfdbfe;
+    --purple: #7c3aed;
+    --purple-light: #f5f3ff;
+    --purple-border: #ddd6fe;
+    --gray-50: #f9fafb;
+    --gray-100: #f3f4f6;
+    --gray-200: #e5e7eb;
+    --gray-300: #d1d5db;
+    --gray-400: #9ca3af;
+    --gray-500: #6b7280;
+    --gray-600: #4b5563;
+    --gray-700: #374151;
+    --gray-800: #1f2937;
+    --gray-900: #111827;
+    --sidebar-w: 260px;
+    --content-max: 860px;
+    --toc-w: 220px;
+  }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    color: var(--gray-800);
+    line-height: 1.7;
+    background: #fff;
+  }
+  a { color: var(--primary); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code {
+    font-family: 'SF Mono', 'Fira Code', 'Fira Mono', Menlo, monospace;
+    font-size: 0.875em;
+    background: var(--gray-100);
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: var(--primary-dark);
+  }
+  pre { background: var(--gray-900); color: #e5e7eb; padding: 16px 20px; border-radius: 8px; overflow-x: auto; font-size: 0.85rem; line-height: 1.6; }
+  pre code { background: none; padding: 0; color: inherit; }
+  kbd {
+    display: inline-block; padding: 2px 6px; font-size: 0.8em;
+    border: 1px solid var(--gray-300); border-radius: 4px;
+    background: var(--gray-50); box-shadow: 0 1px 0 var(--gray-300);
+    font-family: inherit;
+  }
+
+  /* ── Top Nav ── */
+  .topnav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    height: 56px; background: var(--gray-900); color: #fff;
+    display: flex; align-items: center; padding: 0 24px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.3);
+  }
+  .topnav-logo { font-weight: 700; font-size: 1.1rem; letter-spacing: -0.02em; }
+  .topnav-logo span { color: var(--primary); }
+  .topnav-links { margin-left: auto; display: flex; gap: 24px; font-size: 0.875rem; }
+  .topnav-links a { color: var(--gray-300); }
+  .topnav-links a:hover { color: #fff; text-decoration: none; }
+  .topnav-links a.active { color: #fff; font-weight: 600; }
+
+  /* ── Layout ── */
+  .layout { display: flex; margin-top: 56px; min-height: calc(100vh - 56px); }
+
+  /* ── Sidebar ── */
+  .sidebar {
+    position: fixed; top: 56px; left: 0; bottom: 0;
+    width: var(--sidebar-w); background: var(--gray-50);
+    border-right: 1px solid var(--gray-200);
+    overflow-y: auto; padding: 20px 0; font-size: 0.85rem;
+  }
+  .sidebar-section { padding: 0 16px; margin-bottom: 20px; }
+  .sidebar-section-title {
+    font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.08em; color: var(--gray-400); margin-bottom: 8px;
+    padding-left: 8px;
+  }
+  .sidebar-link {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 12px; border-radius: 6px; color: var(--gray-600);
+    transition: all 0.15s;
+  }
+  .sidebar-link:hover { background: var(--gray-200); color: var(--gray-800); text-decoration: none; }
+  .sidebar-link.active { background: var(--primary-light); color: var(--primary); font-weight: 600; }
+  .sidebar-link svg { width: 16px; height: 16px; flex-shrink: 0; }
+
+  /* ── Main Content ── */
+  .main {
+    margin-left: var(--sidebar-w); flex: 1;
+    padding: 40px 40px 80px;
+    margin-right: calc(var(--toc-w) + 48px);
+  }
+  .content { max-width: var(--content-max); width: 100%; }
+
+  /* ── TOC (right rail) ── */
+  .toc {
+    position: fixed; top: 96px; right: 24px;
+    width: var(--toc-w); font-size: 0.78rem;
+  }
+  .toc-title { font-weight: 700; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--gray-400); margin-bottom: 10px; }
+  .toc-list { list-style: none; border-left: 2px solid var(--gray-200); }
+  .toc-list li { padding-left: 14px; margin-bottom: 6px; }
+  .toc-list a { color: var(--gray-500); transition: color 0.15s; }
+  .toc-list a:hover { color: var(--primary); text-decoration: none; }
+  .toc-list a.active { color: var(--primary); font-weight: 600; }
+  .toc-list .indent { padding-left: 28px; }
+
+  /* ── Typography ── */
+  .content h1 { font-size: 2rem; font-weight: 800; letter-spacing: -0.03em; margin-bottom: 8px; color: var(--gray-900); }
+  .content h2 { font-size: 1.45rem; font-weight: 700; margin-top: 48px; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid var(--gray-200); color: var(--gray-900); }
+  .content h3 { font-size: 1.15rem; font-weight: 600; margin-top: 32px; margin-bottom: 12px; color: var(--gray-800); }
+  .content h4 { font-size: 1rem; font-weight: 600; margin-top: 24px; margin-bottom: 8px; color: var(--gray-700); }
+  .content p { margin-bottom: 16px; color: var(--gray-700); }
+  .content > ul, .content > ol { margin-bottom: 16px; padding-left: 24px; color: var(--gray-700); }
+  .content li { margin-bottom: 6px; }
+  .subtitle { font-size: 1.1rem; color: var(--gray-500); margin-bottom: 32px; }
+
+  /* ── Breadcrumb ── */
+  .breadcrumb { font-size: 0.8rem; color: var(--gray-400); margin-bottom: 12px; }
+  .breadcrumb a { color: var(--gray-400); }
+  .breadcrumb a:hover { color: var(--primary); }
+
+  /* ── Admonitions ── */
+  .admonition {
+    border-radius: 8px; padding: 16px 20px; margin: 20px 0;
+    border-left: 4px solid; font-size: 0.9rem;
+  }
+  .admonition-title {
+    font-weight: 700; font-size: 0.8rem; text-transform: uppercase;
+    letter-spacing: 0.04em; margin-bottom: 6px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .admonition.tip { background: var(--green-light); border-color: var(--green); }
+  .admonition.tip .admonition-title { color: var(--green); }
+  .admonition.info { background: var(--blue-light); border-color: var(--blue); }
+  .admonition.info .admonition-title { color: var(--blue); }
+  .admonition.warning { background: var(--yellow-light); border-color: var(--yellow); }
+  .admonition.warning .admonition-title { color: var(--yellow); }
+  .admonition.note { background: var(--gray-50); border-color: var(--gray-400); }
+  .admonition.note .admonition-title { color: var(--gray-600); }
+
+  /* ── Step Boxes ── */
+  .step-grid { display: grid; grid-template-columns: 1fr; gap: 16px; margin: 20px 0; }
+  .step-box {
+    display: flex; gap: 16px; padding: 16px 20px;
+    border: 1px solid var(--gray-200); border-radius: 10px;
+    background: #fff; transition: box-shadow 0.15s;
+  }
+  .step-box:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+  .step-num {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: var(--primary); color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 0.85rem; flex-shrink: 0;
+  }
+  .step-content h4 { margin: 0 0 4px; font-size: 0.95rem; }
+  .step-content p { margin: 0; font-size: 0.88rem; color: var(--gray-600); }
+
+  /* ── Feature Cards ── */
+  .feature-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 20px 0; }
+  .feature-card {
+    border: 1px solid var(--gray-200); border-radius: 8px; padding: 16px;
+    transition: box-shadow 0.15s;
+  }
+  .feature-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+  .feature-card h4 { margin: 0 0 6px; font-size: 0.9rem; display: flex; align-items: center; gap: 8px; }
+  .feature-card p { margin: 0; font-size: 0.82rem; color: var(--gray-500); }
+  .feature-icon { font-size: 1.1rem; }
+
+  /* ── Tables ── */
+  .sim-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+  .sim-table th { background: var(--gray-50); text-align: left; padding: 8px 12px; font-weight: 600; color: var(--gray-600); border-bottom: 1px solid var(--gray-200); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; }
+  .sim-table td { padding: 8px 12px; border-bottom: 1px solid var(--gray-100); color: var(--gray-700); }
+  .sim-table tr:hover td { background: var(--gray-50); }
+  .sim-badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 0.7rem; font-weight: 600; }
+  .sim-badge.green { background: var(--green-light); color: var(--green); border: 1px solid var(--green-border); }
+  .sim-badge.yellow { background: var(--yellow-light); color: var(--yellow); border: 1px solid var(--yellow-border); }
+  .sim-badge.red { background: var(--red-light); color: var(--red); border: 1px solid var(--red-border); }
+  .sim-badge.blue { background: var(--blue-light); color: var(--blue); border: 1px solid var(--blue-border); }
+  .sim-badge.gray { background: var(--gray-100); color: var(--gray-600); border: 1px solid var(--gray-200); }
+  .sim-badge.purple { background: var(--purple-light); color: var(--purple); border: 1px solid var(--purple-border); }
+  .sim-code { font-family: 'SF Mono', monospace; font-size: 0.75rem; color: var(--primary); }
+
+  /* ── Screenshot Frames ── */
+  .screenshot {
+    margin: 24px 0; border-radius: 10px; overflow: hidden;
+    border: 1px solid var(--gray-200); box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+  }
+  .screenshot-chrome {
+    background: var(--gray-100); padding: 8px 14px; display: flex;
+    align-items: center; gap: 8px; border-bottom: 1px solid var(--gray-200);
+  }
+  .screenshot-dots { display: flex; gap: 6px; }
+  .screenshot-dots span { width: 10px; height: 10px; border-radius: 50%; }
+  .screenshot-dots span:nth-child(1) { background: #f87171; }
+  .screenshot-dots span:nth-child(2) { background: #fbbf24; }
+  .screenshot-dots span:nth-child(3) { background: #34d399; }
+  .screenshot-title { font-size: 0.75rem; color: var(--gray-500); margin-left: 8px; }
+  .screenshot-body { background: #fff; position: relative; }
+  .screenshot-caption {
+    text-align: center; font-size: 0.8rem; color: var(--gray-500);
+    padding: 10px; font-style: italic; background: var(--gray-50);
+    border-top: 1px solid var(--gray-200);
+  }
+
+  /* ── Layer Stack Visual ── */
+  .layer-stack { margin: 20px 0; display: flex; flex-direction: column; gap: 2px; }
+  .layer-bar {
+    padding: 10px 16px; border-radius: 6px; font-size: 0.82rem; font-weight: 600;
+    display: flex; justify-content: space-between; align-items: center;
+    color: #fff;
+  }
+  .layer-bar .layer-tag { font-size: 0.7rem; font-weight: 400; opacity: 0.85; }
+
+  /* ── Separator ── */
+  .section-sep { display: flex; align-items: center; gap: 12px; margin: 32px 0 24px; color: var(--gray-400); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; }
+  .section-sep::before, .section-sep::after { content: ''; flex: 1; height: 1px; background: var(--gray-200); }
+
+  /* ── Next Steps ── */
+  .next-steps { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin: 24px 0; }
+  .next-step-card {
+    border: 1px solid var(--gray-200); border-radius: 8px; padding: 16px;
+    transition: all 0.15s;
+  }
+  .next-step-card:hover { border-color: var(--primary); box-shadow: 0 2px 8px rgba(79,70,229,0.1); text-decoration: none; }
+  .next-step-card h4 { margin: 0 0 4px; font-size: 0.9rem; color: var(--gray-800); }
+  .next-step-card p { margin: 0; font-size: 0.78rem; color: var(--gray-500); }
+
+  /* ── Scroll to Top ── */
+  .scroll-top {
+    position: fixed; bottom: 32px; right: 32px; z-index: 90;
+    width: 40px; height: 40px; border-radius: 50%;
+    background: var(--primary); color: #fff; border: none;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 2px 8px rgba(79,70,229,0.4);
+    opacity: 0; visibility: hidden; transition: all 0.2s;
+  }
+  .scroll-top.visible { opacity: 1; visibility: visible; }
+  .scroll-top:hover { background: var(--primary-dark); transform: translateY(-2px); }
+  .scroll-top svg { width: 20px; height: 20px; }
+
+  /* ── Responsive ── */
+  @media (max-width: 1200px) {
+    .toc { display: none; }
+    .main { margin-right: 0; }
+  }
+  @media (max-width: 900px) {
+    .sidebar { display: none; }
+    .main { margin-left: 0; }
+    .feature-grid { grid-template-columns: 1fr; }
+    .next-steps { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════ TOP NAV ══════════════════ -->
+<nav class="topnav">
+  <div class="topnav-logo"><img src="../assets/axis_transparent.png" alt="AXIS"
+    style="height:20px;vertical-align:middle;margin-right:2px;"> Docs</div>
+  <div class="topnav-links">
+    <a href="../getting-started/">Getting Started</a>
+    <a href="../user-guide/">User Guide</a>
+    <a href="../configuration/">Configuration</a>
+    <a href="../architecture/" class="active">Architecture</a>
+    <a href="../api-reference/">API Reference</a>
+  </div>
+</nav>
+
+<!-- ══════════════════ SIDEBAR ══════════════════ -->
+<div class="layout">
+<aside class="sidebar">
+  <div class="sidebar-section">
+    <div class="sidebar-section-title">Overview</div>
+    <a class="sidebar-link active" href="#architecture-overview" data-section="architecture-overview">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      Architecture Overview
+    </a>
+    <a class="sidebar-link" href="#request-lifecycle" data-section="request-lifecycle">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      Request Lifecycle
+    </a>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-section-title">Components</div>
+    <a class="sidebar-link" href="#agent-core" data-section="agent-core">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+      Agent Core
+    </a>
+    <a class="sidebar-link" href="#tool-system" data-section="tool-system">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+      Tool System
+    </a>
+    <a class="sidebar-link" href="#prompt-composition" data-section="prompt-composition">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      Prompt Composition
+    </a>
+    <a class="sidebar-link" href="#schema-context" data-section="schema-context">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+      Schema Context
+    </a>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-section-title">Intelligence</div>
+    <a class="sidebar-link" href="#skill-system" data-section="skill-system">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+      Skill System
+    </a>
+    <a class="sidebar-link" href="#cross-session-memory" data-section="cross-session-memory">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      Cross-Session Memory
+    </a>
+    <a class="sidebar-link" href="#sql-error-recovery" data-section="sql-error-recovery">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+      SQL Error Recovery
+    </a>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-section-title">Data Flow</div>
+    <a class="sidebar-link" href="#request-pipeline" data-section="request-pipeline">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="12" x2="2" y2="12"/><polyline points="15 5 22 12 15 19"/></svg>
+      Request Pipeline
+    </a>
+    <a class="sidebar-link" href="#streaming-sse" data-section="streaming-sse">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>
+      Streaming &amp; SSE
+    </a>
+    <a class="sidebar-link" href="#tracing" data-section="tracing">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+      Tracing
+    </a>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-section-title">Reference</div>
+    <a class="sidebar-link" href="#tool-reference" data-section="tool-reference">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+      Tool Reference
+    </a>
+    <a class="sidebar-link" href="#configuration" data-section="configuration">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+      Configuration
+    </a>
+  </div>
+</aside>
+
+<!-- ══════════════════ MAIN CONTENT ══════════════════ -->
+<main class="main">
+<div class="content">
+
+<!-- Breadcrumb -->
+<div class="breadcrumb">
+  <a href="#">Docs</a> / <a href="#">Architecture</a> / <strong>Copilot Agent</strong>
+</div>
+
+<h1>Copilot Agent Architecture</h1>
+<p class="subtitle">Deep-dive into the OpenAI Agents SDK copilot &mdash; request lifecycle, tools, prompt composition, memory, and observability.</p>
+
+<!-- ══════════════ ARCHITECTURE OVERVIEW ══════════════ -->
+<h2 id="architecture-overview">Architecture Overview</h2>
+<p>The AXIS Copilot is a conversational data analyst built on the <strong>OpenAI Agents SDK</strong>. It accepts natural language questions, translates them into DuckDB SQL queries, and returns formatted answers with optional charts. Every request flows through a layered pipeline of guardrails, context injection, tool execution, and output sanitization.</p>
+
+<div class="feature-grid">
+  <div class="feature-card">
+    <h4><span class="feature-icon">&#x1F6E0;</span> 12 Tools</h4>
+    <p>From SQL execution to pattern analysis, chart rendering, and dataset export &mdash; all callable by the agent.</p>
+  </div>
+  <div class="feature-card">
+    <h4><span class="feature-icon">&#x1F4DA;</span> 3 Skills Max</h4>
+    <p>Up to three domain-specific skill files are injected per request, selected by trigger-word matching.</p>
+  </div>
+  <div class="feature-card">
+    <h4><span class="feature-icon">&#x1F4AC;</span> 6-Turn History</h4>
+    <p>Conversation context is capped at the last 6 turns to stay within token limits while preserving continuity.</p>
+  </div>
+  <div class="feature-card">
+    <h4><span class="feature-icon">&#x1F9E0;</span> 1000-Char Memory</h4>
+    <p>Cross-session memory injection is capped at 1000 characters &mdash; compact SQL patterns and error fixes.</p>
+  </div>
+</div>
+
+<!-- High-level SVG Diagram -->
+<div class="screenshot">
+  <div class="screenshot-chrome">
+    <div class="screenshot-dots"><span></span><span></span><span></span></div>
+    <div class="screenshot-title">Copilot Request Flow</div>
+  </div>
+  <div class="screenshot-body" style="padding:24px 16px;">
+    <svg viewBox="0 0 800 120" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;">
+      <defs>
+        <marker id="arrow" viewBox="0 0 10 7" refX="10" refY="3.5" markerWidth="8" markerHeight="6" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#9ca3af"/></marker>
+      </defs>
+      <!-- Boxes -->
+      <rect x="2" y="35" width="82" height="50" rx="8" fill="#eef2ff" stroke="#4f46e5" stroke-width="1.5"/>
+      <text x="43" y="65" text-anchor="middle" font-size="11" font-weight="600" fill="#3730a3">HTTP POST</text>
+      <line x1="84" y1="60" x2="108" y2="60" stroke="#9ca3af" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+      <rect x="110" y="35" width="82" height="50" rx="8" fill="#fef2f2" stroke="#dc2626" stroke-width="1.5"/>
+      <text x="151" y="57" text-anchor="middle" font-size="10" font-weight="600" fill="#dc2626">Input</text>
+      <text x="151" y="70" text-anchor="middle" font-size="10" font-weight="600" fill="#dc2626">Guardrails</text>
+      <line x1="192" y1="60" x2="216" y2="60" stroke="#9ca3af" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+      <rect x="218" y="35" width="82" height="50" rx="8" fill="#fefce8" stroke="#ca8a04" stroke-width="1.5"/>
+      <text x="259" y="57" text-anchor="middle" font-size="10" font-weight="600" fill="#ca8a04">Request</text>
+      <text x="259" y="70" text-anchor="middle" font-size="10" font-weight="600" fill="#ca8a04">Classifier</text>
+      <line x1="300" y1="60" x2="324" y2="60" stroke="#9ca3af" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+      <rect x="326" y="25" width="140" height="70" rx="8" fill="#eef2ff" stroke="#4f46e5" stroke-width="2"/>
+      <text x="396" y="50" text-anchor="middle" font-size="11" font-weight="700" fill="#3730a3">Agent Core</text>
+      <text x="396" y="66" text-anchor="middle" font-size="9" fill="#6b7280">tool loop (max turns)</text>
+      <text x="396" y="80" text-anchor="middle" font-size="9" fill="#6b7280">LLM + 12 tools</text>
+      <line x1="466" y1="60" x2="490" y2="60" stroke="#9ca3af" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+      <rect x="492" y="35" width="82" height="50" rx="8" fill="#f0fdf4" stroke="#16a34a" stroke-width="1.5"/>
+      <text x="533" y="57" text-anchor="middle" font-size="10" font-weight="600" fill="#16a34a">Output</text>
+      <text x="533" y="70" text-anchor="middle" font-size="10" font-weight="600" fill="#16a34a">Sanitizer</text>
+      <line x1="574" y1="60" x2="598" y2="60" stroke="#9ca3af" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+      <rect x="600" y="35" width="82" height="50" rx="8" fill="#eff6ff" stroke="#2563eb" stroke-width="1.5"/>
+      <text x="641" y="57" text-anchor="middle" font-size="10" font-weight="600" fill="#2563eb">SSE</text>
+      <text x="641" y="70" text-anchor="middle" font-size="10" font-weight="600" fill="#2563eb">Stream</text>
+      <line x1="682" y1="60" x2="706" y2="60" stroke="#9ca3af" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+      <rect x="708" y="35" width="82" height="50" rx="8" fill="var(--gray-100)" stroke="var(--gray-400)" stroke-width="1.5"/>
+      <text x="749" y="65" text-anchor="middle" font-size="11" font-weight="600" fill="var(--gray-700)">Client</text>
+
+      <!-- Labels -->
+      <text x="43" y="28" text-anchor="middle" font-size="9" fill="#9ca3af">1</text>
+      <text x="151" y="28" text-anchor="middle" font-size="9" fill="#9ca3af">2</text>
+      <text x="259" y="28" text-anchor="middle" font-size="9" fill="#9ca3af">3</text>
+      <text x="396" y="16" text-anchor="middle" font-size="9" fill="#9ca3af">4</text>
+      <text x="533" y="28" text-anchor="middle" font-size="9" fill="#9ca3af">5</text>
+      <text x="641" y="28" text-anchor="middle" font-size="9" fill="#9ca3af">6</text>
+      <text x="749" y="28" text-anchor="middle" font-size="9" fill="#9ca3af">7</text>
+
+      <!-- Feedback loop arrow under Agent Core -->
+      <path d="M 440 95 C 440 108, 350 108, 350 95" fill="none" stroke="#4f46e5" stroke-width="1" stroke-dasharray="4 3" marker-end="url(#arrow)"/>
+      <text x="396" y="115" text-anchor="middle" font-size="8" fill="#4f46e5">tool loop</text>
+    </svg>
+  </div>
+  <div class="screenshot-caption">End-to-end request flow from HTTP POST to SSE-streamed response</div>
+</div>
+
+<!-- ══════════════ REQUEST LIFECYCLE ══════════════ -->
+<h2 id="request-lifecycle">Request Lifecycle</h2>
+<p>Every copilot request passes through eight distinct stages. The pipeline is shared between the Pydantic-AI and OpenAI Agents SDK implementations via <code>run_copilot_request()</code> in <code>request_router.py</code>.</p>
+
+<div class="step-grid">
+  <div class="step-box">
+    <div class="step-num">1</div>
+    <div class="step-content">
+      <h4>HTTP POST</h4>
+      <p>The frontend sends a POST to <code>/copilot/stream/oai</code> with the user message, conversation history, dataset label, and optional agent filter.</p>
+    </div>
+  </div>
+  <div class="step-box">
+    <div class="step-num">2</div>
+    <div class="step-content">
+      <h4>Input Guardrails</h4>
+      <p><code>sanitize_input()</code> strips prompt-injection patterns, enforces the 2,000-character limit, and raises <code>RequestBlocked</code> if harmful content is detected.</p>
+    </div>
+  </div>
+  <div class="step-box">
+    <div class="step-num">3</div>
+    <div class="step-content">
+      <h4>Skill &amp; Example Selection</h4>
+      <p><code>prepare_request()</code> runs trigger-word matching against SKILL.md files (cap: 3) and selects relevant SQL examples for the agent/message combination.</p>
+    </div>
+  </div>
+  <div class="step-box">
+    <div class="step-num">4</div>
+    <div class="step-content">
+      <h4>Context Build</h4>
+      <p>The framework-specific context factory constructs <code>OAIContext</code> (or <code>CopilotDeps</code>), injecting the ThoughtStream, dataset label, data context, skills, and memory.</p>
+    </div>
+  </div>
+  <div class="step-box">
+    <div class="step-num">5</div>
+    <div class="step-content">
+      <h4>Schema Injection</h4>
+      <p><code>_build_schema_context()</code> generates DDL, computes column stats, injects schema hints, metric catalog, memory, and monitoring context into the system prompt.</p>
+    </div>
+  </div>
+  <div class="step-box">
+    <div class="step-num">6</div>
+    <div class="step-content">
+      <h4>Agent Execution</h4>
+      <p>The OpenAI Agents SDK <code>Runner.run()</code> enters its tool loop &mdash; the LLM decides which tools to call, receives results, and iterates until it has a final answer.</p>
+    </div>
+  </div>
+  <div class="step-box">
+    <div class="step-num">7</div>
+    <div class="step-content">
+      <h4>Output Sanitization</h4>
+      <p><code>sanitize_output()</code> strips credentials, traceback lines, and sensitive patterns from the response before it reaches the client.</p>
+    </div>
+  </div>
+  <div class="step-box">
+    <div class="step-num">8</div>
+    <div class="step-content">
+      <h4>SSE Streaming</h4>
+      <p>Thoughts (reasoning, tool usage, observations) stream in real-time via SSE events. The final response and optional chart/download specs are sent as the closing events.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ AGENT CORE ══════════════ -->
+<div class="section-sep">Components</div>
+<h2 id="agent-core">Agent Core (OAICopilotAgent)</h2>
+<p>The copilot is implemented as a module in <code>app/copilot/oai_agent.py</code> using the OpenAI Agents SDK. The agent is created once per process and reused across requests. Dynamic instructions are injected per-request via a callable.</p>
+
+<h3>OAIContext Fields</h3>
+<p>Both agent implementations share a base context (<code>BaseCopilotContext</code>) with these fields:</p>
+
+<table class="sim-table">
+  <thead>
+    <tr><th>Field</th><th>Type</th><th>Purpose</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><code>thought_stream</code></td><td><code>ThoughtStream</code></td><td>Async pub/sub for real-time thought streaming to client</td></tr>
+    <tr><td><code>dataset_label</code></td><td><code>str</code></td><td>Which dataset to query (e.g. <code>"evaluation"</code>, <code>"monitoring"</code>)</td></tr>
+    <tr><td><code>data_context</code></td><td><code>dict</code></td><td>Optional schema hints passed from the frontend</td></tr>
+    <tr><td><code>_cache</code></td><td><code>dict</code></td><td>Per-request tool result cache (keyed by tool+params+row count)</td></tr>
+    <tr><td><code>chart_spec</code></td><td><code>dict | None</code></td><td>Plotly chart specification set by <code>plot_data</code> tool</td></tr>
+    <tr><td><code>download_spec</code></td><td><code>dict | None</code></td><td>Download metadata set by <code>download_data</code> tool</td></tr>
+    <tr><td><code>skills_injection</code></td><td><code>str</code></td><td>Rendered skill bodies injected into system prompt</td></tr>
+    <tr><td><code>last_sql</code></td><td><code>str</code></td><td>Most recent SQL query (for error recovery context)</td></tr>
+    <tr><td><code>sql_examples_injection</code></td><td><code>str</code></td><td>Matched Q&rarr;SQL examples for in-context learning</td></tr>
+    <tr><td><code>agent_name</code></td><td><code>str | None</code></td><td>Agent/source filter applied to all queries</td></tr>
+    <tr><td><code>sql_executed_this_turn</code></td><td><code>bool</code></td><td>Tracks whether SQL ran this turn (for memory extraction)</td></tr>
+    <tr><td><code>error_fixes</code></td><td><code>list[dict]</code></td><td>Error-to-fix pairs collected during SQL retries</td></tr>
+  </tbody>
+</table>
+
+<h3>Agent Creation Pattern</h3>
+<pre><code>agent = Agent(
+    name="axis-copilot",
+    instructions=lambda ctx: compose_system_prompt(ctx.context),
+    tools=[summarize_data, query_data, run_sql, analyze_data,
+           compare_data, plot_data, analyze_patterns, ...],
+    hooks=CopilotRunHooks(),
+    model=LLMProvider.get_model(),
+)</code></pre>
+
+<div class="admonition info">
+  <div class="admonition-title">&#x2139;&#xFE0F; Info</div>
+  The agent is created once at module level and cached for the process lifetime. The <code>instructions</code> parameter accepts a callable, so context is injected fresh for every request without recreating the agent.
+</div>
+
+<!-- ══════════════ TOOL SYSTEM ══════════════ -->
+<h2 id="tool-system">Tool System</h2>
+<p>The copilot has 12 tools registered via the <code>@function_tool</code> decorator. Each tool follows a consistent pattern: cache check, guardrail validation, DuckDB execution, thought emission, and result truncation.</p>
+
+<table class="sim-table">
+  <thead>
+    <tr><th>Tool</th><th>Category</th><th>Description</th><th>Key Behavior</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>summarize_data</code></td>
+      <td><span class="sim-badge green">Analysis</span></td>
+      <td>Dataset overview: schema, row count, filter values, numeric stats</td>
+      <td>Cached per row-count</td>
+    </tr>
+    <tr>
+      <td><code>query_data</code></td>
+      <td><span class="sim-badge blue">SQL</span></td>
+      <td>Filter, search, min/max lookups with fuzzy column matching</td>
+      <td>Cap: 50 records</td>
+    </tr>
+    <tr>
+      <td><code>analyze_data</code></td>
+      <td><span class="sim-badge green">Analysis</span></td>
+      <td>Statistical aggregations: group-by, averages, distributions</td>
+      <td>Auto numeric detection</td>
+    </tr>
+    <tr>
+      <td><code>compare_data</code></td>
+      <td><span class="sim-badge green">Analysis</span></td>
+      <td>Compare two groups on numeric metrics with delta computation</td>
+      <td>Paired column stats</td>
+    </tr>
+    <tr>
+      <td><code>query_kpi_data</code></td>
+      <td><span class="sim-badge blue">SQL</span></td>
+      <td>Query the KPI table for business metrics</td>
+      <td>Separate table access</td>
+    </tr>
+    <tr>
+      <td><code>run_sql</code></td>
+      <td><span class="sim-badge blue">SQL</span></td>
+      <td>Execute arbitrary SELECT on DuckDB with 3-attempt auto-fix</td>
+      <td>Guardrail + retry loop</td>
+    </tr>
+    <tr>
+      <td><code>plot_data</code></td>
+      <td><span class="sim-badge yellow">Output</span></td>
+      <td>Generate Plotly chart specs (bar, line, scatter, pie, histogram)</td>
+      <td>Sets <code>chart_spec</code> on context</td>
+    </tr>
+    <tr>
+      <td><code>analyze_patterns</code></td>
+      <td><span class="sim-badge green">Analysis</span></td>
+      <td>Discover patterns, correlations, outliers in the dataset</td>
+      <td>Multi-query analysis</td>
+    </tr>
+    <tr>
+      <td><code>save_as_dataset</code></td>
+      <td><span class="sim-badge yellow">Output</span></td>
+      <td>Persist a SQL result as a new named dataset in DuckDB</td>
+      <td>Creates new table</td>
+    </tr>
+    <tr>
+      <td><code>download_data</code></td>
+      <td><span class="sim-badge yellow">Output</span></td>
+      <td>Prepare CSV/JSON download of query results</td>
+      <td>Sets <code>download_spec</code></td>
+    </tr>
+    <tr>
+      <td><code>describe_metric_signals</code></td>
+      <td><span class="sim-badge gray">Meta</span></td>
+      <td>Describe available metrics and their signal schemas</td>
+      <td>Schema introspection</td>
+    </tr>
+    <tr>
+      <td><code>recall_memory</code></td>
+      <td><span class="sim-badge gray">Meta</span></td>
+      <td>Retrieve full cross-session memory for the current schema</td>
+      <td>Returns all stored patterns</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>Tool Execution Pattern</h3>
+<p>Every tool uses the <code>tool_span</code> context manager for consistent caching, tracing, and thought emission:</p>
+
+<pre><code>@ft
+async def run_sql(ctx: RunContextWrapper[OAIContext], sql: str) -> str:
+    deps = ctx.context
+    async with tool_span(
+        deps, "run_sql", sql,
+        f"Executing SQL query...",
+        {"sql": sql_fingerprint(sql)},
+    ) as (_tracer, _span, cached):
+        if cached:
+            return cached
+
+        # Guardrail check
+        blocked = check_sql_safety(sql)
+        if blocked:
+            return json.dumps({"error": blocked})
+
+        # Execute with retry loop (up to 3 attempts)
+        result = await _execute_with_retry(deps, sql)
+        deps.set_cached("run_sql", sql, result)
+        return result</code></pre>
+
+<h3>SQL Retry Loop</h3>
+<p>The <code>run_sql</code> tool implements a 3-attempt auto-fix loop for SQL errors:</p>
+
+<div class="screenshot">
+  <div class="screenshot-chrome">
+    <div class="screenshot-dots"><span></span><span></span><span></span></div>
+    <div class="screenshot-title">run_sql retry loop</div>
+  </div>
+  <div class="screenshot-body" style="padding:20px;">
+    <svg viewBox="0 0 700 140" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;">
+      <defs>
+        <marker id="arr2" viewBox="0 0 10 7" refX="10" refY="3.5" markerWidth="8" markerHeight="6" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#9ca3af"/></marker>
+      </defs>
+      <!-- Attempt 1 -->
+      <rect x="10" y="20" width="100" height="44" rx="8" fill="#eff6ff" stroke="#2563eb" stroke-width="1.5"/>
+      <text x="60" y="38" text-anchor="middle" font-size="10" font-weight="600" fill="#2563eb">Execute SQL</text>
+      <text x="60" y="52" text-anchor="middle" font-size="9" fill="#6b7280">Attempt 1</text>
+      <line x1="110" y1="42" x2="140" y2="42" stroke="#9ca3af" stroke-width="1.5" marker-end="url(#arr2)"/>
+
+      <!-- Error -->
+      <rect x="142" y="20" width="80" height="44" rx="8" fill="#fef2f2" stroke="#dc2626" stroke-width="1.5"/>
+      <text x="182" y="38" text-anchor="middle" font-size="10" font-weight="600" fill="#dc2626">Error</text>
+      <text x="182" y="52" text-anchor="middle" font-size="9" fill="#6b7280">parse hint</text>
+      <line x1="222" y1="42" x2="252" y2="42" stroke="#9ca3af" stroke-width="1.5" marker-end="url(#arr2)"/>
+
+      <!-- Auto-fix -->
+      <rect x="254" y="20" width="100" height="44" rx="8" fill="#fefce8" stroke="#ca8a04" stroke-width="1.5"/>
+      <text x="304" y="38" text-anchor="middle" font-size="10" font-weight="600" fill="#ca8a04">Auto-Fix</text>
+      <text x="304" y="52" text-anchor="middle" font-size="9" fill="#6b7280">_attempt_sql_fix</text>
+      <line x1="354" y1="42" x2="384" y2="42" stroke="#9ca3af" stroke-width="1.5" marker-end="url(#arr2)"/>
+
+      <!-- Attempt 2 -->
+      <rect x="386" y="20" width="100" height="44" rx="8" fill="#eff6ff" stroke="#2563eb" stroke-width="1.5"/>
+      <text x="436" y="38" text-anchor="middle" font-size="10" font-weight="600" fill="#2563eb">Retry SQL</text>
+      <text x="436" y="52" text-anchor="middle" font-size="9" fill="#6b7280">Attempt 2</text>
+      <line x1="486" y1="42" x2="516" y2="42" stroke="#9ca3af" stroke-width="1.5" marker-end="url(#arr2)"/>
+
+      <!-- Success -->
+      <rect x="518" y="10" width="80" height="30" rx="8" fill="#f0fdf4" stroke="#16a34a" stroke-width="1.5"/>
+      <text x="558" y="30" text-anchor="middle" font-size="10" font-weight="600" fill="#16a34a">Success</text>
+
+      <!-- Or fail -->
+      <rect x="518" y="52" width="80" height="30" rx="8" fill="#fef2f2" stroke="#dc2626" stroke-width="1.5"/>
+      <text x="558" y="72" text-anchor="middle" font-size="10" font-weight="600" fill="#dc2626">Fail</text>
+
+      <!-- Branching lines -->
+      <line x1="516" y1="35" x2="518" y2="25" stroke="#16a34a" stroke-width="1"/>
+      <line x1="516" y1="50" x2="518" y2="67" stroke="#dc2626" stroke-width="1"/>
+
+      <!-- Loop back from Fail -->
+      <path d="M 598 67 L 620 67 C 635 67, 635 110, 304 110 C 254 110, 254 75, 254 64" fill="none" stroke="#ca8a04" stroke-width="1" stroke-dasharray="4 3" marker-end="url(#arr2)"/>
+      <text x="440" y="125" text-anchor="middle" font-size="9" fill="#ca8a04">retry (up to 3x)</text>
+    </svg>
+  </div>
+  <div class="screenshot-caption">SQL errors are parsed, auto-fixed, and retried up to 3 times before surfacing the error</div>
+</div>
+
+<!-- ══════════════ PROMPT COMPOSITION ══════════════ -->
+<h2 id="prompt-composition">Prompt Composition</h2>
+<p>The system prompt is assembled dynamically per request by <code>compose_system_prompt()</code>. It stacks multiple layers, each contributing domain knowledge, rules, and context:</p>
+
+<div class="layer-stack">
+  <div class="layer-bar" style="background: #3730a3;">
+    <span>Layer 1: BASE_PROMPT</span>
+    <span class="layer-tag">Universal rules, persona, output format</span>
+  </div>
+  <div class="layer-bar" style="background: #4f46e5;">
+    <span>Layer 2: TOOL_INSTRUCTIONS</span>
+    <span class="layer-tag">Per-tool when/how guidance</span>
+  </div>
+  <div class="layer-bar" style="background: #2563eb;">
+    <span>Layer 3: DUCKDB_SQL_NOTES</span>
+    <span class="layer-tag">DuckDB SQL dialect quirks</span>
+  </div>
+  <div class="layer-bar" style="background: #7c3aed;">
+    <span>Layer 4: CAPABILITIES + SAFETY_RULES</span>
+    <span class="layer-tag">What the agent can/cannot do</span>
+  </div>
+  <div class="layer-bar" style="background: #16a34a;">
+    <span>Layer 5: Dynamic Schema Context</span>
+    <span class="layer-tag">DDL + hints + catalog + memory</span>
+  </div>
+  <div class="layer-bar" style="background: #ca8a04;">
+    <span>Layer 6: Skills Injection</span>
+    <span class="layer-tag">Up to 3 matched SKILL.md bodies</span>
+  </div>
+</div>
+
+<div class="admonition tip">
+  <div class="admonition-title">&#x1F4A1; Tip</div>
+  Layers 1-4 are static per deployment. Layers 5-6 are rebuilt for every request, incorporating the current schema state, matched skills, SQL examples, and cross-session memory.
+</div>
+
+<h3>Prompt Size Budget</h3>
+<ul>
+  <li><strong>Static layers</strong> (1-4): ~2,500 tokens &mdash; constant overhead</li>
+  <li><strong>Schema DDL</strong>: scales with column count (~10 tokens/column)</li>
+  <li><strong>Memory injection</strong>: hard-capped at 1,000 characters</li>
+  <li><strong>Skills</strong>: typically 200-500 tokens per skill, max 3</li>
+  <li><strong>SQL examples</strong>: 2-5 matched examples, ~100 tokens each</li>
+</ul>
+
+<!-- ══════════════ SCHEMA CONTEXT ══════════════ -->
+<h2 id="schema-context">Schema Context Building</h2>
+<p>The schema context is the richest dynamic section of the prompt. It gives the LLM everything it needs to write correct SQL queries against the current dataset.</p>
+
+<div class="step-grid">
+  <div class="step-box">
+    <div class="step-num">1</div>
+    <div class="step-content">
+      <h4>Get Metadata</h4>
+      <p><code>store.get_metadata(table)</code> returns column names, types, row count, time range, and filter values from the DuckDB catalog.</p>
+    </div>
+  </div>
+  <div class="step-box">
+    <div class="step-num">2</div>
+    <div class="step-content">
+      <h4>Compute Column Stats</h4>
+      <p>For numeric columns, compute <code>AVG</code>, <code>MIN</code>, <code>MAX</code> (up to 8 columns). For categorical columns, sample distinct values (up to 15).</p>
+    </div>
+  </div>
+  <div class="step-box">
+    <div class="step-num">3</div>
+    <div class="step-content">
+      <h4>Build DDL</h4>
+      <p>Generates a DuckDB <code>CREATE TABLE</code> DDL string with column names and types, plus inline comments for ranges and sample values.</p>
+    </div>
+  </div>
+  <div class="step-box">
+    <div class="step-num">4</div>
+    <div class="step-content">
+      <h4>Inject Extras</h4>
+      <p>Appends schema hints (YAML), metric catalog, cross-session memory, monitoring context, agent filter, last SQL query, and SQL examples.</p>
+    </div>
+  </div>
+</div>
+
+<h3>DDL Format Example</h3>
+<pre><code>-- DuckDB table: eval_data (12,847 rows)
+CREATE TABLE eval_data (
+  dataset_id VARCHAR,        -- unique record identifier
+  query VARCHAR,             -- input prompt
+  actual_output VARCHAR,     -- LLM response text
+  faithfulness_score DOUBLE, -- range: [0.12 .. 0.99], avg: 0.74
+  relevance_score DOUBLE,    -- range: [0.05 .. 1.00], avg: 0.81
+  environment VARCHAR,       -- values: production, staging, dev
+  source_name VARCHAR,       -- values: alpha_bot, beta_bot
+  timestamp TIMESTAMP
+);</code></pre>
+
+<h3>Injection Sources</h3>
+<table class="sim-table">
+  <thead><tr><th>Source</th><th>Origin</th><th>When Injected</th></tr></thead>
+  <tbody>
+    <tr><td>Schema DDL</td><td>DuckDB catalog metadata</td><td>Always</td></tr>
+    <tr><td>Schema Hints</td><td><code>custom/config/schema_hints.yaml</code></td><td>If file exists</td></tr>
+    <tr><td>Metric Catalog</td><td><code>custom/config/metric_catalog.yaml</code></td><td>If file exists</td></tr>
+    <tr><td>Cross-Session Memory</td><td>DuckDB KV store</td><td>If <code>copilot_memory_enabled</code></td></tr>
+    <tr><td>Monitoring Context</td><td>Monitoring metadata cache</td><td>If monitoring dataset active</td></tr>
+    <tr><td>Agent Filter</td><td>Request parameter</td><td>If <code>agent_name</code> provided</td></tr>
+    <tr><td>Last SQL</td><td>Previous turn context</td><td>If available</td></tr>
+    <tr><td>SQL Examples</td><td><code>custom/config/sql_examples/</code></td><td>If matched by trigger words</td></tr>
+  </tbody>
+</table>
+
+<!-- ══════════════ SKILL SYSTEM ══════════════ -->
+<div class="section-sep">Intelligence</div>
+<h2 id="skill-system">Skill System</h2>
+<p>Skills are domain-specific instruction files that augment the copilot's capabilities for particular types of questions. They are written as Markdown files with YAML frontmatter.</p>
+
+<h3>SKILL.md Format</h3>
+<pre><code>---
+name: trend-analysis
+description: Analyze time-series trends and detect anomalies
+version: "1.0"
+priority: 10
+triggers:
+  - trend
+  - over time
+  - time series
+  - anomaly
+  - spike
+  - regression
+---
+
+## Trend Analysis Skill
+
+When the user asks about trends over time, follow these steps:
+1. Use `run_sql` to query with GROUP BY time bucket
+2. Look for sustained direction changes (3+ consecutive periods)
+3. Flag anomalies where values exceed 2 standard deviations
+...</code></pre>
+
+<h3>Trigger Matching</h3>
+<p>Skills are selected by word-boundary matching against the user message and recent conversation context. The matching is scored and capped at 3 skills per request:</p>
+<ul>
+  <li><strong>Word boundary</strong>: triggers match as whole words (not substrings)</li>
+  <li><strong>Scored</strong>: more trigger matches = higher priority</li>
+  <li><strong>Cap</strong>: maximum 3 skills injected per request</li>
+  <li><strong>Rendered</strong>: selected skills are wrapped in XML blocks for clear delineation</li>
+</ul>
+
+<h3>Skill Discovery</h3>
+<p>The skill registry loads from two locations, with custom overriding builtin:</p>
+<ol>
+  <li><strong>Builtin</strong>: <code>app/copilot/skills/builtin/</code> &mdash; shipped with AXIS</li>
+  <li><strong>Custom</strong>: <code>custom/config/skills/</code> &mdash; site-specific overrides (by name)</li>
+</ol>
+
+<div class="admonition note">
+  <div class="admonition-title">&#x1F4DD; Note</div>
+  If a custom skill has the same <code>name</code> as a builtin skill, the custom version takes precedence. This allows deployers to override default behavior without modifying the codebase.
+</div>
+
+<!-- ══════════════ CROSS-SESSION MEMORY ══════════════ -->
+<h2 id="cross-session-memory">Cross-Session Memory</h2>
+<p>The copilot learns from past interactions. After each successful SQL-executing request, patterns are extracted and stored in DuckDB for future injection. Memory is keyed by <strong>schema fingerprint</strong> so different datasets maintain separate memory stores.</p>
+
+<!-- Memory Architecture Diagram -->
+<div class="screenshot">
+  <div class="screenshot-chrome">
+    <div class="screenshot-dots"><span></span><span></span><span></span></div>
+    <div class="screenshot-title">Cross-Session Memory Architecture</div>
+  </div>
+  <div class="screenshot-body" style="padding:24px 16px;">
+    <svg viewBox="0 0 750 180" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;">
+      <defs>
+        <marker id="arr3" viewBox="0 0 10 7" refX="10" refY="3.5" markerWidth="8" markerHeight="6" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#9ca3af"/></marker>
+      </defs>
+
+      <!-- Request -->
+      <rect x="10" y="60" width="90" height="50" rx="8" fill="#eef2ff" stroke="#4f46e5" stroke-width="1.5"/>
+      <text x="55" y="82" text-anchor="middle" font-size="11" font-weight="600" fill="#3730a3">Request</text>
+      <text x="55" y="96" text-anchor="middle" font-size="9" fill="#6b7280">(with SQL)</text>
+
+      <!-- Arrow to Extract -->
+      <line x1="100" y1="85" x2="140" y2="85" stroke="#9ca3af" stroke-width="1.5" marker-end="url(#arr3)"/>
+
+      <!-- Extract -->
+      <rect x="142" y="60" width="110" height="50" rx="8" fill="#fefce8" stroke="#ca8a04" stroke-width="1.5"/>
+      <text x="197" y="80" text-anchor="middle" font-size="10" font-weight="600" fill="#ca8a04">Extract</text>
+      <text x="197" y="95" text-anchor="middle" font-size="9" fill="#6b7280">fire-and-forget</text>
+
+      <!-- Arrow to DuckDB -->
+      <line x1="252" y1="85" x2="292" y2="85" stroke="#9ca3af" stroke-width="1.5" marker-end="url(#arr3)"/>
+
+      <!-- DuckDB KV -->
+      <rect x="294" y="50" width="120" height="70" rx="8" fill="#f3f4f6" stroke="#6b7280" stroke-width="1.5"/>
+      <text x="354" y="75" text-anchor="middle" font-size="11" font-weight="700" fill="#374151">DuckDB KV</text>
+      <text x="354" y="92" text-anchor="middle" font-size="9" fill="#6b7280">keyed by schema</text>
+      <text x="354" y="106" text-anchor="middle" font-size="9" fill="#6b7280">fingerprint</text>
+
+      <!-- Arrow to Inject (compact) -->
+      <line x1="414" y1="72" x2="470" y2="40" stroke="#16a34a" stroke-width="1.5" marker-end="url(#arr3)"/>
+
+      <!-- Inject compact -->
+      <rect x="472" y="15" width="130" height="50" rx="8" fill="#f0fdf4" stroke="#16a34a" stroke-width="1.5"/>
+      <text x="537" y="35" text-anchor="middle" font-size="10" font-weight="600" fill="#16a34a">Inject (Compact)</text>
+      <text x="537" y="50" text-anchor="middle" font-size="9" fill="#6b7280">system prompt, 1000 chars</text>
+
+      <!-- Arrow to Tool (full) -->
+      <line x1="414" y1="100" x2="470" y2="130" stroke="#2563eb" stroke-width="1.5" marker-end="url(#arr3)"/>
+
+      <!-- Tool full -->
+      <rect x="472" y="108" width="130" height="50" rx="8" fill="#eff6ff" stroke="#2563eb" stroke-width="1.5"/>
+      <text x="537" y="128" text-anchor="middle" font-size="10" font-weight="600" fill="#2563eb">Tool (Full)</text>
+      <text x="537" y="143" text-anchor="middle" font-size="9" fill="#6b7280">recall_memory tool</text>
+
+      <!-- Labels -->
+      <text x="537" y="8" text-anchor="middle" font-size="9" fill="#16a34a">always injected</text>
+      <text x="537" y="170" text-anchor="middle" font-size="9" fill="#2563eb">on-demand</text>
+    </svg>
+  </div>
+  <div class="screenshot-caption">Memory is extracted asynchronously and served via two channels: compact injection and the recall_memory tool</div>
+</div>
+
+<h3>Data Model</h3>
+<table class="sim-table">
+  <thead><tr><th>Category</th><th>What's Stored</th><th>Max Items</th><th>Example</th></tr></thead>
+  <tbody>
+    <tr><td><strong>SQL Patterns</strong></td><td>Successful query templates (sanitized)</td><td>10</td><td><code>SELECT AVG("?") FROM ? WHERE "?" = '?'</code></td></tr>
+    <tr><td><strong>Column Frequency</strong></td><td>Which columns are queried most often</td><td>15</td><td><code>faithfulness_score: 12 hits</code></td></tr>
+    <tr><td><strong>Error Fixes</strong></td><td>Error-message &rarr; fix-description pairs</td><td>5</td><td><code>"Column not found" → "Used fuzzy match to find similar column"</code></td></tr>
+  </tbody>
+</table>
+
+<h3>Decay &amp; Eviction</h3>
+<table class="sim-table">
+  <thead><tr><th>Mechanism</th><th>Value</th><th>Effect</th></tr></thead>
+  <tbody>
+    <tr><td>Decay factor</td><td><code>0.9</code></td><td>Existing hit counts multiplied by 0.9 before adding new hits</td></tr>
+    <tr><td>Minimum hits</td><td><code>0.5</code></td><td>Entries below this threshold are evicted during decay</td></tr>
+    <tr><td>Max injection chars</td><td><code>1000</code></td><td>Compact injection is truncated at this limit</td></tr>
+  </tbody>
+</table>
+
+<h3>Schema Fingerprinting</h3>
+<p>Memory is keyed by a SHA-256 hash (first 12 chars) of the sorted column names and types. When the schema changes (columns added/removed/renamed), the fingerprint changes and the copilot starts fresh memory for the new schema:</p>
+<pre><code>def schema_fingerprint(store, table_name: str) -> str:
+    meta = store.get_metadata(table_name)
+    cols = sorted(
+        (c["column_name"], c.get("column_type", ""))
+        for c in meta.get("columns", [])
+    )
+    return hashlib.sha256(str(cols).encode()).hexdigest()[:12]</code></pre>
+
+<!-- ══════════════ SQL ERROR RECOVERY ══════════════ -->
+<h2 id="sql-error-recovery">SQL Error Recovery</h2>
+<p>When a SQL query fails, the copilot attempts to automatically fix it using heuristic error parsing. The <code>_parse_sql_error_hint()</code> function extracts structured hints from DuckDB error messages, and <code>_attempt_sql_fix()</code> applies corrections.</p>
+
+<h3>Error Types Handled</h3>
+<table class="sim-table">
+  <thead><tr><th>Error Type</th><th>Detection</th><th>Auto-Fix Strategy</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><span class="sim-badge red">Column Not Found</span></td>
+      <td>DuckDB "column not found" error</td>
+      <td>Fuzzy-match against available columns, substitute closest match</td>
+    </tr>
+    <tr>
+      <td><span class="sim-badge yellow">Type Mismatch</span></td>
+      <td>CAST errors, type conversion failures</td>
+      <td>Wrap with <code>TRY_CAST()</code> to gracefully handle NULLs</td>
+    </tr>
+    <tr>
+      <td><span class="sim-badge blue">Table Not Found</span></td>
+      <td>"table not found" in error</td>
+      <td>Substitute with the correct table name from context</td>
+    </tr>
+    <tr>
+      <td><span class="sim-badge gray">Syntax Error</span></td>
+      <td>DuckDB parser errors</td>
+      <td>Common fixes: missing quotes, wrong function names, dialect quirks</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>Fix Description</h3>
+<p>After a successful auto-fix, <code>_describe_sql_fix()</code> generates a human-readable description that is both emitted as a thought and stored in cross-session memory for future reference:</p>
+
+<pre><code># Example output from _describe_sql_fix():
+"Column 'faitfulness_score' not found → replaced with 'faithfulness_score' (fuzzy match)"
+"CAST error on 'latency' → wrapped with TRY_CAST to handle NULL values"</code></pre>
+
+<div class="admonition warning">
+  <div class="admonition-title">&#x26A0;&#xFE0F; Warning</div>
+  If all 3 retry attempts fail, the error is returned to the LLM as a tool result. The agent may then try a different approach, ask the user for clarification, or report the error in its response.
+</div>
+
+<!-- ══════════════ REQUEST PIPELINE ══════════════ -->
+<div class="section-sep">Data Flow</div>
+<h2 id="request-pipeline">Request Pipeline (Detailed)</h2>
+<p>Here is the full data flow through the copilot's request pipeline, showing exactly which function handles each stage and what data flows between them.</p>
+
+<div class="screenshot">
+  <div class="screenshot-chrome">
+    <div class="screenshot-dots"><span></span><span></span><span></span></div>
+    <div class="screenshot-title">Request Pipeline Sequence</div>
+  </div>
+  <div class="screenshot-body" style="padding:20px;">
+    <svg viewBox="0 0 780 260" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;">
+      <defs>
+        <marker id="arr4" viewBox="0 0 10 7" refX="10" refY="3.5" markerWidth="8" markerHeight="6" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#9ca3af"/></marker>
+      </defs>
+
+      <!-- Column headers -->
+      <text x="80" y="16" text-anchor="middle" font-size="10" font-weight="700" fill="#4b5563">Router</text>
+      <text x="240" y="16" text-anchor="middle" font-size="10" font-weight="700" fill="#4b5563">Classifier</text>
+      <text x="420" y="16" text-anchor="middle" font-size="10" font-weight="700" fill="#4b5563">Agent</text>
+      <text x="590" y="16" text-anchor="middle" font-size="10" font-weight="700" fill="#4b5563">Sanitizer</text>
+      <text x="720" y="16" text-anchor="middle" font-size="10" font-weight="700" fill="#4b5563">SSE</text>
+
+      <!-- Vertical lines -->
+      <line x1="80" y1="24" x2="80" y2="250" stroke="#e5e7eb" stroke-width="1" stroke-dasharray="4 2"/>
+      <line x1="240" y1="24" x2="240" y2="250" stroke="#e5e7eb" stroke-width="1" stroke-dasharray="4 2"/>
+      <line x1="420" y1="24" x2="420" y2="250" stroke="#e5e7eb" stroke-width="1" stroke-dasharray="4 2"/>
+      <line x1="590" y1="24" x2="590" y2="250" stroke="#e5e7eb" stroke-width="1" stroke-dasharray="4 2"/>
+      <line x1="720" y1="24" x2="720" y2="250" stroke="#e5e7eb" stroke-width="1" stroke-dasharray="4 2"/>
+
+      <!-- Step 1: POST /copilot/stream/oai -->
+      <rect x="20" y="35" width="120" height="28" rx="6" fill="#eef2ff" stroke="#4f46e5" stroke-width="1"/>
+      <text x="80" y="53" text-anchor="middle" font-size="9" fill="#3730a3">POST /stream/oai</text>
+
+      <!-- Arrow to prepare_request -->
+      <line x1="80" y1="63" x2="80" y2="72" stroke="#9ca3af" stroke-width="1" marker-end="url(#arr4)"/>
+      <line x1="80" y1="75" x2="240" y2="75" stroke="#4f46e5" stroke-width="1.5" marker-end="url(#arr4)"/>
+
+      <!-- Step 2: prepare_request -->
+      <rect x="175" y="80" width="130" height="28" rx="6" fill="#fefce8" stroke="#ca8a04" stroke-width="1"/>
+      <text x="240" y="98" text-anchor="middle" font-size="9" fill="#ca8a04">prepare_request()</text>
+
+      <!-- Arrow back with PreparedRequest -->
+      <line x1="240" y1="108" x2="240" y2="118" stroke="#9ca3af" stroke-width="1"/>
+      <text x="260" y="128" font-size="8" fill="#6b7280">PreparedRequest</text>
+
+      <!-- Arrow to build_context -->
+      <line x1="240" y1="132" x2="420" y2="132" stroke="#4f46e5" stroke-width="1.5" marker-end="url(#arr4)"/>
+
+      <!-- Step 3: build_context + execute -->
+      <rect x="355" y="138" width="130" height="28" rx="6" fill="#eef2ff" stroke="#4f46e5" stroke-width="1"/>
+      <text x="420" y="156" text-anchor="middle" font-size="9" fill="#3730a3">build_context()</text>
+
+      <rect x="355" y="172" width="130" height="28" rx="6" fill="#eef2ff" stroke="#4f46e5" stroke-width="1.5"/>
+      <text x="420" y="190" text-anchor="middle" font-size="9" font-weight="600" fill="#3730a3">Runner.run()</text>
+
+      <!-- Tool loop -->
+      <path d="M 485 186 C 510 186, 510 153, 485 153" fill="none" stroke="#4f46e5" stroke-width="1" stroke-dasharray="3 2" marker-end="url(#arr4)"/>
+      <text x="520" y="172" font-size="8" fill="#4f46e5">tools</text>
+
+      <!-- Arrow to sanitize -->
+      <line x1="420" y1="200" x2="420" y2="210" stroke="#9ca3af" stroke-width="1"/>
+      <line x1="420" y1="212" x2="590" y2="212" stroke="#16a34a" stroke-width="1.5" marker-end="url(#arr4)"/>
+
+      <!-- Step 4: sanitize_output -->
+      <rect x="530" y="218" width="120" height="28" rx="6" fill="#f0fdf4" stroke="#16a34a" stroke-width="1"/>
+      <text x="590" y="236" text-anchor="middle" font-size="9" fill="#16a34a">sanitize_output()</text>
+
+      <!-- Arrow to SSE -->
+      <line x1="590" y1="246" x2="720" y2="246" stroke="#2563eb" stroke-width="1.5" marker-end="url(#arr4)"/>
+
+      <!-- SSE events (thoughts streamed in parallel) -->
+      <rect x="662" y="35" width="116" height="24" rx="6" fill="#eff6ff" stroke="#2563eb" stroke-width="1"/>
+      <text x="720" y="51" text-anchor="middle" font-size="8" fill="#2563eb">thought events</text>
+      <text x="720" y="64" text-anchor="middle" font-size="7" fill="#9ca3af">(streamed in parallel)</text>
+
+      <rect x="668" y="74" width="104" height="20" rx="4" fill="#fff" stroke="#e5e7eb" stroke-width="1"/>
+      <text x="720" y="88" text-anchor="middle" font-size="7" fill="#6b7280">reasoning / tool_use</text>
+      <rect x="668" y="98" width="104" height="20" rx="4" fill="#fff" stroke="#e5e7eb" stroke-width="1"/>
+      <text x="720" y="112" text-anchor="middle" font-size="7" fill="#6b7280">observation / planning</text>
+
+    </svg>
+  </div>
+  <div class="screenshot-caption">Sequence showing data flow between router, classifier, agent, sanitizer, and SSE stream</div>
+</div>
+
+<h3>Key Functions</h3>
+<table class="sim-table">
+  <thead><tr><th>Function</th><th>Module</th><th>Responsibility</th></tr></thead>
+  <tbody>
+    <tr><td><code>run_copilot_request()</code></td><td>request_router.py</td><td>Orchestrates full lifecycle: prep &rarr; context &rarr; execute &rarr; sanitize</td></tr>
+    <tr><td><code>prepare_request()</code></td><td>request_classifier.py</td><td>Input sanitization, skill selection, SQL example matching</td></tr>
+    <tr><td><code>compose_system_prompt()</code></td><td>tool_instructions.py</td><td>Assembles all prompt layers into final system instructions</td></tr>
+    <tr><td><code>_build_schema_context()</code></td><td>oai_agent.py</td><td>Generates DDL + stats + hints for the current schema</td></tr>
+    <tr><td><code>sanitize_output()</code></td><td>guardrails.py</td><td>Strips credentials, tracebacks, and sensitive patterns</td></tr>
+  </tbody>
+</table>
+
+<!-- ══════════════ STREAMING & SSE ══════════════ -->
+<h2 id="streaming-sse">Streaming &amp; SSE</h2>
+<p>The copilot streams real-time feedback to the frontend via <strong>Server-Sent Events</strong>. The <code>ThoughtStream</code> class provides an async pub/sub system that agent tools and hooks publish into, while the SSE endpoint subscribes and forwards events to the client.</p>
+
+<h3>SSE Event Types</h3>
+<table class="sim-table">
+  <thead><tr><th>Event</th><th>Data</th><th>When Emitted</th></tr></thead>
+  <tbody>
+    <tr><td><code>thought</code></td><td>Thought JSON (type, content, tool, color)</td><td>Throughout execution &mdash; reasoning, tool use, observations</td></tr>
+    <tr><td><code>response</code></td><td>Final answer + optional chart/download specs</td><td>After agent completes and output is sanitized</td></tr>
+    <tr><td><code>error</code></td><td>Error message string</td><td>On unrecoverable failure</td></tr>
+    <tr><td><code>done</code></td><td>Empty</td><td>Signals end of stream</td></tr>
+  </tbody>
+</table>
+
+<h3>ThoughtType Enum</h3>
+<p>Each thought has a type that determines its display color in the frontend:</p>
+
+<div style="display:flex;flex-wrap:wrap;gap:8px;margin:16px 0;">
+  <span class="sim-badge" style="background:#eff6ff;color:#3B82F6;border:1px solid #bfdbfe;">REASONING</span>
+  <span class="sim-badge" style="background:#f5f3ff;color:#8B5CF6;border:1px solid #ddd6fe;">TOOL_USE</span>
+  <span class="sim-badge" style="background:#f0fdf4;color:#10B981;border:1px solid #bbf7d0;">OBSERVATION</span>
+  <span class="sim-badge" style="background:#fffbeb;color:#F59E0B;border:1px solid #fef08a;">PLANNING</span>
+  <span class="sim-badge" style="background:#eef2ff;color:#6366F1;border:1px solid #c7d2fe;">REFLECTION</span>
+  <span class="sim-badge" style="background:#fdf2f8;color:#EC4899;border:1px solid #fbcfe8;">DECISION</span>
+  <span class="sim-badge" style="background:#fef2f2;color:#EF4444;border:1px solid #fecaca;">ERROR</span>
+  <span class="sim-badge" style="background:#f0fdf4;color:#22C55E;border:1px solid #bbf7d0;">SUCCESS</span>
+</div>
+
+<h3>ThoughtStream Architecture</h3>
+<p>The stream uses an <code>asyncio.Queue</code> internally. Tools and hooks call <code>emit_*()</code> methods (e.g. <code>emit_reasoning()</code>, <code>emit_tool_use()</code>) which enqueue <code>Thought</code> dataclass instances. The SSE endpoint reads from the queue and yields formatted events:</p>
+
+<pre><code>class ThoughtStream:
+    def __init__(self):
+        self._queue: asyncio.Queue[Thought | None] = asyncio.Queue()
+
+    async def emit_reasoning(self, content: str, node_name: str = None):
+        await self._queue.put(Thought(
+            type=ThoughtType.REASONING,
+            content=content,
+            node_name=node_name,
+        ))
+
+    async def subscribe(self):
+        """Yield thoughts until None sentinel is received."""
+        while True:
+            thought = await self._queue.get()
+            if thought is None:
+                break
+            yield thought</code></pre>
+
+<!-- ══════════════ TRACING ══════════════ -->
+<h2 id="tracing">Tracing</h2>
+<p>The copilot integrates with <strong>Langfuse</strong> for observability. Every request creates a trace span hierarchy that captures tool calls, SQL queries, timings, and errors.</p>
+
+<h3>Span Hierarchy</h3>
+<div class="screenshot">
+  <div class="screenshot-chrome">
+    <div class="screenshot-dots"><span></span><span></span><span></span></div>
+    <div class="screenshot-title">Trace Span Hierarchy</div>
+  </div>
+  <div class="screenshot-body" style="padding:20px;font-family:'SF Mono',monospace;font-size:0.8rem;color:var(--gray-700);">
+    <div style="padding:4px 0;">
+      <span style="color:var(--primary);font-weight:700;">copilot.request</span> <span style="color:var(--gray-400);">--- root span</span>
+    </div>
+    <div style="padding:4px 0 4px 20px;">
+      <span style="color:var(--green);">prepare_request</span> <span style="color:var(--gray-400);">--- guardrails + classification</span>
+    </div>
+    <div style="padding:4px 0 4px 20px;">
+      <span style="color:var(--blue);">agent.run</span> <span style="color:var(--gray-400);">--- LLM execution</span>
+    </div>
+    <div style="padding:4px 0 4px 40px;">
+      <span style="color:var(--purple);">tool:summarize_data</span> <span style="color:var(--gray-400);">--- tool span</span>
+    </div>
+    <div style="padding:4px 0 4px 40px;">
+      <span style="color:var(--purple);">tool:run_sql</span> <span style="color:var(--gray-400);">--- tool span</span>
+    </div>
+    <div style="padding:4px 0 4px 60px;">
+      <span style="color:var(--yellow);">sql.execute</span> <span style="color:var(--gray-400);">--- DuckDB query</span>
+    </div>
+    <div style="padding:4px 0 4px 60px;">
+      <span style="color:var(--red);">sql.error</span> <span style="color:var(--gray-400);">--- error + retry</span>
+    </div>
+    <div style="padding:4px 0 4px 60px;">
+      <span style="color:var(--yellow);">sql.retry</span> <span style="color:var(--gray-400);">--- fixed query</span>
+    </div>
+    <div style="padding:4px 0 4px 40px;">
+      <span style="color:var(--purple);">tool:plot_data</span> <span style="color:var(--gray-400);">--- tool span</span>
+    </div>
+    <div style="padding:4px 0 4px 20px;">
+      <span style="color:var(--green);">sanitize_output</span> <span style="color:var(--gray-400);">--- output guardrails</span>
+    </div>
+    <div style="padding:4px 0 4px 20px;">
+      <span style="color:var(--gray-500);">memory.extract</span> <span style="color:var(--gray-400);">--- fire-and-forget</span>
+    </div>
+  </div>
+  <div class="screenshot-caption">Trace hierarchy showing nested spans for a typical copilot request with SQL retry</div>
+</div>
+
+<h3>SQL Fingerprinting</h3>
+<p>For privacy-safe tracing, SQL queries are fingerprinted before being sent to Langfuse. The <code>sql_fingerprint()</code> function replaces literal values with placeholders:</p>
+<pre><code># Input:  SELECT * FROM eval_data WHERE source_name = 'alpha_bot' AND score > 0.8
+# Output: SELECT * FROM eval_data WHERE source_name = ? AND score > ?</code></pre>
+
+<div class="admonition info">
+  <div class="admonition-title">&#x2139;&#xFE0F; Info</div>
+  Tracing auto-configures on first use. Set <code>TRACING_MODE=langfuse</code> plus <code>LANGFUSE_PUBLIC_KEY</code>, <code>LANGFUSE_SECRET_KEY</code>, and <code>LANGFUSE_BASE_URL</code> environment variables. If unset, tracing resolves to a noop.
+</div>
+
+<!-- ══════════════ TOOL REFERENCE ══════════════ -->
+<div class="section-sep">Reference</div>
+<h2 id="tool-reference">Tool Reference</h2>
+<p>Complete reference for all 12 copilot tools with inputs, outputs, and behavior details.</p>
+
+<table class="sim-table" style="font-size:0.75rem;">
+  <thead>
+    <tr><th style="min-width:120px;">Tool</th><th>When to Use</th><th>Key Inputs</th><th>Output</th><th>Cache?</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>summarize_data</code></td>
+      <td>First interaction or "tell me about the data"</td>
+      <td><code>include_numeric_stats: bool</code></td>
+      <td>Schema, row count, filter values, numeric stats</td>
+      <td><span class="sim-badge green">Yes</span></td>
+    </tr>
+    <tr>
+      <td><code>query_data</code></td>
+      <td>Lookup specific records, find min/max, search by ID</td>
+      <td><code>filter_column</code>, <code>filter_value</code>, <code>find_min_column</code>, <code>find_max_column</code>, <code>search_text</code>, <code>limit</code></td>
+      <td>Matching records + total count</td>
+      <td><span class="sim-badge green">Yes</span></td>
+    </tr>
+    <tr>
+      <td><code>analyze_data</code></td>
+      <td>Aggregations, group-by, distributions</td>
+      <td><code>group_by</code>, <code>metric</code>, <code>aggregation</code>, <code>filters</code></td>
+      <td>Aggregated statistics</td>
+      <td><span class="sim-badge green">Yes</span></td>
+    </tr>
+    <tr>
+      <td><code>compare_data</code></td>
+      <td>Compare two slices (A vs B) on metrics</td>
+      <td><code>group_column</code>, <code>group_a</code>, <code>group_b</code>, <code>metrics</code></td>
+      <td>Side-by-side stats with deltas</td>
+      <td><span class="sim-badge green">Yes</span></td>
+    </tr>
+    <tr>
+      <td><code>query_kpi_data</code></td>
+      <td>Access business KPI table</td>
+      <td><code>filters</code>, <code>limit</code></td>
+      <td>KPI records</td>
+      <td><span class="sim-badge green">Yes</span></td>
+    </tr>
+    <tr>
+      <td><code>run_sql</code></td>
+      <td>Complex queries that structured tools cannot handle</td>
+      <td><code>sql: str</code></td>
+      <td>Query results (up to 6000 chars)</td>
+      <td><span class="sim-badge green">Yes</span></td>
+    </tr>
+    <tr>
+      <td><code>plot_data</code></td>
+      <td>User asks for a chart or visualization</td>
+      <td><code>chart_type</code>, <code>sql</code>, <code>x_column</code>, <code>y_column</code>, <code>title</code></td>
+      <td>Plotly chart spec (set on context)</td>
+      <td><span class="sim-badge gray">No</span></td>
+    </tr>
+    <tr>
+      <td><code>analyze_patterns</code></td>
+      <td>Look for correlations, outliers, trends</td>
+      <td><code>analysis_type</code>, <code>columns</code>, <code>filters</code></td>
+      <td>Pattern analysis results</td>
+      <td><span class="sim-badge green">Yes</span></td>
+    </tr>
+    <tr>
+      <td><code>save_as_dataset</code></td>
+      <td>User wants to persist a filtered view</td>
+      <td><code>name</code>, <code>sql</code>, <code>description</code></td>
+      <td>Confirmation with table name</td>
+      <td><span class="sim-badge gray">No</span></td>
+    </tr>
+    <tr>
+      <td><code>download_data</code></td>
+      <td>User wants to export data</td>
+      <td><code>sql</code>, <code>format</code>, <code>filename</code></td>
+      <td>Download spec (set on context)</td>
+      <td><span class="sim-badge gray">No</span></td>
+    </tr>
+    <tr>
+      <td><code>describe_metric_signals</code></td>
+      <td>User asks about available metrics</td>
+      <td>(none)</td>
+      <td>Metric schema descriptions</td>
+      <td><span class="sim-badge green">Yes</span></td>
+    </tr>
+    <tr>
+      <td><code>recall_memory</code></td>
+      <td>Agent wants full memory context</td>
+      <td>(none)</td>
+      <td>All stored patterns, column freq, error fixes</td>
+      <td><span class="sim-badge gray">No</span></td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- ══════════════ CONFIGURATION ══════════════ -->
+<h2 id="configuration">Configuration</h2>
+<p>The copilot is controlled by environment variables and YAML config files in the <code>custom/config/</code> directory.</p>
+
+<h3>Environment Settings</h3>
+<table class="sim-table">
+  <thead><tr><th>Setting</th><th>Default</th><th>Description</th></tr></thead>
+  <tbody>
+    <tr><td><code>copilot_enabled</code></td><td><code>true</code></td><td>Enable/disable the copilot feature entirely</td></tr>
+    <tr><td><code>copilot_memory_enabled</code></td><td><code>true</code></td><td>Enable/disable cross-session memory extraction and injection</td></tr>
+    <tr><td><code>LLM_MODEL_NAME</code></td><td><code>gpt-4o-mini</code></td><td>OpenAI model used for the agent</td></tr>
+    <tr><td><code>OPENAI_API_KEY</code></td><td>&mdash;</td><td>API key for OpenAI (required)</td></tr>
+    <tr><td><code>TRACING_MODE</code></td><td>&mdash;</td><td>Set to <code>langfuse</code> to enable tracing</td></tr>
+    <tr><td><code>LANGFUSE_PUBLIC_KEY</code></td><td>&mdash;</td><td>Langfuse public key (when tracing enabled)</td></tr>
+    <tr><td><code>LANGFUSE_SECRET_KEY</code></td><td>&mdash;</td><td>Langfuse secret key (when tracing enabled)</td></tr>
+    <tr><td><code>LANGFUSE_BASE_URL</code></td><td>&mdash;</td><td>Langfuse API URL (when tracing enabled)</td></tr>
+  </tbody>
+</table>
+
+<h3>YAML Config Files</h3>
+<table class="sim-table">
+  <thead><tr><th>File</th><th>Location</th><th>Purpose</th></tr></thead>
+  <tbody>
+    <tr><td><code>schema_hints.yaml</code></td><td><code>custom/config/</code></td><td>Column descriptions and usage hints injected into schema context</td></tr>
+    <tr><td><code>metric_catalog.yaml</code></td><td><code>custom/config/</code></td><td>Metric definitions, thresholds, and interpretations</td></tr>
+    <tr><td><code>sql_examples/*.yaml</code></td><td><code>custom/config/</code></td><td>Example Q&amp;A pairs for in-context learning</td></tr>
+    <tr><td><code>skills/*.md</code></td><td><code>custom/config/</code></td><td>Domain-specific skill files (SKILL.md format)</td></tr>
+  </tbody>
+</table>
+
+<div class="admonition tip">
+  <div class="admonition-title">&#x1F4A1; Tip</div>
+  Use <code>make setup</code> to create the <code>custom/</code> directory structure and copy <code>.example</code> templates. All config files are optional &mdash; the copilot works with auto-discovered schema alone, but adding hints and examples significantly improves answer quality.
+</div>
+
+<!-- ══════════════ NEXT STEPS ══════════════ -->
+<h2 id="next-steps">Next Steps</h2>
+
+<div class="next-steps">
+  <a class="next-step-card" href="monitoring-guide.html">
+    <h4>&#x1F4C8; Monitoring &rarr;</h4>
+    <p>Learn about the monitoring data pipeline that feeds the copilot's dataset queries.</p>
+  </a>
+  <a class="next-step-card" href="settings-guide.html">
+    <h4>&#x2699; Settings &rarr;</h4>
+    <p>Configure LLM models, API keys, database connections, and copilot feature flags.</p>
+  </a>
+  <a class="next-step-card" href="agent-replay-guide.html">
+    <h4>&#x25B6; Agent Replay &rarr;</h4>
+    <p>Replay and analyze past agent conversations with Langfuse trace integration.</p>
+  </a>
+</div>
+
+<!-- ══════════════ FOOTER ══════════════ -->
+<div style="margin-top:60px;padding-top:24px;border-top:1px solid var(--gray-200);font-size:0.8rem;color:var(--gray-400);text-align:center;">
+  AXIS Documentation &middot; Built with MkDocs Material
+</div>
+
+</div><!-- .content -->
+</main>
+
+<!-- ══════════════════ TABLE OF CONTENTS ══════════════════ -->
+<nav class="toc">
+  <div class="toc-title">On this page</div>
+  <ul class="toc-list">
+    <li><a href="#architecture-overview">Architecture Overview</a></li>
+    <li><a href="#request-lifecycle">Request Lifecycle</a></li>
+    <li><a href="#agent-core">Agent Core</a></li>
+    <li class="indent"><a href="#tool-system">Tool System</a></li>
+    <li class="indent"><a href="#prompt-composition">Prompt Composition</a></li>
+    <li class="indent"><a href="#schema-context">Schema Context</a></li>
+    <li><a href="#skill-system">Skill System</a></li>
+    <li class="indent"><a href="#cross-session-memory">Cross-Session Memory</a></li>
+    <li class="indent"><a href="#sql-error-recovery">SQL Error Recovery</a></li>
+    <li><a href="#request-pipeline">Request Pipeline</a></li>
+    <li class="indent"><a href="#streaming-sse">Streaming &amp; SSE</a></li>
+    <li class="indent"><a href="#tracing">Tracing</a></li>
+    <li><a href="#tool-reference">Tool Reference</a></li>
+    <li><a href="#configuration">Configuration</a></li>
+  </ul>
+</nav>
+
+</div><!-- .layout -->
+
+<!-- ══════════════════ SCROLL TO TOP ══════════════════ -->
+<button class="scroll-top" id="scrollTopBtn" aria-label="Scroll to top" onclick="window.scrollTo({top:0,behavior:'smooth'})">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+</button>
+
+<script>
+// Scroll-to-top visibility
+const scrollBtn = document.getElementById('scrollTopBtn');
+window.addEventListener('scroll', () => {
+  scrollBtn.classList.toggle('visible', window.scrollY > 400);
+});
+
+// Active sidebar link + TOC link based on scroll position
+const sections = document.querySelectorAll('h2[id], h3[id]');
+const sidebarLinks = document.querySelectorAll('.sidebar-link[data-section]');
+const tocLinks = document.querySelectorAll('.toc-list a');
+
+function updateActive() {
+  let current = '';
+  const offset = 120;
+  sections.forEach(section => {
+    const rect = section.getBoundingClientRect();
+    if (rect.top <= offset) {
+      current = section.id;
+    }
+  });
+
+  // Update sidebar
+  sidebarLinks.forEach(link => {
+    link.classList.toggle('active', link.dataset.section === current);
+  });
+
+  // Update TOC
+  tocLinks.forEach(link => {
+    const href = link.getAttribute('href');
+    link.classList.toggle('active', href === '#' + current);
+  });
+}
+
+window.addEventListener('scroll', updateActive, { passive: true });
+updateActive();
+</script>
+
+</body>
+</html>

@@ -80,6 +80,7 @@ coverage_html_report
 # test results
 /reports
 docs/competitive/
+docs/design/
 
 
 # SCM version info
