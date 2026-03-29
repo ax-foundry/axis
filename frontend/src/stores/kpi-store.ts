@@ -55,6 +55,20 @@ interface KpiStoreState {
   /** YYYY-MM-DD or null (= no filter) */
   kpiTimeEnd: string | null;
 
+  // Drill-down state (ephemeral, not persisted)
+  /** Whether the drill-down table is visible */
+  drillDownOpen: boolean;
+  /** Date filter from trend chart click (YYYY-MM-DD) */
+  drillDownDateFilter: string | null;
+  /** Dataset ID for the case profile modal */
+  caseProfileDatasetId: string | null;
+  /** Active chart view tab */
+  chartViewMode: 'trend' | 'distribution' | 'segments';
+  /** Value range filter from distribution chart click */
+  drillDownValueRange: { min: number; max: number } | null;
+  /** Segment filter from segment chart click (separate from page-level segment) */
+  drillDownSegment: string | null;
+
   // Actions
   setDatasetReady: (ready: boolean) => void;
   setSyncStatus: (status: DatasetSyncStatus | null) => void;
@@ -74,6 +88,12 @@ interface KpiStoreState {
   setAvailableSourceComponents: (components: string[]) => void;
   setKpiTimePreset: (preset: string) => void;
   setKpiTimeRange: (start: string, end: string) => void;
+  setDrillDownOpen: (open: boolean) => void;
+  setDrillDownDateFilter: (date: string | null) => void;
+  setCaseProfileDatasetId: (id: string | null) => void;
+  setChartViewMode: (mode: 'trend' | 'distribution' | 'segments') => void;
+  setDrillDownValueRange: (range: { min: number; max: number } | null) => void;
+  setDrillDownSegment: (segment: string | null) => void;
 }
 
 export const useKpiStore = create<KpiStoreState>()(
@@ -97,6 +117,12 @@ export const useKpiStore = create<KpiStoreState>()(
       kpiTimePreset: 'all',
       kpiTimeStart: null,
       kpiTimeEnd: null,
+      drillDownOpen: false,
+      drillDownDateFilter: null,
+      caseProfileDatasetId: null,
+      chartViewMode: 'trend' as const,
+      drillDownValueRange: null,
+      drillDownSegment: null,
 
       setDatasetReady: (ready) => set({ datasetReady: ready }),
 
@@ -105,11 +131,27 @@ export const useKpiStore = create<KpiStoreState>()(
       setStoreStatusChecked: (checked) => set({ storeStatusChecked: checked }),
 
       selectKpi: (kpiName) =>
-        set((state) => ({
-          selectedKpi: state.selectedKpi === kpiName ? null : kpiName,
-        })),
+        set((state) => {
+          const deselecting = state.selectedKpi === kpiName;
+          return {
+            selectedKpi: deselecting ? null : kpiName,
+            drillDownDateFilter: null,
+            drillDownValueRange: null,
+            drillDownSegment: null,
+            chartViewMode: 'trend' as const,
+            ...(deselecting ? { drillDownOpen: false } : {}),
+          };
+        }),
 
-      clearSelectedKpi: () => set({ selectedKpi: null }),
+      clearSelectedKpi: () =>
+        set({
+          selectedKpi: null,
+          drillDownOpen: false,
+          drillDownDateFilter: null,
+          drillDownValueRange: null,
+          drillDownSegment: null,
+          chartViewMode: 'trend' as const,
+        }),
 
       setSelectedSourceName: (name) => set({ selectedSourceName: name }),
 
@@ -140,6 +182,25 @@ export const useKpiStore = create<KpiStoreState>()(
 
       setKpiTimeRange: (start, end) =>
         set({ kpiTimePreset: 'custom', kpiTimeStart: start, kpiTimeEnd: end }),
+
+      setDrillDownOpen: (open) => set({ drillDownOpen: open }),
+
+      setDrillDownDateFilter: (date) => set({ drillDownDateFilter: date }),
+
+      setCaseProfileDatasetId: (id) => set({ caseProfileDatasetId: id }),
+
+      setChartViewMode: (mode) =>
+        set((state) => ({
+          chartViewMode: mode,
+          // Clear chart-specific drill-down filters when switching tabs
+          drillDownDateFilter: mode !== 'trend' ? null : state.drillDownDateFilter,
+          drillDownValueRange: mode !== 'distribution' ? null : state.drillDownValueRange,
+          drillDownSegment: mode !== 'segments' ? null : state.drillDownSegment,
+        })),
+
+      setDrillDownValueRange: (range) => set({ drillDownValueRange: range }),
+
+      setDrillDownSegment: (segment) => set({ drillDownSegment: segment }),
     }),
     {
       name: 'axis-kpi-store',

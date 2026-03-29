@@ -1,7 +1,8 @@
 'use client';
 
-import { BarChart3, Database, Loader2, Settings, TrendingUp } from 'lucide-react';
+import { BarChart3, Clock, Database, Loader2, Settings, TrendingUp } from 'lucide-react';
 import Link from 'next/link';
+import { useMemo } from 'react';
 
 import { AgentKPISection } from '@/components/production/kpi';
 import { PageHeader } from '@/components/ui/PageHeader';
@@ -68,11 +69,22 @@ function EmptyState() {
   );
 }
 
+function formatTimeAgo(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const minutes = Math.floor(diff / 60_000);
+  if (minutes < 1) return 'just now';
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  return `${days}d ago`;
+}
+
 function KpiPageHeader() {
   return (
     <PageHeader
       icon={TrendingUp}
-      title="Agent KPIs"
+      title="KPIs"
       subtitle="Track agent performance metrics and trends"
     />
   );
@@ -82,6 +94,10 @@ export default function KpiPage() {
   const datasetReady = useKpiStore((s) => s.datasetReady);
   const syncStatus = useKpiStore((s) => s.syncStatus);
   const storeStatusChecked = useKpiStore((s) => s.storeStatusChecked);
+
+  const lastSync = syncStatus?.last_sync;
+  const rowCount = syncStatus?.rows ?? 0;
+  const lastSyncLabel = useMemo(() => (lastSync ? formatTimeAgo(lastSync) : null), [lastSync]);
 
   // Still checking DuckDB status
   if (!storeStatusChecked) {
@@ -101,6 +117,18 @@ export default function KpiPage() {
       <KpiPageHeader />
       <SourceSelector scope={['kpi']} />
       <div className="mx-auto max-w-7xl px-6 py-6">
+        {/* Sync status bar */}
+        {(lastSyncLabel || rowCount > 0) && (
+          <div className="mb-4 flex items-center gap-4 text-xs text-text-muted">
+            {rowCount > 0 && <span>{rowCount.toLocaleString()} records</span>}
+            {lastSyncLabel && (
+              <span className="flex items-center gap-1">
+                <Clock className="h-3 w-3" />
+                Last synced {lastSyncLabel}
+              </span>
+            )}
+          </div>
+        )}
         <AgentKPISection hideInternalLoadingStates />
       </div>
     </div>

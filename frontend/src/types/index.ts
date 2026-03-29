@@ -1778,6 +1778,86 @@ export interface KpiSankeyResponse {
 }
 
 // ============================================
+// KPI Drill-Down
+// ============================================
+
+export interface KpiDrillDownRow {
+  dataset_id: string;
+  created_at: string;
+  numeric_value: number | null;
+  segment: string | null;
+  source_component: string | null;
+  source_step: string | null;
+  environment: string | null;
+}
+
+export interface KpiDrillDownResponse {
+  success: boolean;
+  data: KpiDrillDownRow[];
+  total: number;
+  page: number;
+  page_size: number;
+  kpi_name: string;
+}
+
+export interface KpiCaseKpiValue {
+  kpi_name: string;
+  display_name: string;
+  kpi_category: string | null;
+  numeric_value: number | null;
+  unit: KpiUnit;
+}
+
+export interface KpiCaseProfileResponse {
+  success: boolean;
+  dataset_id: string;
+  created_at: string | null;
+  segment: string | null;
+  source_component: string | null;
+  environment: string | null;
+  kpis: KpiCaseKpiValue[];
+}
+
+// ============================================
+// KPI Distribution & Segment Comparison
+// ============================================
+
+export interface KpiPercentiles {
+  p25: number;
+  p50: number;
+  p75: number;
+  p95: number;
+}
+
+export interface KpiDistributionResponse {
+  success: boolean;
+  kpi_name: string;
+  unit: KpiUnit;
+  bin_edges: number[];
+  bin_counts: number[];
+  total: number;
+  sample_size: number;
+  capped: boolean;
+  percentiles: KpiPercentiles | null;
+  is_binary: boolean;
+  binary_counts: Record<string, number> | null;
+}
+
+export interface KpiSegmentBar {
+  segment: string;
+  agg_value: number;
+  count: number;
+}
+
+export interface KpiSegmentComparisonResponse {
+  success: boolean;
+  kpi_name: string;
+  unit: KpiUnit;
+  aggregation: 'avg' | 'sum';
+  segments: KpiSegmentBar[];
+}
+
+// ============================================
 // Metric Definitions
 // ============================================
 

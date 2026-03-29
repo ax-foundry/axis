@@ -4,20 +4,30 @@ from dataclasses import dataclass
 from datetime import date, timedelta
 from typing import Any
 
+import numpy as np
+
 from app.config.db.kpi import kpi_db_config
 from app.models.kpi_schemas import (
+    KpiCaseKpiValue,
+    KpiCaseProfileResponse,
     KpiCategoriesResponse,
     KpiCategoryItem,
     KpiCategoryPanel,
     KpiCompositionChartConfig,
     KpiCompositionKpiEntry,
     KpiDateRange,
+    KpiDistributionResponse,
+    KpiDrillDownResponse,
+    KpiDrillDownRow,
     KpiFiltersResponse,
+    KpiPercentiles,
     KpiSankeyChartData,
     KpiSankeyLink,
     KpiSankeyNode,
     KpiSankeyResponse,
     KpiSankeySummaryKpi,
+    KpiSegmentBar,
+    KpiSegmentComparisonResponse,
     KpiSparklinePoint,
     KpiTrendPoint,
     KpiTrendsResponse,
@@ -1008,3 +1018,331 @@ def get_kpi_sankey(
             charts.append(chart)
 
     return KpiSankeyResponse(charts=charts)
+
+
+# -- Drill-down ----------------------------------------------------------------
+
+# Server-side mapping: user-facing sort key → SQL column.
+# No raw user input reaches SQL assembly.
+DRILL_DOWN_SORT_MAP: dict[str, str] = {
+    "created_at": "created_at",
+    "numeric_value": "numeric_value",
+    "segment": "segment",
+    "source_component": "source_component",
+    "dataset_id": "dataset_id",
+}
+
+_DRILL_DOWN_COLS = (
+    "dataset_id, created_at, numeric_value, segment, " "source_component, source_step, environment"
+)
+
+
+def get_kpi_drill_down(
+    store: DuckDBStore,
+    *,
+    kpi_name: str,
+    page: int = 1,
+    page_size: int = 50,
+    sort_by: str = "created_at",
+    sort_dir: str = "desc",
+    date_filter: str | None = None,
+    value_min: float | None = None,
+    value_max: float | None = None,
+    source_name: str | None = None,
+    environment: str | None = None,
+    source_type: str | None = None,
+    source_component: str | None = None,
+    segment: str | None = None,
+    time_start: str | None = None,
+    time_end: str | None = None,
+) -> KpiDrillDownResponse:
+    """Return paginated case-level rows for a single KPI."""
+    where, params = _build_where(
+        source_name=source_name,
+        environment=environment,
+        source_type=source_type,
+        source_component=source_component,
+        segment=segment,
+        time_start=time_start,
+        time_end=time_end,
+        kpi_names=[kpi_name],
+    )
+
+    # Value range filter (from distribution/binary chart clicks)
+    if value_min is not None:
+        where += " AND numeric_value >= ?"
+        params.append(value_min)
+    if value_max is not None:
+        where += " AND numeric_value < ?"
+        params.append(value_max)
+
+    # Date filter: range bounds (UTC-consistent with existing time filtering)
+    if date_filter:
+        try:
+            day_start = date.fromisoformat(date_filter)
+            next_day = str(day_start + timedelta(days=1))
+            where += " AND created_at >= ? AND created_at < ?"
+            params.extend([date_filter, next_day])
+        except ValueError:
+            logger.warning("Invalid date_filter '%s', ignoring", date_filter)
+
+    # Safe sort column via mapping dict
+    sort_col = DRILL_DOWN_SORT_MAP.get(sort_by, "created_at")
+    direction = "ASC" if sort_dir == "asc" else "DESC"
+
+    total = store.query_value(f"SELECT COUNT(*) FROM {TABLE} WHERE {where}", params) or 0
+
+    offset = (page - 1) * page_size
+    sql = (
+        f"SELECT {_DRILL_DOWN_COLS} FROM {TABLE} "
+        f"WHERE {where} ORDER BY {sort_col} {direction} NULLS LAST "
+        f"LIMIT ? OFFSET ?"
+    )
+    rows = store.query_list(sql, [*params, page_size, offset])
+
+    return KpiDrillDownResponse(
+        data=[
+            KpiDrillDownRow(
+                dataset_id=str(r.get("dataset_id", "")),
+                created_at=str(r.get("created_at", "")),
+                numeric_value=r.get("numeric_value"),
+                segment=r.get("segment"),
+                source_component=r.get("source_component"),
+                source_step=r.get("source_step"),
+                environment=r.get("environment"),
+            )
+            for r in rows
+        ],
+        total=int(total),
+        page=page,
+        page_size=page_size,
+        kpi_name=kpi_name,
+    )
+
+
+def get_kpi_case_profile(
+    store: DuckDBStore,
+    *,
+    dataset_id: str,
+    source_name: str | None = None,
+) -> KpiCaseProfileResponse:
+    """Return all KPI values for a single case (dataset_id)."""
+    conditions = ["dataset_id = ?"]
+    params: list[object] = [dataset_id]
+    if source_name:
+        conditions.append("source_name = ?")
+        params.append(source_name)
+
+    where = " AND ".join(conditions)
+    sql = (
+        f"SELECT kpi_name, kpi_category, numeric_value, created_at, "
+        f"segment, source_component, environment "
+        f"FROM {TABLE} WHERE {where} ORDER BY kpi_category, kpi_name"
+    )
+    rows = store.query_list(sql, params)
+
+    if not rows:
+        return KpiCaseProfileResponse(dataset_id=dataset_id, kpis=[])
+
+    # Case metadata from first row
+    first = rows[0]
+
+    # Deduplicate: keep latest value per kpi_name
+    seen: dict[str, dict[str, Any]] = {}
+    for r in rows:
+        name = str(r.get("kpi_name", ""))
+        existing = seen.get(name)
+        if existing is None or str(r.get("created_at", "")) > str(existing.get("created_at", "")):
+            seen[name] = r
+
+    kpis = [
+        KpiCaseKpiValue(
+            kpi_name=name,
+            display_name=_get_display_name(name, source_name),
+            kpi_category=r.get("kpi_category"),
+            numeric_value=r.get("numeric_value"),
+            unit=_get_unit(name, source_name),
+        )
+        for name, r in seen.items()
+    ]
+
+    return KpiCaseProfileResponse(
+        dataset_id=dataset_id,
+        created_at=str(first.get("created_at", "")),
+        segment=first.get("segment"),
+        source_component=first.get("source_component"),
+        environment=first.get("environment"),
+        kpis=kpis,
+    )
+
+
+# -- Distribution & Segment Comparison ----------------------------------------
+
+_DISTRIBUTION_SAMPLE_CAP = 50_000
+
+
+def get_kpi_distribution(
+    store: DuckDBStore,
+    *,
+    kpi_name: str,
+    source_name: str | None = None,
+    environment: str | None = None,
+    source_type: str | None = None,
+    source_component: str | None = None,
+    segment: str | None = None,
+    time_start: str | None = None,
+    time_end: str | None = None,
+) -> KpiDistributionResponse:
+    """Return histogram bins and percentiles for a single KPI's raw values."""
+    where, params = _build_where(
+        source_name=source_name,
+        environment=environment,
+        source_type=source_type,
+        source_component=source_component,
+        segment=segment,
+        time_start=time_start,
+        time_end=time_end,
+        kpi_names=[kpi_name],
+    )
+
+    unit = _get_unit(kpi_name, source_name)
+
+    # Total count (before sampling)
+    total = store.query_value(f"SELECT COUNT(*) FROM {TABLE} WHERE {where}", params) or 0
+
+    if total == 0:
+        return KpiDistributionResponse(
+            kpi_name=kpi_name,
+            unit=unit,
+            bin_edges=[],
+            bin_counts=[],
+            total=0,
+            sample_size=0,
+            capped=False,
+            percentiles=None,
+        )
+
+    # Deterministic sample (ordered by created_at DESC for stability)
+    sql = (
+        f"SELECT numeric_value FROM {TABLE} " f"WHERE {where} " f"ORDER BY created_at DESC LIMIT ?"
+    )
+    rows = store.query_list(sql, [*params, _DISTRIBUTION_SAMPLE_CAP])
+    values = np.array(
+        [r["numeric_value"] for r in rows if r.get("numeric_value") is not None],
+        dtype=np.float64,
+    )
+
+    sample_size = len(values)
+    capped = int(total) > _DISTRIBUTION_SAMPLE_CAP
+
+    if sample_size == 0:
+        return KpiDistributionResponse(
+            kpi_name=kpi_name,
+            unit=unit,
+            bin_edges=[],
+            bin_counts=[],
+            total=int(total),
+            sample_size=0,
+            capped=capped,
+            percentiles=None,
+        )
+
+    if capped:
+        logger.info(
+            "KPI distribution for '%s' capped at %d of %d rows",
+            kpi_name,
+            sample_size,
+            total,
+        )
+
+    # Detect binary data (all values are 0 or 1) — use bar chart instead of histogram
+    unique_vals = np.unique(values)
+    is_binary = len(unique_vals) <= 2 and all(v in (0.0, 1.0) for v in unique_vals)
+
+    if is_binary:
+        n_zeros = int(np.sum(values == 0.0))
+        n_ones = int(np.sum(values == 1.0))
+        return KpiDistributionResponse(
+            kpi_name=kpi_name,
+            unit=unit,
+            bin_edges=[],
+            bin_counts=[],
+            total=int(total),
+            sample_size=sample_size,
+            capped=capped,
+            percentiles=None,
+            is_binary=True,
+            binary_counts={"0": n_zeros, "1": n_ones},
+        )
+
+    counts, edges = np.histogram(values, bins=20)
+    p25, p50, p75, p95 = np.percentile(values, [25, 50, 75, 95]).tolist()
+
+    return KpiDistributionResponse(
+        kpi_name=kpi_name,
+        unit=unit,
+        bin_edges=[float(e) for e in edges],
+        bin_counts=[int(c) for c in counts],
+        total=int(total),
+        sample_size=sample_size,
+        capped=capped,
+        percentiles=KpiPercentiles(p25=p25, p50=p50, p75=p75, p95=p95),
+    )
+
+
+def get_kpi_segment_comparison(
+    store: DuckDBStore,
+    *,
+    kpi_name: str,
+    source_name: str | None = None,
+    environment: str | None = None,
+    source_type: str | None = None,
+    source_component: str | None = None,
+    time_start: str | None = None,
+    time_end: str | None = None,
+) -> KpiSegmentComparisonResponse:
+    """Return per-segment aggregated values for a single KPI.
+
+    Uses SUM for count-type KPIs, AVG for rate/score KPIs (consistent
+    with trend/card aggregation).  Segment filter is intentionally
+    omitted so all segments are compared.
+    """
+    where, params = _build_where(
+        source_name=source_name,
+        environment=environment,
+        source_type=source_type,
+        source_component=source_component,
+        segment=None,  # intentionally ignored
+        time_start=time_start,
+        time_end=time_end,
+        kpi_names=[kpi_name],
+    )
+
+    unit = _get_unit(kpi_name, source_name)
+
+    # Determine aggregation function (SUM for count KPIs, AVG otherwise)
+    spec = _sum_kpi_spec(source_name)
+    is_sum = kpi_name in spec.exact_names or _matches_prefix(kpi_name, spec.prefixes)
+    agg_fn = "SUM" if is_sum else "AVG"
+    aggregation = "sum" if is_sum else "avg"
+
+    sql = (
+        f"SELECT segment, {agg_fn}(numeric_value) AS agg_value, COUNT(*) AS count "
+        f"FROM {TABLE} WHERE {where} AND segment IS NOT NULL "
+        f"GROUP BY segment ORDER BY agg_value DESC"
+    )
+    rows = store.query_list(sql, params)
+
+    return KpiSegmentComparisonResponse(
+        kpi_name=kpi_name,
+        unit=unit,
+        aggregation=aggregation,
+        segments=[
+            KpiSegmentBar(
+                segment=str(r["segment"]),
+                agg_value=float(r["agg_value"]),
+                count=int(r["count"]),
+            )
+            for r in rows
+        ],
+    )
