@@ -1,17 +1,3 @@
-"""Cross-session copilot memory — heuristic extraction and injection of learned patterns.
-
-Extracts SQL patterns, column usage, and error-to-fix pairs from each successful
-copilot request.  Persists per-table (keyed by schema fingerprint) in DuckDB KV
-storage.  Injects compact SQL-comment blocks into the system prompt alongside
-schema hints.
-
-Lifecycle: lazy singleton.  Memory is loaded from DuckDB on first access and
-updated after each successful SQL-executing request.
-
-Trust boundary: content derives from SQL queries and error messages — sanitized
-before persistence to strip literals, IDs, and emails.
-"""
-
 from __future__ import annotations
 
 import hashlib
@@ -25,9 +11,7 @@ logger = logging.getLogger("axis.copilot.memory")
 
 _store_instance: CopilotMemoryStore | None = None
 
-# ---------------------------------------------------------------------------
-# Caps
-# ---------------------------------------------------------------------------
+
 _MAX_INJECTION_CHARS = 1000
 _MAX_SQL_PATTERNS = 10
 _MAX_COLUMN_FREQ = 15
@@ -270,7 +254,18 @@ def _extract_columns(sql: str, known_columns: set[str]) -> list[str]:
 
 
 class CopilotMemoryStore:
-    """Singleton store for cross-session copilot memory.
+    """Cross-session copilot memory — heuristic extraction and injection of learned patterns.
+
+    Extracts SQL patterns, column usage, and error-to-fix pairs from each successful
+    copilot request.  Persists per-table (keyed by schema fingerprint) in DuckDB KV
+    storage.  Injects compact SQL-comment blocks into the system prompt alongside
+    schema hints.
+
+    Lifecycle: lazy singleton.  Memory is loaded from DuckDB on first access and
+    updated after each successful SQL-executing request.
+
+    Trust boundary: content derives from SQL queries and error messages — sanitized
+    before persistence to strip literals, IDs, and emails.
 
     Follows the same pattern as ``SchemaHintsStore`` and ``MetricCatalogStore``.
     """
