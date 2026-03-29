@@ -59,6 +59,10 @@ import type {
   KpiFilters,
   KpiFiltersResponse,
   KpiSankeyResponse,
+  KpiDrillDownResponse,
+  KpiCaseProfileResponse,
+  KpiDistributionResponse,
+  KpiSegmentComparisonResponse,
 } from '@/types';
 
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? '';
@@ -1547,4 +1551,75 @@ export async function getKpiFilters(sourceComponent?: string): Promise<KpiFilter
 
 export async function getKpiSankey(filters?: KpiFilters): Promise<KpiSankeyResponse> {
   return fetchApi(`/api/kpi/sankey${_kpiParams(filters)}`);
+}
+
+export async function getKpiDrillDown(params: {
+  kpi_name: string;
+  page?: number;
+  page_size?: number;
+  sort_by?: string;
+  sort_dir?: string;
+  date_filter?: string;
+  value_min?: number;
+  value_max?: number;
+  segment_override?: string;
+  filters?: KpiFilters;
+}): Promise<KpiDrillDownResponse> {
+  const s = new URLSearchParams();
+  s.set('kpi_name', params.kpi_name);
+  if (params.page) s.set('page', String(params.page));
+  if (params.page_size) s.set('page_size', String(params.page_size));
+  if (params.sort_by) s.set('sort_by', params.sort_by);
+  if (params.sort_dir) s.set('sort_dir', params.sort_dir);
+  if (params.date_filter) s.set('date_filter', params.date_filter);
+  if (params.value_min !== undefined) s.set('value_min', String(params.value_min));
+  if (params.value_max !== undefined) s.set('value_max', String(params.value_max));
+  if (params.segment_override) s.set('segment', params.segment_override);
+  if (params.filters?.source_name) s.set('source_name', params.filters.source_name);
+  if (params.filters?.segment) s.set('segment', params.filters.segment);
+  if (params.filters?.source_component) s.set('source_component', params.filters.source_component);
+  if (params.filters?.environment) s.set('environment', params.filters.environment);
+  if (params.filters?.time_start) s.set('time_start', params.filters.time_start);
+  if (params.filters?.time_end) s.set('time_end', params.filters.time_end);
+  return fetchApi(`/api/kpi/drill-down?${s.toString()}`);
+}
+
+export async function getKpiCaseProfile(
+  datasetId: string,
+  sourceName?: string
+): Promise<KpiCaseProfileResponse> {
+  const s = new URLSearchParams();
+  s.set('dataset_id', datasetId);
+  if (sourceName) s.set('source_name', sourceName);
+  return fetchApi(`/api/kpi/case-profile?${s.toString()}`);
+}
+
+export async function getKpiDistribution(
+  kpiName: string,
+  filters?: KpiFilters
+): Promise<KpiDistributionResponse> {
+  const s = new URLSearchParams();
+  s.set('kpi_name', kpiName);
+  if (filters?.source_name) s.set('source_name', filters.source_name);
+  if (filters?.segment) s.set('segment', filters.segment);
+  if (filters?.source_component) s.set('source_component', filters.source_component);
+  if (filters?.environment) s.set('environment', filters.environment);
+  if (filters?.time_start) s.set('time_start', filters.time_start);
+  if (filters?.time_end) s.set('time_end', filters.time_end);
+  return fetchApi(`/api/kpi/distribution?${s.toString()}`);
+}
+
+export async function getKpiSegmentComparison(
+  kpiName: string,
+  filters?: KpiFilters
+): Promise<KpiSegmentComparisonResponse> {
+  const s = new URLSearchParams();
+  s.set('kpi_name', kpiName);
+  // Intentionally exclude segment — endpoint compares all segments
+  if (filters?.source_name) s.set('source_name', filters.source_name);
+  if (filters?.source_component) s.set('source_component', filters.source_component);
+  if (filters?.environment) s.set('environment', filters.environment);
+  if (filters?.time_start) s.set('time_start', filters.time_start);
+  if (filters?.time_end) s.set('time_end', filters.time_end);
+  return fetchApi(`/api/kpi/segment-comparison?${s.toString()}`);
 }

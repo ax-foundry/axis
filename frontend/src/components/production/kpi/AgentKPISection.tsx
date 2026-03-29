@@ -1,20 +1,30 @@
 'use client';
 
-import { Layers, Loader2 } from 'lucide-react';
-import { useEffect, useMemo } from 'react';
+import { BarChart3, Layers, List, Loader2, TrendingUp, X } from 'lucide-react';
+import { useCallback, useEffect, useMemo } from 'react';
 
 import { FilterDropdown } from '@/components/ui/FilterDropdown';
 import { TimeRangeSelector } from '@/components/ui/TimeRangeSelector';
 import { useKpiData, useKpiSankey, useKpiTrends } from '@/lib/hooks/useKpiData';
-import { formatLocalDate } from '@/lib/utils';
+import { cn, formatLocalDate } from '@/lib/utils';
 import { useKpiStore } from '@/stores';
 
+import { KPICaseProfileModal } from './KPICaseProfileModal';
 import { KPICategoryStrip } from './KPICategoryStrip';
 import { KPICompositionChart } from './KPICompositionChart';
+import { KPIDistributionChart } from './KPIDistributionChart';
+import { KPIDrillDownTable } from './KPIDrillDownTable';
 import { KPISankeyChart } from './KPISankeyChart';
+import { KPISegmentComparisonChart } from './KPISegmentComparisonChart';
 import { KPITrendChart } from './KPITrendChart';
 
 import type { KpiCategoryItem, KpiDateRange, KpiTrendPoint } from '@/types';
+
+const CHART_TABS = [
+  { key: 'trend' as const, label: 'Trend', icon: TrendingUp },
+  { key: 'distribution' as const, label: 'Distribution', icon: BarChart3 },
+  { key: 'segments' as const, label: 'Segments', icon: Layers },
+];
 
 const KPI_TIME_PRESETS = [
   { value: 'all', label: 'All time' },
@@ -74,6 +84,21 @@ export function AgentKPISection({
   const setKpiTimePreset = useKpiStore((s) => s.setKpiTimePreset);
   const setKpiTimeRange = useKpiStore((s) => s.setKpiTimeRange);
   const selectedSourceName = useKpiStore((s) => s.selectedSourceName);
+  const drillDownOpen = useKpiStore((s) => s.drillDownOpen);
+  const setDrillDownOpen = useKpiStore((s) => s.setDrillDownOpen);
+  const setDrillDownDateFilter = useKpiStore((s) => s.setDrillDownDateFilter);
+  const caseProfileDatasetId = useKpiStore((s) => s.caseProfileDatasetId);
+  const setCaseProfileDatasetId = useKpiStore((s) => s.setCaseProfileDatasetId);
+  const chartViewMode = useKpiStore((s) => s.chartViewMode);
+  const setChartViewMode = useKpiStore((s) => s.setChartViewMode);
+
+  const handleDateClick = useCallback(
+    (date: string) => {
+      setDrillDownDateFilter(date);
+      setDrillDownOpen(true);
+    },
+    [setDrillDownDateFilter, setDrillDownOpen]
+  );
 
   const dateLabel = useMemo(() => (dateRange ? formatDateRange(dateRange) : null), [dateRange]);
 
@@ -225,20 +250,123 @@ export function AgentKPISection({
         <KPICategoryStrip kpis={cardKpis} selectedKpi={selectedKpi} onSelectKpi={selectKpi} />
       )}
 
-      {/* Trend chart for selected KPI (above composition/sankey charts) */}
+      {/* Chart area for selected KPI */}
       {selectedKpi && (
-        <div className="animate-in fade-in slide-in-from-top-2 duration-200">
-          {trendsLoading ? (
-            <div className="flex items-center justify-center rounded-lg border border-border bg-surface py-8">
-              <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-              <span className="ml-2 text-sm text-text-muted">Loading trend...</span>
+        <div className="animate-in fade-in slide-in-from-top-2 space-y-3 duration-200">
+          {viewMode === 'detail' ? (
+            /* Detail mode: tabbed container with Trend / Distribution / Segments */
+            <div className="overflow-hidden rounded-lg border border-border bg-surface">
+              {/* Header: title + tabs + close */}
+              <div className="flex items-center justify-between border-b border-border px-4 py-2">
+                <h3 className="text-sm font-medium text-text-primary">
+                  {selectedItem?.display_name ?? selectedKpi}
+                </h3>
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-0.5 rounded-lg bg-gray-100 p-0.5 dark:bg-gray-800">
+                    {CHART_TABS.map((tab) => {
+                      const Icon = tab.icon;
+                      const isActive = chartViewMode === tab.key;
+                      return (
+                        <button
+                          key={tab.key}
+                          onClick={() => setChartViewMode(tab.key)}
+                          className={cn(
+                            'flex items-center gap-1 rounded-md px-2.5 py-1 text-[11px] font-medium transition-all',
+                            isActive
+                              ? 'bg-white text-text-primary shadow-sm dark:bg-gray-700'
+                              : 'text-text-muted hover:text-text-primary'
+                          )}
+                        >
+                          <Icon className="h-3 w-3" />
+                          {tab.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <button
+                    onClick={() => selectKpi(selectedKpi)}
+                    className="rounded p-1 text-text-muted transition-colors hover:bg-gray-100 hover:text-text-primary dark:hover:bg-gray-800"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Chart content */}
+              <div className="px-2 py-2">
+                {chartViewMode === 'trend' && (
+                  <>
+                    {trendsLoading ? (
+                      <div className="flex items-center justify-center py-12">
+                        <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                        <span className="ml-2 text-sm text-text-muted">Loading trend...</span>
+                      </div>
+                    ) : (
+                      <KPITrendChart
+                        displayName={selectedItem?.display_name ?? selectedKpi}
+                        unit={selectedItem?.unit ?? 'score'}
+                        data={trendPoints}
+                        onDateClick={handleDateClick}
+                      />
+                    )}
+                  </>
+                )}
+                {chartViewMode === 'distribution' && (
+                  <KPIDistributionChart
+                    kpiName={selectedKpi}
+                    displayName={selectedItem?.display_name ?? selectedKpi}
+                    unit={selectedItem?.unit ?? 'score'}
+                  />
+                )}
+                {chartViewMode === 'segments' && (
+                  <KPISegmentComparisonChart
+                    kpiName={selectedKpi}
+                    displayName={selectedItem?.display_name ?? selectedKpi}
+                    unit={selectedItem?.unit ?? 'score'}
+                  />
+                )}
+              </div>
             </div>
           ) : (
-            <KPITrendChart
-              displayName={selectedItem?.display_name ?? selectedKpi}
-              unit={selectedItem?.unit ?? 'score'}
-              data={trendPoints}
-              onClose={() => selectKpi(selectedKpi)}
+            /* Summary mode: just the trend chart with its own close button */
+            <>
+              {trendsLoading ? (
+                <div className="flex items-center justify-center rounded-lg border border-border bg-surface py-8">
+                  <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                  <span className="ml-2 text-sm text-text-muted">Loading trend...</span>
+                </div>
+              ) : (
+                <KPITrendChart
+                  displayName={selectedItem?.display_name ?? selectedKpi}
+                  unit={selectedItem?.unit ?? 'score'}
+                  data={trendPoints}
+                  onClose={() => selectKpi(selectedKpi)}
+                />
+              )}
+            </>
+          )}
+
+          {/* View Cases toggle (detail mode only) */}
+          {viewMode === 'detail' && (
+            <button
+              onClick={() => setDrillDownOpen(!drillDownOpen)}
+              className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+                drillDownOpen
+                  ? 'bg-primary/10 text-primary'
+                  : 'text-text-muted hover:bg-gray-100 hover:text-text-primary dark:hover:bg-gray-800'
+              }`}
+            >
+              <List className="h-3.5 w-3.5" />
+              {drillDownOpen ? 'Hide Cases' : 'View Cases'}
+            </button>
+          )}
+
+          {/* Drill-down table (detail mode only) */}
+          {viewMode === 'detail' && drillDownOpen && selectedItem && (
+            <KPIDrillDownTable
+              kpiName={selectedKpi}
+              displayName={selectedItem.display_name}
+              unit={selectedItem.unit}
             />
           )}
         </div>
@@ -260,6 +388,14 @@ export function AgentKPISection({
             <KPISankeyChart key={chart.title} chart={chart} isLoading={sankeyLoading} />
           ))}
         </div>
+      )}
+
+      {/* Case profile modal */}
+      {caseProfileDatasetId && (
+        <KPICaseProfileModal
+          datasetId={caseProfileDatasetId}
+          onClose={() => setCaseProfileDatasetId(null)}
+        />
       )}
     </div>
   );

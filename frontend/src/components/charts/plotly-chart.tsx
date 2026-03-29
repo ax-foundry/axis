@@ -22,6 +22,7 @@ interface PlotlyChartProps {
   config?: Partial<Plotly.Config>;
   className?: string;
   style?: React.CSSProperties;
+  onClick?: (event: Plotly.PlotMouseEvent) => void;
 }
 
 const defaultConfig: Partial<Plotly.Config> = {
@@ -31,7 +32,14 @@ const defaultConfig: Partial<Plotly.Config> = {
   staticPlot: false,
 };
 
-export function PlotlyChart({ data, layout, config, className = '', style }: PlotlyChartProps) {
+export function PlotlyChart({
+  data,
+  layout,
+  config,
+  className = '',
+  style,
+  onClick,
+}: PlotlyChartProps) {
   const chartColors = useChartColors();
   const colors = useColors();
   const isDark = useDarkMode();
@@ -117,6 +125,7 @@ export function PlotlyChart({ data, layout, config, className = '', style }: Plo
       className={className}
       style={{ width: '100%', height: '100%', ...style }}
       useResizeHandler
+      onClick={onClick}
     />
   );
 }

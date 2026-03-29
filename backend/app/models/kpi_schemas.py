@@ -102,6 +102,94 @@ class KpiFiltersResponse(BaseModel):
     production_kpi_names: list[str] = []
 
 
+class KpiPercentiles(BaseModel):
+    """Percentile values for a KPI distribution."""
+
+    p25: float
+    p50: float
+    p75: float
+    p95: float
+
+
+class KpiDistributionResponse(BaseModel):
+    """Response for GET /api/kpi/distribution."""
+
+    success: bool = True
+    kpi_name: str
+    unit: str
+    bin_edges: list[float]
+    bin_counts: list[int]
+    total: int
+    sample_size: int
+    capped: bool
+    percentiles: KpiPercentiles | None = None
+    is_binary: bool = False  # True when all values are 0 or 1
+    binary_counts: dict[str, int] | None = None  # {"0": N, "1": M} when is_binary
+
+
+class KpiSegmentBar(BaseModel):
+    """A single segment bar in a segment comparison chart."""
+
+    segment: str
+    agg_value: float
+    count: int
+
+
+class KpiSegmentComparisonResponse(BaseModel):
+    """Response for GET /api/kpi/segment-comparison."""
+
+    success: bool = True
+    kpi_name: str
+    unit: str
+    aggregation: str  # "avg" or "sum"
+    segments: list[KpiSegmentBar]
+
+
+class KpiDrillDownRow(BaseModel):
+    """A single case-level KPI row for drill-down."""
+
+    dataset_id: str
+    created_at: str
+    numeric_value: float | None
+    segment: str | None = None
+    source_component: str | None = None
+    source_step: str | None = None
+    environment: str | None = None
+
+
+class KpiDrillDownResponse(BaseModel):
+    """Paginated response for GET /api/kpi/drill-down."""
+
+    success: bool = True
+    data: list[KpiDrillDownRow]
+    total: int
+    page: int
+    page_size: int
+    kpi_name: str
+
+
+class KpiCaseKpiValue(BaseModel):
+    """A single KPI value within a case profile."""
+
+    kpi_name: str
+    display_name: str
+    kpi_category: str | None = None
+    numeric_value: float | None = None
+    unit: str = "score"
+
+
+class KpiCaseProfileResponse(BaseModel):
+    """Response for GET /api/kpi/case-profile."""
+
+    success: bool = True
+    dataset_id: str
+    created_at: str | None = None
+    segment: str | None = None
+    source_component: str | None = None
+    environment: str | None = None
+    kpis: list[KpiCaseKpiValue]
+
+
 class KpiSankeyNode(BaseModel):
     """A node in the Sankey diagram."""
 

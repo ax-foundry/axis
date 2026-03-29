@@ -21,6 +21,7 @@ interface KPITrendChartProps {
   unit: KpiUnit;
   data: KpiTrendPoint[];
   onClose?: () => void;
+  onDateClick?: (date: string) => void;
 }
 
 function unitSuffix(unit: KpiUnit): string {
@@ -34,7 +35,13 @@ function unitSuffix(unit: KpiUnit): string {
   }
 }
 
-export function KPITrendChart({ displayName, unit, data, onClose }: KPITrendChartProps) {
+export function KPITrendChart({
+  displayName,
+  unit,
+  data,
+  onClose,
+  onDateClick,
+}: KPITrendChartProps) {
   const colors = useColors();
 
   const { traces, layout } = useMemo(() => {
@@ -158,7 +165,21 @@ export function KPITrendChart({ displayName, unit, data, onClose }: KPITrendChar
         )}
       </div>
       <div className="px-2 py-2">
-        <PlotlyChart data={traces} layout={layout} />
+        <PlotlyChart
+          data={traces}
+          layout={layout}
+          onClick={
+            onDateClick
+              ? (event) => {
+                  const point = event.points[0];
+                  if (point?.x) {
+                    // x is the date string (YYYY-MM-DD)
+                    onDateClick(String(point.x).slice(0, 10));
+                  }
+                }
+              : undefined
+          }
+        />
       </div>
     </div>
   );

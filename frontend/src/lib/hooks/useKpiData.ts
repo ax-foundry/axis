@@ -150,3 +150,94 @@ export function useKpiTrendsMulti(kpiNames: string[], enabled: boolean) {
     ...SYNC_RETRY_CONFIG,
   });
 }
+
+/**
+ * Drill-down hook: paginated case-level rows for a single KPI.
+ */
+export function useKpiDrillDown(
+  kpiName: string | null,
+  pagination: { page: number; pageSize: number; sortBy: string; sortDir: string },
+  dateFilter: string | null,
+  valueRange: { min: number; max: number } | null,
+  segmentOverride: string | null,
+  enabled: boolean
+) {
+  const filters = useKpiFilters();
+
+  return useQuery({
+    queryKey: [
+      'kpi-drill-down',
+      kpiName,
+      filters,
+      pagination,
+      dateFilter,
+      valueRange,
+      segmentOverride,
+    ],
+    queryFn: () =>
+      api.getKpiDrillDown({
+        kpi_name: kpiName!,
+        page: pagination.page,
+        page_size: pagination.pageSize,
+        sort_by: pagination.sortBy,
+        sort_dir: pagination.sortDir,
+        date_filter: dateFilter || undefined,
+        value_min: valueRange?.min,
+        value_max: valueRange?.max,
+        segment_override: segmentOverride || undefined,
+        filters,
+      }),
+    enabled: enabled && kpiName !== null,
+    staleTime: 30_000,
+    ...SYNC_RETRY_CONFIG,
+  });
+}
+
+/**
+ * Case profile hook: all KPI values for a single dataset_id.
+ */
+export function useKpiCaseProfile(datasetId: string | null, enabled: boolean) {
+  const selectedSourceName = useKpiStore((s) => s.selectedSourceName);
+
+  return useQuery({
+    queryKey: ['kpi-case-profile', datasetId, selectedSourceName],
+    queryFn: () => api.getKpiCaseProfile(datasetId!, selectedSourceName || undefined),
+    enabled: enabled && datasetId !== null,
+    staleTime: 60_000,
+    ...SYNC_RETRY_CONFIG,
+  });
+}
+
+/**
+ * Distribution hook: histogram + percentiles for a single KPI.
+ */
+export function useKpiDistribution(kpiName: string | null, enabled: boolean) {
+  const filters = useKpiFilters();
+
+  return useQuery({
+    queryKey: ['kpi-distribution', kpiName, filters],
+    queryFn: () => api.getKpiDistribution(kpiName!, filters),
+    enabled: enabled && kpiName !== null,
+    staleTime: 60_000,
+    ...SYNC_RETRY_CONFIG,
+  });
+}
+
+/**
+ * Segment comparison hook: per-segment aggregated values.
+ * Query key excludes segment to avoid cache fragmentation.
+ */
+export function useKpiSegmentComparison(kpiName: string | null, enabled: boolean) {
+  const filters = useKpiFilters();
+  // Exclude segment from query key — endpoint always compares all segments
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { segment: _, ...filtersWithoutSegment } = filters;
+
+  return useQuery({
+    queryKey: ['kpi-segment-comparison', kpiName, filtersWithoutSegment],
+    queryFn: () => api.getKpiSegmentComparison(kpiName!, filters),
+    enabled: enabled && kpiName !== null,
+    staleTime: 60_000,
+    ...SYNC_RETRY_CONFIG,
+  });
+}

@@ -4,16 +4,24 @@ import anyio
 from fastapi import APIRouter, Query
 
 from app.models.kpi_schemas import (
+    KpiCaseProfileResponse,
     KpiCategoriesResponse,
+    KpiDistributionResponse,
+    KpiDrillDownResponse,
     KpiFiltersResponse,
     KpiSankeyResponse,
+    KpiSegmentComparisonResponse,
     KpiTrendsResponse,
 )
 from app.services.duckdb_store import get_store
 from app.services.kpi_service import (
+    get_kpi_case_profile,
     get_kpi_categories,
+    get_kpi_distribution,
+    get_kpi_drill_down,
     get_kpi_filters,
     get_kpi_sankey,
+    get_kpi_segment_comparison,
     get_kpi_trends,
 )
 
@@ -113,6 +121,122 @@ async def kpi_sankey(
             source_type=source_type,
             source_component=source_component,
             segment=segment,
+            time_start=time_start,
+            time_end=time_end,
+        ),
+        limiter=store.query_limiter,
+    )
+
+
+@router.get("/drill-down", response_model=KpiDrillDownResponse)
+async def kpi_drill_down(
+    kpi_name: str = Query(..., description="KPI name to drill down into"),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(50, ge=1, le=500),
+    sort_by: str = Query("created_at"),
+    sort_dir: str = Query("desc", pattern="^(asc|desc)$"),
+    date_filter: str | None = Query(None, description="Single day YYYY-MM-DD"),
+    value_min: float | None = Query(None, description="Min numeric_value (inclusive)"),
+    value_max: float | None = Query(None, description="Max numeric_value (exclusive)"),
+    source_name: str | None = None,
+    environment: str | None = None,
+    source_type: str | None = None,
+    source_component: str | None = None,
+    segment: str | None = None,
+    time_start: str | None = None,
+    time_end: str | None = None,
+) -> KpiDrillDownResponse:
+    """Paginated case-level rows for a single KPI."""
+    store = get_store()
+    return await anyio.to_thread.run_sync(
+        lambda: get_kpi_drill_down(
+            store,
+            kpi_name=kpi_name,
+            page=page,
+            page_size=page_size,
+            sort_by=sort_by,
+            sort_dir=sort_dir,
+            date_filter=date_filter,
+            value_min=value_min,
+            value_max=value_max,
+            source_name=source_name,
+            environment=environment,
+            source_type=source_type,
+            source_component=source_component,
+            segment=segment,
+            time_start=time_start,
+            time_end=time_end,
+        ),
+        limiter=store.query_limiter,
+    )
+
+
+@router.get("/case-profile", response_model=KpiCaseProfileResponse)
+async def kpi_case_profile(
+    dataset_id: str = Query(..., description="Case dataset ID"),
+    source_name: str | None = None,
+) -> KpiCaseProfileResponse:
+    """All KPI values for a single case."""
+    store = get_store()
+    return await anyio.to_thread.run_sync(
+        lambda: get_kpi_case_profile(
+            store,
+            dataset_id=dataset_id,
+            source_name=source_name,
+        ),
+        limiter=store.query_limiter,
+    )
+
+
+@router.get("/distribution", response_model=KpiDistributionResponse)
+async def kpi_distribution(
+    kpi_name: str = Query(..., description="KPI name"),
+    source_name: str | None = None,
+    environment: str | None = None,
+    source_type: str | None = None,
+    source_component: str | None = None,
+    segment: str | None = None,
+    time_start: str | None = None,
+    time_end: str | None = None,
+) -> KpiDistributionResponse:
+    """Histogram and percentiles for a single KPI's value distribution."""
+    store = get_store()
+    return await anyio.to_thread.run_sync(
+        lambda: get_kpi_distribution(
+            store,
+            kpi_name=kpi_name,
+            source_name=source_name,
+            environment=environment,
+            source_type=source_type,
+            source_component=source_component,
+            segment=segment,
+            time_start=time_start,
+            time_end=time_end,
+        ),
+        limiter=store.query_limiter,
+    )
+
+
+@router.get("/segment-comparison", response_model=KpiSegmentComparisonResponse)
+async def kpi_segment_comparison(
+    kpi_name: str = Query(..., description="KPI name"),
+    source_name: str | None = None,
+    environment: str | None = None,
+    source_type: str | None = None,
+    source_component: str | None = None,
+    time_start: str | None = None,
+    time_end: str | None = None,
+) -> KpiSegmentComparisonResponse:
+    """Per-segment aggregated values for a single KPI."""
+    store = get_store()
+    return await anyio.to_thread.run_sync(
+        lambda: get_kpi_segment_comparison(
+            store,
+            kpi_name=kpi_name,
+            source_name=source_name,
+            environment=environment,
+            source_type=source_type,
+            source_component=source_component,
             time_start=time_start,
             time_end=time_end,
         ),

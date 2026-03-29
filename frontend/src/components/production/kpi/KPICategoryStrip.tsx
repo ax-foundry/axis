@@ -12,11 +12,10 @@ import {
 } from 'lucide-react';
 import { useMemo } from 'react';
 
-import { formatDuration } from '@/lib/human-signals-utils';
+import { formatKpiValue } from '@/lib/kpi-format';
 import { cn } from '@/lib/utils';
 
 import type { FlatKpiItem } from './AgentKPISection';
-import type { KpiUnit } from '@/types';
 
 const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   Zap,
@@ -26,22 +25,6 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   Heart,
   BarChart3,
 };
-
-function formatValue(value: number | null, unit: KpiUnit): string {
-  if (value === null || value === undefined) return '--';
-  switch (unit) {
-    case 'percent':
-      return `${(value * 100).toFixed(1)}%`;
-    case 'seconds':
-      return formatDuration(value);
-    case 'score':
-      return value.toFixed(2);
-    case 'count':
-      return value.toFixed(0);
-    default:
-      return String(value);
-  }
-}
 
 /** Tiny inline SVG sparkline from sparkline[] data */
 function Sparkline({ data, className }: { data: { value: number | null }[]; className?: string }) {
@@ -123,7 +106,7 @@ export function KPICategoryStrip({ kpis, selectedKpi, onSelectKpi }: KPICategory
             {/* Value + trend icon */}
             <div className="flex items-center gap-1.5">
               <span className="text-xl font-bold text-text-primary">
-                {formatValue(kpi.current_value, kpi.unit)}
+                {formatKpiValue(kpi.current_value, kpi.unit)}
               </span>
               {trend && trend !== 'flat' && (
                 <TrendIcon
