@@ -153,6 +153,7 @@ nav:
       - Frontend: architecture/frontend.md
       - Data Formats: architecture/data-formats.md
       - State Management: architecture/state-management.md
+      - Copilot Agent: architecture/copilot-agent.md
   - API Reference:
       - api-reference/index.md
       - REST API: api-reference/rest-api.md
