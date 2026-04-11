@@ -121,6 +121,18 @@ def _serialize_tree_node(
                 # duration is a timedelta
                 latency_ms = duration.total_seconds() * 1000
 
+    # Cost — try various attribute names Langfuse V4 may use
+    raw_cost = (
+        getattr(obs, "calculatedTotalCost", None)
+        or getattr(obs, "calculated_total_cost", None)
+        or getattr(obs, "totalCost", None)
+        or getattr(obs, "total_cost", None)
+    )
+    cost: float | None = None
+    if raw_cost is not None:
+        with contextlib.suppress(TypeError, ValueError):
+            cost = float(raw_cost)
+
     # Recursively serialize children
     children_raw = getattr(node, "children", []) or []
     children = [_serialize_tree_node(child, max_chars, depth + 1) for child in children_raw]
@@ -139,6 +151,7 @@ def _serialize_tree_node(
         latency_ms=latency_ms,
         start_time=str(start_time) if start_time else None,
         end_time=str(end_time) if end_time else None,
+        cost=cost,
         depth=depth,
         children=children,
     )
@@ -163,8 +176,9 @@ def _accumulate_tree_tokens(
     total_latency: float = 0
 
     for node in _walk_tree(nodes):
-        # Only count tokens from leaf-ish nodes (GENERATION, TOOL) to avoid double-counting
-        if node.type and node.type.upper() in ("GENERATION", "TOOL"):
+        # Only count tokens from leaf-ish nodes to avoid double-counting
+        # LLM is the Langfuse V4 equivalent of GENERATION
+        if node.type and node.type.upper() in ("GENERATION", "LLM", "TOOL"):
             if node.usage:
                 total_input += node.usage.input
                 total_output += node.usage.output
@@ -199,6 +213,18 @@ def _serialize_observation(obs: Any, max_chars: int | None) -> ObservationSummar
     end_time = getattr(obs, "endTime", None)
     latency_ms = _compute_latency_ms(start_time, end_time)
 
+    # Cost
+    raw_cost = (
+        getattr(obs, "calculatedTotalCost", None)
+        or getattr(obs, "calculated_total_cost", None)
+        or getattr(obs, "totalCost", None)
+        or getattr(obs, "total_cost", None)
+    )
+    cost: float | None = None
+    if raw_cost is not None:
+        with contextlib.suppress(TypeError, ValueError):
+            cost = float(raw_cost)
+
     return ObservationSummary(
         id=str(getattr(obs, "id", "")),
         name=getattr(obs, "name", None),
@@ -213,6 +239,7 @@ def _serialize_observation(obs: Any, max_chars: int | None) -> ObservationSummar
         latency_ms=latency_ms,
         start_time=str(start_time) if start_time else None,
         end_time=str(end_time) if end_time else None,
+        cost=cost,
     )
 
 
@@ -541,6 +568,19 @@ async def get_trace_detail(
         if t_tot > 0:
             total_input, total_output, total_total = t_in, t_out, t_tot
             total_latency_ms = t_lat
+
+        # Fallback: compute total cost from leaf generation nodes if trace-level is missing
+        if total_cost is None:
+            tree_cost = sum(
+                n.cost
+                for n in _walk_tree(tree)
+                if n.cost is not None
+                and n.cost > 0
+                and n.type
+                and n.type.upper() in ("GENERATION", "LLM")
+            )
+            if tree_cost > 0:
+                total_cost = tree_cost
 
     return TraceDetailResponse(
         id=trace_id,

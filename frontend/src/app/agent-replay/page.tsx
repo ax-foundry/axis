@@ -3,6 +3,8 @@
 import {
   AlertCircle,
   ArrowLeft,
+  BarChart3,
+  ChevronDown,
   FlaskConical,
   Loader2,
   Logs,
@@ -12,7 +14,7 @@ import {
   PlayCircle,
   Settings,
 } from 'lucide-react';
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import {
   AgentIdentityBar,
@@ -22,6 +24,7 @@ import {
   TRACE_IO_NODE_ID,
   TraceIOPanel,
   TracePicker,
+  TraceWaterfall,
   WhatIfPanel,
 } from '@/components/agent-replay';
 import {
@@ -56,6 +59,7 @@ export default function AgentReplayPage() {
     setAvailableAgents,
     reset,
   } = useReplayStore();
+  const [waterfallOpen, setWaterfallOpen] = useState(false);
   const {
     data: trace,
     isLoading: traceLoading,
@@ -279,7 +283,7 @@ export default function AgentReplayPage() {
           <div
             className={cn(
               'shrink-0 overflow-hidden border-r border-primary/10 bg-gradient-to-b from-surface to-primary/[0.01] transition-[width] duration-200',
-              sidebarCollapsed ? 'w-0 border-r-0' : 'w-64 overflow-y-auto'
+              sidebarCollapsed ? 'w-0 border-r-0' : 'w-72 overflow-y-auto'
             )}
           >
             <ObservationTree
@@ -334,7 +338,7 @@ export default function AgentReplayPage() {
                       <ArrowLeft className="h-3.5 w-3.5" />
                       Exit What-If
                     </button>
-                  ) : selectedNode.type?.toUpperCase() === 'GENERATION' ? (
+                  ) : ['GENERATION', 'LLM'].includes(selectedNode.type?.toUpperCase() ?? '') ? (
                     <button
                       onClick={() => enterWhatIf(selectedNode.id)}
                       className="flex items-center gap-1.5 rounded-md bg-gradient-to-r from-primary to-primary-dark px-2.5 py-1 text-xs font-bold text-white shadow-md shadow-primary/25 transition-all hover:shadow-lg hover:shadow-primary/30 hover:brightness-110"
@@ -367,6 +371,30 @@ export default function AgentReplayPage() {
                 </button>
               </div>
             </div>
+
+            {/* Collapsible waterfall timeline */}
+            {!whatIf.active && trace.tree.length > 0 && (
+              <div className="border-b border-primary/10">
+                <button
+                  onClick={() => setWaterfallOpen(!waterfallOpen)}
+                  className="flex w-full items-center gap-1.5 px-3 py-1.5 text-[10px] font-semibold text-text-muted transition-colors hover:bg-primary/[0.03] hover:text-primary-dark"
+                >
+                  <ChevronDown
+                    className={cn('h-3 w-3 transition-transform', !waterfallOpen && '-rotate-90')}
+                  />
+                  <BarChart3 className="h-3 w-3" />
+                  Timeline
+                </button>
+                {waterfallOpen && (
+                  <TraceWaterfall
+                    nodes={trace.tree}
+                    selectedNodeId={selectedNodeId}
+                    expandedNodeIds={expandedNodeIds}
+                    onSelectNode={setSelectedNodeId}
+                  />
+                )}
+              </div>
+            )}
 
             <div
               className={cn(

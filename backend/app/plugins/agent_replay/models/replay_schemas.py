@@ -25,6 +25,7 @@ class ObservationSummary(BaseModel):
     latency_ms: float | None = None
     start_time: str | None = None
     end_time: str | None = None
+    cost: float | None = None
 
 
 class ObservationNodeResponse(BaseModel):
@@ -41,6 +42,7 @@ class ObservationNodeResponse(BaseModel):
     latency_ms: float | None = None
     start_time: str | None = None
     end_time: str | None = None
+    cost: float | None = None
     depth: int = 0
     children: list[ObservationNodeResponse] = Field(default_factory=list)
 

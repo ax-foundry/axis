@@ -151,7 +151,9 @@ export function WhatIfPanel({ traceId, nodeId, nodeName, agent }: WhatIfPanelPro
 
       {fixtureError && (
         <div className="flex flex-1 flex-col items-center justify-center gap-3 p-6">
-          {fixtureError instanceof Error && fixtureError.message.includes('not GENERATION') ? (
+          {fixtureError instanceof Error &&
+          (fixtureError.message.includes('not GENERATION') ||
+            fixtureError.message.includes('not GENERATION/LLM')) ? (
             <>
               <div className="flex items-center gap-2">
                 <FlaskConical className="h-6 w-6 text-primary/40" />

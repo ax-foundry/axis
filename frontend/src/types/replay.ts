@@ -20,6 +20,7 @@ export interface ObservationSummary {
   latency_ms: number | null;
   start_time: string | null;
   end_time: string | null;
+  cost: number | null;
 }
 
 export interface StepSummary {
@@ -43,7 +44,7 @@ export interface TraceSummary {
 export interface ObservationNodeData {
   id: string;
   name: string | null;
-  type: 'SPAN' | 'GENERATION' | 'TOOL' | 'EVENT' | string | null;
+  type: 'SPAN' | 'GENERATION' | 'LLM' | 'TOOL' | 'EVENT' | 'AGENT' | 'CHAIN' | string | null;
   model: string | null;
   input: unknown;
   output: unknown;
@@ -54,6 +55,7 @@ export interface ObservationNodeData {
   latency_ms: number | null;
   start_time: string | null;
   end_time: string | null;
+  cost: number | null;
   depth: number;
   children: ObservationNodeData[];
 }

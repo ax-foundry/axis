@@ -3,14 +3,17 @@
 import { useQueryClient } from '@tanstack/react-query';
 import {
   Activity,
+  Bot,
   ChevronDown,
   Clock,
   Cpu,
+  DollarSign,
   Expand,
   FileInput,
   FileOutput,
   Info,
   Layers,
+  Link,
   Wrench,
 } from 'lucide-react';
 import { useState } from 'react';
@@ -26,6 +29,9 @@ import type { ObservationNodeData, TraceDetail } from '@/types/replay';
 const TYPE_BADGE: Record<string, { bg: string; text: string; Icon: typeof Layers }> = {
   SPAN: { bg: 'bg-indigo-100', text: 'text-indigo-700', Icon: Layers },
   GENERATION: { bg: 'bg-emerald-100', text: 'text-emerald-700', Icon: Cpu },
+  LLM: { bg: 'bg-emerald-100', text: 'text-emerald-700', Icon: Cpu },
+  AGENT: { bg: 'bg-violet-100', text: 'text-violet-700', Icon: Bot },
+  CHAIN: { bg: 'bg-cyan-100', text: 'text-cyan-700', Icon: Link },
   TOOL: { bg: 'bg-amber-100', text: 'text-amber-700', Icon: Wrench },
   EVENT: { bg: 'bg-gray-100 dark:bg-gray-800', text: 'text-gray-600', Icon: Activity },
 };
@@ -125,6 +131,12 @@ export function NodeDetailPanel({ node, traceId, agent, className }: NodeDetailP
               <span className="rounded-full bg-accent-gold/30 px-2 py-0.5 text-[10px] font-bold text-white backdrop-blur-sm">
                 {activeNode.usage.input.toLocaleString()} in |{' '}
                 {activeNode.usage.output.toLocaleString()} out
+              </span>
+            )}
+            {activeNode.cost != null && activeNode.cost > 0 && (
+              <span className="flex items-center gap-1 rounded-full bg-accent-gold/30 px-2 py-0.5 text-[10px] font-bold text-white backdrop-blur-sm">
+                <DollarSign className="h-2.5 w-2.5" />
+                {formatCost(activeNode.cost)}
               </span>
             )}
             {hasTruncated && (
@@ -230,6 +242,14 @@ function NodeDetailsPane({ node }: { node: ObservationNodeData }) {
               {node.latency_ms != null ? formatMs(node.latency_ms) : '—'}
             </div>
           </div>
+          {node.cost != null && node.cost > 0 && (
+            <div>
+              <div className="text-[10px] font-medium uppercase tracking-wide text-text-muted">
+                Cost
+              </div>
+              <div className="mt-px font-semibold text-accent-gold">{formatCost(node.cost)}</div>
+            </div>
+          )}
           {node.usage && node.usage.total > 0 && (
             <>
               <div>
@@ -279,6 +299,11 @@ function NodeDetailsPane({ node }: { node: ObservationNodeData }) {
         </div>
       </div>
 
+      {/* Agent/Chain details */}
+      {node.type && ['AGENT', 'CHAIN'].includes(node.type.toUpperCase()) && (
+        <AgentDetailsSection input={node.input} output={node.output} type={node.type} />
+      )}
+
       {/* Metadata */}
       {node.metadata && Object.keys(node.metadata).length > 0 && (
         <div className="overflow-hidden rounded-lg border border-primary/15 shadow-sm">
@@ -308,6 +333,78 @@ function NodeDetailsPane({ node }: { node: ObservationNodeData }) {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Agent/Chain details section (structured fields from input/output)
+// ---------------------------------------------------------------------------
+
+const AGENT_INPUT_KEYS = ['step', 'kind', 'attempt', 'max_retries'] as const;
+const AGENT_OUTPUT_KEYS = ['task_status', 'context_entries', 'enrichment_count', 'error'] as const;
+
+function AgentDetailsSection({
+  input,
+  output,
+  type,
+}: {
+  input: unknown;
+  output: unknown;
+  type: string;
+}) {
+  const inputObj = input && typeof input === 'object' ? (input as Record<string, unknown>) : null;
+  const outputObj =
+    output && typeof output === 'object' ? (output as Record<string, unknown>) : null;
+
+  const fields: Array<{ label: string; value: string }> = [];
+
+  if (inputObj) {
+    for (const key of AGENT_INPUT_KEYS) {
+      if (key in inputObj && inputObj[key] != null) {
+        fields.push({
+          label: key.replace(/_/g, ' '),
+          value: String(inputObj[key]),
+        });
+      }
+    }
+  }
+
+  if (outputObj) {
+    for (const key of AGENT_OUTPUT_KEYS) {
+      if (key in outputObj && outputObj[key] != null) {
+        fields.push({
+          label: key.replace(/_/g, ' '),
+          value: String(outputObj[key]),
+        });
+      }
+    }
+  }
+
+  if (fields.length === 0) return null;
+
+  const headerColor = type.toUpperCase() === 'AGENT' ? 'text-violet-700' : 'text-cyan-700';
+
+  return (
+    <div className="overflow-hidden rounded-lg border border-primary/15 shadow-sm">
+      <div className="border-b border-primary/10 bg-surface px-3 py-1.5">
+        <h4 className={`text-[10px] font-bold uppercase tracking-wider ${headerColor}`}>
+          {type.toUpperCase()} Details
+          <span className="ml-1.5 rounded-full bg-primary/10 px-1.5 py-px text-[9px] font-semibold text-primary">
+            {fields.length}
+          </span>
+        </h4>
+      </div>
+      <div className="grid grid-cols-3 gap-x-4 gap-y-2 px-3 py-2 text-xs sm:grid-cols-4">
+        {fields.map(({ label, value }) => (
+          <div key={label}>
+            <div className="text-[10px] font-medium uppercase tracking-wide text-text-muted">
+              {label}
+            </div>
+            <div className="mt-px font-semibold text-text-primary">{value}</div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

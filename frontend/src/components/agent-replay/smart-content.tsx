@@ -163,8 +163,9 @@ export function splitTextAndJson(text: string): ContentSegment[] {
       segments.push({ type: 'json', value: candidate });
       remaining = remaining.slice(endIdx + 1);
     } else {
-      // Not valid JSON — include up through this opener as text and continue scanning
-      const chunkEnd = braceIdx + 1;
+      // Not valid JSON — include through the closing bracket as text and continue.
+      // This prevents fragmenting markdown like "[x] item" or "{ key: val }".
+      const chunkEnd = endIdx + 1;
       const prefix = remaining.slice(0, chunkEnd);
       if (segments.length > 0 && segments[segments.length - 1].type === 'text') {
         segments[segments.length - 1].value += prefix;

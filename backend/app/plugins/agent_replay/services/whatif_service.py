@@ -291,10 +291,10 @@ async def extract_fixture(
     obs = getattr(node, "observation", node)
     obs_type = getattr(obs, "type", None)
 
-    if not obs_type or obs_type.upper() != "GENERATION":
+    if not obs_type or obs_type.upper() not in ("GENERATION", "LLM"):
         raise WhatIfValidationError(
-            f"Node {node_id!r} is type {obs_type!r}, not GENERATION. "
-            "What-If is only available for GENERATION nodes."
+            f"Node {node_id!r} is type {obs_type!r}, not GENERATION/LLM. "
+            "What-If is only available for GENERATION/LLM nodes."
         )
 
     # Extract properties

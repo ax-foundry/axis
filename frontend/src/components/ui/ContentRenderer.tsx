@@ -56,22 +56,25 @@ interface ContentRendererProps {
 }
 
 export function ContentRenderer({ content, className = '', forceType }: ContentRendererProps) {
+  // Normalize tabs to spaces so they render in HTML (tabs are collapsed in normal flow)
+  const normalizedContent = useMemo(() => content.replace(/\t/g, '  '), [content]);
+
   const contentType = useMemo(() => {
     if (forceType) return forceType;
-    return detectContentType(content);
-  }, [content, forceType]);
+    return detectContentType(normalizedContent);
+  }, [normalizedContent, forceType]);
 
-  if (!content) {
+  if (!normalizedContent) {
     return <span className="italic text-text-muted">Empty</span>;
   }
 
   if (contentType === 'json') {
     try {
-      const parsed = JSON.parse(content);
+      const parsed = JSON.parse(normalizedContent);
       const formatted = JSON.stringify(parsed, null, 2);
       return (
         <pre
-          className={`overflow-x-auto rounded bg-gray-100 p-3 font-mono text-sm dark:bg-gray-800 dark:bg-gray-800 ${className}`}
+          className={`overflow-x-auto rounded bg-gray-100 p-3 font-mono text-sm dark:bg-gray-800 ${className}`}
         >
           <code>{formatted}</code>
         </pre>
@@ -82,6 +85,11 @@ export function ContentRenderer({ content, className = '', forceType }: ContentR
   }
 
   if (contentType === 'markdown') {
+    // Standard markdown treats single \n as a soft break (collapsed to space).
+    // Agent outputs use single \n for line breaks, so convert to hard breaks
+    // by adding two trailing spaces before each newline.
+    const withHardBreaks = normalizedContent.replace(/\n/g, '  \n');
+
     return (
       <div className={`max-w-none text-text-secondary ${className}`}>
         <ReactMarkdown
@@ -147,14 +155,14 @@ export function ContentRenderer({ content, className = '', forceType }: ContentR
             ),
           }}
         >
-          {content}
+          {withHardBreaks}
         </ReactMarkdown>
       </div>
     );
   }
 
   // Plain text - preserve whitespace
-  return <div className={`whitespace-pre-wrap ${className}`}>{content}</div>;
+  return <div className={`whitespace-pre-wrap ${className}`}>{normalizedContent}</div>;
 }
 
 export { detectContentType, type ContentType };

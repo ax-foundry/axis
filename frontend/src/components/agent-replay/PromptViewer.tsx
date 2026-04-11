@@ -201,6 +201,36 @@ export function PromptViewer({ content, className }: PromptViewerProps) {
     );
   }
 
+  // ML chat-style dict: { system: "...", user: "...", assistant: "..." }
+  if (typeof content === 'object' && content !== null && !Array.isArray(content)) {
+    const obj = content as Record<string, unknown>;
+    const roleKeys = Object.keys(obj).filter((k) => k.toLowerCase() in ROLE_CONFIG);
+    if (roleKeys.length > 0 && roleKeys.length >= Object.keys(obj).length / 2) {
+      // Order: system first, then user, assistant, tool, then any remaining keys
+      const roleOrder = ['system', 'user', 'assistant', 'tool'];
+      const sortedKeys = [...Object.keys(obj)].sort((a, b) => {
+        const ai = roleOrder.indexOf(a.toLowerCase());
+        const bi = roleOrder.indexOf(b.toLowerCase());
+        return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
+      });
+
+      const messages = sortedKeys
+        .filter((k) => obj[k] != null)
+        .map((k) => ({
+          role: k.toLowerCase(),
+          content: typeof obj[k] === 'string' ? obj[k] : JSON.stringify(obj[k], null, 2),
+        }));
+
+      if (messages.length > 0) {
+        return (
+          <div className={cn(className)}>
+            {renderMessages(messages as Array<{ role: string; content: string }>)}
+          </div>
+        );
+      }
+    }
+  }
+
   // Object/dict content
   return (
     <div className={cn(className)}>
