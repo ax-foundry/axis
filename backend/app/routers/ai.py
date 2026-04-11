@@ -375,6 +375,36 @@ async def copilot_stream_oai(request: CopilotRequest, http_request: Request) -> 
     )
 
 
+@router.post("/copilot/stream/orchestrator")
+async def copilot_stream_orchestrator(
+    request: CopilotRequest, http_request: Request
+) -> EventSourceResponse:
+    r"""Stream orchestrator responses with multi-agent delegation.
+
+    The orchestrator coordinates SQL, Python, Reporting, and Research sub-agents.
+    Same SSE contract as ``/copilot/stream``.
+    Events: ``thought``, ``response``, ``error``, ``done``.
+    """
+    if not getattr(settings, "copilot_orchestrator_enabled", False):
+        return EventSourceResponse(
+            _disabled_generator("Orchestrator is not enabled. Set COPILOT_ORCHESTRATOR_ENABLED=true.")
+        )
+    _validate_agent_name(request.agent_name)
+    from app.copilot.orchestrator import OrchestratorAgent
+
+    return EventSourceResponse(
+        _copilot_stream_generator(
+            OrchestratorAgent, "copilot.stream.orchestrator", request, http_request
+        )
+    )
+
+
+async def _disabled_generator(message: str) -> AsyncGenerator[dict[str, str], None]:
+    """Yield a single error event for disabled features."""
+    yield {"event": SSEEventType.ERROR.value, "data": json.dumps({"error": message})}
+    yield {"event": SSEEventType.DONE.value, "data": ""}
+
+
 @router.post("/copilot/chat")
 async def copilot_chat(request: CopilotRequest, http_request: Request) -> CopilotResponse:
     """Non-streaming copilot endpoint for simple requests.

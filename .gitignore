@@ -118,3 +118,4 @@ AGENTS.md
 .cursor/
 
 venv/
+backend/notebooks/orchestrator_playground.ipynb

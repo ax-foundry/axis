@@ -45,6 +45,10 @@ class Settings(BaseSettings):
     copilot_memory_enabled: bool = Field(
         default=True, description="Enable cross-session copilot memory (learned SQL patterns)."
     )
+    copilot_orchestrator_enabled: bool = Field(
+        default=False,
+        description="Enable multi-agent orchestrator endpoint (/copilot/stream/orchestrator).",
+    )
 
     # Plugins
     AXIS_PLUGINS_ENABLED: str = Field(

@@ -1918,7 +1918,11 @@ class CopilotAgent:
             pass  # best-effort — don't break execution
         # Attach token usage so Langfuse can compute cost
         usage = agent_run.usage
-        if usage and usage.has_values:
+        has_values = getattr(usage, "has_values", None)
+        # handle both property and callable (pydantic-ai compat)
+        if callable(has_values):
+            has_values = has_values()
+        if usage and has_values:
             _span.set_attribute(
                 "usage",
                 {
