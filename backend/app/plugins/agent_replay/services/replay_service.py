@@ -272,6 +272,19 @@ def _serialize_step(step: Any, index: int, max_chars: int | None) -> StepSummary
     )
 
 
+def _build_preview(obj: Any, max_keys: int = 4) -> dict[str, str] | None:
+    """Extract a compact {key: short_value} preview from a trace input/output dict."""
+    if obj is None or not isinstance(obj, dict):
+        return None
+    preview: dict[str, str] = {}
+    for key, value in list(obj.items())[:max_keys]:
+        if value is None:
+            continue
+        s = str(value)
+        preview[str(key)] = s[:80] + "..." if len(s) > 80 else s
+    return preview or None
+
+
 def _traces_to_summaries(raw_traces: list[Any]) -> list[TraceSummary]:
     from axion.tracing import TraceCollection
 
@@ -283,6 +296,24 @@ def _traces_to_summaries(raw_traces: list[Any]) -> list[TraceSummary]:
         trace_name = getattr(trace, "name", None)
         tags_list = list(getattr(trace, "tags", []) or [])
         timestamp = getattr(trace, "timestamp", None)
+        session_id = getattr(trace, "session_id", None)
+
+        # Cost and latency
+        raw_cost = getattr(trace, "total_cost", None) or getattr(trace, "totalCost", None)
+        total_cost: float | None = None
+        if raw_cost is not None:
+            with contextlib.suppress(TypeError, ValueError):
+                total_cost = float(raw_cost)
+
+        raw_latency = getattr(trace, "latency", None)
+        latency_s: float | None = None
+        if raw_latency is not None:
+            with contextlib.suppress(TypeError, ValueError):
+                latency_s = float(raw_latency)
+
+        # Input/output previews
+        trace_input = getattr(trace, "input", None)
+        trace_output = getattr(trace, "output", None)
 
         summaries.append(
             TraceSummary(
@@ -292,6 +323,11 @@ def _traces_to_summaries(raw_traces: list[Any]) -> list[TraceSummary]:
                 timestamp=str(timestamp) if timestamp else None,
                 step_count=len(step_names),
                 step_names=step_names,
+                session_id=str(session_id) if session_id else None,
+                total_cost=total_cost,
+                latency_s=latency_s,
+                input_preview=_build_preview(trace_input),
+                output_preview=_build_preview(trace_output),
             )
         )
     return summaries
@@ -312,32 +348,48 @@ def get_status() -> ReplayStatusResponse:
     configured = has_global or has_agents
 
     search_fields = [SearchFieldOption(value="trace_id", label="Trace ID")]
+    # Add YAML-configured search fields (e.g. session_id, case_id)
+    for sf_value, sf_label in get_replay_config().search_fields.items():
+        search_fields.append(SearchFieldOption(value=sf_value, label=sf_label))
+    # Add DB-column search fields
     search_db = get_replay_config().search_db
     if search_db.enabled and search_db.is_configured:
         for col_name, col_label in search_db.search_columns.items():
             search_fields.append(SearchFieldOption(value=col_name, label=col_label))
 
-    # Build per-agent search fields
+    # Build per-agent search fields and review step types
+    cfg = get_replay_config()
     agent_search_fields: dict[str, list[SearchFieldOption]] = {}
+    agent_review_step_types: dict[str, list[str]] = {}
     for agent in get_configured_agents():
+        # Search fields: per-agent override → global → DB columns
         fields = [SearchFieldOption(value="trace_id", label="Trace ID")]
+        for sf_value, sf_label in cfg.get_search_fields(agent).items():
+            fields.append(SearchFieldOption(value=sf_value, label=sf_label))
         if search_db.enabled and search_db.is_configured:
             resolved = search_db.get_agent_config(agent)
             for col_name, col_label in resolved.search_columns.items():
                 fields.append(SearchFieldOption(value=col_name, label=col_label))
         agent_search_fields[agent] = fields
 
+        # Review step types: per-agent override → global
+        agent_rst = cfg.get_review_step_types(agent)
+        if agent_rst:
+            agent_review_step_types[agent] = agent_rst
+
     return ReplayStatusResponse(
         enabled=settings.agent_replay_enabled,
         configured=configured,
         langfuse_host=settings.langfuse_host,
-        default_limit=get_replay_config().default_limit,
-        default_days_back=get_replay_config().default_days_back,
-        whatif_enabled=get_replay_config().whatif_enabled,
-        whatif_disabled_agents=get_replay_config().whatif_disabled_agents,
+        default_limit=cfg.default_limit,
+        default_days_back=cfg.default_days_back,
+        whatif_enabled=cfg.whatif_enabled,
+        whatif_disabled_agents=cfg.whatif_disabled_agents,
         agents=get_configured_agents(),
         search_fields=search_fields,
         agent_search_fields=agent_search_fields,
+        review_step_types=cfg.review_step_types,
+        agent_review_step_types=agent_review_step_types,
     )
 
 
@@ -394,7 +446,18 @@ async def search_traces(
     if not query:
         return RecentTracesResponse(traces=[], total=0)
 
-    if search_by != "trace_id":
+    # Session ID search — fetch all traces in a Langfuse session
+    if search_by == "session_id":
+        loader = _get_loader(agent_name)
+        raw_traces = await asyncio.to_thread(
+            loader.get_session_traces,
+            session_id=query,
+            show_progress=False,
+        )
+        summaries = _traces_to_summaries(raw_traces)
+        return RecentTracesResponse(traces=summaries[:limit], total=len(summaries))
+
+    if search_by not in ("trace_id", "session_id"):
         from app.plugins.agent_replay.services.search_db import lookup_trace_ids
 
         # Backward compat: "field" maps to first configured column

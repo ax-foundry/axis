@@ -18,9 +18,17 @@ interface ReviewPanelProps {
   traceName: string | null;
   tree: ObservationNodeData[];
   traceInput: unknown;
+  reviewStepTypes?: string[];
 }
 
-export function ReviewPanel({ traceId, agent, traceName, tree, traceInput }: ReviewPanelProps) {
+export function ReviewPanel({
+  traceId,
+  agent,
+  traceName,
+  tree,
+  traceInput,
+  reviewStepTypes,
+}: ReviewPanelProps) {
   const {
     reviewVerdict,
     reviewFailureNodeId,
@@ -182,6 +190,7 @@ export function ReviewPanel({ traceId, agent, traceName, tree, traceInput }: Rev
             nodes={tree}
             value={reviewFailureNodeId}
             onChange={setReviewFailureNodeId}
+            allowedTypes={reviewStepTypes}
           />
         </div>
 

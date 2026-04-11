@@ -312,18 +312,6 @@ function ObservationTreeRow({
             {countDescendants(node)}
           </span>
         )}
-
-        {/* Latency only — just the most essential number, no tokens/cost clutter */}
-        {(isExpanded || !hasChildren) && node.latency_ms != null && (
-          <span
-            className={cn(
-              'z-[1] ml-auto shrink-0 text-[9px]',
-              isSelected ? 'text-primary/60' : 'text-text-muted/50'
-            )}
-          >
-            {formatMs(node.latency_ms)}
-          </span>
-        )}
       </button>
 
       {/* Children */}

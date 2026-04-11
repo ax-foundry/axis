@@ -214,8 +214,8 @@ export default function AgentReplayPage() {
 
       {/* Pre-trace states: centered with gradient background */}
       {!trace && (
-        <div className="flex flex-1 flex-col bg-gradient-to-b from-surface via-primary/[0.02] to-primary/[0.05]">
-          <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col px-6 pt-12">
+        <div className="min-h-0 flex-1 overflow-y-auto bg-gradient-to-b from-surface via-primary/[0.02] to-primary/[0.05]">
+          <div className="mx-auto w-full max-w-4xl px-6 pb-12 pt-12">
             {/* Not configured state */}
             {status && !status.configured && (
               <div className="mx-auto max-w-lg rounded-2xl border-2 border-primary/20 bg-surface p-8 text-center shadow-lg shadow-primary/5">
@@ -430,6 +430,10 @@ export default function AgentReplayPage() {
                   traceName={trace.name ?? null}
                   tree={trace.tree}
                   traceInput={trace.trace_input}
+                  reviewStepTypes={
+                    (selectedAgent && status?.agent_review_step_types?.[selectedAgent]) ||
+                    status?.review_step_types
+                  }
                 />
               </div>
             )}

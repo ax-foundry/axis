@@ -251,6 +251,14 @@ def load_replay_db_config() -> ReplayDBConfig:
 
 
 @dataclass
+class AgentReplayOverrides:
+    """Per-agent overrides for replay config fields."""
+
+    review_step_types: list[str] | None = None
+    search_fields: dict[str, str] | None = None
+
+
+@dataclass
 class ReplayConfig:
     default_limit: int = 20
     default_days_back: int = 7
@@ -258,6 +266,9 @@ class ReplayConfig:
     search_metadata_key: str = "caseReference"
     whatif_enabled: bool = True
     whatif_disabled_agents: list[str] = field(default_factory=list)
+    search_fields: dict[str, str] = field(default_factory=dict)
+    review_step_types: list[str] = field(default_factory=list)
+    agents_config: dict[str, AgentReplayOverrides] = field(default_factory=dict)
     langfuse_agents: dict[str, LangfuseAgentCreds] = field(default_factory=dict)
     search_db: ReplayDBConfig = field(default_factory=ReplayDBConfig)
     prompt_patterns: Any = None  # PromptPatternsBase instance (or None)
@@ -267,6 +278,22 @@ class ReplayConfig:
         if not self.whatif_enabled:
             return False
         return not (agent_name and agent_name.lower() in self.whatif_disabled_agents)
+
+    def get_review_step_types(self, agent_name: str | None) -> list[str]:
+        """Get review_step_types for a specific agent, falling back to global."""
+        if agent_name and agent_name in self.agents_config:
+            override = self.agents_config[agent_name].review_step_types
+            if override is not None:
+                return override
+        return self.review_step_types
+
+    def get_search_fields(self, agent_name: str | None) -> dict[str, str]:
+        """Get search_fields for a specific agent, falling back to global."""
+        if agent_name and agent_name in self.agents_config:
+            override = self.agents_config[agent_name].search_fields
+            if override is not None:
+                return override
+        return self.search_fields
 
 
 def _build_prompt_patterns(raw: dict[str, Any] | None) -> Any:
@@ -354,6 +381,42 @@ def load_replay_config() -> ReplayConfig:
                 raw_disabled = data.get("whatif_disabled_agents") or []
                 disabled_agents = [str(a).strip().lower() for a in raw_disabled if str(a).strip()]
 
+                # Parse extra search fields: {value: label} pairs
+                raw_sf = data.get("search_fields") or {}
+                extra_search_fields = (
+                    {str(k): str(v) for k, v in raw_sf.items()} if isinstance(raw_sf, dict) else {}
+                )
+
+                # Parse review_step_types — uppercase-normalized list
+                raw_rst = data.get("review_step_types") or []
+                review_step_types = (
+                    [str(t).strip().upper() for t in raw_rst if str(t).strip()]
+                    if isinstance(raw_rst, list)
+                    else []
+                )
+
+                # Parse per-agent overrides
+                agents_config: dict[str, AgentReplayOverrides] = {}
+                raw_agents = data.get("agents") or {}
+                if isinstance(raw_agents, dict):
+                    for name, overrides in raw_agents.items():
+                        if not isinstance(overrides, dict):
+                            continue
+                        agent_rst = overrides.get("review_step_types")
+                        agent_sf = overrides.get("search_fields")
+                        agents_config[str(name).lower()] = AgentReplayOverrides(
+                            review_step_types=(
+                                [str(t).strip().upper() for t in agent_rst if str(t).strip()]
+                                if isinstance(agent_rst, list)
+                                else None
+                            ),
+                            search_fields=(
+                                {str(k): str(v) for k, v in agent_sf.items()}
+                                if isinstance(agent_sf, dict)
+                                else None
+                            ),
+                        )
+
                 config = ReplayConfig(
                     default_limit=data.get("default_limit", 20),
                     default_days_back=data.get("default_days_back", 7),
@@ -361,6 +424,9 @@ def load_replay_config() -> ReplayConfig:
                     search_metadata_key=data.get("search_metadata_key", "caseReference"),
                     whatif_enabled=data.get("whatif_enabled", True),
                     whatif_disabled_agents=disabled_agents,
+                    search_fields=extra_search_fields,
+                    review_step_types=review_step_types,
+                    agents_config=agents_config,
                     prompt_patterns=_build_prompt_patterns(data.get("prompt_patterns")),
                 )
                 logger.info("Loaded agent replay config from %s", REPLAY_CONFIG_PATH)

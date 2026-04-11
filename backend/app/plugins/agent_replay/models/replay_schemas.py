@@ -67,6 +67,11 @@ class TraceSummary(BaseModel):
     timestamp: str | None = None
     step_count: int = 0
     step_names: list[str] = Field(default_factory=list)
+    session_id: str | None = None
+    total_cost: float | None = None
+    latency_s: float | None = None
+    input_preview: dict[str, str] | None = None
+    output_preview: dict[str, str] | None = None
 
 
 class TraceDetailResponse(BaseModel):
@@ -106,3 +111,5 @@ class ReplayStatusResponse(BaseModel):
     agents: list[str] = Field(default_factory=list)
     search_fields: list[SearchFieldOption] = Field(default_factory=list)
     agent_search_fields: dict[str, list[SearchFieldOption]] = Field(default_factory=dict)
+    review_step_types: list[str] = Field(default_factory=list)
+    agent_review_step_types: dict[str, list[str]] = Field(default_factory=dict)

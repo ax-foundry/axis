@@ -39,6 +39,11 @@ export interface TraceSummary {
   timestamp: string | null;
   step_count: number;
   step_names: string[];
+  session_id: string | null;
+  total_cost: number | null;
+  latency_s: number | null;
+  input_preview: Record<string, string> | null;
+  output_preview: Record<string, string> | null;
 }
 
 export interface ObservationNodeData {
@@ -97,6 +102,8 @@ export interface ReplayStatusResponse {
   agents: string[];
   search_fields: SearchFieldOption[];
   agent_search_fields: Record<string, SearchFieldOption[]>;
+  review_step_types: string[];
+  agent_review_step_types: Record<string, string[]>;
 }
 
 // ---------------------------------------------------------------------------

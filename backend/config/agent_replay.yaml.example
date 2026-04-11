@@ -32,6 +32,39 @@ agent_replay:
   #   - agent1
   #   - agent2
 
+  # ── Extra search fields ──
+  # Add search modes to the TracePicker dropdown beyond the default "Trace ID".
+  # Format: { value: label }. Built-in values with special handling:
+  #   session_id — fetches all traces in a Langfuse session
+  # Any other value is passed as search_by to the search endpoint.
+  #
+  # search_fields:
+  #   session_id: Session ID
+
+  # ── Review panel: failure step types ──
+  # Control which observation types appear in the "Failure Step" dropdown
+  # of the Review panel. Empty list = default (SPAN, AGENT, CHAIN).
+  # Use this to hide internal orchestration nodes (e.g. only show AGENT).
+  #
+  # review_step_types:           # Global default (all agents)
+  #   - AGENT
+  #   - SPAN
+
+  # ── Per-agent overrides ──
+  # Override search_fields and review_step_types per agent (by source_name).
+  # Falls back to global values when not specified.
+  #
+  # agents:
+  #   agent1:
+  #     review_step_types:
+  #       - AGENT
+  #     search_fields:
+  #       session_id: Session ID
+  #   agent2:
+  #     review_step_types:
+  #       - AGENT
+  #       - CHAIN
+
   # ── Prompt variable extraction (What-If Simulator) ──
   # Define extraction patterns that pull editable variables from GENERATION
   # prompt text. Each top-level key is a step name (matched against the
