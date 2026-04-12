@@ -88,20 +88,41 @@ function CopyButton({ text }: { text: string }) {
   );
 }
 
-function CitationsList({ items }: { items: unknown[] }) {
+/** Check if value is a flat dict with only primitive values (for clean table rendering). */
+function isFlatDict(obj: unknown): obj is Record<string, unknown> {
+  if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return false;
+  return Object.values(obj as Record<string, unknown>).every(
+    (v) => v === null || typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean'
+  );
+}
+
+/** Render a flat dict as a compact key-value table inside a card. */
+function FlatDictTable({ data }: { data: Record<string, unknown> }) {
   return (
-    <ol className="space-y-1.5 text-xs">
-      {items.map((item, i) => (
-        <li key={i} className="flex gap-2 text-text-secondary">
-          <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary text-[9px] font-bold text-white">
-            {i + 1}
-          </span>
-          <span className="leading-relaxed">
-            {typeof item === 'string' ? item : JSON.stringify(item, null, 2)}
-          </span>
-        </li>
-      ))}
-    </ol>
+    <table className="w-full text-xs">
+      <tbody>
+        {Object.entries(data).map(([key, value]) => (
+          <tr key={key} className="border-border/30 border-b last:border-0">
+            <td className="whitespace-nowrap py-1 pr-3 font-mono text-[10px] font-medium text-text-muted">
+              {key}
+            </td>
+            <td className="break-all py-1 text-text-primary">
+              {value === null ? (
+                <span className="italic text-text-muted">null</span>
+              ) : typeof value === 'boolean' ? (
+                <span className={value ? 'text-emerald-600' : 'text-text-muted'}>
+                  {String(value)}
+                </span>
+              ) : typeof value === 'number' ? (
+                <span className="font-mono">{String(value)}</span>
+              ) : (
+                String(value)
+              )}
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
   );
 }
 
@@ -114,13 +135,22 @@ function SectionCard({
   value: unknown;
   themeIndex: number;
 }) {
-  const isCitations =
+  const isArrayOfPrimitives =
     Array.isArray(value) &&
-    (label.toLowerCase().includes('citation') || label.toLowerCase().includes('reference'));
+    value.length > 0 &&
+    value.every((item) => typeof item === 'string' || typeof item === 'number');
+
+  const isArrayOfFlatDicts =
+    !isArrayOfPrimitives &&
+    Array.isArray(value) &&
+    value.length > 0 &&
+    value.every((item) => isFlatDict(item));
 
   const stringified = typeof value === 'string' ? value : JSON.stringify(value, null, 2);
   const theme = SECTION_THEMES[themeIndex % SECTION_THEMES.length];
   const Icon = theme.IconComp;
+
+  const itemCount = Array.isArray(value) ? value.length : null;
 
   return (
     <div
@@ -136,10 +166,8 @@ function SectionCard({
           <Icon className={cn('h-3 w-3', theme.icon)} />
           <h4 className="text-xs font-bold text-text-primary">
             {label}
-            {isCitations && (
-              <span className="ml-1 text-[10px] font-normal text-text-muted">
-                ({(value as unknown[]).length})
-              </span>
+            {itemCount != null && (
+              <span className="ml-1 text-[10px] font-normal text-text-muted">({itemCount})</span>
             )}
           </h4>
         </div>
@@ -147,10 +175,32 @@ function SectionCard({
       </div>
       <div className="overflow-hidden bg-surface px-3 py-2 text-xs">
         <div className="break-words">
-          {isCitations ? (
-            <CitationsList items={value as unknown[]} />
+          {isArrayOfPrimitives ? (
+            <ol className="space-y-1.5">
+              {(value as Array<string | number>).map((item, i) => (
+                <li key={i} className="flex gap-2 text-text-secondary">
+                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[9px] font-bold text-primary">
+                    {i + 1}
+                  </span>
+                  <span className="leading-relaxed">{String(item)}</span>
+                </li>
+              ))}
+            </ol>
           ) : typeof value === 'string' ? (
             <SmartContent text={value} />
+          ) : isFlatDict(value) ? (
+            <FlatDictTable data={value} />
+          ) : isArrayOfFlatDicts ? (
+            <div className="space-y-2">
+              {(value as Record<string, unknown>[]).map((item, i) => (
+                <div
+                  key={i}
+                  className="border-border/50 rounded-md border bg-gray-50/50 p-2 dark:bg-gray-900/20"
+                >
+                  <FlatDictTable data={item} />
+                </div>
+              ))}
+            </div>
           ) : (
             <ContentRenderer content={JSON.stringify(value, null, 2)} forceType="json" />
           )}
@@ -170,8 +220,23 @@ export function OutputViewer({ content, className }: OutputViewerProps) {
     );
   }
 
-  // String content — SmartContent auto-detects embedded JSON blocks in text
+  // String content — try to parse as JSON first for structured rendering
   if (typeof content === 'string') {
+    // Strip markdown code fences if present
+    const stripped = content
+      .trim()
+      .replace(/^```(?:json)?\s*\n?/i, '')
+      .replace(/\n?\s*```\s*$/, '')
+      .trim();
+    try {
+      const parsed = JSON.parse(stripped);
+      if (parsed && typeof parsed === 'object') {
+        // Re-render as structured content (array or object)
+        return <OutputViewer content={parsed} className={className} />;
+      }
+    } catch {
+      // Not JSON — fall through to SmartContent
+    }
     return (
       <div className={cn(className)}>
         <SmartContent text={content} />
@@ -179,18 +244,104 @@ export function OutputViewer({ content, className }: OutputViewerProps) {
     );
   }
 
-  // Structured object with known keys — render as section cards
+  // Structured object — split into compact summary (short primitives) + cards (complex values)
   if (isStructuredOutput(content)) {
     const keys = Object.keys(content);
     if (keys.length > 0) {
+      // Classify each entry by complexity: short primitives go in summary, rest get cards
+      const SHORT_THRESHOLD = 120;
+      const compactEntries: Array<[string, unknown]> = [];
+      const cardEntries: Array<[string, unknown]> = [];
+
+      for (const key of keys) {
+        const value = content[key];
+        const isCompact =
+          value === null ||
+          typeof value === 'boolean' ||
+          typeof value === 'number' ||
+          (typeof value === 'string' && value.length <= SHORT_THRESHOLD);
+        if (isCompact) {
+          compactEntries.push([key, value]);
+        } else {
+          cardEntries.push([key, value]);
+        }
+      }
+
       return (
         <div className={cn('space-y-2', className)}>
-          {keys.map((key, i) => (
-            <SectionCard key={key} label={friendlyLabel(key)} value={content[key]} themeIndex={i} />
+          {/* Compact summary table for short values */}
+          {compactEntries.length > 0 && (
+            <div className="overflow-hidden rounded-lg border border-border">
+              <table className="w-full text-xs">
+                <tbody>
+                  {compactEntries.map(([key, value]) => (
+                    <tr key={key} className="border-border/50 border-b last:border-0">
+                      <td className="whitespace-nowrap px-3 py-1.5 font-mono text-[11px] font-medium text-primary">
+                        {friendlyLabel(key)}
+                      </td>
+                      <td className="break-all px-3 py-1.5 text-text-primary">
+                        {value === null ? (
+                          <span className="italic text-text-muted">null</span>
+                        ) : typeof value === 'boolean' ? (
+                          <span className={value ? 'text-emerald-600' : 'text-text-muted'}>
+                            {String(value)}
+                          </span>
+                        ) : (
+                          String(value)
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* Full section cards for complex values */}
+          {cardEntries.map(([key, value], i) => (
+            <SectionCard key={key} label={friendlyLabel(key)} value={value} themeIndex={i} />
           ))}
         </div>
       );
     }
+  }
+
+  // Array of primitives — numbered list
+  if (
+    Array.isArray(content) &&
+    content.length > 0 &&
+    content.every((item) => typeof item === 'string' || typeof item === 'number')
+  ) {
+    return (
+      <div className={cn(className)}>
+        <ol className="space-y-1.5 text-xs">
+          {(content as Array<string | number>).map((item, i) => (
+            <li key={i} className="flex gap-2 text-text-secondary">
+              <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[9px] font-bold text-primary">
+                {i + 1}
+              </span>
+              <span className="leading-relaxed">{String(item)}</span>
+            </li>
+          ))}
+        </ol>
+      </div>
+    );
+  }
+
+  // Array of flat dicts — stacked tables
+  if (Array.isArray(content) && content.length > 0 && content.every((item) => isFlatDict(item))) {
+    return (
+      <div className={cn('space-y-2', className)}>
+        {(content as Record<string, unknown>[]).map((item, i) => (
+          <div
+            key={i}
+            className="overflow-hidden rounded-lg border border-border bg-gray-50/50 p-2.5 dark:bg-gray-900/20"
+          >
+            <FlatDictTable data={item} />
+          </div>
+        ))}
+      </div>
+    );
   }
 
   // Fallback: JSON

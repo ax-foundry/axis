@@ -35,16 +35,22 @@ export function useSearchTraces(query: string, agent?: string | null, searchBy?:
   });
 }
 
-export function useRecentTraces(params?: {
-  limit?: number;
-  days_back?: number;
-  name?: string;
-  tags?: string;
-  agent?: string | null;
-}) {
+export function useRecentTraces(
+  params:
+    | {
+        limit?: number;
+        days_back?: number;
+        name?: string;
+        tags?: string;
+        agent?: string | null;
+      }
+    | undefined
+    | null
+) {
   return useQuery({
     queryKey: ['recent-traces', params],
-    queryFn: () => getRecentTraces(params),
+    queryFn: () => getRecentTraces(params ?? undefined),
+    enabled: params != null,
     staleTime: 60_000,
     retry: 1,
   });

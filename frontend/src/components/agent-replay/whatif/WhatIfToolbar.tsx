@@ -13,8 +13,8 @@ interface WhatIfToolbarProps {
 export function WhatIfToolbar({ nodeId, nodeType }: WhatIfToolbarProps) {
   const { whatIf, enterWhatIf } = useReplayStore();
 
-  // Only show for GENERATION nodes
-  if (!nodeType || nodeType.toUpperCase() !== 'GENERATION') return null;
+  // Only show for GENERATION/LLM nodes
+  if (!nodeType || !['GENERATION', 'LLM'].includes(nodeType.toUpperCase())) return null;
 
   const isActive = whatIf.active && whatIf.nodeId === nodeId;
 

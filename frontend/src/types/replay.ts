@@ -20,6 +20,7 @@ export interface ObservationSummary {
   latency_ms: number | null;
   start_time: string | null;
   end_time: string | null;
+  cost: number | null;
 }
 
 export interface StepSummary {
@@ -38,12 +39,17 @@ export interface TraceSummary {
   timestamp: string | null;
   step_count: number;
   step_names: string[];
+  session_id: string | null;
+  total_cost: number | null;
+  latency_s: number | null;
+  input_preview: Record<string, string> | null;
+  output_preview: Record<string, string> | null;
 }
 
 export interface ObservationNodeData {
   id: string;
   name: string | null;
-  type: 'SPAN' | 'GENERATION' | 'TOOL' | 'EVENT' | string | null;
+  type: 'SPAN' | 'GENERATION' | 'LLM' | 'TOOL' | 'EVENT' | 'AGENT' | 'CHAIN' | string | null;
   model: string | null;
   input: unknown;
   output: unknown;
@@ -54,6 +60,7 @@ export interface ObservationNodeData {
   latency_ms: number | null;
   start_time: string | null;
   end_time: string | null;
+  cost: number | null;
   depth: number;
   children: ObservationNodeData[];
 }
@@ -95,6 +102,10 @@ export interface ReplayStatusResponse {
   agents: string[];
   search_fields: SearchFieldOption[];
   agent_search_fields: Record<string, SearchFieldOption[]>;
+  review_step_types: string[];
+  agent_review_step_types: Record<string, string[]>;
+  recent_trace_names: string[];
+  agent_recent_trace_names: Record<string, string[]>;
 }
 
 // ---------------------------------------------------------------------------

@@ -1,6 +1,7 @@
 export { AgentIdentityBar } from './AgentIdentityBar';
 export { TracePicker } from './TracePicker';
 export { ObservationTree, TRACE_IO_NODE_ID } from './ObservationTree';
+export { TraceWaterfall } from './TraceWaterfall';
 export { NodeDetailPanel, TraceIOPanel } from './NodeDetailPanel';
 export { PromptViewer } from './PromptViewer';
 export { OutputViewer } from './OutputViewer';

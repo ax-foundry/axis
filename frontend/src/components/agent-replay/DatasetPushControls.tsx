@@ -6,18 +6,14 @@ import { useMemo } from 'react';
 import type { DatasetInfo } from '@/types/replay';
 
 interface DatasetPushControlsProps {
-  enabled: boolean;
   datasetName: string;
-  onToggle: (v: boolean) => void;
   onDatasetNameChange: (v: string) => void;
   existingDatasets: DatasetInfo[];
   defaultName: string;
 }
 
 export function DatasetPushControls({
-  enabled,
   datasetName,
-  onToggle,
   onDatasetNameChange,
   existingDatasets,
   defaultName,
@@ -25,38 +21,25 @@ export function DatasetPushControls({
   const datasetNames = useMemo(() => existingDatasets.map((d) => d.name), [existingDatasets]);
 
   return (
-    <div className="space-y-2">
-      <label className="flex cursor-pointer items-center gap-2">
-        <input
-          type="checkbox"
-          checked={enabled}
-          onChange={(e) => onToggle(e.target.checked)}
-          className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
-        />
-        <Database className="h-3.5 w-3.5 text-text-muted" />
-        <span className="text-sm font-medium text-text-primary">Add to golden dataset</span>
+    <div className="space-y-1.5">
+      <label className="flex items-center gap-2">
+        <Database className="h-3.5 w-3.5 text-primary" />
+        <span className="text-xs font-semibold text-text-primary">Golden Dataset</span>
       </label>
-
-      {enabled && (
-        <div className="ml-6">
-          <input
-            type="text"
-            list="dataset-suggestions"
-            value={datasetName}
-            onChange={(e) => onDatasetNameChange(e.target.value)}
-            placeholder={defaultName}
-            className="w-full rounded-lg border border-primary/15 bg-surface px-3 py-1.5 text-sm text-text-primary shadow-sm placeholder:text-text-muted focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/15"
-          />
-          <datalist id="dataset-suggestions">
-            {datasetNames.map((name) => (
-              <option key={name} value={name} />
-            ))}
-          </datalist>
-          <p className="mt-1 text-[11px] text-text-muted">
-            Leave blank to use default: {defaultName}
-          </p>
-        </div>
-      )}
+      <input
+        type="text"
+        list="dataset-suggestions"
+        value={datasetName}
+        onChange={(e) => onDatasetNameChange(e.target.value)}
+        placeholder={defaultName}
+        className="w-full rounded-lg border border-primary/15 bg-surface px-3 py-1.5 text-sm text-text-primary shadow-sm placeholder:text-text-muted focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/15"
+      />
+      <datalist id="dataset-suggestions">
+        {datasetNames.map((name) => (
+          <option key={name} value={name} />
+        ))}
+      </datalist>
+      <p className="text-[11px] text-text-muted">Leave blank to use default: {defaultName}</p>
     </div>
   );
 }

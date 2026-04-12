@@ -18,23 +18,31 @@ interface ReviewPanelProps {
   traceName: string | null;
   tree: ObservationNodeData[];
   traceInput: unknown;
+  reviewStepTypes?: string[];
+  onSaveSuccess?: () => void;
 }
 
-export function ReviewPanel({ traceId, agent, traceName, tree, traceInput }: ReviewPanelProps) {
+export function ReviewPanel({
+  traceId,
+  agent,
+  traceName,
+  tree,
+  traceInput,
+  reviewStepTypes,
+  onSaveSuccess,
+}: ReviewPanelProps) {
   const {
     reviewVerdict,
     reviewFailureNodeId,
     reviewToolingNeeds,
     reviewRationale,
     reviewExpectedOutput,
-    reviewAddToDataset,
     reviewDatasetName,
     setReviewVerdict,
     setReviewFailureNodeId,
     setReviewToolingNeeds,
     setReviewRationale,
     setReviewExpectedOutput,
-    setReviewAddToDataset,
     setReviewDatasetName,
     resetReviewForm,
     toggleReviewPanel,
@@ -88,16 +96,15 @@ export function ReviewPanel({ traceId, agent, traceName, tree, traceInput }: Rev
         rationale: reviewRationale,
         expected_output: reviewExpectedOutput,
         trace_input: traceInput ?? undefined,
-        add_to_dataset: reviewAddToDataset,
-        dataset_name: reviewAddToDataset ? reviewDatasetName || undefined : undefined,
+        add_to_dataset: true,
+        dataset_name: reviewDatasetName || undefined,
       },
       {
         onSuccess: () => {
-          // Keep panel open to show success, reset form after brief display
-          setTimeout(() => {
-            resetReviewForm();
-            resetMutation();
-          }, 2000);
+          resetReviewForm();
+          resetMutation();
+          toggleReviewPanel();
+          onSaveSuccess?.();
         },
       }
     );
@@ -112,11 +119,12 @@ export function ReviewPanel({ traceId, agent, traceName, tree, traceInput }: Rev
     reviewToolingNeeds,
     reviewRationale,
     reviewExpectedOutput,
-    reviewAddToDataset,
     reviewDatasetName,
     saveReview,
     resetReviewForm,
     resetMutation,
+    toggleReviewPanel,
+    onSaveSuccess,
   ]);
 
   const existingCount = existingReviews?.scores?.length ?? 0;
@@ -182,6 +190,7 @@ export function ReviewPanel({ traceId, agent, traceName, tree, traceInput }: Rev
             nodes={tree}
             value={reviewFailureNodeId}
             onChange={setReviewFailureNodeId}
+            allowedTypes={reviewStepTypes}
           />
         </div>
 
@@ -239,9 +248,7 @@ export function ReviewPanel({ traceId, agent, traceName, tree, traceInput }: Rev
 
         {/* Dataset push */}
         <DatasetPushControls
-          enabled={reviewAddToDataset}
           datasetName={reviewDatasetName}
-          onToggle={setReviewAddToDataset}
           onDatasetNameChange={setReviewDatasetName}
           existingDatasets={datasetsData?.datasets ?? []}
           defaultName={defaultDatasetName}
@@ -265,6 +272,8 @@ export function ReviewPanel({ traceId, agent, traceName, tree, traceInput }: Rev
               <Loader2 className="h-4 w-4 animate-spin" />
               Saving...
             </>
+          ) : !reviewVerdict ? (
+            'Select a verdict to save'
           ) : (
             'Save Review'
           )}

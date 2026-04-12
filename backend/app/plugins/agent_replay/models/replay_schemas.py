@@ -25,6 +25,7 @@ class ObservationSummary(BaseModel):
     latency_ms: float | None = None
     start_time: str | None = None
     end_time: str | None = None
+    cost: float | None = None
 
 
 class ObservationNodeResponse(BaseModel):
@@ -41,6 +42,7 @@ class ObservationNodeResponse(BaseModel):
     latency_ms: float | None = None
     start_time: str | None = None
     end_time: str | None = None
+    cost: float | None = None
     depth: int = 0
     children: list[ObservationNodeResponse] = Field(default_factory=list)
 
@@ -65,6 +67,11 @@ class TraceSummary(BaseModel):
     timestamp: str | None = None
     step_count: int = 0
     step_names: list[str] = Field(default_factory=list)
+    session_id: str | None = None
+    total_cost: float | None = None
+    latency_s: float | None = None
+    input_preview: dict[str, str] | None = None
+    output_preview: dict[str, str] | None = None
 
 
 class TraceDetailResponse(BaseModel):
@@ -104,3 +111,7 @@ class ReplayStatusResponse(BaseModel):
     agents: list[str] = Field(default_factory=list)
     search_fields: list[SearchFieldOption] = Field(default_factory=list)
     agent_search_fields: dict[str, list[SearchFieldOption]] = Field(default_factory=dict)
+    review_step_types: list[str] = Field(default_factory=list)
+    agent_review_step_types: dict[str, list[str]] = Field(default_factory=dict)
+    recent_trace_names: list[str] = Field(default_factory=list)
+    agent_recent_trace_names: dict[str, list[str]] = Field(default_factory=dict)
