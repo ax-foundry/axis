@@ -22,8 +22,10 @@ RUN --mount=type=secret,id=git_token \
       GIT_TOKEN=$(cat /run/secrets/git_token) && \
       git config --global url."https://${GIT_TOKEN}@github.com/".insteadOf "https://github.com/"; \
     fi && \
-    pip install --no-cache-dir -r requirements.txt && \
-    git config --global --remove-section url 2>/dev/null || true
+    pip install --no-cache-dir -r requirements.txt ; \
+    PIP_EXIT=$? ; \
+    git config --global --remove-section url 2>/dev/null || true ; \
+    exit $PIP_EXIT
 
 # Copy application code
 COPY . .
