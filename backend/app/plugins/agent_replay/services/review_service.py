@@ -168,8 +168,10 @@ def _save_review_sync(request: ReviewCreateRequest) -> ReviewResponse:
         )
         client.create_dataset(name=dataset_name)
 
-        # Item ID = {agent}-golden-YYYY-MM for grouping by review batch
-        item_id = _default_dataset_name(label)
+        # Item ID = unique per review submission (trace + timestamp)
+        import time
+
+        item_id = f"{request.trace_id}-{int(time.time() * 1000)}"
 
         # Build metadata from review fields
         item_metadata: dict[str, str] = {"verdict": request.verdict.value}

@@ -377,6 +377,13 @@ def get_status() -> ReplayStatusResponse:
         if agent_rst:
             agent_review_step_types[agent] = agent_rst
 
+    # Recent trace names: per-agent override → global
+    agent_recent_trace_names: dict[str, list[str]] = {}
+    for agent in get_configured_agents():
+        agent_rtn = cfg.get_recent_trace_names(agent)
+        if agent_rtn:
+            agent_recent_trace_names[agent] = agent_rtn
+
     return ReplayStatusResponse(
         enabled=settings.agent_replay_enabled,
         configured=configured,
@@ -390,6 +397,8 @@ def get_status() -> ReplayStatusResponse:
         agent_search_fields=agent_search_fields,
         review_step_types=cfg.review_step_types,
         agent_review_step_types=agent_review_step_types,
+        recent_trace_names=cfg.recent_trace_names,
+        agent_recent_trace_names=agent_recent_trace_names,
     )
 
 

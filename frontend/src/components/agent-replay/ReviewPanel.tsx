@@ -19,6 +19,7 @@ interface ReviewPanelProps {
   tree: ObservationNodeData[];
   traceInput: unknown;
   reviewStepTypes?: string[];
+  onSaveSuccess?: () => void;
 }
 
 export function ReviewPanel({
@@ -28,6 +29,7 @@ export function ReviewPanel({
   tree,
   traceInput,
   reviewStepTypes,
+  onSaveSuccess,
 }: ReviewPanelProps) {
   const {
     reviewVerdict,
@@ -35,14 +37,12 @@ export function ReviewPanel({
     reviewToolingNeeds,
     reviewRationale,
     reviewExpectedOutput,
-    reviewAddToDataset,
     reviewDatasetName,
     setReviewVerdict,
     setReviewFailureNodeId,
     setReviewToolingNeeds,
     setReviewRationale,
     setReviewExpectedOutput,
-    setReviewAddToDataset,
     setReviewDatasetName,
     resetReviewForm,
     toggleReviewPanel,
@@ -96,16 +96,15 @@ export function ReviewPanel({
         rationale: reviewRationale,
         expected_output: reviewExpectedOutput,
         trace_input: traceInput ?? undefined,
-        add_to_dataset: reviewAddToDataset,
-        dataset_name: reviewAddToDataset ? reviewDatasetName || undefined : undefined,
+        add_to_dataset: true,
+        dataset_name: reviewDatasetName || undefined,
       },
       {
         onSuccess: () => {
-          // Keep panel open to show success, reset form after brief display
-          setTimeout(() => {
-            resetReviewForm();
-            resetMutation();
-          }, 2000);
+          resetReviewForm();
+          resetMutation();
+          toggleReviewPanel();
+          onSaveSuccess?.();
         },
       }
     );
@@ -120,11 +119,12 @@ export function ReviewPanel({
     reviewToolingNeeds,
     reviewRationale,
     reviewExpectedOutput,
-    reviewAddToDataset,
     reviewDatasetName,
     saveReview,
     resetReviewForm,
     resetMutation,
+    toggleReviewPanel,
+    onSaveSuccess,
   ]);
 
   const existingCount = existingReviews?.scores?.length ?? 0;
@@ -248,9 +248,7 @@ export function ReviewPanel({
 
         {/* Dataset push */}
         <DatasetPushControls
-          enabled={reviewAddToDataset}
           datasetName={reviewDatasetName}
-          onToggle={setReviewAddToDataset}
           onDatasetNameChange={setReviewDatasetName}
           existingDatasets={datasetsData?.datasets ?? []}
           defaultName={defaultDatasetName}
@@ -274,6 +272,8 @@ export function ReviewPanel({
               <Loader2 className="h-4 w-4 animate-spin" />
               Saving...
             </>
+          ) : !reviewVerdict ? (
+            'Select a verdict to save'
           ) : (
             'Save Review'
           )}

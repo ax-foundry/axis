@@ -535,13 +535,9 @@ export function TracePicker({ onSelect, agent, className }: TracePickerProps) {
   const [searchBy, setSearchBy] = useState<string>('trace_id');
   const [showRecent, setShowRecent] = useState(false);
   const [recentLimit, setRecentLimit] = useState(20);
+  const [recentName, setRecentName] = useState<string>('');
   const { data: statusData } = useReplayStatus();
   const { data, isLoading, error } = useSearchTraces(submittedQuery, agent, searchBy);
-  const {
-    data: recentData,
-    isLoading: recentLoading,
-    error: recentError,
-  } = useRecentTraces(showRecent ? { limit: recentLimit, agent } : undefined);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const searchFields = useMemo(() => {
@@ -551,11 +547,30 @@ export function TracePicker({ onSelect, agent, className }: TracePickerProps) {
     return statusData?.search_fields ?? [];
   }, [agent, statusData]);
 
+  const traceNameOptions = useMemo(() => {
+    if (agent && statusData?.agent_recent_trace_names?.[agent]) {
+      return statusData.agent_recent_trace_names[agent];
+    }
+    return statusData?.recent_trace_names ?? [];
+  }, [agent, statusData]);
+
+  // Resolve effective name: user selection, or first configured option as default
+  const effectiveName = recentName || (traceNameOptions.length > 0 ? traceNameOptions[0] : '');
+
+  const {
+    data: recentData,
+    isLoading: recentLoading,
+    error: recentError,
+  } = useRecentTraces(
+    showRecent ? { limit: recentLimit, agent, name: effectiveName || undefined } : undefined
+  );
+
   // Reset searchBy when agent changes (available fields may differ)
   useEffect(() => {
     setSearchBy('trace_id');
     setSubmittedQuery('');
     setShowRecent(false);
+    setRecentName('');
   }, [agent]);
 
   // When user submits a search, hide recent
@@ -674,6 +689,24 @@ export function TracePicker({ onSelect, agent, className }: TracePickerProps) {
               Recent Traces
             </button>
             <span className="h-4 w-px bg-primary/15" />
+            {traceNameOptions.length > 0 && (
+              <>
+                <select
+                  value={effectiveName}
+                  onChange={(e) => setRecentName(e.target.value)}
+                  className="appearance-none border-none bg-transparent py-2 pl-2.5 pr-1 text-xs font-medium text-primary focus:outline-none"
+                  style={{ backgroundImage: 'none' }}
+                >
+                  {traceNameOptions.map((name) => (
+                    <option key={name} value={name}>
+                      {name}
+                    </option>
+                  ))}
+                  <option value="">All</option>
+                </select>
+                <span className="h-4 w-px bg-primary/15" />
+              </>
+            )}
             <select
               value={recentLimit}
               onChange={(e) => setRecentLimit(Number(e.target.value))}
@@ -788,6 +821,20 @@ export function TracePicker({ onSelect, agent, className }: TracePickerProps) {
               {recentData.total} recent {recentData.total === 1 ? 'trace' : 'traces'}
             </span>
             <div className="h-px flex-1 bg-border" />
+            {traceNameOptions.length > 0 && (
+              <select
+                value={recentName}
+                onChange={(e) => setRecentName(e.target.value)}
+                className="rounded border border-border bg-surface px-2 py-0.5 text-[10px] text-text-muted focus:border-primary/40 focus:outline-none"
+              >
+                {traceNameOptions.map((name) => (
+                  <option key={name} value={name}>
+                    {name}
+                  </option>
+                ))}
+                <option value="">All names</option>
+              </select>
+            )}
             <select
               value={recentLimit}
               onChange={(e) => setRecentLimit(Number(e.target.value))}

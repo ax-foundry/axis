@@ -50,9 +50,17 @@ agent_replay:
   #   - AGENT
   #   - SPAN
 
+  # ── Recent trace name filter ──
+  # Control which trace names appear in the "Recent Traces" name dropdown.
+  # Only traces matching these names will be shown. Empty = show all.
+  #
+  # recent_trace_names:
+  #   - agent1
+  #   - agent2
+
   # ── Per-agent overrides ──
-  # Override search_fields and review_step_types per agent (by source_name).
-  # Falls back to global values when not specified.
+  # Override search_fields, review_step_types, and recent_trace_names
+  # per agent (by source_name). Falls back to global values when not specified.
   #
   # agents:
   #   agent1:
@@ -60,6 +68,8 @@ agent_replay:
   #       - AGENT
   #     search_fields:
   #       session_id: Session ID
+  #     recent_trace_names:
+  #       - agent1
   #   agent2:
   #     review_step_types:
   #       - AGENT

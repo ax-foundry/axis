@@ -113,3 +113,5 @@ class ReplayStatusResponse(BaseModel):
     agent_search_fields: dict[str, list[SearchFieldOption]] = Field(default_factory=dict)
     review_step_types: list[str] = Field(default_factory=list)
     agent_review_step_types: dict[str, list[str]] = Field(default_factory=dict)
+    recent_trace_names: list[str] = Field(default_factory=list)
+    agent_recent_trace_names: dict[str, list[str]] = Field(default_factory=dict)

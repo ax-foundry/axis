@@ -4,6 +4,7 @@ import {
   AlertCircle,
   ArrowLeft,
   BarChart3,
+  CheckCircle2,
   ChevronDown,
   FlaskConical,
   Loader2,
@@ -60,6 +61,7 @@ export default function AgentReplayPage() {
     reset,
   } = useReplayStore();
   const [waterfallOpen, setWaterfallOpen] = useState(false);
+  const [reviewToast, setReviewToast] = useState(false);
   const {
     data: trace,
     isLoading: traceLoading,
@@ -434,9 +436,24 @@ export default function AgentReplayPage() {
                     (selectedAgent && status?.agent_review_step_types?.[selectedAgent]) ||
                     status?.review_step_types
                   }
+                  onSaveSuccess={() => {
+                    setReviewToast(true);
+                    setTimeout(() => setReviewToast(false), 3000);
+                  }}
                 />
               </div>
             )}
+          </div>
+        </div>
+      )}
+      {/* Review saved toast */}
+      {reviewToast && (
+        <div className="animate-in fade-in slide-in-from-bottom-4 fixed bottom-6 left-1/2 z-50 -translate-x-1/2">
+          <div className="flex items-center gap-2.5 rounded-xl border border-green-200 bg-green-50 px-5 py-3 shadow-lg">
+            <CheckCircle2 className="h-5 w-5 text-green-600" />
+            <span className="text-sm font-semibold text-green-700">
+              Review saved & added to dataset
+            </span>
           </div>
         </div>
       )}

@@ -256,6 +256,7 @@ class AgentReplayOverrides:
 
     review_step_types: list[str] | None = None
     search_fields: dict[str, str] | None = None
+    recent_trace_names: list[str] | None = None
 
 
 @dataclass
@@ -268,6 +269,7 @@ class ReplayConfig:
     whatif_disabled_agents: list[str] = field(default_factory=list)
     search_fields: dict[str, str] = field(default_factory=dict)
     review_step_types: list[str] = field(default_factory=list)
+    recent_trace_names: list[str] = field(default_factory=list)
     agents_config: dict[str, AgentReplayOverrides] = field(default_factory=dict)
     langfuse_agents: dict[str, LangfuseAgentCreds] = field(default_factory=dict)
     search_db: ReplayDBConfig = field(default_factory=ReplayDBConfig)
@@ -294,6 +296,14 @@ class ReplayConfig:
             if override is not None:
                 return override
         return self.search_fields
+
+    def get_recent_trace_names(self, agent_name: str | None) -> list[str]:
+        """Get recent_trace_names for a specific agent, falling back to global."""
+        if agent_name and agent_name in self.agents_config:
+            override = self.agents_config[agent_name].recent_trace_names
+            if override is not None:
+                return override
+        return self.recent_trace_names
 
 
 def _build_prompt_patterns(raw: dict[str, Any] | None) -> Any:
@@ -387,6 +397,14 @@ def load_replay_config() -> ReplayConfig:
                     {str(k): str(v) for k, v in raw_sf.items()} if isinstance(raw_sf, dict) else {}
                 )
 
+                # Parse recent_trace_names
+                raw_rtn = data.get("recent_trace_names") or []
+                recent_trace_names = (
+                    [str(n).strip() for n in raw_rtn if str(n).strip()]
+                    if isinstance(raw_rtn, list)
+                    else []
+                )
+
                 # Parse review_step_types — uppercase-normalized list
                 raw_rst = data.get("review_step_types") or []
                 review_step_types = (
@@ -404,6 +422,7 @@ def load_replay_config() -> ReplayConfig:
                             continue
                         agent_rst = overrides.get("review_step_types")
                         agent_sf = overrides.get("search_fields")
+                        agent_rtn = overrides.get("recent_trace_names")
                         agents_config[str(name).lower()] = AgentReplayOverrides(
                             review_step_types=(
                                 [str(t).strip().upper() for t in agent_rst if str(t).strip()]
@@ -413,6 +432,11 @@ def load_replay_config() -> ReplayConfig:
                             search_fields=(
                                 {str(k): str(v) for k, v in agent_sf.items()}
                                 if isinstance(agent_sf, dict)
+                                else None
+                            ),
+                            recent_trace_names=(
+                                [str(n).strip() for n in agent_rtn if str(n).strip()]
+                                if isinstance(agent_rtn, list)
                                 else None
                             ),
                         )
@@ -426,6 +450,7 @@ def load_replay_config() -> ReplayConfig:
                     whatif_disabled_agents=disabled_agents,
                     search_fields=extra_search_fields,
                     review_step_types=review_step_types,
+                    recent_trace_names=recent_trace_names,
                     agents_config=agents_config,
                     prompt_patterns=_build_prompt_patterns(data.get("prompt_patterns")),
                 )

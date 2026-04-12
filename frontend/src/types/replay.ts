@@ -104,6 +104,8 @@ export interface ReplayStatusResponse {
   agent_search_fields: Record<string, SearchFieldOption[]>;
   review_step_types: string[];
   agent_review_step_types: Record<string, string[]>;
+  recent_trace_names: string[];
+  agent_recent_trace_names: Record<string, string[]>;
 }
 
 // ---------------------------------------------------------------------------

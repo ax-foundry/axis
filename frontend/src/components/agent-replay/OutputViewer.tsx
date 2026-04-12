@@ -88,23 +88,6 @@ function CopyButton({ text }: { text: string }) {
   );
 }
 
-function CitationsList({ items }: { items: unknown[] }) {
-  return (
-    <ol className="space-y-1.5 text-xs">
-      {items.map((item, i) => (
-        <li key={i} className="flex gap-2 text-text-secondary">
-          <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary text-[9px] font-bold text-white">
-            {i + 1}
-          </span>
-          <span className="leading-relaxed">
-            {typeof item === 'string' ? item : JSON.stringify(item, null, 2)}
-          </span>
-        </li>
-      ))}
-    </ol>
-  );
-}
-
 /** Check if value is a flat dict with only primitive values (for clean table rendering). */
 function isFlatDict(obj: unknown): obj is Record<string, unknown> {
   if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return false;
@@ -152,12 +135,16 @@ function SectionCard({
   value: unknown;
   themeIndex: number;
 }) {
-  const isCitations =
+  const isArrayOfPrimitives =
     Array.isArray(value) &&
-    (label.toLowerCase().includes('citation') || label.toLowerCase().includes('reference'));
+    value.length > 0 &&
+    value.every((item) => typeof item === 'string' || typeof item === 'number');
 
   const isArrayOfFlatDicts =
-    Array.isArray(value) && value.length > 0 && value.every((item) => isFlatDict(item));
+    !isArrayOfPrimitives &&
+    Array.isArray(value) &&
+    value.length > 0 &&
+    value.every((item) => isFlatDict(item));
 
   const stringified = typeof value === 'string' ? value : JSON.stringify(value, null, 2);
   const theme = SECTION_THEMES[themeIndex % SECTION_THEMES.length];
@@ -188,8 +175,17 @@ function SectionCard({
       </div>
       <div className="overflow-hidden bg-surface px-3 py-2 text-xs">
         <div className="break-words">
-          {isCitations ? (
-            <CitationsList items={value as unknown[]} />
+          {isArrayOfPrimitives ? (
+            <ol className="space-y-1.5">
+              {(value as Array<string | number>).map((item, i) => (
+                <li key={i} className="flex gap-2 text-text-secondary">
+                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[9px] font-bold text-primary">
+                    {i + 1}
+                  </span>
+                  <span className="leading-relaxed">{String(item)}</span>
+                </li>
+              ))}
+            </ol>
           ) : typeof value === 'string' ? (
             <SmartContent text={value} />
           ) : isFlatDict(value) ? (
@@ -224,8 +220,23 @@ export function OutputViewer({ content, className }: OutputViewerProps) {
     );
   }
 
-  // String content — SmartContent auto-detects embedded JSON blocks in text
+  // String content — try to parse as JSON first for structured rendering
   if (typeof content === 'string') {
+    // Strip markdown code fences if present
+    const stripped = content
+      .trim()
+      .replace(/^```(?:json)?\s*\n?/i, '')
+      .replace(/\n?\s*```\s*$/, '')
+      .trim();
+    try {
+      const parsed = JSON.parse(stripped);
+      if (parsed && typeof parsed === 'object') {
+        // Re-render as structured content (array or object)
+        return <OutputViewer content={parsed} className={className} />;
+      }
+    } catch {
+      // Not JSON — fall through to SmartContent
+    }
     return (
       <div className={cn(className)}>
         <SmartContent text={content} />
@@ -293,6 +304,44 @@ export function OutputViewer({ content, className }: OutputViewerProps) {
         </div>
       );
     }
+  }
+
+  // Array of primitives — numbered list
+  if (
+    Array.isArray(content) &&
+    content.length > 0 &&
+    content.every((item) => typeof item === 'string' || typeof item === 'number')
+  ) {
+    return (
+      <div className={cn(className)}>
+        <ol className="space-y-1.5 text-xs">
+          {(content as Array<string | number>).map((item, i) => (
+            <li key={i} className="flex gap-2 text-text-secondary">
+              <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[9px] font-bold text-primary">
+                {i + 1}
+              </span>
+              <span className="leading-relaxed">{String(item)}</span>
+            </li>
+          ))}
+        </ol>
+      </div>
+    );
+  }
+
+  // Array of flat dicts — stacked tables
+  if (Array.isArray(content) && content.length > 0 && content.every((item) => isFlatDict(item))) {
+    return (
+      <div className={cn('space-y-2', className)}>
+        {(content as Record<string, unknown>[]).map((item, i) => (
+          <div
+            key={i}
+            className="overflow-hidden rounded-lg border border-border bg-gray-50/50 p-2.5 dark:bg-gray-900/20"
+          >
+            <FlatDictTable data={item} />
+          </div>
+        ))}
+      </div>
+    );
   }
 
   // Fallback: JSON
