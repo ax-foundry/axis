@@ -76,8 +76,9 @@ jobs:
           python-version: '3.12'
       - name: Install dependencies
         run: |
-          pip install mypy pydantic pandas-stubs types-PyYAML
-          pip install -r requirements.txt
+          pip install uv
+          uv pip install --system mypy pydantic pandas-stubs types-PyYAML
+          uv pip install --system -r requirements.txt
       - name: Mypy type check
         run: mypy app --ignore-missing-imports
 
@@ -96,8 +97,9 @@ jobs:
           python-version: '3.12'
       - name: Install dependencies
         run: |
-          pip install -r requirements.txt
-          pip install pytest pytest-asyncio
+          pip install uv
+          uv pip install --system -r requirements.txt
+          uv pip install --system pytest pytest-asyncio
       - name: Run tests
         run: pytest tests -v
 
