@@ -8,22 +8,26 @@ WORKDIR /app
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
-# Install system dependencies
+# Install system dependencies + uv (fast Python package installer)
 RUN apt-get update && apt-get install -y \
     gcc \
     git \
     libpq-dev \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && pip install --no-cache-dir uv
 
 # Install Python dependencies (BuildKit secret for git-based deps like axion)
+# uv resolves 10-100x faster than pip — no more resolution-too-deep errors
 COPY requirements.txt .
 RUN --mount=type=secret,id=git_token \
     if [ -f /run/secrets/git_token ]; then \
       GIT_TOKEN=$(cat /run/secrets/git_token) && \
       git config --global url."https://${GIT_TOKEN}@github.com/".insteadOf "https://github.com/"; \
     fi && \
-    pip install --no-cache-dir -r requirements.txt && \
-    git config --global --remove-section url 2>/dev/null || true
+    uv pip install --system --no-cache -r requirements.txt ; \
+    UV_EXIT=$? ; \
+    git config --global --remove-section url 2>/dev/null || true ; \
+    exit $UV_EXIT
 
 # Copy application code
 COPY . .
