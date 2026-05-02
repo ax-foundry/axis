@@ -8,7 +8,7 @@ Deployment:
 2. Set ``AXIS_EXTERNAL_PLUGINS_DIR=/path/to/parent/dir`` so AXIS discovers it
 3. Set ``AXIS_PLUGINS_ENABLED=example_agent`` (or ``*`` for all external plugins)
 4. Add a matching entry in ``custom/config/agents.yaml`` for display metadata
-5. Replace the body of ``echo_agent.EchoAgent.process()`` with your own logic
+5. Replace the body of ``demo_agent.DemoAgent.process()`` with your own logic
 """
 
 from fastapi import FastAPI
@@ -19,12 +19,12 @@ from app.plugins.types import PluginMeta
 PLUGIN_META = PluginMeta(
     name="example_agent",
     version="0.1.0",
-    description='Example plugin: registers an "echo" agent that mirrors user messages.',
+    description="Example plugin: demonstrates how to register a custom copilot agent.",
 )
 
 
 def register(app: FastAPI) -> None:  # noqa: ARG001
-    """Register the EchoAgent under the name ``"echo"``."""
-    from example_agent.echo_agent import EchoAgent  # relative import: package is on sys.path
+    """Register the DemoAgent under the name ``"demo"``."""
+    from example_agent.demo_agent import DemoAgent  # relative import: package is on sys.path
 
-    register_agent("echo", EchoAgent)
+    register_agent("demo", DemoAgent)

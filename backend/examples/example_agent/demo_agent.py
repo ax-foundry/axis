@@ -20,8 +20,8 @@ from app.copilot.thoughts import ThoughtStream
 logger = logging.getLogger("axis.plugins.example_agent")
 
 
-class EchoAgent:
-    """Trivial demo agent: echoes the user message with a prefix.
+class DemoAgent:
+    """Reference agent that returns a static response.
 
     Replace the body of ``process()`` with your own logic — call an external
     API, run a LangGraph workflow, query a vector store, etc.
@@ -45,18 +45,18 @@ class EchoAgent:
         user_id: str | None = None,
         agent_name: str | None = None,
     ) -> tuple[str, dict[str, Any] | None, dict[str, Any] | None]:
-        """Return the user message echoed back, with some example thoughts."""
+        """Return a static acknowledgement with example thought emissions."""
         await self.thought_stream.emit_reasoning(
-            f"EchoAgent received: {message[:80]}",
-            node_name="EchoAgent",
+            f"DemoAgent received: {message[:80]}",
+            node_name="DemoAgent",
         )
         await self.thought_stream.emit_planning(
             f"Dataset in scope: {dataset_label or 'none'}",
-            node_name="EchoAgent",
+            node_name="DemoAgent",
         )
-        await self.thought_stream.emit_success("Done — echoing message", node_name="EchoAgent")
+        await self.thought_stream.emit_success("Done", node_name="DemoAgent")
 
-        response = f"**[EchoAgent]** You said: _{message}_"
-        chart_spec = None  # Return a Plotly dict here to render a chart
-        download_spec = None  # Return a download descriptor here if needed
+        response = f"**[DemoAgent]** Received: _{message}_"
+        chart_spec = None
+        download_spec = None
         return response, chart_spec, download_spec

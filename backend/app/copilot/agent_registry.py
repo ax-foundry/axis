@@ -22,7 +22,6 @@ import logging
 
 logger = logging.getLogger("axis.copilot.agent_registry")
 
-# Maps agent_name → agent class (not instance; instantiated per-request)
 _registry: dict[str, type] = {}
 
 
@@ -38,7 +37,6 @@ def register_agent(name: str, agent_cls: type) -> None:
     """
     from app.copilot.agent_protocol import CopilotAgentProtocol
 
-    # Probe __init__ with thought_stream=None (must be cheap + side-effect-free)
     try:
         probe = agent_cls(thought_stream=None)
     except Exception as exc:
@@ -52,16 +50,12 @@ def register_agent(name: str, agent_cls: type) -> None:
             f"(check: is_configured must be a @property, process() must be async def)"
         )
 
-    # Fix A: isinstance only checks attribute presence — verify is_configured is a
-    # property (returns bool), not an accidentally bare method (always truthy).
     if not isinstance(probe.is_configured, bool):
         raise TypeError(
             f"Agent {agent_cls.__qualname__!r}.is_configured must be a @property "
             f"returning bool, got {type(probe.is_configured).__name__!r}"
         )
 
-    # Fix B: isinstance doesn't check async — verify process is a coroutine function
-    # so the router can safely await it.
     if not inspect.iscoroutinefunction(agent_cls.process):
         raise TypeError(
             f"Agent {agent_cls.__qualname__!r}.process must be defined with `async def`"
