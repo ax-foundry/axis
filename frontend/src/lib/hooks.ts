@@ -2,11 +2,11 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useRef, useState } from 'react';
 
 import { useDataStore, useMonitoringStore, useHumanSignalsStore } from '@/stores';
-import { useFilteredEvalData } from './hooks/useFilteredEvalData';
 import { useCalibrationStore } from '@/stores/calibration-store';
 import { useCopilotStore } from '@/stores/copilot-store';
 
 import * as api from './api';
+import { useFilteredEvalData } from './hooks/useFilteredEvalData';
 import { createCopilotStream, createReportStream, fetchCopilotTools } from './sse';
 
 import type {
