@@ -12,7 +12,9 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
+from app.config.agents import agents_config
 from app.config.env import settings
+from app.copilot.agent_registry import get_agent_class, list_registered_agents
 from app.plugins import get_all_tags_metadata, register_all
 from app.routers import (
     ai,
@@ -235,6 +237,24 @@ app.include_router(datasets.router, prefix="/api/datasets", tags=["datasets"])
 
 # Register plugin routers
 register_all(app)
+
+# Log registered copilot agents and warn on agents.yaml ↔ registry mismatches
+_registered = list_registered_agents()
+for _name in _registered:
+    logger.info("Copilot agent registered: %r → %s", _name, get_agent_class(_name).__qualname__)  # type: ignore[union-attr]
+
+_yaml_names = {a.name for a in agents_config}
+_registry_names = set(_registered)
+for _name in _yaml_names - _registry_names:
+    logger.warning(
+        "agents.yaml lists '%s' but no plugin has registered it — frontend will show it but requests will use the default agent",
+        _name,
+    )
+for _name in _registry_names - _yaml_names:
+    logger.warning(
+        "Plugin registered agent '%s' but it has no entry in agents.yaml — frontend metadata (label, avatar) will be missing",
+        _name,
+    )
 
 
 @app.get("/")
