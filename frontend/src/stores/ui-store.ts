@@ -69,6 +69,7 @@ interface UIState {
   // Filters and selections
   selectedExperiment: string | null;
   selectedExperiments: string[];
+  selectedEvaluationNames: string[];
   selectedMetrics: string[];
   currentPage: number;
   itemsPerPage: number;
@@ -165,6 +166,7 @@ interface UIState {
   setDatabaseModalOpen: (open: boolean, targetStore?: 'data' | 'monitoring' | 'memory') => void;
   setSelectedExperiment: (experiment: string | null) => void;
   setSelectedExperiments: (experiments: string[]) => void;
+  setSelectedEvaluationNames: (names: string[]) => void;
   setSelectedMetrics: (metrics: string[]) => void;
   setCurrentPage: (page: number) => void;
   setItemsPerPage: (count: number) => void;
@@ -278,6 +280,7 @@ export const useUIStore = create<UIState>()(
       databaseTargetStore: 'data',
       selectedExperiment: null,
       selectedExperiments: [],
+      selectedEvaluationNames: [],
       selectedMetrics: [],
       currentPage: 1,
       itemsPerPage: 10,
@@ -383,6 +386,8 @@ export const useUIStore = create<UIState>()(
       setSelectedExperiment: (selectedExperiment) => set({ selectedExperiment }),
 
       setSelectedExperiments: (selectedExperiments) => set({ selectedExperiments }),
+
+      setSelectedEvaluationNames: (selectedEvaluationNames) => set({ selectedEvaluationNames }),
 
       setSelectedMetrics: (selectedMetrics) => set({ selectedMetrics }),
 

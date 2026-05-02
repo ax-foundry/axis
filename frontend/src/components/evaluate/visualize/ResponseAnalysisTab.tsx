@@ -3,6 +3,7 @@
 import { useMemo } from 'react';
 
 import { PlotlyChart } from '@/components/charts/plotly-chart';
+import { useFilteredEvalData } from '@/lib/hooks/useFilteredEvalData';
 import { cn } from '@/lib/utils';
 import { useDataStore, useUIStore } from '@/stores';
 import { Columns, ChartColors } from '@/types';
@@ -25,7 +26,8 @@ const LENGTH_BINS = [
 ];
 
 export function ResponseAnalysisTab() {
-  const { data, metricColumns, format } = useDataStore();
+  const { metricColumns, format } = useDataStore();
+  const { filteredData: data } = useFilteredEvalData();
   const { analyticsResponseMetric, setAnalyticsResponseMetric } = useUIStore();
 
   // Get available metrics

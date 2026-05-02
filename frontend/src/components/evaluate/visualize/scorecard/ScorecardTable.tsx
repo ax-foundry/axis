@@ -20,6 +20,8 @@ import type { ScorecardDisplayRow, ScorecardMetric } from '@/lib/scorecard-utils
 
 interface ScorecardTableProps {
   hierarchy: Map<string, ScorecardMetric>;
+  evaluationHierarchies?: Map<string, Map<string, ScorecardMetric>> | null;
+  evaluationNames?: string[];
   showWeights?: boolean;
   onMetricClick?: (metricName: string) => void;
   onGenerateReport?: (metricName?: string) => void;
@@ -28,8 +30,20 @@ interface ScorecardTableProps {
 type SortField = 'name' | 'score' | 'weight';
 type SortDirection = 'asc' | 'desc';
 
+const GREEN_THRESHOLD = 0.7;
+const RED_THRESHOLD = 0.3;
+
+function scoreColorClass(score: number | null | undefined): string {
+  if (score === null || score === undefined) return 'text-text-primary';
+  if (score >= GREEN_THRESHOLD) return 'text-success';
+  if (score < RED_THRESHOLD) return 'text-error';
+  return 'text-warning';
+}
+
 export function ScorecardTable({
   hierarchy,
+  evaluationHierarchies,
+  evaluationNames,
   showWeights = true,
   onMetricClick,
   onGenerateReport,
@@ -44,19 +58,20 @@ export function ScorecardTable({
   const [sortField, setSortField] = useState<SortField>('name');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
 
+  const isComparisonMode =
+    !!evaluationHierarchies && !!evaluationNames && evaluationNames.length >= 2;
+  const showDelta = isComparisonMode && evaluationNames!.length === 2;
+
   const expandedSet = useMemo(() => new Set(scorecardExpandedNodes), [scorecardExpandedNodes]);
 
   const rows = useMemo(() => {
     return generateDisplayRows(hierarchy, expandedSet);
   }, [hierarchy, expandedSet]);
 
-  // Get visible rows only
   const visibleRows = useMemo(() => {
     let filtered = rows.filter((row) => row.isVisible);
 
-    // Sort only root-level nodes, keep hierarchy structure
     if (sortField !== 'name') {
-      // Group by parent to maintain hierarchy while sorting
       const rootRows = filtered.filter((r) => r.level === 1);
 
       rootRows.sort((a, b) => {
@@ -69,11 +84,9 @@ export function ScorecardTable({
         return sortDirection === 'desc' ? -comparison : comparison;
       });
 
-      // Rebuild filtered array maintaining hierarchy
       const sortedFiltered: ScorecardDisplayRow[] = [];
       const addWithChildren = (row: ScorecardDisplayRow) => {
         sortedFiltered.push(row);
-        // Find and add children
         filtered
           .filter((r) => r.parent === row.metricName && r.isVisible)
           .forEach((child) => addWithChildren(child));
@@ -104,7 +117,6 @@ export function ScorecardTable({
     );
   };
 
-  // Get all expandable node IDs
   const allExpandableNodes = useMemo(() => {
     const expandable: string[] = [];
     hierarchy.forEach((metric, name) => {
@@ -127,10 +139,14 @@ export function ScorecardTable({
 
   return (
     <div className="border-border/50 overflow-hidden rounded-xl border bg-surface shadow-sm">
-      {/* Header actions */}
       <div className="border-border/50 flex items-center justify-between border-b bg-gray-50 px-4 py-2 dark:bg-gray-900/50">
         <span className="text-sm text-text-muted">
           {metricColumns.length} metrics • {componentColumns.length} components
+          {isComparisonMode && (
+            <span className="ml-2 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+              Comparing {evaluationNames!.length} evaluations
+            </span>
+          )}
         </span>
         <button
           onClick={() =>
@@ -142,11 +158,11 @@ export function ScorecardTable({
         </button>
       </div>
 
-      {/* Table */}
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
             <tr className="border-border/50 border-b bg-gray-50 dark:bg-gray-900/30">
+              {/* Hierarchy */}
               <th className="px-4 py-3 text-left">
                 <button
                   onClick={() => handleSort('name')}
@@ -155,19 +171,47 @@ export function ScorecardTable({
                   Hierarchy {getSortIcon('name')}
                 </button>
               </th>
+
+              {/* Type */}
               <th className="px-4 py-3 text-left">
                 <span className="text-xs font-semibold uppercase tracking-wider text-text-muted">
                   Type
                 </span>
               </th>
-              <th className="px-4 py-3 text-left">
-                <button
-                  onClick={() => handleSort('score')}
-                  className="flex items-center gap-1 text-xs font-semibold uppercase tracking-wider text-text-muted transition-colors hover:text-text-primary"
-                >
-                  Score {getSortIcon('score')}
-                </button>
-              </th>
+
+              {/* Score columns */}
+              {isComparisonMode ? (
+                <>
+                  {evaluationNames!.map((name) => (
+                    <th key={name} className="px-4 py-3 text-left">
+                      <span
+                        className="block max-w-[120px] truncate text-xs font-semibold uppercase tracking-wider text-text-muted"
+                        title={name}
+                      >
+                        {name}
+                      </span>
+                    </th>
+                  ))}
+                  {showDelta && (
+                    <th className="px-4 py-3 text-left">
+                      <span className="text-xs font-semibold uppercase tracking-wider text-text-muted">
+                        Δ
+                      </span>
+                    </th>
+                  )}
+                </>
+              ) : (
+                <th className="px-4 py-3 text-left">
+                  <button
+                    onClick={() => handleSort('score')}
+                    className="flex items-center gap-1 text-xs font-semibold uppercase tracking-wider text-text-muted transition-colors hover:text-text-primary"
+                  >
+                    Score {getSortIcon('score')}
+                  </button>
+                </th>
+              )}
+
+              {/* Weight columns */}
               {showWeights && (
                 <>
                   <th className="px-4 py-3 text-left">
@@ -185,11 +229,17 @@ export function ScorecardTable({
                   </th>
                 </>
               )}
-              <th className="px-4 py-3 text-left">
-                <span className="text-xs font-semibold uppercase tracking-wider text-text-muted">
-                  Distribution
-                </span>
-              </th>
+
+              {/* Distribution — only in single mode */}
+              {!isComparisonMode && (
+                <th className="px-4 py-3 text-left">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-text-muted">
+                    Distribution
+                  </span>
+                </th>
+              )}
+
+              {/* Actions */}
               {onGenerateReport && (
                 <th className="px-4 py-3 text-center">
                   <span className="text-xs font-semibold uppercase tracking-wider text-text-muted">
@@ -205,6 +255,10 @@ export function ScorecardTable({
                 key={row.metricName}
                 row={row}
                 showWeights={showWeights}
+                isComparisonMode={isComparisonMode}
+                evaluationHierarchies={evaluationHierarchies}
+                evaluationNames={evaluationNames}
+                showDelta={showDelta}
                 onToggle={() => toggleScorecardNode(row.metricName)}
                 onClick={() => onMetricClick?.(row.metricName)}
                 onGenerateReport={onGenerateReport}
@@ -220,6 +274,10 @@ export function ScorecardTable({
 interface ScorecardTableRowProps {
   row: ScorecardDisplayRow;
   showWeights: boolean;
+  isComparisonMode: boolean;
+  evaluationHierarchies?: Map<string, Map<string, ScorecardMetric>> | null;
+  evaluationNames?: string[];
+  showDelta: boolean;
   onToggle: () => void;
   onClick: () => void;
   onGenerateReport?: (metricName?: string) => void;
@@ -228,6 +286,10 @@ interface ScorecardTableRowProps {
 function ScorecardTableRow({
   row,
   showWeights,
+  isComparisonMode,
+  evaluationHierarchies,
+  evaluationNames,
+  showDelta,
   onToggle,
   onClick,
   onGenerateReport,
@@ -236,8 +298,23 @@ function ScorecardTableRow({
   const typeLabel = getTypeLabel(row.type);
   const typeColorClass = getTypeColorClass(row.type);
 
-  // Calculate indent based on level
   const indent = (row.level - 1) * 24;
+
+  // Per-evaluation scores for this metric
+  const evalScores = useMemo(() => {
+    if (!isComparisonMode || !evaluationHierarchies || !evaluationNames) return [];
+    return evaluationNames.map((name) => {
+      const metric = evaluationHierarchies.get(name)?.get(row.metricName);
+      return { name, score: metric?.avgScore ?? null };
+    });
+  }, [isComparisonMode, evaluationHierarchies, evaluationNames, row.metricName]);
+
+  const delta =
+    showDelta && evalScores.length === 2
+      ? evalScores[1].score !== null && evalScores[0].score !== null
+        ? evalScores[1].score - evalScores[0].score
+        : null
+      : null;
 
   return (
     <tr
@@ -246,7 +323,6 @@ function ScorecardTableRow({
         row.hasChildren && 'font-medium'
       )}
       onClick={(e) => {
-        // Don't trigger row click if clicking expand button
         if ((e.target as HTMLElement).closest('button')) return;
         onClick();
       }}
@@ -288,15 +364,54 @@ function ScorecardTableRow({
         </span>
       </td>
 
-      {/* Score column */}
-      <td className="px-4 py-3">
-        <span className="text-sm font-medium text-text-primary">{formatScore(row.avgScore)}</span>
-        {row.testCaseCount > 1 && (
-          <span className="ml-2 text-xs text-text-muted">
-            ({formatScoreRange(row.minScore, row.maxScore)})
-          </span>
-        )}
-      </td>
+      {/* Score columns */}
+      {isComparisonMode ? (
+        <>
+          {evalScores.map(({ name, score }) => (
+            <td key={name} className="px-4 py-3">
+              <span className={cn('text-sm font-semibold', scoreColorClass(score))}>
+                {score !== null ? formatScore(score) : '—'}
+              </span>
+              {score !== null && row.testCaseCount > 1 && (
+                <span className="ml-1 text-xs text-text-muted">
+                  (
+                  {formatScoreRange(
+                    evaluationHierarchies?.get(name)?.get(row.metricName)?.minScore ?? score,
+                    evaluationHierarchies?.get(name)?.get(row.metricName)?.maxScore ?? score
+                  )}
+                  )
+                </span>
+              )}
+            </td>
+          ))}
+          {showDelta && (
+            <td className="px-4 py-3">
+              {delta !== null ? (
+                <span
+                  className={cn(
+                    'text-sm font-semibold',
+                    delta > 0 ? 'text-success' : delta < 0 ? 'text-error' : 'text-text-muted'
+                  )}
+                >
+                  {delta > 0 ? '+' : ''}
+                  {formatScore(delta)}
+                </span>
+              ) : (
+                <span className="text-sm text-text-muted">—</span>
+              )}
+            </td>
+          )}
+        </>
+      ) : (
+        <td className="px-4 py-3">
+          <span className="text-sm font-medium text-text-primary">{formatScore(row.avgScore)}</span>
+          {row.testCaseCount > 1 && (
+            <span className="ml-2 text-xs text-text-muted">
+              ({formatScoreRange(row.minScore, row.maxScore)})
+            </span>
+          )}
+        </td>
+      )}
 
       {/* Weight columns */}
       {showWeights && (
@@ -312,10 +427,12 @@ function ScorecardTableRow({
         </>
       )}
 
-      {/* Distribution column */}
-      <td className="px-4 py-3">
-        <ScorecardSparkline distribution={row.scoreDistribution} mean={row.avgScore} />
-      </td>
+      {/* Distribution — only in single mode */}
+      {!isComparisonMode && (
+        <td className="px-4 py-3">
+          <ScorecardSparkline distribution={row.scoreDistribution} mean={row.avgScore} />
+        </td>
+      )}
 
       {/* Actions column */}
       {onGenerateReport && (

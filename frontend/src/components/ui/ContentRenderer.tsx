@@ -91,7 +91,7 @@ export function ContentRenderer({ content, className = '', forceType }: ContentR
     const withHardBreaks = normalizedContent.replace(/\n/g, '  \n');
 
     return (
-      <div className={`max-w-none text-text-secondary ${className}`}>
+      <div className={`max-w-none break-words text-text-secondary ${className}`}>
         <ReactMarkdown
           components={{
             // Customize heading sizes

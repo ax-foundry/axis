@@ -10,6 +10,7 @@ const AVAILABLE_FIELDS = [
   { id: 'additional_input', label: 'Additional Input' },
   { id: 'additional_output', label: 'Additional Output' },
   { id: 'expected_output', label: 'Expected Output' },
+  { id: 'acceptance_criteria', label: 'Acceptance Criteria' },
   { id: 'conversation', label: 'Conversation' },
   { id: 'retrieved_content', label: 'Retrieved Content' },
 ] as const;

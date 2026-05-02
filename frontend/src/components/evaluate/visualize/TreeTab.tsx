@@ -6,12 +6,14 @@ import { useMemo, useCallback, useEffect } from 'react';
 import { InputContextPanel } from '@/components/tree/InputContextPanel';
 import { MetricDetailPopup } from '@/components/tree/MetricDetailPopup';
 import { TreeVisualization, type TreeNode } from '@/components/tree/tree-visualization';
+import { useFilteredEvalData } from '@/lib/hooks/useFilteredEvalData';
 import { cn } from '@/lib/utils';
 import { useDataStore, useUIStore } from '@/stores';
 import { Columns } from '@/types';
 
 export function TreeTab() {
-  const { data, format } = useDataStore();
+  const { format } = useDataStore();
+  const { filteredData: data } = useFilteredEvalData();
   const {
     treeViewMode,
     setTreeViewMode,

@@ -6,6 +6,7 @@ import { useCalibrationStore } from '@/stores/calibration-store';
 import { useCopilotStore } from '@/stores/copilot-store';
 
 import * as api from './api';
+import { useFilteredEvalData } from './hooks/useFilteredEvalData';
 import { createCopilotStream, createReportStream, fetchCopilotTools } from './sse';
 
 import type {
@@ -618,7 +619,7 @@ interface ReportStreamState {
  * Hook for streaming report generation with real-time thoughts.
  */
 export function useReportStream() {
-  const { data } = useDataStore();
+  const { filteredData: data } = useFilteredEvalData();
   const abortControllerRef = useRef<AbortController | null>(null);
 
   const [state, setState] = useState<ReportStreamState>({

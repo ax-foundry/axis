@@ -227,6 +227,7 @@ export interface ComparisonRow {
   additionalOutput?: string;
   conversation?: string;
   retrievedContent?: string;
+  acceptanceCriteria?: string;
   metrics: Record<string, number>;
   overallScore: number;
   metadata?: Record<string, unknown>;
@@ -238,7 +239,8 @@ export type CompareDetailField =
   | 'additional_output'
   | 'expected_output'
   | 'conversation'
-  | 'retrieved_content';
+  | 'retrieved_content'
+  | 'acceptance_criteria';
 
 export interface WinnerInfo {
   experimentName: string;

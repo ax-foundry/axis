@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react';
 
+import { useFilteredEvalData } from '@/lib/hooks/useFilteredEvalData';
 import { aggregateMetrics, buildHierarchy, computeNormalizedWeights } from '@/lib/scorecard-utils';
 import { useDataStore, useUIStore } from '@/stores';
 import { Columns } from '@/types';
@@ -12,8 +13,11 @@ import { ScorecardDrilldownModal } from './ScorecardDrilldownModal';
 import { ScorecardKPIs } from './ScorecardKPIs';
 import { ScorecardTable } from './ScorecardTable';
 
+import type { ScorecardMetric } from '@/lib/scorecard-utils';
+
 export function ScorecardTab() {
-  const { data, format } = useDataStore();
+  const { format } = useDataStore();
+  const { filteredData: data } = useFilteredEvalData();
   const {
     scorecardDrilldownMetric,
     setScorecardDrilldownMetric,
@@ -21,6 +25,20 @@ export function ScorecardTab() {
     openReportModal,
     closeReportModal,
   } = useUIStore();
+
+  // Unique evaluation names in the currently visible data
+  const uniqueEvalNames = useMemo(() => {
+    const names = new Set<string>();
+    data.forEach((row) => {
+      const name = row[Columns.EXPERIMENT_NAME];
+      if (name !== undefined && name !== null && name !== '') {
+        names.add(String(name));
+      }
+    });
+    return Array.from(names).sort();
+  }, [data]);
+
+  const isComparisonMode = uniqueEvalNames.length >= 2;
 
   // Get unique test case count
   const testCaseCount = useMemo(() => {
@@ -33,27 +51,39 @@ export function ScorecardTab() {
     return ids.size;
   }, [data]);
 
-  // Build aggregated hierarchy
+  // Build aggregated hierarchy (combined across all evaluation names — used for structure)
   const hierarchy = useMemo(() => {
     if (!data || data.length === 0 || !format) return new Map();
-
     const aggregated = aggregateMetrics(data, format);
     const built = buildHierarchy(aggregated);
     computeNormalizedWeights(built);
     return built;
   }, [data, format]);
 
-  // Handle metric click for drill-down
+  // Build per-evaluation hierarchies for comparison mode
+  const evaluationHierarchies = useMemo((): Map<string, Map<string, ScorecardMetric>> | null => {
+    if (!isComparisonMode || !data || data.length === 0 || !format) return null;
+    const result = new Map<string, Map<string, ScorecardMetric>>();
+    uniqueEvalNames.forEach((evalName) => {
+      const evalData = data.filter(
+        (row) => String(row[Columns.EXPERIMENT_NAME] ?? '') === evalName
+      );
+      const aggregated = aggregateMetrics(evalData, format);
+      const built = buildHierarchy(aggregated);
+      computeNormalizedWeights(built);
+      result.set(evalName, built);
+    });
+    return result;
+  }, [isComparisonMode, data, format, uniqueEvalNames]);
+
   const handleMetricClick = (metricName: string) => {
     setScorecardDrilldownMetric(metricName);
   };
 
-  // Handle close drill-down modal
   const handleCloseDrilldown = () => {
     setScorecardDrilldownMetric(null);
   };
 
-  // Helper to get all descendant metrics (including self)
   const getMetricWithDescendants = (metricName: string): string[] => {
     const result: string[] = [metricName];
     const metric = hierarchy.get(metricName);
@@ -65,17 +95,14 @@ export function ScorecardTab() {
     return result;
   };
 
-  // Handle report generation for a specific metric (includes all descendants)
   const handleGenerateReport = (metricName?: string) => {
     if (metricName) {
-      const metricsToFilter = getMetricWithDescendants(metricName);
-      openReportModal(metricsToFilter);
+      openReportModal(getMetricWithDescendants(metricName));
     } else {
       openReportModal();
     }
   };
 
-  // Empty state
   if (!data || data.length === 0) {
     return (
       <div className="flex h-64 items-center justify-center text-text-muted">
@@ -84,7 +111,6 @@ export function ScorecardTab() {
     );
   }
 
-  // Check if data is in tree/flat format
   if (format !== 'tree_format' && format !== 'flat_format') {
     return (
       <div className="flex h-64 flex-col items-center justify-center text-center">
@@ -98,7 +124,6 @@ export function ScorecardTab() {
     );
   }
 
-  // Empty hierarchy
   if (hierarchy.size === 0) {
     return (
       <div className="flex h-64 items-center justify-center text-text-muted">
@@ -109,21 +134,24 @@ export function ScorecardTab() {
 
   return (
     <div className="space-y-6">
-      {/* KPI Cards */}
-      <ScorecardKPIs hierarchy={hierarchy} testCaseCount={testCaseCount} />
+      <ScorecardKPIs
+        hierarchy={hierarchy}
+        testCaseCount={testCaseCount}
+        evaluationHierarchies={evaluationHierarchies}
+        evaluationNames={isComparisonMode ? uniqueEvalNames : undefined}
+      />
 
-      {/* Report Generator Panel */}
       <ReportGeneratorPanel hierarchy={hierarchy} testCaseCount={testCaseCount} />
 
-      {/* Hierarchical Table */}
       <ScorecardTable
         hierarchy={hierarchy}
+        evaluationHierarchies={evaluationHierarchies}
+        evaluationNames={isComparisonMode ? uniqueEvalNames : undefined}
         showWeights={true}
         onMetricClick={handleMetricClick}
         onGenerateReport={handleGenerateReport}
       />
 
-      {/* Drill-down Modal */}
       {scorecardDrilldownMetric && format && (
         <ScorecardDrilldownModal
           isOpen={!!scorecardDrilldownMetric}
@@ -134,7 +162,6 @@ export function ScorecardTab() {
         />
       )}
 
-      {/* Report Modal */}
       <ReportModal isOpen={reportModalOpen} onClose={closeReportModal} />
     </div>
   );

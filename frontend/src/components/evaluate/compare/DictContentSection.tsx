@@ -83,7 +83,7 @@ function DictEntry({ label, value }: { label: string; value: string }) {
         </button>
       </div>
       {(expanded || !isLong) && (
-        <div className="max-h-64 overflow-y-auto px-4 py-3">
+        <div className="max-h-64 min-w-0 overflow-y-auto px-4 py-3">
           <ContentRenderer content={value} className="text-sm leading-relaxed" />
         </div>
       )}
@@ -135,6 +135,8 @@ export function DictContentSection({ title, content, compact }: DictContentSecti
   }
 
   const entries = Object.entries(parsed);
+
+  if (entries.length === 0) return null;
 
   return (
     <div>
