@@ -3,12 +3,11 @@
 import { useMemo } from 'react';
 
 import { PlotlyChart } from '@/components/charts/plotly-chart';
+import { useFilteredEvalData } from '@/lib/hooks/useFilteredEvalData';
 import { cn } from '@/lib/utils';
 import { useDataStore, useUIStore } from '@/stores';
-import { Columns, Colors } from '@/types';
+import { ChartColors, Columns, Colors } from '@/types';
 
-// Helper to convert Python-like string to JSON
-// Handles single quotes, None, True, False, escaped quotes, and apostrophes within strings.
 function pythonToJson(pythonStr: string): string {
   let result = '';
   let i = 0;
@@ -19,33 +18,21 @@ function pythonToJson(pythonStr: string): string {
     const char = pythonStr[i];
     const nextChar = i < pythonStr.length - 1 ? pythonStr[i + 1] : '';
 
-    // Check for string start/end
     if ((char === "'" || char === '"') && !inString) {
       inString = true;
       stringChar = char;
-      result += '"'; // Always use double quotes in JSON
+      result += '"';
       i++;
       continue;
     }
 
-    // Inside a string
     if (inString) {
-      // Handle escape sequences
       if (char === '\\') {
         if (nextChar === stringChar) {
-          // Escaped quote (e.g., \' inside '...' or \" inside "...")
-          // In JSON, single quotes don't need escaping, double quotes do
-          if (stringChar === "'") {
-            // Python \' -> JSON ' (no escaping needed)
-            result += "'";
-          } else {
-            // Python \" -> JSON \"
-            result += '\\"';
-          }
-          i += 2; // Skip both backslash and quote
+          result += stringChar === "'" ? "'" : '\\"';
+          i += 2;
           continue;
         } else if (nextChar === '\\') {
-          // Escaped backslash
           result += '\\\\';
           i += 2;
           continue;
@@ -62,14 +49,11 @@ function pythonToJson(pythonStr: string): string {
           i += 2;
           continue;
         } else {
-          // Unknown escape, keep the backslash
           result += '\\';
           i++;
           continue;
         }
       }
-
-      // Check for end of string
       if (char === stringChar) {
         inString = false;
         stringChar = '';
@@ -77,8 +61,6 @@ function pythonToJson(pythonStr: string): string {
         i++;
         continue;
       }
-
-      // Handle characters that need escaping in JSON
       if (char === '"') result += '\\"';
       else if (char === '\n') result += '\\n';
       else if (char === '\r') result += '\\r';
@@ -88,7 +70,6 @@ function pythonToJson(pythonStr: string): string {
       continue;
     }
 
-    // Outside strings, handle Python keywords
     if (pythonStr.slice(i, i + 4) === 'None') {
       result += 'null';
       i += 4;
@@ -104,7 +85,6 @@ function pythonToJson(pythonStr: string): string {
       i += 5;
       continue;
     }
-    // Handle nan/NaN (Python float nan)
     if (
       pythonStr.slice(i, i + 3).toLowerCase() === 'nan' &&
       (i === 0 || /[\s,:\[\{(]/.test(pythonStr[i - 1])) &&
@@ -118,7 +98,6 @@ function pythonToJson(pythonStr: string): string {
     result += char;
     i++;
   }
-
   return result;
 }
 
@@ -140,8 +119,20 @@ function extractMetadata(row: Record<string, unknown>): Record<string, unknown> 
   return {};
 }
 
+interface BreakdownItem {
+  value: string;
+  count: number;
+  mean: number;
+  passRate: number;
+}
+
 export function MetadataBreakdownTab() {
-  const { data, metricColumns, format } = useDataStore();
+  const { metricColumns, format } = useDataStore();
+  const {
+    filteredData: data,
+    hasMultiple,
+    filteredEvaluationNames: evaluationNames,
+  } = useFilteredEvalData();
   const {
     analyticsMetadataGrouping,
     setAnalyticsMetadataGrouping,
@@ -151,10 +142,8 @@ export function MetadataBreakdownTab() {
     setAnalyticsPassRateThreshold,
   } = useUIStore();
 
-  // Get available metrics
   const availableMetrics = useMemo(() => {
     if (!data || data.length === 0) return [];
-
     if (format === 'tree_format' || format === 'flat_format') {
       const metrics = new Set<string>();
       data.forEach((row) => {
@@ -163,119 +152,126 @@ export function MetadataBreakdownTab() {
       });
       return Array.from(metrics);
     }
-
     return metricColumns;
   }, [data, metricColumns, format]);
 
-  // Get available metadata keys
   const availableMetadataKeys = useMemo(() => {
     if (!data || data.length === 0) return [];
-
     const keys = new Set<string>();
     data.forEach((row) => {
-      const metadata = extractMetadata(row);
-      Object.keys(metadata).forEach((k) => keys.add(k));
+      Object.keys(extractMetadata(row)).forEach((k) => keys.add(k));
     });
-
     return Array.from(keys).sort();
   }, [data]);
 
   const activeMetric = analyticsResponseMetric || availableMetrics[0] || null;
   const activeGrouping = analyticsMetadataGrouping || availableMetadataKeys[0] || null;
 
-  // Compute breakdown by metadata grouping
+  // Helper: compute breakdown items from a slice of data
+  const computeBreakdown = useMemo(() => {
+    return (rows: typeof data): BreakdownItem[] => {
+      if (!activeGrouping || !activeMetric) return [];
+      const groups = new Map<string, { scores: number[] }>();
+
+      if (format === 'tree_format' || format === 'flat_format') {
+        const testCases = new Map<
+          string,
+          { metadata: Record<string, unknown>; scores: Record<string, number> }
+        >();
+        rows.forEach((row) => {
+          const id = row[Columns.DATASET_ID] as string;
+          if (!id) return;
+          if (!testCases.has(id)) testCases.set(id, { metadata: extractMetadata(row), scores: {} });
+          const metricName = row[Columns.METRIC_NAME] as string;
+          const score = row[Columns.METRIC_SCORE] as number;
+          if (metricName && typeof score === 'number')
+            testCases.get(id)!.scores[metricName] = score;
+        });
+        testCases.forEach((tc) => {
+          const groupValue = tc.metadata[activeGrouping!];
+          const strValue =
+            typeof groupValue === 'object'
+              ? JSON.stringify(groupValue)
+              : String(groupValue ?? 'undefined');
+          const score = tc.scores[activeMetric!];
+          if (typeof score !== 'number') return;
+          if (!groups.has(strValue)) groups.set(strValue, { scores: [] });
+          groups.get(strValue)!.scores.push(score);
+        });
+      } else {
+        rows.forEach((row) => {
+          const metadata = extractMetadata(row);
+          const groupValue = metadata[activeGrouping!];
+          const strValue =
+            typeof groupValue === 'object'
+              ? JSON.stringify(groupValue)
+              : String(groupValue ?? 'undefined');
+          const score = row[activeMetric!] as number;
+          if (typeof score !== 'number') return;
+          if (!groups.has(strValue)) groups.set(strValue, { scores: [] });
+          groups.get(strValue)!.scores.push(score);
+        });
+      }
+
+      return Array.from(groups.entries())
+        .map(([value, { scores }]) => {
+          const mean = scores.reduce((a, b) => a + b, 0) / scores.length;
+          const passRate =
+            scores.filter((s) => s >= analyticsPassRateThreshold).length / scores.length;
+          return { value, count: scores.length, mean, passRate };
+        })
+        .sort((a, b) => b.mean - a.mean);
+    };
+  }, [format, activeGrouping, activeMetric, analyticsPassRateThreshold]);
+
+  // Aggregated breakdown (single eval or no comparison)
   const breakdownData = useMemo(() => {
-    if (!data || data.length === 0 || !activeGrouping || !activeMetric) return null;
+    if (!data || data.length === 0 || hasMultiple) return null;
+    return computeBreakdown(data);
+  }, [data, hasMultiple, computeBreakdown]);
 
-    // Group by metadata value
-    const groups = new Map<string, { scores: number[]; count: number }>();
+  // Per-eval breakdown for comparison mode
+  const breakdownByEval = useMemo((): Map<string, BreakdownItem[]> | null => {
+    if (!hasMultiple || !data || data.length === 0) return null;
 
-    if (format === 'tree_format' || format === 'flat_format') {
-      // Build test case map
-      const testCases = new Map<
-        string,
-        {
-          metadata: Record<string, unknown>;
-          scores: Record<string, number>;
-        }
-      >();
+    const byName = new Map<string, typeof data>();
+    evaluationNames.forEach((n) => byName.set(n, []));
+    data.forEach((row) => {
+      const evalName = String(row[Columns.EXPERIMENT_NAME] ?? 'Default');
+      if (byName.has(evalName)) byName.get(evalName)!.push(row);
+    });
 
-      data.forEach((row) => {
-        const id = row[Columns.DATASET_ID] as string;
-        if (!id) return;
+    const result = new Map<string, BreakdownItem[]>();
+    evaluationNames.forEach((n) => result.set(n, computeBreakdown(byName.get(n) ?? [])));
+    return result;
+  }, [hasMultiple, data, evaluationNames, computeBreakdown]);
 
-        if (!testCases.has(id)) {
-          testCases.set(id, {
-            metadata: extractMetadata(row),
-            scores: {},
-          });
-        }
+  // All unique metadata values across all eval names (for chart x-axis alignment)
+  const allMetadataValues = useMemo(() => {
+    if (!breakdownByEval) return breakdownData?.map((d) => d.value) ?? [];
+    const vals = new Set<string>();
+    breakdownByEval.forEach((items) => items.forEach((item) => vals.add(item.value)));
+    return Array.from(vals);
+  }, [breakdownByEval, breakdownData]);
 
-        const metricName = row[Columns.METRIC_NAME] as string;
-        const score = row[Columns.METRIC_SCORE] as number;
-        if (metricName && typeof score === 'number') {
-          testCases.get(id)!.scores[metricName] = score;
-        }
-      });
-
-      testCases.forEach((tc) => {
-        const groupValue = tc.metadata[activeGrouping];
-        const strValue =
-          typeof groupValue === 'object'
-            ? JSON.stringify(groupValue)
-            : String(groupValue ?? 'undefined');
-
-        const score = tc.scores[activeMetric];
-        if (typeof score !== 'number') return;
-
-        if (!groups.has(strValue)) {
-          groups.set(strValue, { scores: [], count: 0 });
-        }
-        groups.get(strValue)!.scores.push(score);
-        groups.get(strValue)!.count++;
-      });
-    } else {
-      data.forEach((row) => {
-        const metadata = extractMetadata(row);
-        const groupValue = metadata[activeGrouping];
-        const strValue =
-          typeof groupValue === 'object'
-            ? JSON.stringify(groupValue)
-            : String(groupValue ?? 'undefined');
-
-        const score = row[activeMetric] as number;
-        if (typeof score !== 'number') return;
-
-        if (!groups.has(strValue)) {
-          groups.set(strValue, { scores: [], count: 0 });
-        }
-        groups.get(strValue)!.scores.push(score);
-        groups.get(strValue)!.count++;
+  // Chart traces
+  const meanScoreChart = useMemo((): Plotly.Data[] => {
+    if (hasMultiple && breakdownByEval) {
+      return evaluationNames.map((evalName, idx) => {
+        const items = breakdownByEval.get(evalName) ?? [];
+        const byVal = Object.fromEntries(items.map((i) => [i.value, i.mean]));
+        return {
+          type: 'bar',
+          name: evalName,
+          x: allMetadataValues,
+          y: allMetadataValues.map((v) => byVal[v] ?? null),
+          marker: { color: ChartColors[idx % ChartColors.length] },
+          hovertemplate: `<b>%{x}</b><br>${evalName}: %{y:.3f}<extra></extra>`,
+        } as Plotly.Data;
       });
     }
 
-    // Calculate stats for each group
-    const breakdown = Array.from(groups.entries())
-      .map(([value, data]) => {
-        const mean = data.scores.reduce((a, b) => a + b, 0) / data.scores.length;
-        const passCount = data.scores.filter((s) => s >= analyticsPassRateThreshold).length;
-        const passRate = passCount / data.scores.length;
-        return {
-          value,
-          count: data.count,
-          mean,
-          passRate,
-        };
-      })
-      .sort((a, b) => b.mean - a.mean);
-
-    return breakdown;
-  }, [data, format, activeGrouping, activeMetric, analyticsPassRateThreshold]);
-
-  // Prepare chart data
-  const meanScoreChart = useMemo(() => {
     if (!breakdownData) return [];
-
     return [
       {
         type: 'bar',
@@ -291,11 +287,25 @@ export function MetadataBreakdownTab() {
         hovertemplate: '<b>%{x}</b><br>Mean: %{y:.3f}<extra></extra>',
       } as Plotly.Data,
     ];
-  }, [breakdownData]);
+  }, [hasMultiple, breakdownByEval, breakdownData, evaluationNames, allMetadataValues]);
 
-  const passRateChart = useMemo(() => {
+  const passRateChart = useMemo((): Plotly.Data[] => {
+    if (hasMultiple && breakdownByEval) {
+      return evaluationNames.map((evalName, idx) => {
+        const items = breakdownByEval.get(evalName) ?? [];
+        const byVal = Object.fromEntries(items.map((i) => [i.value, i.passRate * 100]));
+        return {
+          type: 'bar',
+          name: evalName,
+          x: allMetadataValues,
+          y: allMetadataValues.map((v) => byVal[v] ?? null),
+          marker: { color: ChartColors[idx % ChartColors.length] },
+          hovertemplate: `<b>%{x}</b><br>${evalName}: %{y:.1f}%<extra></extra>`,
+        } as Plotly.Data;
+      });
+    }
+
     if (!breakdownData) return [];
-
     return [
       {
         type: 'bar',
@@ -311,7 +321,7 @@ export function MetadataBreakdownTab() {
         hovertemplate: '<b>%{x}</b><br>Pass Rate: %{y:.1f}%<extra></extra>',
       } as Plotly.Data,
     ];
-  }, [breakdownData]);
+  }, [hasMultiple, breakdownByEval, breakdownData, evaluationNames, allMetadataValues]);
 
   if (!data || data.length === 0) {
     return (
@@ -332,6 +342,14 @@ export function MetadataBreakdownTab() {
     );
   }
 
+  const displayBreakdown = hasMultiple
+    ? breakdownByEval
+      ? Array.from(breakdownByEval.values()).flat()
+      : []
+    : (breakdownData ?? []);
+
+  const isMultiSeries = hasMultiple && (evaluationNames.length ?? 0) > 1;
+
   return (
     <div className="space-y-6">
       {/* Controls */}
@@ -351,7 +369,6 @@ export function MetadataBreakdownTab() {
               ))}
             </select>
           </div>
-
           <div className="flex items-center gap-2">
             <span className="text-sm text-text-muted">Metric:</span>
             <select
@@ -366,7 +383,6 @@ export function MetadataBreakdownTab() {
               ))}
             </select>
           </div>
-
           <div className="flex items-center gap-2">
             <span className="text-sm text-text-muted">Pass Threshold:</span>
             <input
@@ -386,49 +402,51 @@ export function MetadataBreakdownTab() {
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        {/* Mean Score by Grouping */}
+        {/* Mean Score */}
         <div className="border-border/50 rounded-xl border bg-surface p-5 shadow-sm">
           <h3 className="mb-4 text-lg font-semibold text-text-primary">
             Mean {activeMetric || 'Score'} by {activeGrouping}
+            {hasMultiple && (
+              <span className="ml-2 text-sm font-normal text-text-muted">by Evaluation</span>
+            )}
           </h3>
           <div className="h-[350px]">
             <PlotlyChart
               data={meanScoreChart}
               layout={{
-                xaxis: {
-                  title: activeGrouping || 'Category',
-                  tickangle: -45,
-                },
-                yaxis: {
-                  title: `Mean ${activeMetric || 'Score'}`,
-                  range: [0, 1.05],
-                },
-                showlegend: false,
+                barmode: isMultiSeries ? 'group' : undefined,
+                showlegend: isMultiSeries,
+                xaxis: { title: activeGrouping || 'Category', tickangle: -45 },
+                yaxis: { title: `Mean ${activeMetric || 'Score'}`, range: [0, 1.05] },
                 margin: { l: 60, r: 20, t: 20, b: 100 },
+                legend: isMultiSeries
+                  ? { orientation: 'h', y: -0.25, x: 0.5, xanchor: 'center' }
+                  : undefined,
               }}
             />
           </div>
         </div>
 
-        {/* Pass Rate by Grouping */}
+        {/* Pass Rate */}
         <div className="border-border/50 rounded-xl border bg-surface p-5 shadow-sm">
           <h3 className="mb-4 text-lg font-semibold text-text-primary">
             Pass Rate by {activeGrouping}
+            {hasMultiple && (
+              <span className="ml-2 text-sm font-normal text-text-muted">by Evaluation</span>
+            )}
           </h3>
           <div className="h-[350px]">
             <PlotlyChart
               data={passRateChart}
               layout={{
-                xaxis: {
-                  title: activeGrouping || 'Category',
-                  tickangle: -45,
-                },
-                yaxis: {
-                  title: 'Pass Rate (%)',
-                  range: [0, 105],
-                },
-                showlegend: false,
+                barmode: isMultiSeries ? 'group' : undefined,
+                showlegend: isMultiSeries,
+                xaxis: { title: activeGrouping || 'Category', tickangle: -45 },
+                yaxis: { title: 'Pass Rate (%)', range: [0, 105] },
                 margin: { l: 60, r: 20, t: 20, b: 100 },
+                legend: isMultiSeries
+                  ? { orientation: 'h', y: -0.25, x: 0.5, xanchor: 'center' }
+                  : undefined,
               }}
             />
           </div>
@@ -436,7 +454,7 @@ export function MetadataBreakdownTab() {
       </div>
 
       {/* Summary Table */}
-      {breakdownData && breakdownData.length > 0 && (
+      {displayBreakdown.length > 0 && !hasMultiple && breakdownData && (
         <div className="border-border/50 rounded-xl border bg-surface p-5 shadow-sm">
           <h3 className="mb-4 text-lg font-semibold text-text-primary">Breakdown Summary</h3>
           <div className="overflow-x-auto">

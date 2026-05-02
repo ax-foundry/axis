@@ -19,8 +19,9 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
 import { useReportStream } from '@/lib/hooks';
+import { useFilteredEvalData } from '@/lib/hooks/useFilteredEvalData';
 import { cn } from '@/lib/utils';
-import { useUIStore, useDataStore } from '@/stores';
+import { useUIStore } from '@/stores';
 import { AVAILABLE_CONTEXT_FIELDS, Columns } from '@/types';
 
 import { InsightPatternsPanel } from './InsightPatternsPanel';
@@ -77,7 +78,7 @@ function ThoughtBubble({ thought }: { thought: Thought }) {
 }
 
 export function ReportModal({ isOpen, onClose }: ReportModalProps) {
-  const { data } = useDataStore();
+  const { filteredData: data } = useFilteredEvalData();
   const {
     reportMetricFilter,
     reportMode,

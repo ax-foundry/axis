@@ -212,12 +212,7 @@ export function ComparisonTable({ rows, metrics }: ComparisonTableProps) {
                 )}
               >
                 <td className="p-4">
-                  <span
-                    className="block max-w-[200px] truncate text-sm font-medium text-text-primary"
-                    title={row.id}
-                  >
-                    {row.id.length > 25 ? `${row.id.substring(0, 25)}...` : row.id}
-                  </span>
+                  <span className="block text-sm font-medium text-text-primary">{row.id}</span>
                   {row.experimentName && (
                     <span className="mt-0.5 block text-xs text-text-muted">
                       {row.experimentName}

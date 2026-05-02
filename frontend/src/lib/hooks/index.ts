@@ -1,3 +1,5 @@
+export { useFilteredEvalData } from './useFilteredEvalData';
+export type { FilteredEvalData } from './useFilteredEvalData';
 export { usePlayback } from './usePlayback';
 export {
   useHumanSignalsUpload,

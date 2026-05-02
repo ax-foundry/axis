@@ -29,6 +29,7 @@ interface GroupedTestCase {
   additionalOutput?: string;
   conversation?: string;
   retrievedContent?: string;
+  acceptanceCriteria?: string;
   experiments: Map<string, ComparisonRow>;
 }
 
@@ -73,36 +74,35 @@ function ExperimentColumn({ row, metrics }: { row?: ComparisonRow; metrics: stri
     );
   }
 
-  return (
-    <div className="space-y-3 p-3">
-      {/* Conversation/Output - using CompactConversation for chat-style display */}
-      <div className="overflow-hidden rounded-lg bg-gray-50 dark:bg-gray-900">
-        <CompactConversation query={row.query} output={row.actualOutput} maxPreviewLength={120} />
-      </div>
+  const metricEntries = metrics
+    .map((m) => ({ name: m, score: row.metrics[m] }))
+    .filter((e) => e.score !== undefined && e.score >= 0 && e.score <= 1);
 
-      {/* Overall Score */}
-      <div className="flex items-center justify-between">
-        <span className="text-xs font-medium text-text-muted">Overall Score</span>
+  return (
+    <div className="space-y-2">
+      <CompactConversation query={row.query} output={row.actualOutput} maxPreviewLength={120} />
+      <div className="flex items-center gap-2">
+        <span className="text-xs text-text-muted">Score</span>
         <ScoreBadge score={row.overallScore} />
       </div>
-
-      {/* Metrics Preview */}
-      <div className="grid grid-cols-2 gap-2">
-        {metrics.slice(0, 4).map((metric) => {
-          const score = row.metrics[metric];
-          if (score === undefined) return null;
-          return (
-            <div key={metric} className={cn('rounded-lg p-2', getScoreBgColor(score))}>
-              <p className="truncate text-xs text-text-muted" title={metric}>
-                {metric.length > 12 ? metric.substring(0, 12) + '...' : metric}
-              </p>
-              <p className={cn('text-sm font-semibold', getScoreColor(score))}>
-                {(score * 100).toFixed(1)}%
-              </p>
-            </div>
-          );
-        })}
-      </div>
+      {metricEntries.length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          {metricEntries.slice(0, 6).map(({ name, score }) => (
+            <span
+              key={name}
+              className={cn(
+                'inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-xs',
+                getScoreBgColor(score!),
+                getScoreColor(score!)
+              )}
+              title={name}
+            >
+              <span className="max-w-[80px] truncate text-text-muted">{name}</span>
+              <span className="font-medium">{(score! * 100).toFixed(0)}%</span>
+            </span>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -209,6 +209,20 @@ function ExpandedRow({
               </div>
             )}
 
+            {/* Acceptance Criteria if present and visible */}
+            {visibleFields.includes('acceptance_criteria') && testCase.acceptanceCriteria && (
+              <div>
+                <h4 className="mb-2 text-sm font-semibold text-text-primary">
+                  Acceptance Criteria
+                </h4>
+                <div className="border-border/50 rounded-lg border bg-surface p-4">
+                  <p className="whitespace-pre-wrap text-sm text-text-secondary">
+                    {testCase.acceptanceCriteria}
+                  </p>
+                </div>
+              </div>
+            )}
+
             {/* Retrieved Content if present and visible */}
             {visibleFields.includes('retrieved_content') && testCase.retrievedContent && (
               <div>
@@ -294,6 +308,7 @@ export function SideBySideTable({ rows, metrics }: SideBySideTableProps) {
           additionalOutput: row.additionalOutput,
           conversation: row.conversation,
           retrievedContent: row.retrievedContent,
+          acceptanceCriteria: row.acceptanceCriteria,
           experiments: new Map(),
         });
       }
@@ -436,7 +451,7 @@ export function SideBySideTable({ rows, metrics }: SideBySideTableProps) {
                     onClick={() => toggleExpand(testCase.id)}
                   >
                     {/* Expand icon */}
-                    <td className="p-4">
+                    <td className="p-4 align-top">
                       {isExpanded ? (
                         <ChevronDown className="h-4 w-4 text-primary" />
                       ) : (
@@ -445,13 +460,10 @@ export function SideBySideTable({ rows, metrics }: SideBySideTableProps) {
                     </td>
 
                     {/* ID and Query */}
-                    <td className="p-4">
+                    <td className="p-4 align-top">
                       <div className="space-y-2">
                         <div className="flex items-center gap-2">
-                          <span
-                            className="max-w-[200px] truncate text-sm font-medium text-text-primary"
-                            title={testCase.id}
-                          >
+                          <span className="text-sm font-medium text-text-primary">
                             {testCase.id}
                           </span>
                         </div>
@@ -467,14 +479,14 @@ export function SideBySideTable({ rows, metrics }: SideBySideTableProps) {
                     {experimentNames.map((expName) => {
                       const row = testCase.experiments.get(expName);
                       return (
-                        <td key={expName} className="border-border/30 border-l p-4 align-top">
+                        <td key={expName} className="border-border/30 border-l p-3 align-top">
                           <ExperimentColumn row={row} metrics={metrics} />
                         </td>
                       );
                     })}
 
                     {/* Actions */}
-                    <td className="p-4 text-center" onClick={(e) => e.stopPropagation()}>
+                    <td className="p-4 text-center align-top" onClick={(e) => e.stopPropagation()}>
                       <button
                         onClick={() => openTestCaseDetail(testCase.id)}
                         className="rounded-lg p-2 text-text-muted transition-colors hover:bg-primary/10 hover:text-primary"

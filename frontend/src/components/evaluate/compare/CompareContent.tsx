@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
+import { useFilteredEvalData } from '@/lib/hooks/useFilteredEvalData';
 import { cn } from '@/lib/utils';
 import { useDataStore, useUIStore } from '@/stores';
 import { Columns } from '@/types';
@@ -189,7 +190,8 @@ function extractMetadata(row: EvaluationRecord): Record<string, unknown> {
 type TableViewMode = 'side-by-side' | 'classic';
 
 export function CompareContent() {
-  const { data, metricColumns, format } = useDataStore();
+  const { metricColumns, format } = useDataStore();
+  const { filteredData: data } = useFilteredEvalData();
   const {
     compareSearchQuery,
     setCompareSearchQuery,
@@ -255,6 +257,7 @@ export function CompareContent() {
           additionalOutput?: string;
           conversation?: string;
           retrievedContent?: string;
+          acceptanceCriteria?: string;
           metrics: Record<string, number>;
           metadata?: Record<string, unknown>;
         }
@@ -279,6 +282,7 @@ export function CompareContent() {
             additionalOutput: row[Columns.ADDITIONAL_OUTPUT] as string | undefined,
             conversation: row[Columns.CONVERSATION] as string | undefined,
             retrievedContent: row[Columns.RETRIEVED_CONTENT] as string | undefined,
+            acceptanceCriteria: row[Columns.ACCEPTANCE_CRITERIA] as string | undefined,
             metrics: {},
             metadata: extractMetadata(row),
           });
@@ -293,7 +297,7 @@ export function CompareContent() {
       });
 
       testCases.forEach((tc) => {
-        const scores = Object.values(tc.metrics);
+        const scores = Object.values(tc.metrics).filter((s) => s >= 0 && s <= 1);
         const overallScore =
           scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
 
@@ -307,6 +311,7 @@ export function CompareContent() {
           additionalOutput: tc.additionalOutput,
           conversation: tc.conversation,
           retrievedContent: tc.retrievedContent,
+          acceptanceCriteria: tc.acceptanceCriteria,
           metrics: tc.metrics,
           overallScore,
           metadata: tc.metadata,
@@ -325,7 +330,7 @@ export function CompareContent() {
           }
         });
 
-        const scores = Object.values(metrics);
+        const scores = Object.values(metrics).filter((s) => s >= 0 && s <= 1);
         const overallScore =
           scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
 
@@ -339,6 +344,7 @@ export function CompareContent() {
           additionalOutput: row[Columns.ADDITIONAL_OUTPUT] as string | undefined,
           conversation: row[Columns.CONVERSATION] as string | undefined,
           retrievedContent: row[Columns.RETRIEVED_CONTENT] as string | undefined,
+          acceptanceCriteria: row[Columns.ACCEPTANCE_CRITERIA] as string | undefined,
           metrics,
           overallScore,
           metadata: extractMetadata(row),

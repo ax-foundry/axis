@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
+import { EvaluationNameFilter } from '@/components/evaluate/EvaluationNameFilter';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { getFeaturesConfig } from '@/lib/api';
 import { cn } from '@/lib/utils';
@@ -162,6 +163,11 @@ export default function EvaluateLayout({ children }: { children: React.ReactNode
               );
             })}
           </nav>
+        </div>
+
+        {/* Evaluation Name Filter — shown when dataset has multiple evaluation_names */}
+        <div className="mb-4">
+          <EvaluationNameFilter />
         </div>
 
         {/* Step Content */}

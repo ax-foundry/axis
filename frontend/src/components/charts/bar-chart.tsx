@@ -6,24 +6,49 @@ import { ChartColors, Colors, Thresholds } from '@/types';
 
 import { PlotlyChart } from './plotly-chart';
 
-interface BarChartProps {
+interface BarChartSeries {
+  name: string;
   values: number[];
+}
+
+interface BarChartProps {
+  values?: number[];
   labels: string[];
   title?: string;
   orientation?: 'vertical' | 'horizontal';
   showThresholds?: boolean;
   colorByValue?: boolean;
+  series?: BarChartSeries[];
 }
 
 export function BarChart({
-  values,
+  values = [],
   labels,
   title,
   orientation = 'vertical',
   showThresholds = false,
   colorByValue = false,
+  series,
 }: BarChartProps) {
   const plotData = useMemo(() => {
+    if (series && series.length > 0) {
+      return series.map((s, index) => ({
+        type: 'bar' as const,
+        name: s.name,
+        x: orientation === 'vertical' ? labels : s.values,
+        y: orientation === 'vertical' ? s.values : labels,
+        orientation: orientation === 'vertical' ? ('v' as const) : ('h' as const),
+        marker: {
+          color: ChartColors[index % ChartColors.length],
+          line: { color: 'rgba(0,0,0,0.1)', width: 1 },
+        },
+        hovertemplate:
+          orientation === 'vertical'
+            ? `<b>%{x}</b><br>${s.name}: %{y:.3f}<extra></extra>`
+            : `<b>%{y}</b><br>${s.name}: %{x:.3f}<extra></extra>`,
+      }));
+    }
+
     const colors = colorByValue
       ? values.map((v) => {
           if (v >= Thresholds.GREEN_THRESHOLD) return Colors.success;
@@ -40,10 +65,7 @@ export function BarChart({
         orientation: orientation === 'vertical' ? ('v' as const) : ('h' as const),
         marker: {
           color: colors,
-          line: {
-            color: 'rgba(0,0,0,0.1)',
-            width: 1,
-          },
+          line: { color: 'rgba(0,0,0,0.1)', width: 1 },
         },
         hovertemplate:
           orientation === 'vertical'
@@ -51,13 +73,12 @@ export function BarChart({
             : '<b>%{y}</b><br>Score: %{x:.3f}<extra></extra>',
       },
     ];
-  }, [values, labels, orientation, colorByValue]);
+  }, [values, labels, orientation, colorByValue, series]);
 
   const layout = useMemo(() => {
     const shapes: Partial<Plotly.Shape>[] = [];
 
     if (showThresholds) {
-      // Add threshold lines
       if (orientation === 'vertical') {
         shapes.push(
           {
@@ -80,9 +101,12 @@ export function BarChart({
       }
     }
 
+    const isMultiSeries = series && series.length > 1;
+
     return {
       title: title ? { text: title, font: { size: 14 } } : undefined,
-      showlegend: false,
+      showlegend: isMultiSeries ?? false,
+      barmode: isMultiSeries ? ('group' as const) : undefined,
       xaxis: {
         title: orientation === 'horizontal' ? 'Score' : undefined,
         gridcolor: '#E1E5EA',
@@ -94,7 +118,7 @@ export function BarChart({
       },
       shapes,
     };
-  }, [title, orientation, showThresholds, labels.length]);
+  }, [title, orientation, showThresholds, labels.length, series]);
 
   return <PlotlyChart data={plotData} layout={layout} />;
 }

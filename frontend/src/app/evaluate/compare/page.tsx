@@ -23,6 +23,7 @@ import { ExperimentSelector } from '@/components/evaluate/compare/ExperimentSele
 import { ExportComparisonReport } from '@/components/evaluate/compare/ExportComparisonReport';
 import { HeadToHeadSummary } from '@/components/evaluate/compare/HeadToHeadSummary';
 import { EmptyState } from '@/components/shared/EmptyState';
+import { useFilteredEvalData } from '@/lib/hooks/useFilteredEvalData';
 import { cn } from '@/lib/utils';
 import { useDataStore, useUIStore } from '@/stores';
 import { Columns, type ComparisonRow } from '@/types';
@@ -157,7 +158,8 @@ function extractMetadata(row: Record<string, unknown>): Record<string, unknown> 
 }
 
 export default function ComparePage() {
-  const { data, format, metricColumns, isLoading } = useDataStore();
+  const { format, metricColumns, isLoading, rowCount } = useDataStore();
+  const { filteredData: data } = useFilteredEvalData();
   const {
     compareBaselineExperiment,
     compareChallengerExperiment,
@@ -292,7 +294,7 @@ export default function ComparePage() {
   }, [comparisonRows, compareBaselineExperiment, compareChallengerExperiment]);
 
   const isComparisonReady = compareBaselineExperiment && compareChallengerExperiment;
-  const hasData = data.length > 0;
+  const hasData = rowCount > 0;
 
   if (!hasData) {
     if (isLoading) {

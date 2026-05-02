@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useRef, useState } from 'react';
 
 import { useDataStore, useMonitoringStore, useHumanSignalsStore } from '@/stores';
+import { useFilteredEvalData } from './hooks/useFilteredEvalData';
 import { useCalibrationStore } from '@/stores/calibration-store';
 import { useCopilotStore } from '@/stores/copilot-store';
 
@@ -618,7 +619,7 @@ interface ReportStreamState {
  * Hook for streaming report generation with real-time thoughts.
  */
 export function useReportStream() {
-  const { data } = useDataStore();
+  const { filteredData: data } = useFilteredEvalData();
   const abortControllerRef = useRef<AbortController | null>(null);
 
   const [state, setState] = useState<ReportStreamState>({
