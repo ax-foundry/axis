@@ -14,6 +14,7 @@ from app.config.agents import agents_config
 from app.config.constants import Headers
 from app.config.env import settings
 from app.copilot.agent import CopilotAgent
+from app.copilot.agent_registry import get_agent_class, list_registered_agents
 from app.copilot.oai_agent import OAICopilotAgent
 from app.copilot.thoughts import ThoughtStream
 from app.copilot.tracing import get_request_tracer, safe_span_attrs
@@ -33,14 +34,18 @@ router = APIRouter()
 
 
 def _validate_agent_name(agent_name: str | None) -> None:
-    """Raise HTTP 400 if agent_name is set but not in the agent registry."""
+    """Raise HTTP 400 if agent_name is set but not in the agent registry or plugin registry."""
     if agent_name is None:
+        return
+    # Plugin-registered agents are always valid
+    if get_agent_class(agent_name) is not None:
         return
     known = {a.name for a in agents_config}
     if known and agent_name not in known:
+        all_known = sorted(known | set(list_registered_agents()))
         raise HTTPException(
             status_code=400,
-            detail=f"Unknown agent '{agent_name}'. Available: {sorted(known)}",
+            detail=f"Unknown agent '{agent_name}'. Available: {all_known}",
         )
 
 
@@ -234,8 +239,14 @@ async def _copilot_stream_generator(
     logger.info("Message: %s...", request.message[:100])
     logger.info("Dataset: %s", request.dataset_label)
 
-    # Resolve provider label from route name for the pipeline span
-    provider = "oai_agents" if "oai" in route_name else "pydantic_ai"
+    # Plugin agents take priority over the built-in agent_class
+    effective_cls = get_agent_class(request.agent_name) or agent_class
+
+    # Provider label for tracing — plugin agents report as "plugin"
+    if effective_cls is not agent_class:
+        provider = "plugin"
+    else:
+        provider = "oai_agents" if "oai" in route_name else "pydantic_ai"
 
     tracer = get_request_tracer(
         route_name=route_name,
@@ -245,9 +256,19 @@ async def _copilot_stream_generator(
     )
 
     thought_stream = ThoughtStream()
-    agent = agent_class(thought_stream=thought_stream)
+    try:
+        agent = effective_cls(thought_stream=thought_stream)
+        configured = agent.is_configured
+    except Exception as exc:
+        logger.exception("Agent %s failed to initialize", effective_cls.__qualname__)
+        yield {
+            "event": SSEEventType.ERROR.value,
+            "data": json.dumps({"error": f"Agent init failed: {exc}"}),
+        }
+        yield {"event": SSEEventType.DONE.value, "data": ""}
+        return
 
-    if not agent.is_configured:
+    if not configured:
         logger.warning("Ask Copilot not configured - no API credentials")
         yield {
             "event": SSEEventType.ERROR.value,
@@ -284,16 +305,28 @@ async def _copilot_stream_generator(
             history_len=len(request.conversation_history or []),
         ),
     ) as _root_span:
-        task = asyncio.create_task(
-            agent.process(
-                message=request.message,
-                dataset_label=request.dataset_label,
-                data_context=data_context,
-                conversation_history=request.conversation_history,
-                user_id=_resolve_user_id(http_request, request),
-                agent_name=request.agent_name,
-            )
-        )
+        # Wrap process() so the thought stream is always closed on completion.
+        # Built-in agents close it inside run_copilot_request(); closing twice is
+        # idempotent.  Plugin agents are not required to close it themselves.
+        _process_kwargs = {
+            "message": request.message,
+            "dataset_label": request.dataset_label,
+            "data_context": data_context,
+            "conversation_history": request.conversation_history,
+            "user_id": _resolve_user_id(http_request, request),
+            "agent_name": request.agent_name,
+        }
+
+        async def _run_agent() -> tuple[str, dict[str, Any] | None, dict[str, Any] | None]:
+            try:
+                result: tuple[
+                    str, dict[str, Any] | None, dict[str, Any] | None
+                ] = await agent.process(**_process_kwargs)
+                return result
+            finally:
+                await thought_stream.close()  # idempotent
+
+        task = asyncio.create_task(_run_agent())
 
         try:
             subscriber = await thought_stream.subscribe()
@@ -385,7 +418,8 @@ async def copilot_chat(request: CopilotRequest, http_request: Request) -> Copilo
     _validate_agent_name(request.agent_name)
 
     thought_stream = ThoughtStream()
-    agent = CopilotAgent(thought_stream=thought_stream)
+    agent_cls = get_agent_class(request.agent_name) or CopilotAgent
+    agent = agent_cls(thought_stream=thought_stream)
 
     if not agent.is_configured:
         return CopilotResponse(
