@@ -1,11 +1,12 @@
 import asyncio
 import logging
-from typing import Any
+import time
+from typing import Any, Literal
 
 import anyio
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import Response
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app.services.duckdb_store import ALLOWED_TABLES, DATASET_TABLE_MAP, get_store
 
@@ -384,3 +385,260 @@ async def export_sql_as_csv(req: ExportRequest) -> Response:
         media_type="text/csv",
         headers={"Content-Disposition": f'attachment; filename="{safe_filename}"'},
     )
+
+
+# ------------------------------------------------------------------
+# Structured query endpoint (typed JSON, no client SQL)
+# ------------------------------------------------------------------
+
+
+BLOCKED_BLOB_COLUMNS = frozenset(
+    {"evaluation_metadata", "metric_metadata", "signals", "dataset_metadata"}
+)
+QUERY_TIMEOUT_SECONDS = 10
+
+
+class Filter(BaseModel):
+    """A single WHERE-clause filter on a column."""
+
+    col: str
+    op: Literal["eq", "neq", "in", "gte", "lte", "gt", "lt", "is_null", "is_not_null"]
+    value: Any | None = None
+
+
+class Aggregate(BaseModel):
+    """An aggregate expression (e.g., AVG(score) AS avg_score)."""
+
+    fn: Literal["count", "avg", "sum", "max", "min", "count_distinct"]
+    col: str
+    as_: str = Field(alias="as")
+
+    model_config = {"populate_by_name": True}
+
+
+class OrderBy(BaseModel):
+    """An ORDER BY clause entry. ``col`` may be a base column or an aggregate alias."""
+
+    col: str
+    dir: Literal["asc", "desc"] = "asc"
+
+
+class DateTrunc(BaseModel):
+    """Bucket a timestamp column into day/week/month and alias it."""
+
+    col: str
+    unit: Literal["day", "week", "month"]
+    as_: str = Field(alias="as")
+
+    model_config = {"populate_by_name": True}
+
+
+class StoreQueryRequest(BaseModel):
+    """Structured query request — server builds parameterized SQL from these fields."""
+
+    select: list[str] | None = None
+    date_trunc: DateTrunc | None = None
+    filters: list[Filter] = Field(default_factory=list, max_length=6)
+    group_by: list[str] = Field(default_factory=list)
+    aggregates: list[Aggregate] = Field(default_factory=list, max_length=4)
+    order_by: list[OrderBy] = Field(default_factory=list)
+    limit: int = Field(default=1000, ge=1, le=10_000)
+
+
+_FILTER_OP_SQL = {
+    "eq": "=",
+    "neq": "!=",
+    "gte": ">=",
+    "lte": "<=",
+    "gt": ">",
+    "lt": "<",
+}
+
+
+def _bad_request(code: str, message: str, **details: Any) -> HTTPException:
+    payload: dict[str, Any] = {"code": code, "message": message}
+    if details:
+        payload["details"] = details
+    return HTTPException(status_code=400, detail=payload)
+
+
+def _check_col(col: str, allowed: set[str], where: str) -> None:
+    if col not in allowed:
+        raise _bad_request("invalid_column", f"Unknown column '{col}' in {where}", column=col)
+
+
+def _check_not_blob(col: str) -> None:
+    if col in BLOCKED_BLOB_COLUMNS:
+        raise _bad_request(
+            "forbidden_select_blob",
+            f"Column '{col}' is a JSON blob and may not be selected",
+            column=col,
+        )
+
+
+def build_sql(req: StoreQueryRequest, table: str, allowed: set[str]) -> tuple[str, list[Any]]:
+    """Build a parameterized SELECT for the structured-query endpoint.
+
+    All identifiers are validated against `allowed` before being quoted into
+    SQL. All values are bound positionally via ``?`` placeholders.
+    """
+    has_aggregates = bool(req.aggregates)
+    select_cols = list(req.select or [])
+    trunc_alias: str | None = None
+
+    select_pieces: list[str] = []
+    group_pieces: list[str] = []
+
+    if req.date_trunc is not None:
+        _check_col(req.date_trunc.col, allowed, "date_trunc.col")
+        trunc_alias = req.date_trunc.as_
+        select_pieces.append(
+            f"DATE_TRUNC('{req.date_trunc.unit}', \"{req.date_trunc.col}\")::text "
+            f'AS "{trunc_alias}"'
+        )
+
+    for col in select_cols:
+        _check_col(col, allowed, "select")
+        _check_not_blob(col)
+        select_pieces.append(f'"{col}"')
+
+    for col in req.group_by:
+        _check_col(col, allowed, "group_by")
+
+    if has_aggregates:
+        # Auto-project group_by columns that aren't already in select/date_trunc.
+        existing = set(select_cols) | ({trunc_alias} if trunc_alias else set())
+        for col in req.group_by:
+            if col not in existing:
+                select_pieces.append(f'"{col}"')
+                existing.add(col)
+        for agg in req.aggregates:
+            if agg.fn == "count" and agg.col == "*":
+                expr = "COUNT(*)"
+            elif agg.fn == "count_distinct":
+                _check_col(agg.col, allowed, "aggregate.col")
+                expr = f'COUNT(DISTINCT "{agg.col}")'
+            else:
+                _check_col(agg.col, allowed, "aggregate.col")
+                expr = f'{agg.fn.upper()}("{agg.col}")'
+            select_pieces.append(f'{expr} AS "{agg.as_}"')
+
+        for col in req.group_by:
+            group_pieces.append(f'"{col}"')
+        if trunc_alias:
+            group_pieces.append(f'"{trunc_alias}"')
+    else:
+        if not select_pieces:
+            raise _bad_request(
+                "invalid_query",
+                "select or date_trunc must be present when no aggregates are given",
+            )
+        if req.group_by:
+            raise _bad_request(
+                "invalid_column",
+                "group_by requires at least one aggregate",
+            )
+
+    where_pieces: list[str] = []
+    params: list[Any] = []
+    for f in req.filters:
+        _check_col(f.col, allowed, "filters.col")
+        if f.op in _FILTER_OP_SQL:
+            where_pieces.append(f'"{f.col}" {_FILTER_OP_SQL[f.op]} ?')
+            params.append(f.value)
+        elif f.op == "in":
+            if not isinstance(f.value, list) or not f.value:
+                raise _bad_request(
+                    "invalid_filter_op",
+                    "'in' requires a non-empty list",
+                    column=f.col,
+                )
+            placeholders = ", ".join(["?"] * len(f.value))
+            where_pieces.append(f'"{f.col}" IN ({placeholders})')
+            params.extend(f.value)
+        elif f.op == "is_null":
+            where_pieces.append(f'"{f.col}" IS NULL')
+        elif f.op == "is_not_null":
+            where_pieces.append(f'"{f.col}" IS NOT NULL')
+
+    order_pieces: list[str] = []
+    valid_aliases = {a.as_ for a in req.aggregates} | ({trunc_alias} if trunc_alias else set())
+    for o in req.order_by:
+        # Aggregate/trunc aliases take precedence over base column names of the same name —
+        # in aggregate mode, ordering by the base column is almost never what callers want.
+        if o.col in valid_aliases:
+            order_pieces.append(f'"{o.col}" {o.dir.upper()}')
+        else:
+            _check_col(o.col, allowed, "order_by.col")
+            order_pieces.append(f'"{o.col}" {o.dir.upper()}')
+
+    sql = "SELECT " + ", ".join(select_pieces) + f' FROM "{table}"'
+    if where_pieces:
+        sql += " WHERE " + " AND ".join(where_pieces)
+    if group_pieces:
+        sql += " GROUP BY " + ", ".join(group_pieces)
+    if order_pieces:
+        sql += " ORDER BY " + ", ".join(order_pieces)
+    sql += f" LIMIT {min(req.limit, 10_000)}"
+    return sql, params
+
+
+@router.post("/query/{dataset}")
+async def query_dataset(
+    dataset: str,
+    req: StoreQueryRequest,
+    debug: bool = Query(False),
+) -> dict[str, Any]:
+    """Execute a structured (no-SQL) analytical query against a dataset.
+
+    Datasets resolve to DuckDB tables via DATASET_TABLE_MAP. All identifiers
+    are validated against the live table schema; values are parameter-bound.
+    """
+    table = _resolve_table(dataset)
+    store = get_store()
+
+    if not store.has_table(table):
+        raise HTTPException(
+            status_code=503,
+            detail={"code": "dataset_warming", "table": table},
+        )
+
+    allowed = store.get_table_columns(table)
+    sql, params = build_sql(req, table, allowed)
+
+    started = time.perf_counter()
+    try:
+        rows = await anyio.to_thread.run_sync(
+            lambda: store.query_list_interruptible(sql, params, QUERY_TIMEOUT_SECONDS),
+            limiter=store.query_limiter,
+        )
+    except TimeoutError as exc:
+        raise HTTPException(
+            status_code=504,
+            detail={"code": "query_timeout", "timeout_seconds": QUERY_TIMEOUT_SECONDS},
+        ) from exc
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.exception("store_query failed for table=%s", table)
+        raise HTTPException(
+            status_code=500,
+            detail={"code": "internal_error", "message": str(exc)},
+        ) from exc
+
+    elapsed_ms = int((time.perf_counter() - started) * 1000)
+    logger.info(
+        "store_query table=%s filter_cols=%s group_by=%s row_count=%d elapsed_ms=%d",
+        table,
+        [f.col for f in req.filters],
+        req.group_by,
+        len(rows),
+        elapsed_ms,
+    )
+
+    return {
+        "rows": rows,
+        "row_count": len(rows),
+        "elapsed_ms": elapsed_ms,
+        "sql": sql if debug else None,
+    }

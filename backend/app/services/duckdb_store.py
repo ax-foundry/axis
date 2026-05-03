@@ -113,6 +113,35 @@ class DuckDBStore:
         records: list[dict[str, Any]] = df.to_dict(orient="records")  # type: ignore[assignment]
         return records
 
+    def query_list_interruptible(
+        self, sql: str, params: list[Any] | None, timeout_seconds: float
+    ) -> list[dict[str, Any]]:
+        """Read-only query with a hard timeout via DuckDB cursor.interrupt().
+
+        On timeout, the running query is cancelled (no leaked limiter slot) and
+        ``TimeoutError`` is raised. Run this from a worker thread.
+        """
+        with self._cursor() as cur:
+            timed_out = threading.Event()
+
+            def _on_timeout() -> None:
+                timed_out.set()
+                with contextlib.suppress(Exception):
+                    cur.interrupt()
+
+            timer = threading.Timer(timeout_seconds, _on_timeout)
+            timer.start()
+            try:
+                df = cur.execute(sql, params or []).fetchdf()
+            except Exception as exc:
+                if timed_out.is_set():
+                    raise TimeoutError(f"Query exceeded {timeout_seconds}s timeout") from exc
+                raise
+            finally:
+                timer.cancel()
+        records: list[dict[str, Any]] = df.to_dict(orient="records")  # type: ignore[assignment]
+        return records
+
     def query_value(self, sql: str, params: list[Any] | None = None) -> Any:
         """Read-only query returning a single scalar."""
         with self._cursor() as cur:
