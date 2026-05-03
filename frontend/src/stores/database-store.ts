@@ -7,14 +7,31 @@ export type SSLMode = 'disable' | 'require' | 'verify-ca' | 'verify-full';
 
 export type DataSelectMode = 'table' | 'query';
 
-export interface DatabaseConnection {
+export type DatabaseType = 'postgres' | 'bigquery';
+
+// Discriminated union by db_type — secrets (password, sa_private_key) are
+// intentionally NOT stored here: they live in component-local useState only.
+// Do NOT enable Zustand persist on this store — it would cache credentials.
+export interface PostgresConnection {
+  db_type: 'postgres';
   host: string;
   port: number;
   database: string;
   username: string;
-  password: string;
+  password: string; // kept only for sentinel '********' flow; never persisted
   ssl_mode: SSLMode;
 }
+
+export interface BigQueryConnection {
+  db_type: 'bigquery';
+  project_id: string;
+  dataset: string;
+  location?: string;
+  sa_client_email?: string;
+  // sa_private_key is intentionally absent — it lives in component state only
+}
+
+export type DatabaseConnection = PostgresConnection | BigQueryConnection;
 
 export interface TableIdentifier {
   schema_name: string;
@@ -59,6 +76,9 @@ interface DatabaseState {
   // Wizard step
   step: DatabaseStep;
 
+  // Source type selection
+  dbType: DatabaseType;
+
   // Connection state
   handle: string | null;
   connectionVersion: string | null;
@@ -92,6 +112,7 @@ interface DatabaseState {
 
   // Actions
   setStep: (step: DatabaseStep) => void;
+  setDbType: (dbType: DatabaseType) => void;
   setHandle: (handle: string | null, version?: string | null) => void;
   setTables: (tables: TableInfo[]) => void;
   setSelectedTable: (table: TableIdentifier | null) => void;
@@ -99,6 +120,7 @@ interface DatabaseState {
   setDataSelectMode: (mode: DataSelectMode) => void;
   setSqlQuery: (query: string) => void;
   setConfigFromDefaults: (config: {
+    db_type?: string;
     tables: string[];
     filters: FilterConfig[];
     column_rename_map: Record<string, string>;
@@ -118,6 +140,7 @@ interface DatabaseState {
 
 const initialState = {
   step: 'connect' as DatabaseStep,
+  dbType: 'postgres' as DatabaseType,
   handle: null as string | null,
   connectionVersion: null as string | null,
   tables: [] as TableInfo[],
@@ -141,6 +164,16 @@ export const useDatabaseStore = create<DatabaseState>()((set, get) => ({
   ...initialState,
 
   setStep: (step) => set({ step, error: null }),
+
+  setDbType: (dbType) =>
+    set({
+      dbType,
+      // Reset connection state when switching source types
+      handle: null,
+      connectionVersion: null,
+      step: 'connect',
+      error: null,
+    }),
 
   setHandle: (handle, version = null) =>
     set({
@@ -177,7 +210,9 @@ export const useDatabaseStore = create<DatabaseState>()((set, get) => ({
       configuredColumnRenameMap: config.column_rename_map,
       configuredQuery: config.query,
     };
-    // If a query is configured, default to SQL mode
+    if (config.db_type === 'bigquery' || config.db_type === 'postgres') {
+      updates.dbType = config.db_type;
+    }
     if (config.query) {
       updates.dataSelectMode = 'query';
       updates.sqlQuery = config.query;

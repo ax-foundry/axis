@@ -1,6 +1,5 @@
 import logging
 from typing import Any
-from urllib.parse import quote_plus
 
 from app.models.database_schemas import (
     ColumnInfo,
@@ -13,6 +12,7 @@ from app.models.database_schemas import (
 )
 from app.services.connection_store import ConnectionInfo, get_connection_store
 from app.services.db import get_backend, get_catalog
+from app.services.db._types import TableId
 
 logger = logging.getLogger(__name__)
 
@@ -60,23 +60,8 @@ def _get_connection_info(handle: str) -> ConnectionInfo:
     return info
 
 
-def _build_url(conn_info: ConnectionInfo) -> str:
-    """Build a connection URL from ConnectionInfo."""
-    encoded_password = quote_plus(conn_info.password)
-    # For Postgres the URL scheme is postgresql://; other backends will
-    # override build_url() entirely, but for the table-browser path we
-    # build URLs from stored credentials.
-    return (
-        f"postgresql://{conn_info.username}:{encoded_password}"
-        f"@{conn_info.host}:{conn_info.port}/{conn_info.database}"
-    )
-
-
 async def connect(conn: DatabaseConnectionRequest) -> tuple[str, str | None]:
     """Test connection and create a handle if successful.
-
-    Args:
-        conn: Database connection request
 
     Returns:
         Tuple of (handle, version) where version is the database version string
@@ -84,34 +69,29 @@ async def connect(conn: DatabaseConnectionRequest) -> tuple[str, str | None]:
     Raises:
         DatabaseServiceError: If connection fails
     """
+    from app.services.db._errors import DatabaseBackendError
+
     store = get_connection_store()
     backend = get_backend(conn.db_type)
 
-    encoded_password = quote_plus(conn.password.get_secret_value())
-    url = f"postgresql://{conn.username}:{encoded_password}@{conn.host}:{conn.port}/{conn.database}"
-    ssl_mode = conn.ssl_mode.value if conn.ssl_mode.value != "disable" else None
+    try:
+        params = backend.build_connection_params(conn)
+    except DatabaseBackendError as e:
+        raise DatabaseServiceError(str(e))
 
     try:
         version = await backend.test_connection(
-            url,
-            ssl_mode=ssl_mode,
+            params,
             connect_timeout=CONNECT_TIMEOUT,
             statement_timeout_ms=QUERY_TIMEOUT_MS,
         )
 
-        handle = store.create_handle(
-            host=conn.host,
-            port=conn.port,
-            database=conn.database,
-            username=conn.username,
-            password=conn.password.get_secret_value(),
-            ssl_mode=conn.ssl_mode.value,
-            db_type=conn.db_type,
-        )
-
-        logger.info(f"Database connection successful: {conn.database}")
+        handle = store.create_handle(conn.db_type, params)
+        logger.info(f"Database connection successful: {conn.db_type}")
         return handle, version
 
+    except DatabaseBackendError as e:
+        raise DatabaseServiceError(str(e))
     except TimeoutError:
         raise DatabaseServiceError(
             f"Connection timed out after {CONNECT_TIMEOUT} seconds. "
@@ -129,7 +109,7 @@ async def connect(conn: DatabaseConnectionRequest) -> tuple[str, str | None]:
                 "3) Firewall allows connections from this server."
             )
         elif "does not exist" in error_msg.lower():
-            error_msg = f"Database '{conn.database}' does not exist."
+            error_msg = f"Database '{getattr(conn, 'database', '')}' does not exist."
         else:
             logger.error(f"Database connection error: {e}")
             error_msg = f"Connection failed: {error_msg}"
@@ -137,26 +117,14 @@ async def connect(conn: DatabaseConnectionRequest) -> tuple[str, str | None]:
 
 
 async def list_tables(handle: str) -> list[TableInfo]:
-    """List tables with estimated row counts.
-
-    Args:
-        handle: Connection handle
-
-    Returns:
-        List of table information
-
-    Raises:
-        ConnectionExpiredError: If handle is invalid or expired
-    """
+    """List tables with estimated row counts."""
     conn_info = _get_connection_info(handle)
-    url = _build_url(conn_info)
-    ssl = conn_info.ssl_mode if conn_info.ssl_mode != "disable" else None
     backend = get_backend(conn_info.db_type)
     catalog = get_catalog(conn_info.db_type)
 
     try:
         async with backend.pooled_connection(
-            url, ssl_mode=ssl, statement_timeout_ms=QUERY_TIMEOUT_MS
+            conn_info.connection_params, statement_timeout_ms=QUERY_TIMEOUT_MS
         ) as pg:
             rows = await catalog.list_tables(pg)
 
@@ -178,34 +146,18 @@ async def list_tables(handle: str) -> list[TableInfo]:
 
 
 async def get_schema(handle: str, table: TableIdentifier) -> TableSchemaResponse:
-    """Get column schema and sample values for a table.
-
-    Args:
-        handle: Connection handle
-        table: Table identifier
-
-    Returns:
-        Table schema response with columns and sample values
-
-    Raises:
-        ConnectionExpiredError: If handle is invalid or expired
-        TableNotFoundError: If table doesn't exist
-    """
+    """Get column schema and sample values for a table."""
     conn_info = _get_connection_info(handle)
-    url = _build_url(conn_info)
-    ssl = conn_info.ssl_mode if conn_info.ssl_mode != "disable" else None
     backend = get_backend(conn_info.db_type)
     catalog = get_catalog(conn_info.db_type)
 
     try:
         async with backend.pooled_connection(
-            url, ssl_mode=ssl, statement_timeout_ms=QUERY_TIMEOUT_MS
+            conn_info.connection_params, statement_timeout_ms=QUERY_TIMEOUT_MS
         ) as pg:
-            # Verify table exists
             if not await catalog.table_exists(pg, table.schema_name, table.name):
                 raise TableNotFoundError(f"Table '{table.schema_name}.{table.name}' not found")
 
-            # Get column information
             column_rows = await catalog.get_columns(pg, table.schema_name, table.name)
 
             columns = [
@@ -217,14 +169,14 @@ async def get_schema(handle: str, table: TableIdentifier) -> TableSchemaResponse
                 for r in column_rows
             ]
 
-            # Get sample values (first 5 rows)
             sample_values: dict[str, list[Any]] = {}
             if columns:
                 column_names = [col.name for col in columns]
                 quoted_columns = ", ".join(
                     [backend.quote_identifier(name) for name in column_names]
                 )
-                quoted_table = backend.quote_table(table.schema_name, table.name)
+                table_id = TableId(schema=table.schema_name, table=table.name)
+                quoted_table = backend.quote_table_id(table_id)
 
                 sample_rows = await pg.fetch_all(
                     f"SELECT {quoted_columns} FROM {quoted_table} LIMIT 5"
@@ -249,50 +201,35 @@ async def get_schema(handle: str, table: TableIdentifier) -> TableSchemaResponse
 async def get_distinct_values(
     handle: str, table: TableIdentifier, column: str, limit: int = 100
 ) -> list[str]:
-    """Get distinct values for a column (for filter dropdowns).
-
-    Args:
-        handle: Connection handle
-        table: Table identifier
-        column: Column name
-        limit: Maximum values to return
-
-    Returns:
-        List of distinct values as strings
-
-    Raises:
-        ConnectionExpiredError: If handle is invalid or expired
-        InvalidColumnError: If column doesn't exist
-    """
+    """Get distinct values for a column (for filter dropdowns)."""
     conn_info = _get_connection_info(handle)
-    url = _build_url(conn_info)
-    ssl = conn_info.ssl_mode if conn_info.ssl_mode != "disable" else None
     backend = get_backend(conn_info.db_type)
     catalog = get_catalog(conn_info.db_type)
 
     try:
         async with backend.pooled_connection(
-            url, ssl_mode=ssl, statement_timeout_ms=QUERY_TIMEOUT_MS
+            conn_info.connection_params, statement_timeout_ms=QUERY_TIMEOUT_MS
         ) as pg:
-            # Verify column exists
             missing = await catalog.validate_columns(pg, table.schema_name, table.name, [column])
             if missing:
                 raise InvalidColumnError(
                     f"Column '{column}' not found in table '{table.schema_name}.{table.name}'"
                 )
 
-            # Get distinct values
-            quoted_table = backend.quote_table(table.schema_name, table.name)
+            table_id = TableId(schema=table.schema_name, table=table.name)
+            quoted_table = backend.quote_table_id(table_id)
             quoted_column = backend.quote_identifier(column)
             cast_col = backend.cast_to_text(quoted_column)
-            ph = backend.param_placeholder()
+
+            bp = backend.new_bound_params()
+            limit_ph = backend.bind_param(bp, limit)
 
             rows = await pg.fetch_all(
                 f"SELECT DISTINCT {cast_col} AS val FROM {quoted_table} "
                 f"WHERE {quoted_column} IS NOT NULL "
                 f"ORDER BY {cast_col} "
-                f"LIMIT {ph}",
-                (limit,),
+                f"LIMIT {limit_ph}",
+                backend.to_params(bp),
             )
 
             return [str(r["val"]) for r in rows]
@@ -311,31 +248,14 @@ async def preview_data(
     filters: list[FilterCondition] | None = None,
     limit: int = 10,
 ) -> list[dict[str, Any]]:
-    """Preview data with column mappings applied.
-
-    Args:
-        handle: Connection handle
-        table: Table identifier
-        mappings: Column mappings to apply
-        filters: Optional filter conditions
-        limit: Number of rows to preview
-
-    Returns:
-        List of dictionaries with mapped column names
-
-    Raises:
-        ConnectionExpiredError: If handle is invalid or expired
-        InvalidColumnError: If a mapped column doesn't exist
-    """
+    """Preview data with column mappings applied."""
     conn_info = _get_connection_info(handle)
-    url = _build_url(conn_info)
-    ssl = conn_info.ssl_mode if conn_info.ssl_mode != "disable" else None
     backend = get_backend(conn_info.db_type)
     catalog = get_catalog(conn_info.db_type)
 
     try:
         async with backend.pooled_connection(
-            url, ssl_mode=ssl, statement_timeout_ms=QUERY_TIMEOUT_MS
+            conn_info.connection_params, statement_timeout_ms=QUERY_TIMEOUT_MS
         ) as pg:
             source_columns = [m.source for m in mappings]
             await _validate_columns(pg, catalog, table, source_columns)
@@ -361,32 +281,14 @@ async def import_data(
     limit: int = 10000,
     dedupe_on_id: bool = True,
 ) -> list[dict[str, Any]]:
-    """Import data from database with column mappings.
-
-    Args:
-        handle: Connection handle
-        table: Table identifier
-        mappings: Column mappings to apply
-        filters: Optional filter conditions
-        limit: Maximum rows to import
-        dedupe_on_id: Whether to deduplicate by id column
-
-    Returns:
-        List of dictionaries with mapped column names
-
-    Raises:
-        ConnectionExpiredError: If handle is invalid or expired
-        InvalidColumnError: If a mapped column doesn't exist
-    """
+    """Import data from database with column mappings."""
     conn_info = _get_connection_info(handle)
-    url = _build_url(conn_info)
-    ssl = conn_info.ssl_mode if conn_info.ssl_mode != "disable" else None
     backend = get_backend(conn_info.db_type)
     catalog = get_catalog(conn_info.db_type)
 
     try:
         async with backend.pooled_connection(
-            url, ssl_mode=ssl, statement_timeout_ms=QUERY_TIMEOUT_MS
+            conn_info.connection_params, statement_timeout_ms=QUERY_TIMEOUT_MS
         ) as pg:
             source_columns = [m.source for m in mappings]
             await _validate_columns(pg, catalog, table, source_columns)
@@ -418,7 +320,6 @@ async def import_data(
                 if len(all_data) >= limit:
                     break
 
-            # Apply deduplication if requested
             if dedupe_on_id and all_data:
                 id_target = None
                 for m in mappings:
@@ -427,7 +328,6 @@ async def import_data(
                         break
 
                 if id_target:
-                    # Long format: dedup on (id, metric_name) to keep all metrics
                     has_metric_name = "metric_name" in all_data[0]
                     seen_ids: set[Any] = set()
                     deduped_data: list[dict[str, Any]] = []
@@ -446,7 +346,6 @@ async def import_data(
                 f"Imported {len(all_data)} rows from "
                 f"{table.schema_name}.{table.name} (handle {handle[:8]}...)"
             )
-
             return all_data
 
     except InvalidColumnError:
@@ -470,41 +369,35 @@ async def execute_query(
 ) -> list[dict[str, Any]]:
     """Execute an arbitrary SELECT query with safety guards.
 
-    Safety layers:
-    1. Session-level read-only mode
-    2. Session-level statement timeout
-    3. Single-statement enforcement (done at schema validation)
-    4. LIMIT appended to query
+    Delegates all dialect-specific safety enforcement to the backend's
+    ``execute_read_query`` method.
 
     Args:
         handle: Connection handle
-        query: SQL query (already validated by schema)
+        query: SQL query (already validated by schema — SELECT/WITH only,
+               no semicolons)
         limit: Maximum rows to return
         timeout_ms: Statement timeout in milliseconds
 
     Returns:
         List of result dictionaries
     """
+    from app.services.db._errors import DatabaseBackendError
+
     conn_info = _get_connection_info(handle)
-    url = _build_url(conn_info)
-    ssl = conn_info.ssl_mode if conn_info.ssl_mode != "disable" else None
     backend = get_backend(conn_info.db_type)
 
     try:
-        async with backend.pooled_connection(
-            url, ssl_mode=ssl, statement_timeout_ms=timeout_ms
-        ) as pg:
-            # Layer 2: Session-level read-only + timeout
-            await pg.execute("SET default_transaction_read_only = on")
-            await pg.execute(f"SET statement_timeout = '{timeout_ms}'")
+        rows = await backend.execute_read_query(
+            conn_info.connection_params,
+            query,
+            max_rows=limit,
+            statement_timeout_ms=timeout_ms,
+        )
+        return [{k: _serialize_value(v) for k, v in row.items()} for row in rows]
 
-            # Append LIMIT (query already has trailing ; stripped by schema validator)
-            ph = backend.param_placeholder()
-            limited_query = f"{query} LIMIT {ph}"
-
-            rows = await pg.fetch_all(limited_query, (limit,))
-            return [{k: _serialize_value(v) for k, v in row.items()} for row in rows]
-
+    except DatabaseBackendError as e:
+        raise QuerySafetyError(str(e))
     except QuerySafetyError:
         raise
     except Exception as e:
@@ -518,47 +411,35 @@ async def preview_data_all_columns(
     filters: list[FilterCondition] | None = None,
     limit: int = 10,
 ) -> list[dict[str, Any]]:
-    """Preview all columns from a table (no mapping step).
-
-    Args:
-        handle: Connection handle
-        table: Table identifier
-        filters: Optional filter conditions
-        limit: Number of rows to preview
-
-    Returns:
-        List of raw dictionaries with all columns
-    """
+    """Preview all columns from a table (no mapping step)."""
     conn_info = _get_connection_info(handle)
-    url = _build_url(conn_info)
-    ssl = conn_info.ssl_mode if conn_info.ssl_mode != "disable" else None
     backend = get_backend(conn_info.db_type)
     catalog = get_catalog(conn_info.db_type)
 
     try:
         async with backend.pooled_connection(
-            url, ssl_mode=ssl, statement_timeout_ms=QUERY_TIMEOUT_MS
+            conn_info.connection_params, statement_timeout_ms=QUERY_TIMEOUT_MS
         ) as pg:
             if filters:
                 filter_columns = [f.column for f in filters]
                 await _validate_columns(pg, catalog, table, filter_columns)
 
             qi = backend.quote_identifier
-            ph = backend.param_placeholder()
-            quoted_table = backend.quote_table(table.schema_name, table.name)
+            table_id = TableId(schema=table.schema_name, table=table.name)
+            quoted_table = backend.quote_table_id(table_id)
 
+            bp = backend.new_bound_params()
             where_clause = ""
-            params: list[Any] = []
             if filters:
                 conditions = []
                 for f in filters:
+                    ph = backend.bind_param(bp, f.value)
                     conditions.append(f"{qi(f.column)} = {ph}")
-                    params.append(f.value)
                 where_clause = "WHERE " + " AND ".join(conditions)
 
-            params.append(limit)
-            query_str = f"SELECT * FROM {quoted_table} {where_clause} LIMIT {ph}"
-            rows = await pg.fetch_all(query_str, tuple(params))
+            limit_ph = backend.bind_param(bp, limit)
+            query_str = f"SELECT * FROM {quoted_table} {where_clause} LIMIT {limit_ph}"
+            rows = await pg.fetch_all(query_str, backend.to_params(bp))
             return [{k: _serialize_value(v) for k, v in row.items()} for row in rows]
 
     except InvalidColumnError:
@@ -575,53 +456,47 @@ async def import_data_all_columns(
     limit: int = 10000,
     dedupe_on_id: bool = True,
 ) -> list[dict[str, Any]]:
-    """Import all columns from a table (no mapping step).
-
-    Args:
-        handle: Connection handle
-        table: Table identifier
-        filters: Optional filter conditions
-        limit: Maximum rows to import
-        dedupe_on_id: Whether to deduplicate by dataset_id or id column
-
-    Returns:
-        List of raw dictionaries
-    """
+    """Import all columns from a table (no mapping step)."""
     conn_info = _get_connection_info(handle)
-    url = _build_url(conn_info)
-    ssl = conn_info.ssl_mode if conn_info.ssl_mode != "disable" else None
     backend = get_backend(conn_info.db_type)
     catalog = get_catalog(conn_info.db_type)
 
     try:
         async with backend.pooled_connection(
-            url, ssl_mode=ssl, statement_timeout_ms=QUERY_TIMEOUT_MS
+            conn_info.connection_params, statement_timeout_ms=QUERY_TIMEOUT_MS
         ) as pg:
             if filters:
                 filter_columns = [f.column for f in filters]
                 await _validate_columns(pg, catalog, table, filter_columns)
 
             qi = backend.quote_identifier
-            ph = backend.param_placeholder()
-            quoted_table = backend.quote_table(table.schema_name, table.name)
+            table_id = TableId(schema=table.schema_name, table=table.name)
+            quoted_table = backend.quote_table_id(table_id)
 
+            # Build base WHERE clause params
+            base_bp = backend.new_bound_params()
             where_clause = ""
-            base_params: list[Any] = []
             if filters:
                 conditions = []
                 for f in filters:
+                    ph = backend.bind_param(base_bp, f.value)
                     conditions.append(f"{qi(f.column)} = {ph}")
-                    base_params.append(f.value)
                 where_clause = "WHERE " + " AND ".join(conditions)
 
             all_data: list[dict[str, Any]] = []
             offset = 0
 
             while True:
+                bp = backend.new_bound_params()
+                bp._items = list(base_bp._items)  # copy filter params
                 chunk_limit = min(CHUNK_SIZE, limit - len(all_data))
-                params = [*base_params, chunk_limit, offset]
-                query_str = f"SELECT * FROM {quoted_table} {where_clause} LIMIT {ph} OFFSET {ph}"
-                chunk = await pg.fetch_all(query_str, tuple(params))
+                limit_ph = backend.bind_param(bp, chunk_limit)
+                offset_ph = backend.bind_param(bp, offset)
+                query_str = (
+                    f"SELECT * FROM {quoted_table} {where_clause} "
+                    f"LIMIT {limit_ph} OFFSET {offset_ph}"
+                )
+                chunk = await pg.fetch_all(query_str, backend.to_params(bp))
 
                 if not chunk:
                     break
@@ -632,7 +507,6 @@ async def import_data_all_columns(
                 if len(all_data) >= limit:
                     break
 
-            # Deduplicate
             if dedupe_on_id and all_data:
                 id_key = None
                 for candidate in ("dataset_id", "id"):
@@ -640,8 +514,6 @@ async def import_data_all_columns(
                         id_key = candidate
                         break
                 if id_key:
-                    # Long format (metric_name column): dedup on (id, metric_name)
-                    # to preserve one row per metric per record.
                     has_metric_name = "metric_name" in all_data[0]
                     seen: set[Any] = set()
                     deduped: list[dict[str, Any]] = []
@@ -675,11 +547,7 @@ async def _validate_columns(
     table: TableIdentifier,
     columns: list[str],
 ) -> None:
-    """Validate that all columns exist in the table.
-
-    Raises:
-        InvalidColumnError: If any column doesn't exist
-    """
+    """Validate that all columns exist in the table."""
     if not columns:
         return
 
@@ -697,40 +565,35 @@ async def _execute_select(
     limit: int,
     offset: int = 0,
 ) -> list[dict[str, Any]]:
-    """Execute SELECT query with mappings and filters.
-
-    Returns data with target column names from mappings.
-    """
+    """Execute SELECT query with mappings and filters using BoundParams."""
     qi = backend.quote_identifier
-    ph = backend.param_placeholder()
+    table_id = TableId(schema=table.schema_name, table=table.name)
+    quoted_table = backend.quote_table_id(table_id)
 
-    # Build column selection with aliases
     select_parts = [f"{qi(m.source)} AS {qi(m.target)}" for m in mappings]
     select_clause = ", ".join(select_parts)
 
-    # Build WHERE clause with parameterized filters
+    bp = backend.new_bound_params()
     where_clause = ""
-    params: list[Any] = []
     if filters:
         conditions = []
         for f in filters:
+            ph = backend.bind_param(bp, f.value)
             conditions.append(f"{qi(f.column)} = {ph}")
-            params.append(f.value)
         where_clause = "WHERE " + " AND ".join(conditions)
 
-    params.extend([limit, offset])
+    limit_ph = backend.bind_param(bp, limit)
+    offset_ph = backend.bind_param(bp, offset)
 
-    quoted_table = backend.quote_table(table.schema_name, table.name)
     query_str = f"""
         SELECT {select_clause}
         FROM {quoted_table}
         {where_clause}
-        LIMIT {ph} OFFSET {ph}
+        LIMIT {limit_ph} OFFSET {offset_ph}
     """
 
-    rows = await pg.fetch_all(query_str, tuple(params))
+    rows = await pg.fetch_all(query_str, backend.to_params(bp))
 
-    # Map dict keys to target names (dict_row already uses alias names)
     target_names = [m.target for m in mappings]
     return [{col: _serialize_value(row.get(col)) for col in target_names} for row in rows]
 

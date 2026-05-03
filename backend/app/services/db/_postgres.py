@@ -3,6 +3,7 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any, cast
+from urllib.parse import quote_plus
 
 import pandas as pd
 import psycopg
@@ -10,8 +11,10 @@ from psycopg import sql
 from psycopg.rows import dict_row
 from psycopg_pool import AsyncConnectionPool
 
-from app.services.db._base import AsyncConnection, CatalogBackend, DatabaseBackend
-from app.services.db._types import DatabaseType
+from app.services.db._base import AsyncConnection, BoundParams, CatalogBackend, DatabaseBackend
+from app.services.db._errors import DatabaseBackendError
+from app.services.db._query_guard import assert_read_only
+from app.services.db._types import DatabaseType, TableId
 
 logger = logging.getLogger(__name__)
 
@@ -37,29 +40,44 @@ class PostgresConnection(AsyncConnection):
     async def fetch_all(
         self,
         query: str,
-        params: tuple[Any, ...] | dict[str, Any] | None = None,
+        params: tuple[Any, ...] | list[Any] | dict[str, Any] | None = None,
     ) -> list[dict[str, Any]]:
+        pg_params: tuple[Any, ...] | dict[str, Any] | None
+        if isinstance(params, list):
+            pg_params = tuple(params)
+        else:
+            pg_params = params  # type: ignore[assignment]
         async with self._conn.cursor() as cur:
-            await cur.execute(query, params)
+            await cur.execute(query, pg_params)
             rows = await cur.fetchall()
             return rows  # type: ignore[return-value]
 
     async def fetch_one(
         self,
         query: str,
-        params: tuple[Any, ...] | dict[str, Any] | None = None,
+        params: tuple[Any, ...] | list[Any] | dict[str, Any] | None = None,
     ) -> dict[str, Any] | None:
+        pg_params: tuple[Any, ...] | dict[str, Any] | None
+        if isinstance(params, list):
+            pg_params = tuple(params)
+        else:
+            pg_params = params  # type: ignore[assignment]
         async with self._conn.cursor() as cur:
-            await cur.execute(query, params)
+            await cur.execute(query, pg_params)
             return await cur.fetchone()  # type: ignore[return-value]
 
     async def execute(
         self,
         query: str,
-        params: tuple[Any, ...] | dict[str, Any] | None = None,
+        params: tuple[Any, ...] | list[Any] | dict[str, Any] | None = None,
     ) -> None:
+        pg_params: tuple[Any, ...] | dict[str, Any] | None
+        if isinstance(params, list):
+            pg_params = tuple(params)
+        else:
+            pg_params = params  # type: ignore[assignment]
         async with self._conn.cursor() as cur:
-            await cur.execute(query, params)
+            await cur.execute(query, pg_params)
 
     async def commit(self) -> None:
         await self._conn.commit()
@@ -122,26 +140,62 @@ class PostgresBackend(DatabaseBackend):
     def db_type(self) -> DatabaseType:
         return DatabaseType.POSTGRES
 
-    def build_url(self, config: Any) -> str:
-        if getattr(config, "url", None):
-            return str(config.url)
-        from urllib.parse import quote_plus
+    def build_connection_params(self, source: Any) -> dict[str, Any]:
+        """Build Postgres params from a config, Pydantic request, or dict."""
+        if isinstance(source, dict):
+            return {
+                "url": source.get("url"),
+                "host": source.get("host", "localhost"),
+                "port": source.get("port", 5432),
+                "database": source.get("database", ""),
+                "username": source.get("username", ""),
+                "password": source.get("password", ""),
+                "ssl_mode": source.get("ssl_mode", "require"),
+            }
 
-        password = quote_plus(str(config.password or ""))
-        user = config.username or ""
-        host = config.host or "localhost"
-        port = config.port or 5432
-        database = config.database or ""
+        url = getattr(source, "url", None)
+        password = getattr(source, "password", None)
+        if hasattr(password, "get_secret_value"):
+            password = password.get_secret_value()
+
+        ssl_mode_val = getattr(source, "ssl_mode", "require") or "require"
+        if hasattr(ssl_mode_val, "value"):
+            ssl_mode_val = ssl_mode_val.value
+
+        return {
+            "url": str(url) if url else None,
+            "host": getattr(source, "host", None) or "localhost",
+            "port": getattr(source, "port", 5432) or 5432,
+            "database": getattr(source, "database", "") or "",
+            "username": getattr(source, "username", "") or "",
+            "password": str(password or ""),
+            "ssl_mode": str(ssl_mode_val),
+        }
+
+    def build_url_from_params(self, params: dict[str, Any]) -> str:
+        """Build a ``postgresql://`` URL from a Postgres params dict."""
+        if params.get("url"):
+            return str(params["url"])
+        password = quote_plus(str(params.get("password", "")))
+        user = params.get("username", "")
+        host = params.get("host", "localhost")
+        port = params.get("port", 5432)
+        database = params.get("database", "")
         return f"postgresql://{user}:{password}@{host}:{port}/{database}"
+
+    def _ssl_from_params(self, params: dict[str, Any]) -> str | None:
+        ssl_mode = params.get("ssl_mode", "require")
+        return ssl_mode if ssl_mode and ssl_mode != "disable" else None
 
     @asynccontextmanager
     async def connect(
         self,
-        url: str,
-        ssl_mode: str | None = None,
+        params: dict[str, Any],
         connect_timeout: int = DEFAULT_CONNECT_TIMEOUT,
         statement_timeout_ms: int = DEFAULT_STATEMENT_TIMEOUT_MS,
     ) -> AsyncIterator[PostgresConnection]:
+        url = self.build_url_from_params(params)
+        ssl_mode = self._ssl_from_params(params)
         conninfo = _build_conninfo(url, ssl_mode, connect_timeout)
         conn = await psycopg.AsyncConnection.connect(
             conninfo,
@@ -157,13 +211,14 @@ class PostgresBackend(DatabaseBackend):
     @asynccontextmanager
     async def pooled_connection(
         self,
-        url: str,
-        ssl_mode: str | None = None,
+        params: dict[str, Any],
         statement_timeout_ms: int = DEFAULT_STATEMENT_TIMEOUT_MS,
         connect_timeout: int = DEFAULT_CONNECT_TIMEOUT,
         min_size: int = DEFAULT_POOL_MIN_SIZE,
         max_size: int = DEFAULT_POOL_MAX_SIZE,
     ) -> AsyncIterator[PostgresConnection]:
+        url = self.build_url_from_params(params)
+        ssl_mode = self._ssl_from_params(params)
         pool = await self._get_pool(url, ssl_mode, connect_timeout, min_size, max_size)
         async with pool.connection() as raw_conn:
             conn = cast("psycopg.AsyncConnection[dict[str, Any]]", raw_conn)
@@ -172,14 +227,15 @@ class PostgresBackend(DatabaseBackend):
 
     async def chunked_read(
         self,
-        url: str,
+        params: dict[str, Any],
         query: str,
-        ssl_mode: str | None = None,
         chunk_size: int = DEFAULT_CHUNK_SIZE,
         max_rows: int = 0,
         connect_timeout: int = DEFAULT_CONNECT_TIMEOUT,
         statement_timeout_ms: int = DEFAULT_STATEMENT_TIMEOUT_MS,
     ) -> AsyncIterator[tuple[pd.DataFrame, bool]]:
+        url = self.build_url_from_params(params)
+        ssl_mode = self._ssl_from_params(params)
         conninfo = _build_conninfo(url, ssl_mode, connect_timeout)
 
         # Use autocommit=True with a plain (client-side) cursor so this works
@@ -218,25 +274,25 @@ class PostgresBackend(DatabaseBackend):
 
     async def test_connection(
         self,
-        url: str,
-        ssl_mode: str | None = None,
+        params: dict[str, Any],
         connect_timeout: int = DEFAULT_CONNECT_TIMEOUT,
         statement_timeout_ms: int = 30_000,
     ) -> str | None:
-        async with self.connect(url, ssl_mode, connect_timeout, statement_timeout_ms) as conn:
+        async with self.connect(params, connect_timeout, statement_timeout_ms) as conn:
             row = await conn.fetch_one("SELECT version()")
             return row["version"] if row else None
 
     async def copy_to_csv(
         self,
-        url: str,
+        params: dict[str, Any],
         query: str,
         dest_path: str | Path,
-        ssl_mode: str | None = None,
         connect_timeout: int = DEFAULT_CONNECT_TIMEOUT,
         statement_timeout_ms: int = 600_000,
     ) -> int:
         """COPY query results to a CSV file via Postgres COPY TO STDOUT."""
+        url = self.build_url_from_params(params)
+        ssl_mode = self._ssl_from_params(params)
         conninfo = _build_conninfo(url, ssl_mode, connect_timeout)
         async with await psycopg.AsyncConnection.connect(conninfo, autocommit=True) as raw_conn:
             conn = cast("psycopg.AsyncConnection[dict[str, Any]]", raw_conn)
@@ -251,7 +307,51 @@ class PostgresBackend(DatabaseBackend):
             row_count = sum(1 for _ in f) - 1  # subtract header
         return max(row_count, 0)
 
+    async def execute_read_query(
+        self,
+        params: dict[str, Any],
+        query: str,
+        *,
+        max_rows: int = 100,
+        statement_timeout_ms: int = 30_000,
+    ) -> list[dict[str, Any]]:
+        """Execute a safe read-only SELECT with Postgres-specific safety guards.
+
+        Guards applied:
+        1. assert_read_only rejects non-SELECT/WITH queries
+        2. Session-level ``SET default_transaction_read_only = on``
+        3. Session-level ``SET statement_timeout``
+        4. ``LIMIT max_rows`` appended to user query
+        """
+        assert_read_only(query)
+
+        async with self.pooled_connection(params, statement_timeout_ms=statement_timeout_ms) as pg:
+            await pg.execute("SET default_transaction_read_only = on")
+            await pg.execute(f"SET statement_timeout = '{statement_timeout_ms}'")
+            limited_query = f"{query} LIMIT {max_rows}"
+            rows = await pg.fetch_all(limited_query)
+            return list(rows)
+
     # -- SQL dialect helpers (defaults from base class are already Postgres) --
+
+    def quote_table_id(self, table: TableId) -> str:
+        """Postgres ignores project; uses schema.table."""
+        return self.quote_table(table.schema, table.table)
+
+    # -- Parameter binding (Postgres uses %s positional params) --
+
+    def bind_param(
+        self,
+        builder: BoundParams,
+        value: Any,
+        name: str | None = None,
+        sql_type: str | None = None,
+    ) -> str:
+        builder._items.append(value)
+        return "%s"
+
+    def to_params(self, builder: BoundParams) -> tuple[Any, ...]:
+        return tuple(builder._items)
 
     # -- Internal pool management --
 
@@ -280,6 +380,11 @@ class PostgresBackend(DatabaseBackend):
             )
 
         return self._pools[conninfo]
+
+    # -- Deprecated build_url shim (for code still using old API) --
+
+    def build_url(self, config: Any) -> str:
+        return self.build_url_from_params(self.build_connection_params(config))
 
 
 # ---------------------------------------------------------------------------

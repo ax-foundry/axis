@@ -1,8 +1,7 @@
 import re
-from enum import StrEnum
-from typing import Any
+from typing import Any, Literal
 
-from pydantic import BaseModel, SecretStr, field_validator
+from pydantic import BaseModel, SecretStr, field_validator, model_validator
 
 # Keywords that indicate a mutation query (first-pass filter only)
 _MUTATION_KEYWORDS = re.compile(
@@ -11,54 +10,62 @@ _MUTATION_KEYWORDS = re.compile(
 )
 
 
-class SSLMode(StrEnum):
+class SSLMode(str):
     """Database SSL connection modes."""
 
     DISABLE = "disable"
     REQUIRE = "require"
-    VERIFY_CA = "verify-ca"  # Future: requires CA cert upload
-    VERIFY_FULL = "verify-full"  # Future: requires CA cert upload
+    VERIFY_CA = "verify-ca"
+    VERIFY_FULL = "verify-full"
+
+
+# ---------------------------------------------------------------------------
+# Connection request — Postgres + BigQuery discriminated union
+# ---------------------------------------------------------------------------
 
 
 class DatabaseConnectionRequest(BaseModel):
-    """Request to connect to a database."""
+    """Request to connect to a database (Postgres or BigQuery)."""
 
-    host: str
+    db_type: Literal["postgres", "bigquery"] = "postgres"
+
+    # Postgres fields
+    host: str | None = None
     port: int = 5432
-    database: str
-    username: str
-    password: SecretStr
-    ssl_mode: SSLMode = SSLMode.REQUIRE
-    db_type: str = "postgres"
+    database: str | None = None
+    username: str | None = None
+    password: SecretStr | None = None
+    ssl_mode: str = "require"
 
-    @field_validator("host")
-    @classmethod
-    def validate_host(cls, v: str) -> str:
-        """Validate host is not empty."""
-        if not v or not v.strip():
-            raise ValueError("Host cannot be empty")
-        return v.strip()
+    # BigQuery fields
+    project_id: str | None = None
+    dataset: str | None = None
+    location: str | None = "US"
+    sa_client_email: str | None = None
+    sa_private_key: SecretStr | None = None
 
-    @field_validator("database")
-    @classmethod
-    def validate_database(cls, v: str) -> str:
-        """Validate database name is not empty."""
-        if not v or not v.strip():
-            raise ValueError("Database name cannot be empty")
-        return v.strip()
-
-    @field_validator("username")
-    @classmethod
-    def validate_username(cls, v: str) -> str:
-        """Validate username is not empty."""
-        if not v or not v.strip():
-            raise ValueError("Username cannot be empty")
-        return v.strip()
+    @model_validator(mode="after")
+    def validate_by_db_type(self) -> "DatabaseConnectionRequest":
+        """Enforce required fields per db_type."""
+        if self.db_type == "postgres":
+            if not self.host or not self.host.strip():
+                raise ValueError("host is required for Postgres connections")
+            if not self.database or not self.database.strip():
+                raise ValueError("database is required for Postgres connections")
+            if not self.username or not self.username.strip():
+                raise ValueError("username is required for Postgres connections")
+            if self.password is None:
+                raise ValueError("password is required for Postgres connections")
+        elif self.db_type == "bigquery":
+            if not self.project_id or not self.project_id.strip():
+                raise ValueError("project_id is required for BigQuery connections")
+            if not self.dataset or not self.dataset.strip():
+                raise ValueError("dataset is required for BigQuery connections")
+        return self
 
     @field_validator("port")
     @classmethod
     def validate_port(cls, v: int) -> int:
-        """Validate port is in valid range."""
         if v < 1 or v > 65535:
             raise ValueError("Port must be between 1 and 65535")
         return v
@@ -76,13 +83,12 @@ class ConnectResponse(BaseModel):
 class TableIdentifier(BaseModel):
     """Identifier for a database table."""
 
-    schema_name: str = "public"  # e.g., "public"
+    schema_name: str = "public"  # e.g., "public" for Postgres; dataset for BigQuery
     name: str  # e.g., "evaluations"
 
     @field_validator("name")
     @classmethod
     def validate_name(cls, v: str) -> str:
-        """Validate table name is not empty."""
         if not v or not v.strip():
             raise ValueError("Table name cannot be empty")
         return v.strip()
@@ -93,7 +99,7 @@ class TableInfo(BaseModel):
 
     schema_name: str
     name: str
-    row_count_estimate: int  # From pg_class.reltuples
+    row_count_estimate: int
 
 
 class TablesListResponse(BaseModel):
@@ -120,15 +126,7 @@ class TableSchemaResponse(BaseModel):
 
 
 class ColumnMapping(BaseModel):
-    """Mapping from source DB column to target AXIS column.
-
-    Supported target columns:
-    - dataset_id, query, actual_output, expected_output
-    - retrieved_content, conversation, additional_input, document_text
-    - actual_reference, expected_reference
-    - tools_called, expected_tools, acceptance_criteria
-    - latency, trace_id, observation_id
-    """
+    """Mapping from source DB column to target AXIS column."""
 
     source: str  # DB column name
     target: str  # AXIS column name
@@ -144,7 +142,7 @@ class FilterCondition(BaseModel):
 class DatabaseImportRequest(BaseModel):
     """Request to import data from database."""
 
-    handle: str  # Connection handle
+    handle: str
     table: TableIdentifier
     mappings: list[ColumnMapping] | None = None
     filters: list[FilterCondition] | None = None
@@ -154,7 +152,6 @@ class DatabaseImportRequest(BaseModel):
     @field_validator("limit")
     @classmethod
     def validate_limit(cls, v: int) -> int:
-        """Validate limit is within bounds."""
         if v < 1:
             raise ValueError("Limit must be at least 1")
         if v > 10000:
@@ -197,7 +194,10 @@ class DistinctValuesResponse(BaseModel):
 class DatabaseDefaults(BaseModel):
     """Default database connection values from config."""
 
-    # Connection (password is never sent — only a flag)
+    # Common
+    db_type: str = "postgres"
+
+    # Postgres connection (password is never sent — only a flag)
     url: str | None = None
     host: str | None = None
     port: int = 5432
@@ -205,6 +205,12 @@ class DatabaseDefaults(BaseModel):
     username: str | None = None
     has_password: bool = False
     ssl_mode: str = "require"
+
+    # BigQuery connection (sa_private_key is never sent — only a flag)
+    project_id: str | None = None
+    dataset: str | None = None
+    location: str | None = None
+    has_sa_credentials: bool = False
 
     # Default table to auto-select
     table: str | None = None
@@ -249,13 +255,11 @@ class QueryPreviewRequest(BaseModel):
     @field_validator("query")
     @classmethod
     def validate_query(cls, v: str) -> str:
-        """Validate query is safe."""
         return _validate_sql_query(v)
 
     @field_validator("limit")
     @classmethod
     def validate_limit(cls, v: int) -> int:
-        """Validate limit is within bounds."""
         if v < 1:
             raise ValueError("Limit must be at least 1")
         if v > 100:
@@ -274,13 +278,11 @@ class QueryImportRequest(BaseModel):
     @field_validator("query")
     @classmethod
     def validate_query(cls, v: str) -> str:
-        """Validate query is safe."""
         return _validate_sql_query(v)
 
     @field_validator("limit")
     @classmethod
     def validate_limit(cls, v: int) -> int:
-        """Validate limit is within bounds."""
         if v < 1:
             raise ValueError("Limit must be at least 1")
         if v > 50000:

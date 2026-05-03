@@ -150,9 +150,8 @@ def _cleanup_sync_dir(sync_uuid: str) -> None:
 
 async def _copy_read(
     backend: DatabaseBackend,
-    pg_url: str,
+    params: dict[str, Any],
     query: str,
-    ssl_mode: str | None,
     statement_timeout_ms: int,
     dest_dir: Path,
     file_name: str,
@@ -162,28 +161,27 @@ async def _copy_read(
     Returns None (falls through to chunked read) if the backend doesn't support COPY
     or if the server drops the connection (e.g. Neon pooler rejects COPY in transaction mode).
     """
-    import psycopg
-
     dest_path = dest_dir / file_name
-    effective_ssl = ssl_mode if ssl_mode not in ("disable", None) else None
     try:
         await backend.copy_to_csv(
-            url=pg_url,
+            params=params,
             query=query,
             dest_path=dest_path,
-            ssl_mode=effective_ssl,
             statement_timeout_ms=statement_timeout_ms,
         )
         return dest_path
     except (NotImplementedError, AttributeError):
         return None
-    except (psycopg.OperationalError, psycopg.DatabaseError, OSError) as e:
-        logger.warning(
-            "COPY read failed (%s: %s), falling back to chunked read",
-            type(e).__name__,
-            e,
-        )
-        return None
+    except Exception as e:
+        # Catch psycopg errors without importing psycopg at module level
+        if "psycopg" in type(e).__module__ or isinstance(e, OSError):
+            logger.warning(
+                "COPY read failed (%s: %s), falling back to chunked read",
+                type(e).__name__,
+                e,
+            )
+            return None
+        raise
 
 
 @dataclass
@@ -245,20 +243,16 @@ def _wrap_query_incremental(query: str, column: str, watermark: str) -> str:
 
 async def _get_partition_bounds(
     backend: DatabaseBackend,
-    pg_url: str,
+    params: dict[str, Any],
     query: str,
     partition_column: str,
-    ssl_mode: str | None,
     statement_timeout_ms: int,
 ) -> tuple[Any, Any] | None:
     """Query MIN/MAX of partition_column. Returns (min, max) or None if empty."""
-    effective_ssl = ssl_mode if ssl_mode not in ("disable", None) else None
     bounds_query = (
         f'SELECT MIN("{partition_column}"), MAX("{partition_column}") FROM ({query}) AS _bounds'
     )
-    async with backend.connect(
-        pg_url, ssl_mode=effective_ssl, statement_timeout_ms=statement_timeout_ms
-    ) as conn:
+    async with backend.connect(params, statement_timeout_ms=statement_timeout_ms) as conn:
         row = await conn.fetch_one(bounds_query)
         if not row:
             return None
@@ -271,26 +265,24 @@ async def _get_partition_bounds(
 
 async def _parallel_copy_read(
     backend: DatabaseBackend,
-    pg_url: str,
+    params: dict[str, Any],
     query: str,
     partition_column: str,
     n_workers: int,
-    ssl_mode: str | None,
     statement_timeout_ms: int,
     dest_dir: Path,
     table_name: str,
 ) -> list[Path]:
     """Run N parallel COPY reads partitioned by partition_column. Returns list of CSV paths."""
     bounds = await _get_partition_bounds(
-        backend, pg_url, query, partition_column, ssl_mode, statement_timeout_ms
+        backend, params, query, partition_column, statement_timeout_ms
     )
     if bounds is None:
         # Empty table — do a single unpartitioned COPY
         result = await _copy_read(
             backend,
-            pg_url,
+            params,
             query,
-            ssl_mode,
             statement_timeout_ms,
             dest_dir,
             f"{table_name}.csv",
@@ -310,9 +302,8 @@ async def _parallel_copy_read(
         coros.append(
             _copy_read(
                 backend,
-                pg_url,
+                params,
                 ranged_query,
-                ssl_mode,
                 statement_timeout_ms,
                 dest_dir,
                 f"{table_name}_{i}.csv",
@@ -397,9 +388,8 @@ def _compute_csv_rename_map(
 
 
 async def _chunked_read(
-    pg_url: str,
+    params: dict[str, Any],
     query: str,
-    ssl_mode: str,
     chunk_size: int,
     normalize_fn: Callable[..., pd.DataFrame] | None,
     custom_columns: dict[str, str] | None,
@@ -419,9 +409,8 @@ async def _chunked_read(
     backend = get_backend(db_type)
 
     async for df, truncated in backend.chunked_read(
-        url=pg_url,
+        params,
         query=query,
-        ssl_mode=ssl_mode if ssl_mode not in ("disable", None) else None,
         chunk_size=chunk_size,
         max_rows=max_rows,
         statement_timeout_ms=statement_timeout_ms,
@@ -581,11 +570,11 @@ async def _sync_internal_table(
     use_copy = False
 
     try:
-        pg_url = _build_url(config)
         normalize_fn = _get_normalize_fn(table_name)
         truncated = False
         db_type = getattr(config, "db_type", "postgres")
         backend = get_backend(db_type)
+        params = _build_params(config)
         partition_column = getattr(config, "partition_column", None)
         sync_workers = duckdb_config.sync_workers
         custom_columns = getattr(config, "columns", None) or {}
@@ -601,11 +590,10 @@ async def _sync_internal_table(
             try:
                 csv_paths = await _parallel_copy_read(
                     backend=backend,
-                    pg_url=pg_url,
+                    params=params,
                     query=config.query,
                     partition_column=partition_column,
                     n_workers=sync_workers,
-                    ssl_mode=config.ssl_mode,
                     statement_timeout_ms=sync_timeout_ms,
                     dest_dir=dest_dir,
                     table_name=table_name,
@@ -621,9 +609,8 @@ async def _sync_internal_table(
         if not use_copy and not csv_paths:
             result = await _copy_read(
                 backend=backend,
-                pg_url=pg_url,
+                params=params,
                 query=config.query,
-                ssl_mode=config.ssl_mode,
                 statement_timeout_ms=sync_timeout_ms,
                 dest_dir=dest_dir,
                 file_name=f"{table_name}.csv",
@@ -635,9 +622,8 @@ async def _sync_internal_table(
         # Tier 3: Sequential chunked read (fallback)
         if not use_copy:
             async for df, was_truncated in _chunked_read(
-                pg_url=pg_url,
+                params=params,
                 query=config.query,
-                ssl_mode=config.ssl_mode,
                 chunk_size=duckdb_config.sync_chunk_size,
                 normalize_fn=normalize_fn,
                 custom_columns=custom_columns,
@@ -1011,12 +997,12 @@ async def _sync_single_table(
 # ------------------------------------------------------------------
 
 
-def _build_url(config: Any) -> str:
-    """Build a connection URL from config using the appropriate backend."""
+def _build_params(config: Any) -> dict[str, Any]:
+    """Build backend connection params from a config object."""
     from app.services.db import get_backend
 
     db_type = getattr(config, "db_type", "postgres")
-    return get_backend(db_type).build_url(config)
+    return get_backend(db_type).build_connection_params(config)
 
 
 async def sync_dataset(

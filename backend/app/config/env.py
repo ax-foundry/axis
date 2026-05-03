@@ -126,6 +126,35 @@ class Settings(BaseSettings):
         default="text-embedding-ada-002", description="Default embedding model name."
     )
 
+    # GCP / BigQuery Configuration
+    gcp_project_id: str | None = Field(
+        default=None,
+        description="GCP project ID used when BigQuery YAML config leaves project_id blank.",
+    )
+    gcp_sa_client_email: str | None = Field(
+        default=None,
+        description=(
+            "Service-account email for BigQuery auth. "
+            "Leave blank to use ADC (gcloud auth application-default login)."
+        ),
+    )
+    gcp_sa_private_key: str | None = Field(
+        default=None,
+        description=(
+            "Service-account private key (PEM) for BigQuery auth. "
+            "Newlines may be encoded as \\\\n in env vars — they are unescaped automatically. "
+            "Never log this value."
+        ),
+    )
+    bigquery_max_bytes_billed: int | None = Field(
+        default=10 * 1024**3,  # 10 GiB
+        description=(
+            "Maximum bytes BigQuery may scan per query (cost guard). "
+            "Set to null to disable (not recommended). "
+            "Default: 10 GiB. Env: BIGQUERY_MAX_BYTES_BILLED."
+        ),
+    )
+
     # Human Signals Database Configuration (env vars)
     human_signals_db_url: str | None = Field(
         default=None,

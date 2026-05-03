@@ -36,7 +36,7 @@ def _normalize_monitoring_columns(df: pd.DataFrame) -> pd.DataFrame:
         normalized = col.lower().strip().replace(" ", "_").replace("-", "_")
         if normalized in MONITORING_COLUMN_NORMALIZATION:
             target = MONITORING_COLUMN_NORMALIZATION[normalized]
-            if target != col:  # Only rename if different
+            if target != col:
                 rename_map[col] = target
     if rename_map:
         df = df.rename(columns=rename_map)
@@ -64,10 +64,7 @@ async def get_defaults(
         default="data", description="Target store: data, monitoring, or human_signals"
     ),
 ) -> DatabaseDefaults:
-    """Get default database connection values from YAML config or env vars.
-
-    YAML config > env vars > hardcoded defaults.
-    """
+    """Get default database connection values from YAML config or env vars."""
     try:
         cfg = get_import_config(store)
     except ValueError:
@@ -77,12 +74,38 @@ async def get_defaults(
         )
 
     has_defaults = cfg.is_configured
-
-    # Build the query field: prefer dataset_query (used for auto-load split queries)
     query = cfg.dataset_query
 
-    # Resolve connection fields: prefer explicit fields, fall back to parsing URL.
-    # The URL itself is NEVER sent to the frontend (it contains the password).
+    if cfg.db_type == "bigquery":
+        # BigQuery path: pull fields from connection_params
+        cp = cfg.connection_params or {}
+        # Also check env-var fallbacks
+        from app.config.env import settings
+
+        project_id = cp.get("project_id") or settings.gcp_project_id
+        dataset = cp.get("dataset")
+        location = cp.get("location") or "US"
+        has_sa = bool(
+            (cp.get("sa_client_email") or settings.gcp_sa_client_email)
+            and (cp.get("sa_private_key") or settings.gcp_sa_private_key)
+        )
+
+        return DatabaseDefaults(
+            db_type="bigquery",
+            project_id=project_id,
+            dataset=dataset,
+            location=location,
+            has_sa_credentials=has_sa,
+            has_defaults=has_defaults,
+            tables=cfg.tables,
+            filters=cfg.filters,
+            column_rename_map=cfg.column_rename_map,
+            query=query,
+            query_timeout=cfg.query_timeout,
+            row_limit=cfg.row_limit,
+        )
+
+    # Postgres path (default)
     host = cfg.host
     port = cfg.port
     database = cfg.database
@@ -91,7 +114,6 @@ async def get_defaults(
     ssl_mode = cfg.ssl_mode
 
     if cfg.url and not host:
-        # Parse non-sensitive parts out of the connection URL
         from urllib.parse import parse_qs, urlparse
 
         try:
@@ -105,9 +127,10 @@ async def get_defaults(
             if qs_ssl:
                 ssl_mode = qs_ssl[0]
         except Exception:
-            pass  # Fall back to whatever fields we already have
+            pass
 
     return DatabaseDefaults(
+        db_type="postgres",
         url=None,  # Never expose the URL
         host=host,
         port=port,
@@ -115,7 +138,7 @@ async def get_defaults(
         username=username,
         has_password=has_password,
         ssl_mode=ssl_mode,
-        table=None,  # Table is selected interactively now
+        table=None,
         has_defaults=has_defaults,
         tables=cfg.tables,
         filters=cfg.filters,
@@ -139,33 +162,12 @@ async def connect_database(
     The handle is valid for 15 minutes and can be used to browse tables,
     preview data, and import data without re-sending credentials.
 
-    If the password is the sentinel '********', the real password is
-    substituted from the server-side config for the given store.
+    For Postgres: if the password is '********', the real password is
+    substituted from server-side config.
+    For BigQuery: if sa_private_key is '********', the real key is substituted
+    from server-side config (GCP_SA_PRIVATE_KEY env var or YAML).
     """
-    # Substitute sentinel password with real config password
-    if request.password.get_secret_value() == _PASSWORD_SENTINEL:
-        try:
-            cfg = get_import_config(store)
-        except ValueError:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Unknown store: {store!r}",
-            )
-
-        # Resolve password: prefer explicit field, fall back to URL
-        real_password = cfg.password
-        if not real_password and cfg.url:
-            from urllib.parse import urlparse
-
-            with contextlib.suppress(Exception):
-                real_password = urlparse(cfg.url).password
-
-        if not real_password:
-            raise HTTPException(
-                status_code=400,
-                detail="No password configured on the server. Please enter one manually.",
-            )
-        request = request.model_copy(update={"password": SecretStr(real_password)})
+    request = await _substitute_sentinels(request, store)
 
     try:
         handle, version = await database_service.connect(request)
@@ -178,7 +180,6 @@ async def connect_database(
     except database_service.DatabaseServiceError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except ValueError as e:
-        # Rate limit exceeded
         raise HTTPException(status_code=429, detail=str(e))
     except Exception:
         logger.exception("Unexpected error during database connection")
@@ -188,12 +189,59 @@ async def connect_database(
         )
 
 
+async def _substitute_sentinels(
+    request: DatabaseConnectionRequest,
+    store: str,
+) -> DatabaseConnectionRequest:
+    """Replace sentinel values with real credentials from server-side config."""
+    if request.db_type == "postgres":
+        if request.password and request.password.get_secret_value() == _PASSWORD_SENTINEL:
+            try:
+                cfg = get_import_config(store)
+            except ValueError:
+                raise HTTPException(status_code=400, detail=f"Unknown store: {store!r}")
+
+            real_password = cfg.password
+            if not real_password and cfg.url:
+                from urllib.parse import urlparse
+
+                with contextlib.suppress(Exception):
+                    real_password = urlparse(cfg.url).password
+
+            if not real_password:
+                raise HTTPException(
+                    status_code=400,
+                    detail="No password configured on the server. Please enter one manually.",
+                )
+            request = request.model_copy(update={"password": SecretStr(real_password)})
+
+    elif request.db_type == "bigquery":
+        if request.sa_private_key and request.sa_private_key.get_secret_value() == _PASSWORD_SENTINEL:
+            from app.config.env import settings
+
+            real_key = None
+            with contextlib.suppress(Exception):
+                cfg = get_import_config(store)
+                real_key = (cfg.connection_params or {}).get("sa_private_key")
+
+            real_key = real_key or settings.gcp_sa_private_key
+
+            if not real_key:
+                raise HTTPException(
+                    status_code=400,
+                    detail=(
+                        "No service-account key configured on the server. "
+                        "Please paste your key or configure GCP_SA_PRIVATE_KEY."
+                    ),
+                )
+            request = request.model_copy(update={"sa_private_key": SecretStr(real_key)})
+
+    return request
+
+
 @router.get("/{handle}/tables", response_model=TablesListResponse)
 async def list_tables(handle: str) -> TablesListResponse:
-    """List available tables in the connected database.
-
-    Returns table names with schema and estimated row counts.
-    """
+    """List available tables in the connected database."""
     try:
         tables = await database_service.list_tables(handle)
         return TablesListResponse(success=True, tables=tables)
@@ -215,10 +263,7 @@ async def get_table_schema(
     schema_name: str = Query(default="public", alias="schema"),
     name: str = Query(..., alias="table"),
 ) -> TableSchemaResponse:
-    """Get column schema and sample values for a table.
-
-    Returns column names, types, nullability, and sample values (first 5 rows).
-    """
+    """Get column schema and sample values for a table."""
     try:
         table = TableIdentifier(schema_name=schema_name, name=name)
         return await database_service.get_schema(handle, table)
@@ -266,11 +311,7 @@ async def preview_data(
     handle: str,
     request: PreviewRequest,
 ) -> PreviewResponse:
-    """Preview data with optional column mappings.
-
-    If mappings are provided, applies them (legacy behavior).
-    If mappings are None, returns all columns as-is.
-    """
+    """Preview data with optional column mappings."""
     try:
         if request.mappings:
             data = await database_service.preview_data(
@@ -311,10 +352,7 @@ async def query_preview(
     handle: str,
     request: QueryPreviewRequest,
 ) -> PreviewResponse:
-    """Preview results of a SQL query.
-
-    Only SELECT queries are allowed. The session is forced read-only.
-    """
+    """Preview results of a SQL query. Only SELECT queries are allowed."""
     try:
         data = await database_service.execute_query(handle, request.query, request.limit)
         return PreviewResponse(
@@ -339,11 +377,7 @@ async def query_import(
     handle: str,
     request: QueryImportRequest,
 ) -> UploadResponse:
-    """Import data from a SQL query.
-
-    Only SELECT queries are allowed. The session is forced read-only.
-    Applies column_rename_map from config if available.
-    """
+    """Import data from a SQL query. Only SELECT queries are allowed."""
     if request.handle != handle:
         raise HTTPException(
             status_code=400,
@@ -371,12 +405,7 @@ async def import_data(
     handle: str,
     request: DatabaseImportRequest,
 ) -> UploadResponse:
-    """Import data from database into AXIS.
-
-    Returns the same response format as CSV upload for consistency.
-    If mappings are provided, uses them. Otherwise imports all columns.
-    """
-    # Validate handle matches request
+    """Import data from database into AXIS."""
     if request.handle != handle:
         raise HTTPException(
             status_code=400,
@@ -421,10 +450,7 @@ async def import_data(
 
 @router.delete("/{handle}")
 async def disconnect(handle: str) -> dict[str, Any]:
-    """Explicitly disconnect and invalidate a connection handle.
-
-    This is optional - handles automatically expire after 15 minutes.
-    """
+    """Explicitly disconnect and invalidate a connection handle."""
     store = get_connection_store()
     deleted = store.delete_handle(handle)
     if deleted:
@@ -455,8 +481,6 @@ def _process_import_data(data: list[dict[str, Any]], source: str) -> UploadRespo
 
     df = pd.DataFrame(data)
 
-    # Apply column_rename_map from config (if the store config has one)
-    # This is applied before standard processing so renamed columns are recognized
     try:
         cfg = get_import_config("data")
         if cfg.column_rename_map:
@@ -466,16 +490,13 @@ def _process_import_data(data: list[dict[str, Any]], source: str) -> UploadRespo
     except ValueError:
         pass
 
-    # Process through standard pipeline
     processed_df, format_type, message = process_uploaded_data(df)
 
     if processed_df is None:
         processed_df = df
 
-    # Apply monitoring column normalization
     processed_df = _normalize_monitoring_columns(processed_df)
 
-    # Pre-import validation: warn if no usable columns found
     result_cols = set(processed_df.columns)
     has_usable = bool(result_cols & _USABLE_COLUMNS)
     warning = ""
@@ -485,7 +506,6 @@ def _process_import_data(data: list[dict[str, Any]], source: str) -> UploadRespo
             "metric_score) detected. Data may need custom downstream processing."
         )
 
-    # Clean NaN values
     processed_df = _clean_nan_values(processed_df)
 
     records: list[dict[str, Any]] = processed_df.to_dict(orient="records")  # type: ignore[assignment]

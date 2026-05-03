@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 
+
 _PROJECT_ROOT = Path(__file__).resolve().parents[3]
 _BACKEND_ENV_FILE = _PROJECT_ROOT / "backend" / ".env"
 
