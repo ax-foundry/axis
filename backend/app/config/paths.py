@@ -4,16 +4,14 @@ from pathlib import Path
 _PROJECT_ROOT = Path(__file__).resolve().parents[3]
 _BACKEND_ENV_FILE = _PROJECT_ROOT / "backend" / ".env"
 
-# Lazy — evaluated after bootstrap_env() has populated os.environ from .env
-_custom_dir: Path | None = None
-
-
 def get_custom_dir() -> Path:
-    """Return the custom directory, reading AXIS_CUSTOM_DIR from env on first call."""
-    global _custom_dir
-    if _custom_dir is None:
-        _custom_dir = Path(os.environ.get("AXIS_CUSTOM_DIR", str(_PROJECT_ROOT / "custom")))
-    return _custom_dir
+    """Return the custom directory, re-reading AXIS_CUSTOM_DIR each call.
+
+    Not cached: agents.py and metric_definitions.py call this at import time,
+    before bootstrap_env() has loaded .env into os.environ. Re-reading avoids
+    the ordering trap.
+    """
+    return Path(os.environ.get("AXIS_CUSTOM_DIR", str(_PROJECT_ROOT / "custom")))
 
 
 # Back-compat alias (deprecated — prefer get_custom_dir())

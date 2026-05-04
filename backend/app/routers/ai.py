@@ -10,7 +10,7 @@ from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 from sse_starlette.sse import EventSourceResponse
 
-from app.config.agents import agents_config
+from app.config.agents import get_agents_config
 from app.config.constants import Headers
 from app.config.env import settings
 from app.copilot.agent import CopilotAgent
@@ -40,7 +40,7 @@ def _validate_agent_name(agent_name: str | None) -> None:
     # Plugin-registered agents are always valid
     if get_agent_class(agent_name) is not None:
         return
-    known = {a.name for a in agents_config}
+    known = {a.name for a in get_agents_config()}
     if known and agent_name not in known:
         all_known = sorted(known | set(list_registered_agents()))
         raise HTTPException(

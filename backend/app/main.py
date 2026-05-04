@@ -12,7 +12,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
-from app.config.agents import agents_config
+from app.config.agents import get_agents_config
 from app.config.env import settings
 from app.copilot.agent_registry import get_agent_class, list_registered_agents
 from app.plugins import get_all_tags_metadata, register_all
@@ -254,7 +254,7 @@ _registered = list_registered_agents()
 for _name in _registered:
     logger.info("Copilot agent registered: %r → %s", _name, get_agent_class(_name).__qualname__)  # type: ignore[union-attr]
 
-_yaml_names = {a.name for a in agents_config}
+_yaml_names = {a.name for a in get_agents_config()}
 _registry_names = set(_registered)
 for _name in _yaml_names - _registry_names:
     logger.warning(
