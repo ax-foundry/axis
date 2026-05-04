@@ -1659,6 +1659,89 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#scorecards-scorecardsyaml" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scorecards (scorecards.yaml)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Scorecards (scorecards.yaml)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#setup_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Setup
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#top-level-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Top-level fields
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#filter-operators" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Filter operators
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#views" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Views
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#apistorequerydataset-structured-query-endpoint" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/store/query/{dataset} — structured query endpoint
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#related" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3694,6 +3777,89 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#scorecards-scorecardsyaml" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scorecards (scorecards.yaml)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Scorecards (scorecards.yaml)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#setup_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Setup
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#top-level-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Top-level fields
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#filter-operators" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Filter operators
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#views" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Views
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#apistorequerydataset-structured-query-endpoint" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/store/query/{dataset} — structured query endpoint
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#related" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -5198,6 +5364,252 @@ layouts, or colors.</p>
 <p>Invalid config produces a clear error message in the server log and falls back to defaults.</p>
 <h3 id="config-api">Config API<a class="headerlink" href="#config-api" title="Permanent link">&para;</a></h3>
 <p>The frontend fetches memory config from <code>GET /api/config/memory</code>, which returns the full config including a <code>config_hash</code> for cache invalidation. The frontend <code>useMemoryConfig()</code> hook caches this with <code>staleTime: Infinity</code>.</p>
+<hr />
+<h2 id="scorecards-scorecardsyaml">Scorecards (<code>scorecards.yaml</code>)<a class="headerlink" href="#scorecards-scorecardsyaml" title="Permanent link">&para;</a></h2>
+<p>Scorecards power the <code>/api/scorecard/{name}/{view}</code> endpoints — a set of five
+fixed dashboard views (summary, timeseries, anomalies, anomaly detail,
+sentiment) whose per-deployment content is fully config-driven. The router
+ships in OSS AXIS; every dataset-specific detail lives here.</p>
+<h3 id="setup_1">Setup<a class="headerlink" href="#setup_1" title="Permanent link">&para;</a></h3>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>cp<span class="w"> </span>backend/config/scorecards.yaml.example<span class="w"> </span>custom/config/scorecards.yaml
+</span></code></pre></div>
+<p>AXIS validates the file structure at startup. Column existence is checked
+per-request (tables may not be synced at boot). If the file is absent the
+<code>/api/scorecard/*</code> endpoints return 404 for any name — no action required
+for deployments that don't use this feature.</p>
+<h3 id="example">Example<a class="headerlink" href="#example" title="Permanent link">&para;</a></h3>
+<div class="language-yaml highlight"><span class="filename">custom/config/scorecards.yaml</span><pre><span></span><code><span id="__span-20-1"><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="nt">scorecards</span><span class="p">:</span>
+</span><span id="__span-20-2"><a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a><span class="w">  </span><span class="nt">my_agent</span><span class="p">:</span>
+</span><span id="__span-20-3"><a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a><span class="w">    </span><span class="nt">source_table</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">monitoring_data</span>
+</span><span id="__span-20-4"><a id="__codelineno-20-4" name="__codelineno-20-4" href="#__codelineno-20-4"></a><span class="w">    </span><span class="nt">sentiment_table</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">human_signals_cases</span>
+</span><span id="__span-20-5"><a id="__codelineno-20-5" name="__codelineno-20-5" href="#__codelineno-20-5"></a><span class="w">    </span><span class="nt">group_column</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">source_name</span><span class="w">       </span><span class="c1"># the per-row &quot;agent&quot; pivot</span>
+</span><span id="__span-20-6"><a id="__codelineno-20-6" name="__codelineno-20-6" href="#__codelineno-20-6"></a><span class="w">    </span><span class="nt">timestamp_column</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">timestamp</span>
+</span><span id="__span-20-7"><a id="__codelineno-20-7" name="__codelineno-20-7" href="#__codelineno-20-7"></a><span class="w">    </span><span class="nt">metric_label_column</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">metric_name</span><span class="w">   </span><span class="c1"># override if your table uses a different name</span>
+</span><span id="__span-20-8"><a id="__codelineno-20-8" name="__codelineno-20-8" href="#__codelineno-20-8"></a><span class="w">    </span><span class="nt">score_column</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">metric_score</span><span class="w">         </span><span class="c1"># override if your table uses a different name</span>
+</span><span id="__span-20-9"><a id="__codelineno-20-9" name="__codelineno-20-9" href="#__codelineno-20-9"></a>
+</span><span id="__span-20-10"><a id="__codelineno-20-10" name="__codelineno-20-10" href="#__codelineno-20-10"></a><span class="w">    </span><span class="nt">base_filters</span><span class="p">:</span>
+</span><span id="__span-20-11"><a id="__codelineno-20-11" name="__codelineno-20-11" href="#__codelineno-20-11"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> col</span><span class="p">:</span><span class="w"> </span><span class="nv">environment</span><span class="p p-Indicator">,</span><span class="nt"> op</span><span class="p">:</span><span class="w"> </span><span class="nv">eq</span><span class="p p-Indicator">,</span><span class="nt"> value</span><span class="p">:</span><span class="w"> </span><span class="nv">production</span><span class="w"> </span><span class="p p-Indicator">}</span>
+</span><span id="__span-20-12"><a id="__codelineno-20-12" name="__codelineno-20-12" href="#__codelineno-20-12"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> col</span><span class="p">:</span><span class="w"> </span><span class="nv">eval_mode</span><span class="p p-Indicator">,</span><span class="nt">   op</span><span class="p">:</span><span class="w"> </span><span class="nv">eq</span><span class="p p-Indicator">,</span><span class="nt"> value</span><span class="p">:</span><span class="w"> </span><span class="nv">online</span><span class="w"> </span><span class="p p-Indicator">}</span>
+</span><span id="__span-20-13"><a id="__codelineno-20-13" name="__codelineno-20-13" href="#__codelineno-20-13"></a>
+</span><span id="__span-20-14"><a id="__codelineno-20-14" name="__codelineno-20-14" href="#__codelineno-20-14"></a><span class="w">    </span><span class="nt">metrics</span><span class="p">:</span>
+</span><span id="__span-20-15"><a id="__codelineno-20-15" name="__codelineno-20-15" href="#__codelineno-20-15"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> name</span><span class="p">:</span><span class="w"> </span><span class="nv">faithfulness</span><span class="p p-Indicator">,</span><span class="nt"> match</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Faithfulness&quot;</span><span class="p p-Indicator">,</span><span class="nt"> agg</span><span class="p">:</span><span class="w"> </span><span class="nv">avg</span><span class="p p-Indicator">,</span><span class="nt"> col</span><span class="p">:</span><span class="w"> </span><span class="nv">metric_score</span><span class="w"> </span><span class="p p-Indicator">}</span>
+</span><span id="__span-20-16"><a id="__codelineno-20-16" name="__codelineno-20-16" href="#__codelineno-20-16"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> name</span><span class="p">:</span><span class="w"> </span><span class="nv">relevance</span><span class="p p-Indicator">,</span><span class="nt">    match</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Relevance&quot;</span><span class="p p-Indicator">,</span><span class="nt">    agg</span><span class="p">:</span><span class="w"> </span><span class="nv">avg</span><span class="p p-Indicator">,</span><span class="nt"> col</span><span class="p">:</span><span class="w"> </span><span class="nv">metric_score</span><span class="w"> </span><span class="p p-Indicator">}</span>
+</span><span id="__span-20-17"><a id="__codelineno-20-17" name="__codelineno-20-17" href="#__codelineno-20-17"></a>
+</span><span id="__span-20-18"><a id="__codelineno-20-18" name="__codelineno-20-18" href="#__codelineno-20-18"></a><span class="w">    </span><span class="nt">anomaly</span><span class="p">:</span>
+</span><span id="__span-20-19"><a id="__codelineno-20-19" name="__codelineno-20-19" href="#__codelineno-20-19"></a><span class="w">      </span><span class="nt">failure_filter</span><span class="p">:</span>
+</span><span id="__span-20-20"><a id="__codelineno-20-20" name="__codelineno-20-20" href="#__codelineno-20-20"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> col</span><span class="p">:</span><span class="w"> </span><span class="nv">passed</span><span class="p p-Indicator">,</span><span class="nt"> op</span><span class="p">:</span><span class="w"> </span><span class="nv">eq</span><span class="p p-Indicator">,</span><span class="nt"> value</span><span class="p">:</span><span class="w"> </span><span class="nv">false</span><span class="w"> </span><span class="p p-Indicator">}</span>
+</span><span id="__span-20-21"><a id="__codelineno-20-21" name="__codelineno-20-21" href="#__codelineno-20-21"></a><span class="w">      </span><span class="nt">critical_rule</span><span class="p">:</span>
+</span><span id="__span-20-22"><a id="__codelineno-20-22" name="__codelineno-20-22" href="#__codelineno-20-22"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> col</span><span class="p">:</span><span class="w"> </span><span class="nv">metric_name</span><span class="p p-Indicator">,</span><span class="nt">  op</span><span class="p">:</span><span class="w"> </span><span class="nv">eq</span><span class="p p-Indicator">,</span><span class="nt"> value</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Step</span><span class="nv"> </span><span class="s">Reliability&quot;</span><span class="w"> </span><span class="p p-Indicator">}</span>
+</span><span id="__span-20-23"><a id="__codelineno-20-23" name="__codelineno-20-23" href="#__codelineno-20-23"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> col</span><span class="p">:</span><span class="w"> </span><span class="nv">metric_score</span><span class="p p-Indicator">,</span><span class="nt"> op</span><span class="p">:</span><span class="w"> </span><span class="nv">eq</span><span class="p p-Indicator">,</span><span class="nt"> value</span><span class="p">:</span><span class="w"> </span><span class="nv">0</span><span class="w"> </span><span class="p p-Indicator">}</span>
+</span><span id="__span-20-24"><a id="__codelineno-20-24" name="__codelineno-20-24" href="#__codelineno-20-24"></a>
+</span><span id="__span-20-25"><a id="__codelineno-20-25" name="__codelineno-20-25" href="#__codelineno-20-25"></a><span class="w">    </span><span class="nt">sentiment</span><span class="p">:</span>
+</span><span id="__span-20-26"><a id="__codelineno-20-26" name="__codelineno-20-26" href="#__codelineno-20-26"></a><span class="w">      </span><span class="nt">column</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Sentiment</span><span class="nv"> </span><span class="s">Category__sentiment&quot;</span>
+</span><span id="__span-20-27"><a id="__codelineno-20-27" name="__codelineno-20-27" href="#__codelineno-20-27"></a><span class="w">      </span><span class="nt">timestamp_column</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Timestamp&quot;</span>
+</span><span id="__span-20-28"><a id="__codelineno-20-28" name="__codelineno-20-28" href="#__codelineno-20-28"></a><span class="w">      </span><span class="nt">value_map</span><span class="p">:</span>
+</span><span id="__span-20-29"><a id="__codelineno-20-29" name="__codelineno-20-29" href="#__codelineno-20-29"></a><span class="w">        </span><span class="nt">positive</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1.0</span>
+</span><span id="__span-20-30"><a id="__codelineno-20-30" name="__codelineno-20-30" href="#__codelineno-20-30"></a><span class="w">        </span><span class="nt">neutral</span><span class="p">:</span><span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">0.5</span>
+</span><span id="__span-20-31"><a id="__codelineno-20-31" name="__codelineno-20-31" href="#__codelineno-20-31"></a><span class="w">        </span><span class="nt">frustrated</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.0</span>
+</span><span id="__span-20-32"><a id="__codelineno-20-32" name="__codelineno-20-32" href="#__codelineno-20-32"></a><span class="w">        </span><span class="nt">confused</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.0</span>
+</span><span id="__span-20-33"><a id="__codelineno-20-33" name="__codelineno-20-33" href="#__codelineno-20-33"></a>
+</span><span id="__span-20-34"><a id="__codelineno-20-34" name="__codelineno-20-34" href="#__codelineno-20-34"></a><span class="w">    </span><span class="nt">detail_columns</span><span class="p">:</span>
+</span><span id="__span-20-35"><a id="__codelineno-20-35" name="__codelineno-20-35" href="#__codelineno-20-35"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dataset_id</span>
+</span><span id="__span-20-36"><a id="__codelineno-20-36" name="__codelineno-20-36" href="#__codelineno-20-36"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">run_id</span>
+</span><span id="__span-20-37"><a id="__codelineno-20-37" name="__codelineno-20-37" href="#__codelineno-20-37"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">metric_name</span>
+</span><span id="__span-20-38"><a id="__codelineno-20-38" name="__codelineno-20-38" href="#__codelineno-20-38"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">metric_score</span>
+</span><span id="__span-20-39"><a id="__codelineno-20-39" name="__codelineno-20-39" href="#__codelineno-20-39"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">explanation</span>
+</span><span id="__span-20-40"><a id="__codelineno-20-40" name="__codelineno-20-40" href="#__codelineno-20-40"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">timestamp</span>
+</span></code></pre></div>
+<h3 id="top-level-fields">Top-level fields<a class="headerlink" href="#top-level-fields" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>source_table</code></td>
+<td><code>str</code></td>
+<td>required</td>
+<td>DuckDB table queried by summary, timeseries, anomalies, anomaly_detail</td>
+</tr>
+<tr>
+<td><code>sentiment_table</code></td>
+<td><code>str</code></td>
+<td><code>null</code></td>
+<td>DuckDB table queried by the sentiment view (can also be set per-sentiment block)</td>
+</tr>
+<tr>
+<td><code>group_column</code></td>
+<td><code>str</code></td>
+<td>required</td>
+<td>Column used to pivot rows — typically <code>source_name</code></td>
+</tr>
+<tr>
+<td><code>timestamp_column</code></td>
+<td><code>str</code></td>
+<td><code>timestamp</code></td>
+<td>Timestamp column on the source table</td>
+</tr>
+<tr>
+<td><code>metric_label_column</code></td>
+<td><code>str</code></td>
+<td><code>metric_name</code></td>
+<td>Column whose value selects which metric spec applies</td>
+</tr>
+<tr>
+<td><code>score_column</code></td>
+<td><code>str</code></td>
+<td><code>metric_score</code></td>
+<td>Numeric column used by the timeseries view's AVG</td>
+</tr>
+<tr>
+<td><code>base_filters</code></td>
+<td><code>list[Filter]</code></td>
+<td><code>[]</code></td>
+<td>Applied to every view's WHERE clause</td>
+</tr>
+<tr>
+<td><code>metrics</code></td>
+<td><code>list[MetricSpec]</code></td>
+<td><code>[]</code></td>
+<td>Aggregated columns shown in the summary view</td>
+</tr>
+<tr>
+<td><code>anomaly</code></td>
+<td><code>AnomalyConfig</code></td>
+<td><code>null</code></td>
+<td>Defines failures and the critical/warning split</td>
+</tr>
+<tr>
+<td><code>sentiment</code></td>
+<td><code>SentimentConfig</code></td>
+<td><code>null</code></td>
+<td>Sentiment scoring from the sentiment table</td>
+</tr>
+<tr>
+<td><code>detail_columns</code></td>
+<td><code>list[str]</code></td>
+<td><code>[]</code></td>
+<td>Columns returned by the anomaly_detail view</td>
+</tr>
+</tbody>
+</table>
+<h3 id="filter-operators">Filter operators<a class="headerlink" href="#filter-operators" title="Permanent link">&para;</a></h3>
+<p><code>base_filters</code>, <code>anomaly.failure_filter</code>, and <code>anomaly.critical_rule</code> all use
+the same <code>{ col, op, value }</code> shape:</p>
+<table>
+<thead>
+<tr>
+<th><code>op</code></th>
+<th>SQL</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>eq</code></td>
+<td><code>=</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>neq</code></td>
+<td><code>!=</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>gte</code></td>
+<td><code>&gt;=</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>lte</code></td>
+<td><code>&lt;=</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>gt</code></td>
+<td><code>&gt;</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>lt</code></td>
+<td><code>&lt;</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>in</code></td>
+<td><code>IN (…)</code></td>
+<td><code>value</code> must be a non-empty list</td>
+</tr>
+<tr>
+<td><code>is_null</code></td>
+<td><code>IS NULL</code></td>
+<td><code>value</code> ignored</td>
+</tr>
+<tr>
+<td><code>is_not_null</code></td>
+<td><code>IS NOT NULL</code></td>
+<td><code>value</code> ignored</td>
+</tr>
+</tbody>
+</table>
+<h3 id="views">Views<a class="headerlink" href="#views" title="Permanent link">&para;</a></h3>
+<p>Each scorecard exposes five POST endpoints under <code>/api/scorecard/{name}/</code>:</p>
+<table>
+<thead>
+<tr>
+<th>View</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>summary</code></td>
+<td>One row per <code>group_column</code> value: configured metric aggregates, anomaly count, sentiment avg, last run time</td>
+</tr>
+<tr>
+<td><code>timeseries</code></td>
+<td>Bucketed (day/week) <code>avg_score</code>, <code>total</code>, <code>failures</code> per metric for a single group key</td>
+</tr>
+<tr>
+<td><code>anomalies</code></td>
+<td>Per-metric <code>total_evaluations</code>, <code>anomaly_count</code>, <code>critical</code>, <code>warning</code> — designed to drive rate-based health bands</td>
+</tr>
+<tr>
+<td><code>anomaly_detail</code></td>
+<td>Paginated drill-down of failing rows for a (group key, metric name) pair</td>
+</tr>
+<tr>
+<td><code>sentiment</code></td>
+<td>Per-group-key average sentiment score and sample count from the sentiment table</td>
+</tr>
+</tbody>
+</table>
+<p>All views accept <code>{ lookback_days: int }</code> (1–365, default 14). See the
+<a href="http://localhost:8500/docs">Swagger UI</a> for full request/response schemas.</p>
+<h3 id="apistorequerydataset-structured-query-endpoint"><code>/api/store/query/{dataset}</code> — structured query endpoint<a class="headerlink" href="#apistorequerydataset-structured-query-endpoint" title="Permanent link">&para;</a></h3>
+<p>Also added alongside scorecards: a typed analytical query endpoint over the
+DuckDB store. Rather than raw SQL, the caller sends a JSON description of
+what to select, filter, aggregate, and sort; the server builds parameterized
+SQL and enforces a per-table column allowlist.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-21-1"><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://localhost:8500/api/store/query/monitoring<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-21-2"><a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;x-api-key: </span><span class="nv">$API_GATEWAY_KEY</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-21-3"><a id="__codelineno-21-3" name="__codelineno-21-3" href="#__codelineno-21-3"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;content-type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-21-4"><a id="__codelineno-21-4" name="__codelineno-21-4" href="#__codelineno-21-4"></a><span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{</span>
+</span><span id="__span-21-5"><a id="__codelineno-21-5" name="__codelineno-21-5" href="#__codelineno-21-5"></a><span class="s1">    &quot;select&quot;: [&quot;source_name&quot;],</span>
+</span><span id="__span-21-6"><a id="__codelineno-21-6" name="__codelineno-21-6" href="#__codelineno-21-6"></a><span class="s1">    &quot;aggregates&quot;: [{&quot;fn&quot;: &quot;avg&quot;, &quot;col&quot;: &quot;metric_score&quot;, &quot;as&quot;: &quot;avg_score&quot;}],</span>
+</span><span id="__span-21-7"><a id="__codelineno-21-7" name="__codelineno-21-7" href="#__codelineno-21-7"></a><span class="s1">    &quot;group_by&quot;: [&quot;source_name&quot;],</span>
+</span><span id="__span-21-8"><a id="__codelineno-21-8" name="__codelineno-21-8" href="#__codelineno-21-8"></a><span class="s1">    &quot;limit&quot;: 100</span>
+</span><span id="__span-21-9"><a id="__codelineno-21-9" name="__codelineno-21-9" href="#__codelineno-21-9"></a><span class="s1">  }&#39;</span>
+</span></code></pre></div>
+<p>Supported datasets: <code>monitoring</code>, <code>human_signals</code>, <code>eval</code>, <code>kpi</code>. Hard 10-second
+timeout; blob columns (<code>evaluation_metadata</code>, <code>metric_metadata</code>, <code>signals</code>,
+<code>dataset_metadata</code>) are blocked from select. Returns
+<code>{ rows, row_count, elapsed_ms }</code>.</p>
 <hr />
 <h2 id="related">Related<a class="headerlink" href="#related" title="Permanent link">&para;</a></h2>
 <ul>
