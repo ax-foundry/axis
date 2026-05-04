@@ -1,14 +1,8 @@
-"""OpenAI Agents SDK implementation of Ask Copilot — parallel to pydantic-ai agent.py.
-
-This module provides an alternative implementation of the Ask Copilot copilot using
-the `openai-agents` package (``agents`` module). Both implementations share the same
-DuckDB tools, ThoughtStream, and SSE contract; only the agent framework differs.
-
-Run side-by-side with the pydantic-ai agent via ``POST /copilot/stream/oai``.
-"""
+"""OpenAI Agents SDK implementation of Ask Copilot."""
 
 import logging
 import math
+import re
 from dataclasses import dataclass
 from typing import Any
 
@@ -16,18 +10,6 @@ import anyio
 from agents import Agent, FunctionTool, RunContextWrapper, RunHooks, RunItemStreamEvent, Runner
 from agents import function_tool as ft
 
-from app.copilot.agent import (
-    _agent_where,
-    _apply_agent_scope,
-    _attempt_sql_fix,
-    _build_schema_ddl,
-    _compute_column_stats,
-    _describe_sql_fix,
-    _is_numeric,
-    _parse_sql_error_hint,
-    _trim_filter_values,
-    _truncate_result,
-)
 from app.copilot.context import BaseCopilotContext, _safe_json
 from app.copilot.guardrails import check_sql_safety
 from app.copilot.hooks import tool_span
@@ -39,6 +21,427 @@ from app.copilot.tool_instructions import compose_system_prompt
 from app.copilot.tracing import get_copilot_tracer, safe_span_attrs, sql_fingerprint
 
 logger = logging.getLogger("axis.copilot.oai_agent")
+
+# ---------------------------------------------------------------------------
+# SQL utility helpers (formerly in agent.py)
+# ---------------------------------------------------------------------------
+
+_NUMERIC_TYPES = frozenset(
+    {"DOUBLE", "FLOAT", "INTEGER", "BIGINT", "DECIMAL", "REAL", "HUGEINT", "UBIGINT", "SMALLINT"}
+)
+
+_MAX_RESULT_CHARS = 6_000
+
+_COLUMN_DESCRIPTIONS: dict[str, str] = {
+    "dataset_id": "unique record identifier",
+    "id": "unique record identifier",
+    "case_id": "unique case identifier",
+    "trace_id": "observability trace ID for linking to Langfuse / external systems",
+    "query": "input prompt or test question sent to the LLM",
+    "actual_output": "LLM response text",
+    "expected_output": "ground truth / reference answer",
+    "full_conversation": "full conversation history (multi-turn)",
+    "context": "retrieved context passages used for generation",
+    "explanation": "metric explanation or reasoning text produced by the judge",
+    "timestamp": "ISO datetime of the record",
+    "created_at": "ISO datetime the record was created",
+}
+
+_COLUMN_SYNONYMS: dict[str, list[str]] = {
+    "metric_score": ["score", "quality", "rating", "value"],
+    "metric_name": ["metric", "measure", "indicator"],
+    "metric_category": ["category"],
+    "metric_type": ["type"],
+    "source_name": ["agent", "bot", "model", "system", "assistant"],
+    "source_component": ["component", "module", "service", "step"],
+    "source_type": ["platform", "provider", "integration"],
+    "environment": ["env", "deployment", "stage"],
+    "evaluation_name": ["experiment", "run", "eval", "batch"],
+    "case_id": ["id", "case", "record", "session"],
+    "trace_id": ["trace", "span"],
+    "query": ["question", "input", "prompt", "request"],
+    "actual_output": ["output", "response", "answer", "reply", "result"],
+    "expected_output": ["expected", "ground_truth", "reference"],
+    "explanation": ["reason", "reasoning", "justification"],
+    "timestamp": ["date", "time", "created_at", "when"],
+    "kpi_name": ["kpi", "indicator"],
+    "kpi_value": ["value", "kpi_score"],
+    "kpi_category": ["kpi_group"],
+    "latency": ["latency_ms", "response_time", "duration", "time_ms"],
+}
+
+_KNOWN_TABLES = frozenset({"monitoring_data", "eval_data", "human_signals_cases", "kpi_data"})
+
+
+def _is_numeric(col_info: dict[str, Any]) -> bool:
+    return any(t in col_info.get("column_type", "").upper() for t in _NUMERIC_TYPES)
+
+
+def _parse_sql_error_hint(
+    error_msg: str,
+    available_columns: list[str],
+    table: str,
+) -> str:
+    """Convert a raw DuckDB exception into an actionable hint for the LLM."""
+    msg = str(error_msg)
+    hint_parts: list[str] = [f"SQL error: {msg}"]
+    msg_lower = msg.lower()
+
+    col_match = re.search(r'[Cc]olumn[^"\'`]*["\']?`?([A-Za-z_]\w*)["\']?`?', msg)
+    if (
+        col_match
+        or "binder error" in msg_lower
+        or ("not found" in msg_lower and "column" in msg_lower)
+    ):
+        bad_col = col_match.group(1).lower() if col_match else ""
+        if bad_col and available_columns:
+            suggestions = [
+                c for c in available_columns if bad_col in c.lower() or c.lower() in bad_col
+            ]
+            for real_col, synonyms in _COLUMN_SYNONYMS.items():
+                if bad_col in synonyms and real_col in available_columns:
+                    suggestions.insert(0, real_col)
+            suggestions = list(dict.fromkeys(suggestions))[:4]
+            if suggestions:
+                hint_parts.append(
+                    f'Hint: column "{bad_col}" not found. Did you mean: {", ".join(suggestions)}?'
+                )
+            else:
+                hint_parts.append(f"Hint: available columns: {', '.join(available_columns[:25])}")
+        elif available_columns:
+            hint_parts.append(f"Hint: available columns: {', '.join(available_columns[:25])}")
+    elif any(
+        k in msg_lower for k in ("cannot cast", "conversion error", "invalid type", "overflow")
+    ):
+        hint_parts.append(
+            "Hint: use TRY_CAST(col AS DOUBLE) to safely cast numeric columns — returns NULL on failure."
+        )
+    elif "table" in msg_lower and any(
+        k in msg_lower for k in ("not found", "does not exist", "unknown")
+    ):
+        hint_parts.append(
+            f'Hint: use the exact table name from the schema context — e.g. "{table}".'
+        )
+    elif any(k in msg_lower for k in ("syntax error", "parser error", "unexpected token")):
+        hint_parts.append(
+            "Hint: check SQL syntax — double-quote column names with spaces/capitals, "
+            "no trailing semicolon, balanced parentheses."
+        )
+
+    hint_parts.append("Rewrite the SQL and call run_sql again.")
+    return " | ".join(hint_parts)
+
+
+def _attempt_sql_fix(sql: str, error_msg: str, available_columns: list[str]) -> str | None:
+    """Try to auto-correct a failed SQL query based on the error message."""
+    msg_lower = error_msg.lower()
+
+    col_match = re.search(r'[Cc]olumn[^"\'`]*["\']?`?([A-Za-z_]\w*)["\']?`?', error_msg)
+    if col_match or ("binder error" in msg_lower and "not found" in msg_lower):
+        bad_col = col_match.group(1) if col_match else None
+        if bad_col:
+            best: str | None = None
+            for c in available_columns:
+                if c.lower() == bad_col.lower():
+                    best = c
+                    break
+            if not best:
+                for c in available_columns:
+                    if bad_col.lower() in c.lower():
+                        best = c
+                        break
+            if not best:
+                for real_col, syns in _COLUMN_SYNONYMS.items():
+                    if bad_col.lower() in syns and real_col in available_columns:
+                        best = real_col
+                        break
+            if best and best != bad_col:
+                fixed = re.sub(
+                    rf'(?<!")(?<!\w){re.escape(bad_col)}(?!\w)(?!")',
+                    f'"{best}"',
+                    sql,
+                )
+                fixed = fixed.replace(f'"{bad_col}"', f'"{best}"')
+                if fixed != sql:
+                    return fixed
+
+    if any(k in msg_lower for k in ("cannot cast", "conversion error", "invalid type")):
+        col_match2 = re.search(r'"(\w+)"', error_msg)
+        if col_match2:
+            col = col_match2.group(1)
+            fixed = sql.replace(f'CAST("{col}"', f'TRY_CAST("{col}"')
+            if fixed == sql:
+                fixed = re.sub(
+                    rf'AVG\("{re.escape(col)}"\)',
+                    f'AVG(TRY_CAST("{col}" AS DOUBLE))',
+                    sql,
+                )
+            if fixed != sql:
+                return fixed
+
+    return None
+
+
+def _describe_sql_fix(before: str, after: str) -> str:
+    """Return a concise description of what changed between two SQL strings."""
+    b_tokens = before.split()
+    a_tokens = after.split()
+    changes: list[str] = []
+    for bt, at in zip(b_tokens, a_tokens, strict=False):
+        if bt != at:
+            bt_clean = bt.strip('"').strip("'").rstrip(",")
+            at_clean = at.strip('"').strip("'").rstrip(",")
+            changes.append(f"{bt_clean} → {at_clean}")
+            if len(changes) >= 2:
+                break
+    if changes:
+        return ", ".join(changes)
+    return f"rewritten ({len(before)} → {len(after)} chars)"
+
+
+def _agent_where(agent_name: str | None) -> str:
+    """Return a SQL WHERE clause fragment for source_name filtering, or empty string."""
+    if not agent_name:
+        return ""
+    safe = agent_name.replace("'", "''")
+    return f" WHERE source_name = '{safe}'"
+
+
+def _apply_agent_scope(sql: str, agent_name: str | None) -> str:
+    """Rewrite bare table references to scoped subqueries filtered by source_name."""
+    if not agent_name:
+        return sql
+    safe = agent_name.replace("'", "''")
+    result = sql
+    for table in _KNOWN_TABLES:
+        result = re.sub(
+            rf"\b{re.escape(table)}\b",
+            f"(SELECT * FROM {table} WHERE source_name = '{safe}') {table}",
+            result,
+            flags=re.IGNORECASE,
+        )
+    return result
+
+
+def _truncate_result(s: str, max_chars: int = _MAX_RESULT_CHARS) -> str:
+    """Trim a JSON result string so it never blows up the LLM context."""
+    if len(s) <= max_chars:
+        return s
+    truncated = s[:max_chars]
+    omitted = len(s) - max_chars
+    return truncated + f'… [truncated, {omitted} chars omitted]"}}'
+
+
+def _trim_filter_values(
+    fv: dict[str, Any], max_cols: int = 8, max_vals: int = 15
+) -> dict[str, Any]:
+    """Return a pruned filter_values dict to avoid huge token counts."""
+    trimmed: dict[str, Any] = {}
+    for col, vals in list(fv.items())[:max_cols]:
+        if isinstance(vals, list) and len(vals) > max_vals:
+            trimmed[col] = [*vals[:max_vals], f"… +{len(vals) - max_vals} more"]
+        else:
+            trimmed[col] = vals
+    skipped = len(fv) - max_cols
+    if skipped > 0:
+        trimmed["__note__"] = f"{skipped} more columns omitted"
+    return trimmed
+
+
+def _compute_column_stats(
+    store: Any,
+    table: str,
+    columns: list[dict[str, Any]],
+    row_count: int,
+) -> dict[str, dict[str, int]]:
+    """Compute NULL% and approximate cardinality for each column in one query."""
+    if not columns or row_count == 0:
+        return {}
+
+    cols = columns[:50]
+    parts: list[str] = []
+    for c in cols:
+        name = c["column_name"]
+        parts.append(f'APPROX_COUNT_DISTINCT("{name}") AS "{name}__uniq"')
+        parts.append(f'COUNT(*) FILTER (WHERE "{name}" IS NULL) AS "{name}__nulls"')
+
+    sql = f"SELECT {', '.join(parts)} FROM {table}"
+    try:
+        rows = store.query_list(sql)
+    except Exception:
+        return {}
+
+    if not rows:
+        return {}
+
+    row = rows[0]
+    stats: dict[str, dict[str, int]] = {}
+    for c in cols:
+        name = c["column_name"]
+        n_unique = row.get(f"{name}__uniq", 0) or 0
+        n_nulls = row.get(f"{name}__nulls", 0) or 0
+        null_pct = round(100 * n_nulls / row_count) if row_count > 0 else 0
+        stats[name] = {"n_unique": int(n_unique), "null_pct": int(null_pct)}
+
+    return stats
+
+
+def _build_sample_sql(
+    table: str,
+    all_cols: list[dict[str, Any]],
+    filter_values: dict[str, Any],
+) -> str:
+    """Generate table-specific example queries illustrating DuckDB syntax."""
+    col_names = {c["column_name"] for c in all_cols}
+    num_cols = [c["column_name"] for c in all_cols if _is_numeric(c)]
+    cat_cols = [c for c in filter_values if c in col_names and c not in num_cols]
+    has_ts = "timestamp" in col_names
+
+    examples: list[str] = []
+
+    order = 'ORDER BY "timestamp" DESC ' if has_ts else ""
+    examples.append(f"SELECT * FROM {table} {order}LIMIT 10")
+
+    if has_ts and num_cols:
+        num = num_cols[0]
+        examples.append(
+            f"SELECT DATE_TRUNC('week', CAST(\"timestamp\" AS TIMESTAMP)) AS week,\n"
+            f'       AVG(TRY_CAST("{num}" AS DOUBLE)) AS avg_{num}\n'
+            f"FROM {table}\n"
+            f"GROUP BY week ORDER BY week"
+        )
+
+    if cat_cols and num_cols:
+        cat, num = cat_cols[0], num_cols[0]
+        examples.append(
+            f'SELECT "{cat}",\n'
+            f'       AVG(TRY_CAST("{num}" AS DOUBLE)) AS avg_{num},\n'
+            f"       COUNT(*) AS n\n"
+            f"FROM {table}\n"
+            f'GROUP BY "{cat}" ORDER BY avg_{num} DESC'
+        )
+    elif cat_cols:
+        cat = cat_cols[0]
+        examples.append(
+            f'SELECT "{cat}", COUNT(*) AS n\n' f"FROM {table}\n" f'GROUP BY "{cat}" ORDER BY n DESC'
+        )
+
+    if not examples:
+        return ""
+
+    lines = ["\nSample queries (always double-quote column names in DuckDB):"]
+    for ex in examples[:3]:
+        lines.append("  -- " + ex.replace("\n", "\n  "))
+    return "\n".join(lines)
+
+
+def _build_schema_ddl(
+    table: str,
+    dataset_label: str,
+    meta: dict[str, Any],
+    num_ranges: dict[str, tuple[Any, Any]],
+    column_stats: dict[str, dict[str, int]] | None = None,
+) -> str:
+    """Render schema context as a DDL CREATE TABLE with inline annotations."""
+    all_cols: list[dict[str, Any]] = meta.get("columns", [])
+    filter_values: dict[str, Any] = meta.get("filter_values", {})
+    row_count = meta.get("row_count", "?")
+    time_range: dict[str, str] | None = meta.get("time_range")
+
+    header_parts: list[str] = [
+        f"{row_count:,} rows" if isinstance(row_count, int) else f"{row_count} rows"
+    ]
+    if time_range:
+        mn = str(time_range.get("min", ""))[:10]
+        mx = str(time_range.get("max", ""))[:10]
+        if mn and mx:
+            header_parts.append(f"{mn} → {mx}")
+
+    lines: list[str] = [
+        f"\nDataset: {dataset_label}",
+        f'CREATE TABLE {table} (  -- {" | ".join(header_parts)}',
+    ]
+
+    if table == "human_signals_cases":
+        lines.insert(
+            1,
+            (
+                "-- Schema note: columns named {metric}__{signal} are flattened from a JSON\n"
+                "-- 'signals' blob. The prefix before '__' is the metric_name; the suffix is the\n"
+                "-- signal key within that metric.\n"
+                "--\n"
+                "-- DATA TYPES: Signal values are stored as VARCHAR. They may contain:\n"
+                "--   - Plain strings: 'billing inquiry'\n"
+                '--   - JSON arrays: \'["billing", "account access"]\'  (use json_extract)\n'
+                '--   - JSON objects: \'{"key": "value"}\'  (use json_extract_string)\n'
+                "--   - Booleans/numbers stored as text: 'true', '42'\n"
+                "--\n"
+                "-- For JSON array columns, to count individual values:\n"
+                "--   SELECT val, COUNT(*) FROM (\n"
+                "--     SELECT json_extract_string(TRY_CAST(col AS JSON), '$[' || i || ']') AS val\n"
+                "--     FROM human_signals_cases,\n"
+                "--          generate_series(0, CAST(json_array_length(TRY_CAST(col AS JSON)) AS BIGINT) - 1) AS t(i)\n"
+                "--     WHERE json_array_length(TRY_CAST(col AS JSON)) > 0\n"
+                "--   ) GROUP BY val ORDER BY COUNT(*) DESC\n"
+                "--\n"
+                "-- For simple string columns, use GROUP BY directly.\n"
+                "-- Full_Conversation is a JSON array of chat messages — not suitable for SQL filtering."
+            ),
+        )
+
+    for col in all_cols[:50]:
+        col_name = col["column_name"]
+        col_type = col.get("column_type", "VARCHAR")
+
+        if _is_numeric(col) and col_name in num_ranges:
+            mn, mx = num_ranges[col_name]
+            comment = f"range: {mn} → {mx}"
+        elif col_name in filter_values:
+            vals = filter_values[col_name]
+            if isinstance(vals, list):
+                sample = ", ".join(str(v) for v in vals[:8])
+                suffix = " …" if len(vals) > 8 else ""
+                comment = f"values: {sample}{suffix}"
+            else:
+                comment = str(vals)
+        else:
+            comment = _COLUMN_DESCRIPTIONS.get(col_name.lower(), "")
+
+        synonyms = _COLUMN_SYNONYMS.get(col_name.lower())
+        if synonyms:
+            alias_str = f"alias: {', '.join(synonyms)}"
+            comment = f"{comment} | {alias_str}" if comment else alias_str
+
+        col_stat = column_stats.get(col_name) if column_stats else None
+        if col_stat:
+            stats_parts: list[str] = []
+            if col_stat["n_unique"] > 0:
+                stats_parts.append(f"{col_stat['n_unique']} unique")
+            if col_stat["null_pct"] > 0:
+                stats_parts.append(f"{col_stat['null_pct']}% null")
+            elif col_stat["null_pct"] == 0:
+                stats_parts.append("0% null")
+            stats_prefix = ", ".join(stats_parts)
+            if stats_prefix and comment:
+                comment = f"{stats_prefix} | {comment}"
+            elif stats_prefix:
+                comment = stats_prefix
+
+        line = f'    "{col_name}" {col_type},'
+        if comment:
+            line += f"  -- {comment}"
+        lines.append(line)
+
+    if len(all_cols) > 50:
+        lines.append(f"    -- … +{len(all_cols) - 50} more columns")
+
+    lines.append(");")
+
+    sample_sql = _build_sample_sql(table, all_cols, filter_values)
+    if sample_sql:
+        lines.append(sample_sql)
+
+    return "\n".join(lines)
 
 
 # ---------------------------------------------------------------------------
@@ -1199,9 +1602,8 @@ SYSTEM_PROMPT = compose_system_prompt()
 async def _build_schema_context(oai_ctx: "OAIContext") -> str:
     """Build a column catalog string to prepend to the user message.
 
-    Mirrors the _dataset_context dynamic system prompt in CopilotAgent so the
-    OAI agent has the same column-level awareness without pydantic-ai's
-    per-call system_prompt hook.
+    Prepends a column catalog to the user message so the agent has
+    full column-level awareness before querying.
     """
     if not oai_ctx.has_data:
         return f"Note: No {oai_ctx.dataset_label} data is loaded in DuckDB yet.\n"
@@ -1339,12 +1741,7 @@ def _build_structured_input(
 
 
 class OAICopilotAgent:
-    """Ask Copilot powered by the OpenAI Agents SDK.
-
-    Parallel implementation to CopilotAgent (pydantic-ai). Both consume the same
-    DuckDB tools, ThoughtStream, and CopilotRequest schema; only the agent
-    framework differs — enabling a direct side-by-side comparison.
-    """
+    """Ask Copilot powered by the OpenAI Agents SDK."""
 
     def __init__(
         self,
@@ -1511,3 +1908,48 @@ class OAICopilotAgent:
     def is_configured(self) -> bool:
         """Check if the agent has a working LLM provider."""
         return LLMProvider.get_default_provider() is not None
+
+    def get_available_tools(self) -> list[dict[str, Any]]:
+        """Get information about available tools."""
+        return [
+            {
+                "name": "summarize_data",
+                "description": "Overview of the dataset: schema, row count, filter values, stats",
+            },
+            {
+                "name": "query_data",
+                "description": "Look up records, find min/max values, filter by column value",
+            },
+            {
+                "name": "analyze_data",
+                "description": "Statistical analysis: avg, std, min, max, quartiles per column",
+            },
+            {
+                "name": "compare_data",
+                "description": "Compare metrics across groups (GROUP BY)",
+            },
+            {
+                "name": "query_kpi_data",
+                "description": "Query KPI data from the kpi_data table",
+            },
+            {
+                "name": "run_sql",
+                "description": "Execute custom SELECT SQL — for date grouping, counts, HAVING, window functions, etc.",
+            },
+            {
+                "name": "plot_data",
+                "description": "Build an interactive Plotly chart from a SQL query — rendered in the browser",
+            },
+            {
+                "name": "analyze_patterns",
+                "description": "LLM-powered pattern detection and improvement recommendations from a SQL-scoped data slice",
+            },
+            {
+                "name": "save_as_dataset",
+                "description": "Persist SQL query results as a named dataset for later analysis or evaluation pipeline use",
+            },
+            {
+                "name": "download_data",
+                "description": "Export SQL query results as a downloadable CSV file — renders a Download button in the chat",
+            },
+        ]

@@ -13,7 +13,6 @@ from sse_starlette.sse import EventSourceResponse
 from app.config.agents import agents_config
 from app.config.constants import Headers
 from app.config.env import settings
-from app.copilot.agent import CopilotAgent
 from app.copilot.agent_registry import get_agent_class, list_registered_agents
 from app.copilot.oai_agent import OAICopilotAgent
 from app.copilot.thoughts import ThoughtStream
@@ -226,13 +225,9 @@ async def _copilot_stream_generator(
     request: CopilotRequest,
     http_request: Request,
 ) -> AsyncGenerator[dict[str, str], None]:
-    """Shared SSE generator for both pydantic-ai and OAI copilot streams.
+    """SSE generator for copilot streams.
 
-    Differences between the two endpoints are parameterized:
-    - ``agent_class``: ``CopilotAgent`` or ``OAICopilotAgent``
-    - ``route_name``: ``"copilot.stream"`` or ``"copilot.stream.oai"``
-
-    Provider/framework labels are NOT router concerns — each agent wrapper
+    Provider/framework labels are NOT router concerns — the agent wrapper
     passes them into ``run_copilot_request()`` internally.
     """
     logger.info("=== %s START ===", route_name.upper().replace(".", " "))
@@ -243,10 +238,7 @@ async def _copilot_stream_generator(
     effective_cls = get_agent_class(request.agent_name) or agent_class
 
     # Provider label for tracing — plugin agents report as "plugin"
-    if effective_cls is not agent_class:
-        provider = "plugin"
-    else:
-        provider = "oai_agents" if "oai" in route_name else "pydantic_ai"
+    provider = "plugin" if effective_cls is not agent_class else "oai_agents"
 
     tracer = get_request_tracer(
         route_name=route_name,
@@ -391,20 +383,7 @@ async def copilot_stream(request: CopilotRequest, http_request: Request) -> Even
     """
     _validate_agent_name(request.agent_name)
     return EventSourceResponse(
-        _copilot_stream_generator(CopilotAgent, "copilot.stream", request, http_request)
-    )
-
-
-@router.post("/copilot/stream/oai")
-async def copilot_stream_oai(request: CopilotRequest, http_request: Request) -> EventSourceResponse:
-    r"""Stream copilot responses using the OpenAI Agents SDK.
-
-    Same SSE contract as ``/copilot/stream``.
-    Events: ``thought``, ``response``, ``error``, ``done``.
-    """
-    _validate_agent_name(request.agent_name)
-    return EventSourceResponse(
-        _copilot_stream_generator(OAICopilotAgent, "copilot.stream.oai", request, http_request)
+        _copilot_stream_generator(OAICopilotAgent, "copilot.stream", request, http_request)
     )
 
 
@@ -418,7 +397,7 @@ async def copilot_chat(request: CopilotRequest, http_request: Request) -> Copilo
     _validate_agent_name(request.agent_name)
 
     thought_stream = ThoughtStream()
-    agent_cls = get_agent_class(request.agent_name) or CopilotAgent
+    agent_cls = get_agent_class(request.agent_name) or OAICopilotAgent
     agent = agent_cls(thought_stream=thought_stream)
 
     if not agent.is_configured:
@@ -450,7 +429,7 @@ async def copilot_chat(request: CopilotRequest, http_request: Request) -> Copilo
         input=request.message,
         **safe_span_attrs(
             route_name="copilot.chat",
-            provider="pydantic_ai",
+            provider="oai_agents",
             dataset_label=request.dataset_label,
             msg_len=len(request.message),
             history_len=len(request.conversation_history or []),
@@ -511,7 +490,7 @@ async def list_copilot_tools() -> ToolsListResponse:
     Returns information about all available tools including
     their descriptions and capabilities.
     """
-    agent = CopilotAgent()
+    agent = OAICopilotAgent()
     tools = agent.get_available_tools()
 
     tool_infos = []

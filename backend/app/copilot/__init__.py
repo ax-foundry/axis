@@ -1,8 +1,8 @@
-from app.copilot.agent import CopilotAgent
+from app.copilot.oai_agent import OAICopilotAgent
 from app.copilot.thoughts import Thought, ThoughtStream, ThoughtType
 
 __all__ = [
-    "CopilotAgent",
+    "OAICopilotAgent",
     "Thought",
     "ThoughtStream",
     "ThoughtType",

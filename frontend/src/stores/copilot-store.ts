@@ -19,8 +19,6 @@ interface HistoryMessage {
   content: string;
 }
 
-export type CopilotProvider = 'pydantic-ai' | 'oai-agents';
-
 interface CopilotState {
   // Streaming state
   isStreaming: boolean;
@@ -43,9 +41,6 @@ interface CopilotState {
 
   // Conversation history (for multi-turn context)
   conversationHistory: HistoryMessage[];
-
-  // Provider selection
-  provider: CopilotProvider;
 
   // Agent selection
   selectedAgent: string | null;
@@ -70,9 +65,6 @@ interface CopilotState {
 
   // Dataset actions
   setSelectedDataset: (dataset: DatasetLabel | null) => void;
-
-  // Provider actions
-  setProvider: (provider: CopilotProvider) => void;
 
   // Agent actions
   setSelectedAgent: (agent: string | null) => void;
@@ -100,7 +92,6 @@ export const useCopilotStore = create<CopilotState>()((set, get) => ({
   sessionId: null,
   selectedDataset: null,
   conversationHistory: [],
-  provider: 'oai-agents',
   selectedAgent: null,
   conversationResetKey: 0,
 
@@ -165,9 +156,6 @@ export const useCopilotStore = create<CopilotState>()((set, get) => ({
 
   // Dataset actions
   setSelectedDataset: (dataset) => set({ selectedDataset: dataset }),
-
-  // Provider actions
-  setProvider: (provider) => set({ provider }),
 
   // Agent actions
   setSelectedAgent: (agent) =>
