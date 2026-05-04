@@ -8,8 +8,6 @@ from .paths import resolve_config_path
 
 logger = logging.getLogger(__name__)
 
-# YAML config file path for agents
-AGENTS_CONFIG_PATH = resolve_config_path("agents.yaml")
 
 
 @dataclass
@@ -44,12 +42,13 @@ def load_agents_config() -> list[AgentConfig]:
 
     Returns an empty list if the file doesn't exist or is malformed.
     """
-    if not AGENTS_CONFIG_PATH.exists():
-        logger.info(f"No agents config found at {AGENTS_CONFIG_PATH}, using empty registry")
+    config_path = resolve_config_path("agents.yaml")
+    if not config_path.exists():
+        logger.info(f"No agents config found at {config_path}, using empty registry")
         return []
 
     try:
-        with AGENTS_CONFIG_PATH.open() as f:
+        with config_path.open() as f:
             yaml_config: dict[str, Any] = yaml.safe_load(f) or {}
 
         agents_data = yaml_config.get("agents", [])
@@ -73,12 +72,25 @@ def load_agents_config() -> list[AgentConfig]:
                     )
                 )
 
-        logger.info(f"Loaded {len(agents)} agent(s) from {AGENTS_CONFIG_PATH}")
+        logger.info(f"Loaded {len(agents)} agent(s) from {config_path}")
         return agents
     except Exception as e:
         logger.warning(f"Failed to load agents config: {e}")
         return []
 
 
-# Global agents config instance
-agents_config = load_agents_config()
+_agents_config: list[AgentConfig] | None = None
+
+
+def get_agents_config() -> list[AgentConfig]:
+    """Return the agent registry, loading from YAML on first call."""
+    global _agents_config
+    if _agents_config is None:
+        _agents_config = load_agents_config()
+    return _agents_config
+
+
+def set_agent_registry(agents: list[AgentConfig]) -> None:
+    """Override the agent registry (used by dynamic loading)."""
+    global _agents_config
+    _agents_config = agents

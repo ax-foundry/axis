@@ -6,7 +6,7 @@ from fastapi import APIRouter, HTTPException, Response
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
-from app.config.agents import agents_config
+from app.config.agents import get_agents_config
 from app.config.db.eval_db import eval_db_config
 from app.config.db.human_signals import human_signals_db_config
 from app.config.db.kpi import kpi_db_config
@@ -96,7 +96,7 @@ async def get_agents() -> AgentsConfigResponse:
                 active=agent.active,
                 trace_names=agent.trace_names,
             )
-            for agent in agents_config
+            for agent in get_agents_config()
         ],
     )
 
