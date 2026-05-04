@@ -1,0 +1,53 @@
+# Scorecards: YAML-driven dashboard definitions consumed by /api/scorecard/{name}/{view}.
+#
+# A scorecard names a (source_table, group_column) pair plus the metric list,
+# anomaly rules, sentiment value-map, and detail-view projection. Every dataset-
+# specific choice (which metric names matter, how 'critical' is defined, what
+# sentiment values mean) lives here. The router itself is generic.
+#
+# Copy to custom/config/scorecards.yaml and edit per deployment.
+
+scorecards:
+  example:
+    source_table: monitoring_data
+    sentiment_table: human_signals_cases
+    group_column: source_name        # the per-row "agent" pivot
+    timestamp_column: timestamp
+
+    # Applied to every view's WHERE clause.
+    base_filters:
+      - { col: environment, op: eq, value: production }
+      - { col: eval_mode, op: eq, value: online }
+
+    # Drives the summary view's filtered AVGs. Each entry becomes a column.
+    metrics:
+      - { name: faithfulness, match: "Faithfulness", agg: avg, col: metric_score }
+      - { name: relevance,    match: "Relevance",    agg: avg, col: metric_score }
+
+    # What counts as a failure, and which failures are 'critical'.
+    anomaly:
+      failure_filter:
+        - { col: passed, op: eq, value: false }
+      critical_rule:
+        - { col: metric_name,  op: eq, value: "Step Reliability" }
+        - { col: metric_score, op: eq, value: 0 }
+
+    # Per-source sentiment scoring, sourced from a flattened signal column.
+    sentiment:
+      column: "Sentiment Category__sentiment"
+      timestamp_column: "Timestamp"
+      value_map:
+        positive: 1.0
+        neutral: 0.5
+        frustrated: 0.0
+        confused: 0.0
+
+    # Columns returned by /anomaly_detail. Validated against the live schema
+    # at request time; blob columns (signals, evaluation_metadata, ...) are blocked.
+    detail_columns:
+      - dataset_id
+      - run_id
+      - metric_name
+      - metric_score
+      - explanation
+      - timestamp

@@ -881,6 +881,143 @@ The frontend fetches memory config from `GET /api/config/memory`, which returns 
 
 ---
 
+## Scorecards (`scorecards.yaml`)
+
+Scorecards power the `/api/scorecard/{name}/{view}` endpoints — a set of five
+fixed dashboard views (summary, timeseries, anomalies, anomaly detail,
+sentiment) whose per-deployment content is fully config-driven. The router
+ships in OSS AXIS; every dataset-specific detail lives here.
+
+### Setup
+
+```bash
+cp backend/config/scorecards.yaml.example custom/config/scorecards.yaml
+```
+
+AXIS validates the file structure at startup. Column existence is checked
+per-request (tables may not be synced at boot). If the file is absent the
+`/api/scorecard/*` endpoints return 404 for any name — no action required
+for deployments that don't use this feature.
+
+### Example
+
+```yaml title="custom/config/scorecards.yaml"
+scorecards:
+  my_agent:
+    source_table: monitoring_data
+    sentiment_table: human_signals_cases
+    group_column: source_name       # the per-row "agent" pivot
+    timestamp_column: timestamp
+    metric_label_column: metric_name   # override if your table uses a different name
+    score_column: metric_score         # override if your table uses a different name
+
+    base_filters:
+      - { col: environment, op: eq, value: production }
+      - { col: eval_mode,   op: eq, value: online }
+
+    metrics:
+      - { name: faithfulness, match: "Faithfulness", agg: avg, col: metric_score }
+      - { name: relevance,    match: "Relevance",    agg: avg, col: metric_score }
+
+    anomaly:
+      failure_filter:
+        - { col: passed, op: eq, value: false }
+      critical_rule:
+        - { col: metric_name,  op: eq, value: "Step Reliability" }
+        - { col: metric_score, op: eq, value: 0 }
+
+    sentiment:
+      column: "Sentiment Category__sentiment"
+      timestamp_column: "Timestamp"
+      value_map:
+        positive: 1.0
+        neutral:  0.5
+        frustrated: 0.0
+        confused: 0.0
+
+    detail_columns:
+      - dataset_id
+      - run_id
+      - metric_name
+      - metric_score
+      - explanation
+      - timestamp
+```
+
+### Top-level fields
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `source_table` | `str` | required | DuckDB table queried by summary, timeseries, anomalies, anomaly_detail |
+| `sentiment_table` | `str` | `null` | DuckDB table queried by the sentiment view (can also be set per-sentiment block) |
+| `group_column` | `str` | required | Column used to pivot rows — typically `source_name` |
+| `timestamp_column` | `str` | `timestamp` | Timestamp column on the source table |
+| `metric_label_column` | `str` | `metric_name` | Column whose value selects which metric spec applies |
+| `score_column` | `str` | `metric_score` | Numeric column used by the timeseries view's AVG |
+| `base_filters` | `list[Filter]` | `[]` | Applied to every view's WHERE clause |
+| `metrics` | `list[MetricSpec]` | `[]` | Aggregated columns shown in the summary view |
+| `anomaly` | `AnomalyConfig` | `null` | Defines failures and the critical/warning split |
+| `sentiment` | `SentimentConfig` | `null` | Sentiment scoring from the sentiment table |
+| `detail_columns` | `list[str]` | `[]` | Columns returned by the anomaly_detail view |
+
+### Filter operators
+
+`base_filters`, `anomaly.failure_filter`, and `anomaly.critical_rule` all use
+the same `{ col, op, value }` shape:
+
+| `op` | SQL | Notes |
+|------|-----|-------|
+| `eq` | `=` | |
+| `neq` | `!=` | |
+| `gte` | `>=` | |
+| `lte` | `<=` | |
+| `gt` | `>` | |
+| `lt` | `<` | |
+| `in` | `IN (…)` | `value` must be a non-empty list |
+| `is_null` | `IS NULL` | `value` ignored |
+| `is_not_null` | `IS NOT NULL` | `value` ignored |
+
+### Views
+
+Each scorecard exposes five POST endpoints under `/api/scorecard/{name}/`:
+
+| View | Description |
+|------|-------------|
+| `summary` | One row per `group_column` value: configured metric aggregates, anomaly count, sentiment avg, last run time |
+| `timeseries` | Bucketed (day/week) `avg_score`, `total`, `failures` per metric for a single group key |
+| `anomalies` | Per-metric `total_evaluations`, `anomaly_count`, `critical`, `warning` — designed to drive rate-based health bands |
+| `anomaly_detail` | Paginated drill-down of failing rows for a (group key, metric name) pair |
+| `sentiment` | Per-group-key average sentiment score and sample count from the sentiment table |
+
+All views accept `{ lookback_days: int }` (1–365, default 14). See the
+[Swagger UI](http://localhost:8500/docs) for full request/response schemas.
+
+### `/api/store/query/{dataset}` — structured query endpoint
+
+Also added alongside scorecards: a typed analytical query endpoint over the
+DuckDB store. Rather than raw SQL, the caller sends a JSON description of
+what to select, filter, aggregate, and sort; the server builds parameterized
+SQL and enforces a per-table column allowlist.
+
+```bash
+curl -X POST http://localhost:8500/api/store/query/monitoring \
+  -H "x-api-key: $API_GATEWAY_KEY" \
+  -H "content-type: application/json" \
+  -d '{
+    "select": ["source_name"],
+    "aggregates": [{"fn": "avg", "col": "metric_score", "as": "avg_score"}],
+    "group_by": ["source_name"],
+    "limit": 100
+  }'
+```
+
+Supported datasets: `monitoring`, `human_signals`, `eval`, `kpi`. Hard 10-second
+timeout; blob columns (`evaluation_metadata`, `metric_metadata`, `signals`,
+`dataset_metadata`) are blocked from select. Returns
+`{ rows, row_count, elapsed_ms }`.
+
+---
+
 ## Related
 
 - [Environment Variables](environment-variables.md) -- env var reference (fallback when YAML is absent)

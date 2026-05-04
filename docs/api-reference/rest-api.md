@@ -28,7 +28,8 @@ AXIS uses FastAPI which auto-generates OpenAPI documentation. When the backend i
 | `graph` | `/api/memory/graph` | Knowledge graph queries and visualization |
 | `kpi` | `/api/kpi` | Agent KPI categories, trends, and filter values for the Production dashboard |
 | `agent-replay` | `/api/agent-replay` | Langfuse trace replay: search, detail, node inspection, reviews |
-| `store` | `/api/store` | DuckDB analytics store: sync, status, metadata, paginated data, watermark management |
+| `store` | `/api/store` | DuckDB analytics store: sync, status, metadata, paginated data, watermark management, structured query |
+| `scorecard` | `/api/scorecard` | YAML-driven dashboard views: summary, timeseries, anomalies, anomaly detail, sentiment |
 
 ## Health Checks
 
