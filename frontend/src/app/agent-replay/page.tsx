@@ -15,8 +15,8 @@ import {
   PlayCircle,
   Settings,
 } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import {
   AgentIdentityBar,
