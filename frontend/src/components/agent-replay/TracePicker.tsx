@@ -526,19 +526,28 @@ interface TracePickerProps {
   onSelect: (traceId: string) => void;
   agent?: string | null;
   className?: string;
+  initialQuery?: string;
+  initialSearchBy?: string;
 }
 
-export function TracePicker({ onSelect, agent, className }: TracePickerProps) {
-  const [inputValue, setInputValue] = useState('');
-  const [submittedQuery, setSubmittedQuery] = useState('');
+export function TracePicker({
+  onSelect,
+  agent,
+  className,
+  initialQuery,
+  initialSearchBy,
+}: TracePickerProps) {
+  const [inputValue, setInputValue] = useState(initialQuery ?? '');
+  const [submittedQuery, setSubmittedQuery] = useState(initialQuery ?? '');
   const [isFocused, setIsFocused] = useState(false);
-  const [searchBy, setSearchBy] = useState<string>('trace_id');
+  const [searchBy, setSearchBy] = useState<string>(initialSearchBy ?? 'trace_id');
   const [showRecent, setShowRecent] = useState(false);
   const [recentLimit, setRecentLimit] = useState(20);
   const [recentName, setRecentName] = useState<string>('');
   const { data: statusData } = useReplayStatus();
   const { data, isLoading, error } = useSearchTraces(submittedQuery, agent, searchBy);
   const inputRef = useRef<HTMLInputElement>(null);
+  const isMountedRef = useRef(false);
 
   const searchFields = useMemo(() => {
     if (agent && statusData?.agent_search_fields?.[agent]) {
@@ -565,8 +574,12 @@ export function TracePicker({ onSelect, agent, className }: TracePickerProps) {
     showRecent ? { limit: recentLimit, agent, name: effectiveName || undefined } : undefined
   );
 
-  // Reset searchBy when agent changes (available fields may differ)
+  // Reset searchBy when agent changes (available fields may differ), but not on initial mount
   useEffect(() => {
+    if (!isMountedRef.current) {
+      isMountedRef.current = true;
+      return;
+    }
     setSearchBy('trace_id');
     setSubmittedQuery('');
     setShowRecent(false);

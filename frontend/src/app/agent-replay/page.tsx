@@ -16,6 +16,7 @@ import {
   Settings,
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 
 import {
   AgentIdentityBar,
@@ -40,6 +41,7 @@ import { cn } from '@/lib/utils';
 import { useReplayStore } from '@/stores/replay-store';
 
 export default function AgentReplayPage() {
+  const searchParams = useSearchParams();
   const { data: status, isLoading: statusLoading } = useReplayStatus();
   const {
     traceId,
@@ -58,6 +60,7 @@ export default function AgentReplayPage() {
     enterWhatIf,
     exitWhatIf,
     setAvailableAgents,
+    setSelectedAgent,
     reset,
   } = useReplayStore();
   const [waterfallOpen, setWaterfallOpen] = useState(false);
@@ -75,6 +78,20 @@ export default function AgentReplayPage() {
     }
   }, [status?.agents, setAvailableAgents]);
 
+  // Apply URL params: ?agent=<name> must be set before ?trace=<id> so the fetch uses the right credentials
+  const urlAgent = searchParams.get('agent');
+  const urlTraceId = searchParams.get('trace');
+  useEffect(() => {
+    if (urlAgent && !selectedAgent) {
+      setSelectedAgent(urlAgent);
+    }
+  }, [urlAgent, selectedAgent, setSelectedAgent]);
+  useEffect(() => {
+    if (urlTraceId && !traceId && (!urlAgent || selectedAgent)) {
+      setTraceId(urlTraceId);
+    }
+  }, [urlTraceId, traceId, setTraceId, urlAgent, selectedAgent]);
+
   // Auto-initialize tree on trace load: expand root + level-1, select first level-1 child
   useEffect(() => {
     if (!trace?.tree?.length) return;
@@ -89,12 +106,12 @@ export default function AgentReplayPage() {
     }
     setExpandedNodeIds(expanded);
 
-    // Auto-select first level-1 child (first "step")
-    const firstChild = trace.tree[0]?.children[0];
-    if (firstChild) {
-      setSelectedNodeId(firstChild.id);
+    // Default to Workflow I/O span if available, otherwise first level-1 child
+    if (trace.trace_input != null || trace.trace_output != null) {
+      setSelectedNodeId(TRACE_IO_NODE_ID);
     } else {
-      setSelectedNodeId(trace.tree[0]?.id ?? null);
+      const firstChild = trace.tree[0]?.children[0];
+      setSelectedNodeId(firstChild?.id ?? trace.tree[0]?.id ?? null);
     }
   }, [trace?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -244,7 +261,12 @@ export default function AgentReplayPage() {
 
             {/* Trace picker — centered hero layout */}
             {status?.configured && !traceId && (
-              <TracePicker onSelect={setTraceId} agent={selectedAgent} />
+              <TracePicker
+                onSelect={setTraceId}
+                agent={selectedAgent}
+                initialQuery={searchParams.get('session') ?? undefined}
+                initialSearchBy={searchParams.get('session') ? 'session_id' : undefined}
+              />
             )}
 
             {/* Loading trace */}

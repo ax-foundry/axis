@@ -83,9 +83,24 @@ def truncate_content(content: Any, max_chars: int | None) -> tuple[Any, bool]:
 
     try:
         serialized = json.dumps(content, default=str)
-        if len(serialized) > max_chars:
-            return serialized[:max_chars] + " [...truncated]", True
-        return content, False
+        if len(serialized) <= max_chars:
+            return content, False
+
+        # For dicts, truncate string values individually so the dict structure
+        # is preserved (prevents frontend from receiving invalid JSON strings).
+        if isinstance(content, dict) and content:
+            per_value_budget = max(500, max_chars // max(len(content), 1))
+            truncated: dict[str, Any] = {}
+            was_truncated = False
+            for k, v in content.items():
+                if isinstance(v, str) and len(v) > per_value_budget:
+                    truncated[k] = v[:per_value_budget] + " [...truncated]"
+                    was_truncated = True
+                else:
+                    truncated[k] = v
+            return truncated, was_truncated
+
+        return serialized[:max_chars] + " [...truncated]", True
     except (TypeError, ValueError):
         return content, False
 
