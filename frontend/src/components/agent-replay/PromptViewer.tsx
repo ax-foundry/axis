@@ -192,8 +192,16 @@ export function PromptViewer({ content, className }: PromptViewerProps) {
     );
   }
 
-  // String content
+  // String content — try JSON parse first so chat-style dicts/arrays still render richly
   if (typeof content === 'string') {
+    try {
+      const parsed: unknown = JSON.parse(content);
+      if (typeof parsed === 'object' && parsed !== null) {
+        return <PromptViewer content={parsed} className={className} />;
+      }
+    } catch {
+      // not JSON, fall through to plain text
+    }
     return (
       <div className={cn(className)}>
         <SmartContent text={content} />
@@ -202,36 +210,84 @@ export function PromptViewer({ content, className }: PromptViewerProps) {
   }
 
   // ML chat-style dict: { system: "...", user: "...", assistant: "..." }
+  // Only role keys with string values are rendered as messages; extra keys (model, temperature, etc.) are ignored.
   if (typeof content === 'object' && content !== null && !Array.isArray(content)) {
     const obj = content as Record<string, unknown>;
-    const roleKeys = Object.keys(obj).filter((k) => k.toLowerCase() in ROLE_CONFIG);
-    if (roleKeys.length > 0 && roleKeys.length >= Object.keys(obj).length / 2) {
-      // Order: system first, then user, assistant, tool, then any remaining keys
+    const ROLE_KEYS = new Set(['system', 'user', 'assistant', 'tool']);
+    const roleKeys = Object.keys(obj).filter(
+      (k) => ROLE_KEYS.has(k.toLowerCase()) && typeof obj[k] === 'string'
+    );
+    if (roleKeys.length > 0) {
       const roleOrder = ['system', 'user', 'assistant', 'tool'];
-      const sortedKeys = [...Object.keys(obj)].sort((a, b) => {
+      const sorted = [...roleKeys].sort((a, b) => {
         const ai = roleOrder.indexOf(a.toLowerCase());
         const bi = roleOrder.indexOf(b.toLowerCase());
         return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
       });
-
-      const messages = sortedKeys
-        .filter((k) => obj[k] != null)
-        .map((k) => ({
-          role: k.toLowerCase(),
-          content: typeof obj[k] === 'string' ? obj[k] : JSON.stringify(obj[k], null, 2),
-        }));
-
-      if (messages.length > 0) {
-        return (
-          <div className={cn(className)}>
-            {renderMessages(messages as Array<{ role: string; content: string }>)}
-          </div>
-        );
-      }
+      const messages = sorted.map((k) => ({ role: k.toLowerCase(), content: obj[k] as string }));
+      return <div className={cn(className)}>{renderMessages(messages)}</div>;
     }
   }
 
-  // Object/dict content
+  // Flat dict (all primitive values) — render as compact key-value table
+  if (typeof content === 'object' && content !== null && !Array.isArray(content)) {
+    const obj = content as Record<string, unknown>;
+    const isFlat = Object.values(obj).every(
+      (v) => v === null || typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean'
+    );
+
+    if (isFlat) {
+      return (
+        <div className={cn('overflow-hidden rounded-lg border border-border', className)}>
+          <table className="w-full text-xs">
+            <tbody>
+              {Object.entries(obj).map(([key, value]) => (
+                <tr key={key} className="border-border/30 border-b last:border-0">
+                  <td className="whitespace-nowrap py-1.5 pl-3 pr-3 font-mono text-[10px] font-medium text-text-muted">
+                    {key}
+                  </td>
+                  <td className="break-all py-1.5 pr-3 text-text-primary">
+                    {value === null ? (
+                      <span className="italic text-text-muted">null</span>
+                    ) : typeof value === 'boolean' ? (
+                      <span className={value ? 'text-emerald-600' : 'text-text-muted'}>
+                        {String(value)}
+                      </span>
+                    ) : typeof value === 'number' ? (
+                      <span className="font-mono">{String(value)}</span>
+                    ) : (
+                      String(value)
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      );
+    }
+
+    // Nested dict — render each top-level key as a labelled section
+    return (
+      <div className={cn('space-y-2', className)}>
+        {Object.entries(obj).map(([key, value]) => (
+          <div key={key} className="overflow-hidden rounded-lg border border-border">
+            <div className="border-b border-border bg-gray-50/60 px-3 py-1">
+              <span className="font-mono text-[10px] font-semibold text-text-muted">{key}</span>
+            </div>
+            <div className="px-3 py-2 text-xs text-text-secondary">
+              <ContentRenderer
+                content={typeof value === 'string' ? value : JSON.stringify(value, null, 2)}
+                forceType={typeof value !== 'string' ? 'json' : undefined}
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  // String / other fallback
   return (
     <div className={cn(className)}>
       <ContentRenderer content={JSON.stringify(content, null, 2)} forceType="json" />
