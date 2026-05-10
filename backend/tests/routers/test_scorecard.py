@@ -864,3 +864,197 @@ def test_filter_on_passthrough_column_still_rejected(seeded_store: DuckDBStore) 
         )
     assert resp.status_code == 400
     assert resp.json()["detail"]["code"] == "scorecard_config_error"
+
+
+# ----------------------------------------------------------------------
+# metric_summary view — LLM-powered pattern rollup
+# ----------------------------------------------------------------------
+
+
+def _spec_with_signals_passthrough() -> ScorecardSpec:
+    """Same as _spec() but exposes signals as a JSON-passthrough detail column."""
+    base = _spec().model_dump()
+    base["detail_columns"] = [
+        "dataset_id",
+        "run_id",
+        "metric_name",
+        "metric_score",
+        "explanation",
+        "signals",
+    ]
+    base["json_passthrough_columns"] = ["signals"]
+    return ScorecardSpec.model_validate(base)
+
+
+def test_metric_summary_returns_patterns_and_learnings(seeded_store: DuckDBStore) -> None:
+    """Endpoint passes signals + critique to the LLM, returns structured rollup."""
+    from unittest.mock import AsyncMock, MagicMock
+
+    from app.config.env import settings
+    from app.main import app
+
+    cfg = ScorecardsConfig(scorecards={"demo": _spec_with_signals_passthrough()})
+
+    fake_pattern = MagicMock(
+        category="Citation drift",
+        description="Claims unsupported by retrieved context.",
+        count=2,
+        metrics_involved=["Relevance"],
+        examples=["d2: low relevance"],
+        distinct_test_cases=2,
+        is_cross_metric=False,
+        confidence=0.8,
+    )
+    fake_learning = MagicMock(
+        title="Tighten retrieval threshold",
+        content="Failures cluster on low-similarity matches.",
+        tags=["retrieval"],
+        confidence=0.75,
+        recommended_actions=["Raise top-k cutoff", "Add reranker"],
+        scope="Relevance",
+        when_not_to_apply=None,
+    )
+    fake_result = MagicMock(patterns=[fake_pattern], learnings=[fake_learning])
+
+    captured: dict[str, Any] = {}
+
+    async def fake_generate(extraction_result, **kwargs):  # type: ignore[no-untyped-def]
+        captured["extraction_result"] = extraction_result
+        return fake_result
+
+    with (
+        patch.object(settings, "API_GATEWAY_KEY", ""),
+        patch("app.routers.scorecard.get_store", return_value=seeded_store),
+        patch("app.routers.scorecard.get_scorecards", return_value=cfg),
+        patch(
+            "app.services.issue_extractor_service.generate_insights",
+            new=AsyncMock(side_effect=fake_generate),
+        ),
+    ):
+        resp = TestClient(app).post(
+            "/api/scorecard/demo/metric_summary",
+            json={
+                "lookback_days": 30,
+                "source_filter": "alpha",
+                "metric_name": "Relevance",
+                "max_issues": 50,
+            },
+        )
+
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+    assert body["metric_name"] == "Relevance"
+    assert body["lookback_days"] == 30
+    assert body["total_failed_available"] >= body["total_issues_analyzed"]
+    assert body["total_failed_available"] >= 1
+
+    assert len(body["patterns"]) == 1
+    assert body["patterns"][0]["category"] == "Citation drift"
+    assert body["patterns"][0]["count"] == 2
+
+    assert len(body["learnings"]) == 1
+    assert body["learnings"][0]["title"] == "Tighten retrieval threshold"
+    assert body["learnings"][0]["recommended_actions"] == ["Raise top-k cutoff", "Add reranker"]
+
+    extraction = captured["extraction_result"]
+    assert extraction.issues, "expected at least one extracted issue"
+    issue = extraction.issues[0]
+    assert issue.critique == "low"
+    assert issue.signals
+
+
+def test_metric_summary_empty_when_no_failures(seeded_store: DuckDBStore) -> None:
+    """No failing rows → empty patterns/learnings without invoking the LLM."""
+    from unittest.mock import AsyncMock
+
+    from app.config.env import settings
+    from app.main import app
+
+    cfg = ScorecardsConfig(scorecards={"demo": _spec_with_signals_passthrough()})
+    gen = AsyncMock()
+
+    with (
+        patch.object(settings, "API_GATEWAY_KEY", ""),
+        patch("app.routers.scorecard.get_store", return_value=seeded_store),
+        patch("app.routers.scorecard.get_scorecards", return_value=cfg),
+        patch("app.services.issue_extractor_service.generate_insights", new=gen),
+    ):
+        resp = TestClient(app).post(
+            "/api/scorecard/demo/metric_summary",
+            json={
+                "lookback_days": 30,
+                "source_filter": "beta",
+                "metric_name": "Faithfulness",
+            },
+        )
+
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+    assert body["patterns"] == []
+    assert body["learnings"] == []
+    assert body["total_failed_available"] == 0
+    assert body["total_issues_analyzed"] == 0
+    gen.assert_not_called()
+
+
+def test_metric_summary_includes_high_score_failures(seeded_store: DuckDBStore) -> None:
+    """A row with passed=False and metric_score=0.8 must reach the LLM —
+    SQL's failure_filter is authoritative; no second-pass score gating."""
+    from datetime import datetime, timedelta, timezone
+    from unittest.mock import AsyncMock, MagicMock
+
+    from app.config.env import settings
+    from app.main import app
+
+    yesterday = (datetime.now(tz=timezone.utc) - timedelta(days=1)).isoformat()
+    seeded_store._conn.execute(  # type: ignore[attr-defined]
+        "INSERT INTO monitoring_data VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        (
+            "d_high",
+            "r_high",
+            yesterday,
+            "Relevance",
+            0.8,  # high score but still flagged as a failure upstream
+            0.7,
+            False,
+            "alpha",
+            "production",
+            "online",
+            "high-score fail",
+            '{"overall":{"status":"fail","value":0.80}}',
+        ),
+    )
+
+    cfg = ScorecardsConfig(scorecards={"demo": _spec_with_signals_passthrough()})
+    captured: dict[str, Any] = {}
+
+    async def fake_generate(extraction_result, **kwargs):  # type: ignore[no-untyped-def]
+        captured["extraction_result"] = extraction_result
+        return MagicMock(patterns=[], learnings=[])
+
+    with (
+        patch.object(settings, "API_GATEWAY_KEY", ""),
+        patch("app.routers.scorecard.get_store", return_value=seeded_store),
+        patch("app.routers.scorecard.get_scorecards", return_value=cfg),
+        patch(
+            "app.services.issue_extractor_service.generate_insights",
+            new=AsyncMock(side_effect=fake_generate),
+        ),
+    ):
+        resp = TestClient(app).post(
+            "/api/scorecard/demo/metric_summary",
+            json={
+                "lookback_days": 30,
+                "source_filter": "alpha",
+                "metric_name": "Relevance",
+                "max_issues": 50,
+            },
+        )
+
+    assert resp.status_code == 200, resp.text
+    extraction = captured["extraction_result"]
+    high_score_ids = [iss.id for iss in extraction.issues if iss.score == 0.8]
+    assert high_score_ids, (
+        "expected the score=0.8 failure row to be passed to the LLM, "
+        f"but extraction had only: {[(i.id, i.score) for i in extraction.issues]}"
+    )

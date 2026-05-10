@@ -1,8 +1,11 @@
 """Generic, YAML-driven dashboard endpoints.
 
-Seven fixed views (``summary``, ``timeseries``, ``anomalies``, ``anomaly_detail``,
-``sentiment``, ``signals``, ``signal_detail``) compose hand-built parameterized
-SQL from a ``ScorecardSpec`` loaded from ``custom/config/scorecards.yaml``.
+Eight fixed views (``summary``, ``timeseries``, ``anomalies``, ``anomaly_detail``,
+``sentiment``, ``signals``, ``signal_detail``, ``metric_summary``) compose hand-built
+parameterized SQL from a ``ScorecardSpec`` loaded from ``custom/config/scorecards.yaml``.
+``metric_summary`` is the only view that calls an LLM — it reuses ``anomaly_detail``'s
+SQL pattern to fetch failing rows then runs them through Axion's ``InsightExtractor``
+to surface themes / insights / action items.
 The view set is fixed in code so URLs stay predictable per shape; *what* each
 view queries is config-driven.
 
@@ -12,6 +15,7 @@ being quoted into SQL. All client-supplied values bind via ``?`` placeholders.
 """
 
 import ast
+import contextlib
 import json
 import logging
 import time
@@ -30,6 +34,7 @@ from app.config.scorecards import (
     SignalsConfig,
     get_scorecards,
 )
+from app.copilot.tracing import get_request_tracer
 from app.routers.store import BLOCKED_BLOB_COLUMNS
 from app.services.duckdb_store import get_store
 
@@ -53,6 +58,82 @@ _BINARY_OP_SQL = {
 # Which AGG functions are allowed for MetricSpec.agg. The Literal on MetricSpec
 # already constrains this; keeping a separate map enforces it again at SQL build.
 _AGG_SQL = {"avg": "AVG", "sum": "SUM", "max": "MAX", "min": "MIN", "count": "COUNT"}
+
+
+# Tokens stripped before fingerprinting an action item for semantic dedup.
+# Mirrors the mithril client-side stopword set so server + client agree on
+# "same action, different wording".
+_ACTION_FINGERPRINT_STOPWORDS = frozenset(
+    {
+        "a", "add", "an", "and", "are", "as", "at", "be", "before", "by", "for",
+        "from", "in", "is", "it", "of", "on", "or", "should", "that", "the",
+        "this", "to", "use", "when", "with", "do", "don", "doesn", "t", "s",
+        "athena", "agent", "system", "model",
+    }
+)
+
+
+def _action_fingerprint(text: str) -> str:
+    """Project an action sentence to a stable bag-of-stems for dedup.
+
+    Lowercases, drops punctuation + stopwords, takes the first 5 tokens
+    (sorted) so 'Add a self-check step' and 'Add a step for self-check'
+    collapse to the same key.
+    """
+    cleaned = "".join(c.lower() if c.isalnum() else " " for c in text)
+    tokens = [
+        t for t in cleaned.split() if t and t not in _ACTION_FINGERPRINT_STOPWORDS
+    ]
+    return " ".join(sorted(tokens[:5]))
+
+
+def _dedupe_and_cap_actions(
+    learnings: list[dict[str, Any]], max_total: int
+) -> list[dict[str, Any]]:
+    """Prune each learning's ``recommended_actions`` so the total across all
+    learnings is ≤ ``max_total`` and no two surviving actions share a
+    fingerprint.
+
+    Why server-side: axion's distillation runs per-cluster, so a "global N"
+    cap inside the prompt is advisory at best. Returning duplicate or
+    redundant actions across clusters is the most common output regression;
+    enforcing the cap here makes it load-bearing.
+
+    Selection: highest learning-confidence wins per fingerprint, then top-N
+    overall by confidence. Each learning keeps only the survivors that
+    originated from it (origin attribution preserved for the UI).
+    """
+    if max_total < 1:
+        return learnings
+
+    candidates: list[tuple[int, str, float]] = []  # (learning_idx, action, conf)
+    for idx, le in enumerate(learnings):
+        for action in le.get("recommended_actions") or []:
+            text = (action or "").strip()
+            if not text:
+                continue
+            fp = _action_fingerprint(text)
+            if not fp:
+                continue
+            candidates.append((idx, text, float(le.get("confidence") or 0.0)))
+
+    best_per_fp: dict[str, tuple[int, str, float]] = {}
+    for entry in candidates:
+        fp = _action_fingerprint(entry[1])
+        existing = best_per_fp.get(fp)
+        if existing is None or entry[2] > existing[2]:
+            best_per_fp[fp] = entry
+
+    survivors = sorted(best_per_fp.values(), key=lambda e: e[2], reverse=True)[
+        :max_total
+    ]
+    survivors_by_idx: dict[int, list[str]] = {}
+    for idx, text, _ in survivors:
+        survivors_by_idx.setdefault(idx, []).append(text)
+
+    for idx, le in enumerate(learnings):
+        le["recommended_actions"] = survivors_by_idx.get(idx, [])
+    return learnings
 
 
 # ----------------------------------------------------------------------
@@ -79,6 +160,20 @@ class AnomalyDetailRequest(ScorecardRequest):
     source_filter: str
     metric_name: str
     limit: int = Field(default=50, ge=1, le=500)
+
+
+class MetricSummaryRequest(ScorecardRequest):
+    """Request body for the ``metric_summary`` view.
+
+    Fetches failing eval rows for ``(source_filter, metric_name)`` over the
+    lookback window, then runs them through Axion's ``InsightExtractor`` to
+    produce themes (patterns) and insights/action-items (learnings).
+    """
+
+    source_filter: str
+    metric_name: str
+    max_issues: int = Field(default=100, ge=1, le=500)
+    max_action_items: int = Field(default=3, ge=1, le=10)
 
 
 class AnomaliesRequest(ScorecardRequest):
@@ -343,6 +438,38 @@ def _maybe_failure_filter(
     return _build_filters(anomaly.failure_filter, allowed, table, "anomaly.failure_filter")
 
 
+def _flatten_signals_to_lines(value: Any) -> list[str] | None:
+    """Flatten a signals JSON blob into ``["path=value", ...]`` for ExtractedIssue.
+
+    Accepts a dict, list, JSON string, or None. Returns None if there is nothing
+    to forward. The flattened list is what the downstream Axion adapter folds
+    into the LLM prompt — keeping the structured failure evidence intact while
+    fitting the ``list[str]`` shape required by ``ExtractedIssue.signals``.
+    """
+    if value is None:
+        return None
+    if isinstance(value, str):
+        try:
+            value = json.loads(value)
+        except json.JSONDecodeError:
+            return [value] if value else None
+
+    lines: list[str] = []
+
+    def _walk(node: Any, path: str) -> None:
+        if isinstance(node, dict):
+            for k, v in node.items():
+                _walk(v, f"{path}.{k}" if path else str(k))
+        elif isinstance(node, list):
+            for i, v in enumerate(node):
+                _walk(v, f"{path}[{i}]")
+        else:
+            lines.append(f"{path}={node}" if path else str(node))
+
+    _walk(value, "")
+    return lines or None
+
+
 @router.post("/{name}/summary")
 async def summary(name: str, req: ScorecardRequest) -> dict[str, Any]:
     """One row per group_key: configured metric AVGs, anomaly_count, last_run_at, sentiment_avg."""
@@ -574,14 +701,447 @@ async def anomaly_detail(name: str, req: AnomalyDetailRequest) -> dict[str, Any]
                 try:
                     json.loads(val)
                 except json.JSONDecodeError:
-                    try:
+                    with contextlib.suppress(ValueError, SyntaxError):
                         row[col] = json.dumps(ast.literal_eval(val), default=str)
-                    except (ValueError, SyntaxError):
-                        # Unparseable — leave as-is; client falls back gracefully.
-                        pass
             else:
                 row[col] = json.dumps(val, default=str)
     return {"rows": rows, "row_count": len(rows)}
+
+
+@router.post("/{name}/metric_summary")
+async def metric_summary(name: str, req: MetricSummaryRequest) -> dict[str, Any]:
+    """LLM-powered pattern summary across failing eval rows for one metric.
+
+    Uses the same WHERE clause as ``anomaly_detail`` (base_filters + group_column
+    match + lookback + failure_filter), but caps to ``max_issues`` and feeds the
+    rows through Axion's ``InsightExtractor`` after mapping ``explanation``
+    -> ``critique`` and forwarding ``signals`` so the LLM sees the structured
+    failure evidence (per-claim verdicts, status, decision_source, etc.).
+
+    Response includes both ``total_failed_available`` (DuckDB count) and
+    ``total_issues_analyzed`` (post-cap) so the caller can show a sampling
+    banner when the cap was hit.
+    """
+    spec = _resolve_scorecard(name)
+    src_cols = _check_table(spec.source_table)
+    if not spec.detail_columns:
+        raise _bad_config("metric_summary view requires detail_columns to be configured")
+    if spec.anomaly is None or not spec.anomaly.failure_filter:
+        raise _bad_config(
+            "metric_summary view requires anomaly.failure_filter to be configured"
+        )
+    _check_col(spec.group_column, src_cols, "group_column", spec.source_table)
+    _check_col(spec.timestamp_column, src_cols, "timestamp_column", spec.source_table)
+    _check_col(spec.metric_label_column, src_cols, "metric_label_column", spec.source_table)
+
+    passthrough = frozenset(spec.json_passthrough_columns)
+    for c in spec.detail_columns:
+        _check_col(c, src_cols, "detail_columns", spec.source_table, passthrough)
+
+    # Dynamically extend the projection with optional context columns when
+    # they exist on the live table. These carry the agent's *actual*
+    # behavior (input case, agent response, additional structured I/O)
+    # which is what makes the LLM analysis behavioral instead of
+    # metric-shaped. Skipped silently when a column is absent so we don't
+    # break environments that haven't backfilled them yet.
+    optional_context_cols = (
+        "query",
+        "actual_output",
+        "expected_output",
+        "additional_input",
+        "additional_output",
+    )
+    extra_cols = [
+        c
+        for c in optional_context_cols
+        if c in src_cols and c not in spec.detail_columns
+    ]
+    missing_optional = [c for c in optional_context_cols if c not in src_cols]
+    projected_cols = list(spec.detail_columns) + extra_cols
+    select_sql = ", ".join(f'"{c}"' for c in projected_cols)
+    logger.info(
+        "metric_summary: projecting %d cols (optional present=%s, missing=%s)",
+        len(projected_cols),
+        extra_cols,
+        missing_optional,
+    )
+    print(
+        f"[METRIC_SUMMARY] projecting {len(projected_cols)} cols "
+        f"(optional present={extra_cols}, missing={missing_optional})",
+        flush=True,
+    )
+
+    base_where, base_params = _build_filters(
+        spec.base_filters, src_cols, spec.source_table, "base_filters"
+    )
+    fail_where, fail_params = _build_filters(
+        spec.anomaly.failure_filter, src_cols, spec.source_table, "anomaly.failure_filter"
+    )
+
+    label_col_q = f'"{spec.metric_label_column}"'
+    where_clause = f"""
+        WHERE {base_where}
+          AND "{spec.group_column}" = ?
+          AND {label_col_q} = ?
+          AND "{spec.timestamp_column}" >= ?
+          AND ({fail_where})
+    """
+    rows_sql = f"""
+        SELECT {select_sql}
+        FROM "{spec.source_table}"
+        {where_clause}
+        ORDER BY "{spec.timestamp_column}" DESC
+        LIMIT ?
+    """
+    count_sql = f"""
+        SELECT COUNT(*) AS n
+        FROM "{spec.source_table}"
+        {where_clause}
+    """
+    common_params: list[Any] = [
+        *base_params,
+        req.source_filter,
+        req.metric_name,
+        _cutoff(req.lookback_days),
+        *fail_params,
+    ]
+
+    rows = await _run_query(rows_sql, [*common_params, req.max_issues])
+    count_rows = await _run_query(count_sql, common_params)
+    total_failed_available = int(count_rows[0]["n"]) if count_rows else 0
+    if rows and extra_cols:
+        stats: dict[str, dict[str, int]] = {}
+        for c in extra_cols:
+            sizes: list[int] = []
+            populated_n = 0
+            for r in rows:
+                v = r.get(c)
+                if v in (None, "", [], {}):
+                    continue
+                populated_n += 1
+                if isinstance(v, str):
+                    sizes.append(len(v))
+                else:
+                    with contextlib.suppress(Exception):
+                        sizes.append(len(json.dumps(v, default=str)))
+            stats[c] = {
+                "populated": populated_n,
+                "max_chars": max(sizes) if sizes else 0,
+                "avg_chars": (sum(sizes) // len(sizes)) if sizes else 0,
+            }
+        logger.info(
+            "metric_summary: optional context (rows=%d): %s",
+            len(rows),
+            stats,
+        )
+
+    # Coerce passthrough JSON columns into a wire-valid JSON string (same logic
+    # as anomaly_detail). The IssueExtractorService will parse `signals` back to
+    # a structured value via include_context_fields.
+    for row in rows:
+        for col in spec.json_passthrough_columns:
+            val = row.get(col)
+            if val is None:
+                continue
+            if isinstance(val, str):
+                try:
+                    json.loads(val)
+                except json.JSONDecodeError:
+                    with contextlib.suppress(ValueError, SyntaxError):
+                        row[col] = json.dumps(ast.literal_eval(val), default=str)
+            else:
+                row[col] = json.dumps(val, default=str)
+
+    generated_at = datetime.now(UTC).isoformat()
+
+    if not rows:
+        return {
+            "patterns": [],
+            "learnings": [],
+            "total_failed_available": total_failed_available,
+            "total_issues_analyzed": 0,
+            "metric_name": req.metric_name,
+            "lookback_days": req.lookback_days,
+            "generated_at": generated_at,
+        }
+
+    # Map scorecard rows -> records expected by IssueExtractorService.
+    # Critical: explanation -> critique (Axion's canonical critique field);
+    # signals flattened from structured JSON into list[str] of "path=value" lines
+    # so ExtractedIssue.signals (typed list[str]) accepts them and the downstream
+    # Axion adapter folds them into the LLM prompt.
+    #
+    # query/actual_output/expected_output/additional_* carry the agent's
+    # actual behavior. They can be very long (full agent transcripts +
+    # submission JSON); truncate per-row so a 35-row analysis doesn't
+    # blow the LLM context window.
+    #
+    # 12000 chars ≈ 3k tokens per field. With 5 optional fields × 35
+    # rows that's a hard ceiling around 525k tokens; in practice most
+    # rows are far shorter and only `additional_input` (submission
+    # blob) routinely fills the budget.
+    #
+    # For dicts/lists, json.dumps(indent=2) before truncation so a
+    # mid-structure cut still leaves the LLM a clean prefix of
+    # well-formed JSON to reason over instead of corrupted concatenation.
+    _MAX_CONTEXT_CHARS = 12000
+
+    def _truncate(value: Any) -> str | None:
+        if value is None:
+            return None
+        if not isinstance(value, str):
+            try:
+                value = json.dumps(value, indent=2, default=str)
+            except (TypeError, ValueError):
+                value = str(value)
+        if len(value) > _MAX_CONTEXT_CHARS:
+            return value[:_MAX_CONTEXT_CHARS] + "\n…[truncated]"
+        return value
+
+    # IssueExtractorService.field_mapping (issue_extractor_service.py L232)
+    # only recognizes query/actual_output/expected_output/retrieved_content/
+    # conversation/signals/critique — `additional_input`/`additional_output`
+    # are silently dropped. Worse: even fields it does keep land in
+    # `item_context`, but axion's EvidenceItem.text is built from
+    # `description` (= issue.critique) only. So nothing in item_context
+    # reaches the LLM prompt.
+    #
+    # Workaround: bundle everything the LLM needs into a synthetic
+    # `critique` upfront so it flows through description -> EvidenceItem.text.
+    def _build_rich_critique(row: dict[str, Any]) -> str | None:
+        # Order matters: the mithril modal renders the first ~95 chars of
+        # an example verbatim. Lead with `actual_output` (the agent's actual
+        # decision — APPROVE/DECLINE/REFER + reasoning) so the snippet is
+        # diagnostic. Judge critique and submission context follow.
+        parts: list[str] = []
+        actual = _truncate(row.get("actual_output"))
+        if actual:
+            parts.append(f"[Agent actual_output]\n{actual}")
+        explanation = row.get("explanation")
+        if explanation:
+            parts.append(f"[Judge critique]\n{explanation}")
+        add_in = _truncate(row.get("additional_input"))
+        if add_in:
+            parts.append(f"[additional_input]\n{add_in}")
+        add_out = _truncate(row.get("additional_output"))
+        if add_out:
+            parts.append(f"[additional_output]\n{add_out}")
+        expected = _truncate(row.get("expected_output"))
+        if expected:
+            parts.append(f"[expected_output]\n{expected}")
+        return "\n\n".join(parts) if parts else None
+
+    records: list[dict[str, Any]] = []
+    for row in rows:
+        # Prefer the actual user input (query column) over the eval name.
+        # Eval name is just a label like "athena_monitor"; query has the
+        # actual case description the agent was responding to.
+        query_val = row.get("query") or row.get("evaluation_name")
+        records.append(
+            {
+                "dataset_id": row.get("dataset_id"),
+                "metric_name": row.get("metric_name"),
+                "metric_score": row.get("metric_score"),
+                "critique": _build_rich_critique(row),
+                "signals": _flatten_signals_to_lines(row.get("signals")),
+                "query": _truncate(query_val),
+                "actual_output": _truncate(row.get("actual_output")),
+                "expected_output": _truncate(row.get("expected_output")),
+            }
+        )
+
+    from app.services.issue_extractor_service import (
+        ExtractionConfig,
+        IssueExtractorService,
+        generate_insights,
+    )
+
+    # SQL already applied the failure_filter; trust it as authoritative and
+    # disable the score-threshold gate (mode="overall") so a failed row with
+    # score=0.8 isn't silently dropped before the LLM sees it.
+    config = ExtractionConfig(
+        metric_filters=[req.metric_name],
+        max_issues=req.max_issues,
+        include_context_fields=[
+            "query",
+            "actual_output",
+            "expected_output",
+            "signals",
+            "critique",
+        ],
+        fold_signals_into_description=True,
+    )
+    service = IssueExtractorService(mode="overall", config=config)
+    extraction_result = service.extract_issues(records, metric_filter=req.metric_name)
+
+    if not extraction_result.issues:
+        return {
+            "patterns": [],
+            "learnings": [],
+            "total_failed_available": total_failed_available,
+            "total_issues_analyzed": 0,
+            "metric_name": req.metric_name,
+            "lookback_days": req.lookback_days,
+            "generated_at": generated_at,
+        }
+
+    from app.config.agents import get_agents_config
+    from app.config.metric_definitions import metric_definitions_config
+
+    agent_lookup = {a.name: a for a in get_agents_config()}
+    agent = agent_lookup.get(req.source_filter)
+    agent_label = agent.label if agent else req.source_filter
+    agent_role = agent.role if agent and agent.role else "AI agent"
+    agent_description = (agent.description or "").strip() if agent else ""
+
+    metric_key = req.metric_name.replace(" ", "")
+    metric_def = metric_definitions_config.monitoring.get(
+        metric_key
+    ) or metric_definitions_config.monitoring.get(req.metric_name)
+    metric_description = metric_def.description.strip() if metric_def else ""
+
+    non_empty_signals = sum(
+        1 for issue in extraction_result.issues if getattr(issue, "signals", None)
+    )
+    logger.info(
+        "metric_summary: extracted %d issues, %d with non-empty signals (agent=%s metric=%s)",
+        extraction_result.issues_found,
+        non_empty_signals,
+        req.source_filter,
+        req.metric_name,
+    )
+
+    evaluation_name = f"{agent_label} / {req.metric_name}"
+
+    agent_preamble = (
+        f"You are analyzing failing evaluation rows for **{agent_label}**, "
+        f"whose role is *{agent_role}*."
+    )
+    if agent_description:
+        agent_preamble += f" {agent_description}"
+    if metric_description:
+        agent_preamble += (
+            f"\n\nThe metric being evaluated is **{req.metric_name}**: {metric_description}"
+        )
+
+    clustering_instruction = (
+        f"{agent_preamble}\n\n"
+        "All rows below were marked failed by the upstream judge "
+        "(passed=False), even when the rolled-up score is high. Each "
+        "row carries:\n"
+        f"- `query` / `additional_input`: the actual case {agent_label} "
+        "was responding to (submission details, coverage being quoted, "
+        "etc.)\n"
+        f"- `actual_output` / `additional_output`: what {agent_label} "
+        "actually said in response\n"
+        "- `signals`: the judge's per-claim verdicts and structured "
+        "failure evidence\n"
+        "- `critique`: the judge's natural-language explanation\n\n"
+        "Group the failing rows into clusters by recurring BEHAVIORAL "
+        "failure modes — what is wrong with the *underwriting work* "
+        f"{agent_label} produced, not just what the judge measured. "
+        "Cluster names must describe a domain failure (e.g. 'Cites "
+        "policy form numbers not present in the retrieved documents', "
+        "'Recommends bind without addressing prior loss runs', "
+        "'Asserts effective-date matches without source confirmation'). "
+        "Avoid cluster names that restate the metric's mechanics "
+        "('Out-of-scope skipping', 'Unsupported claims present', "
+        "'Verified 8/9') or score buckets ('High faithfulness', "
+        "'Mid-range scores'). Read `actual_output` to find what "
+        f"{agent_label} actually said wrong; use `signals`/`critique` "
+        "to confirm why the judge faulted it. You MUST return at least "
+        "one cluster — if the behavioral signal is weak, still produce "
+        "a best-effort cluster summarizing the dominant failure shape."
+    )
+
+    distillation_instruction = (
+        f"{agent_preamble}\n\n"
+        "Every row passed to you is a FAILURE (passed=False). Do not "
+        f"produce insights that praise {agent_label} or describe what "
+        "it is doing well — every learning must explain a failure mode "
+        f"grounded in what {agent_label} actually said "
+        "(`actual_output`/`additional_output`) and why the judge "
+        "faulted it (`signals`/`critique`).\n\n"
+        "Insights must reference the agent's domain behavior — e.g. "
+        "'Athena cites policy form numbers that don't appear in the "
+        "retrieved doc set' — not the metric's measurement mechanics "
+        "(e.g. 'Athena skipped claims marked out-of-scope' is too "
+        "metric-shaped; rewrite as the underlying domain failure that "
+        "led to those skips).\n\n"
+        "Produce 1–2 recommended actions per cluster — fewer is fine, "
+        "but never zero. Each action item must:\n"
+        f"- Be a concrete change to {agent_label} — its system prompt, "
+        "its tools, its retrieval pipeline, or its output format.\n"
+        f"- Reference what {agent_label} should do *differently*; "
+        "avoid generic LLM hygiene advice ('add a self-check', "
+        "'use a verification step') untethered from the agent.\n"
+        "- Be ≤ 25 words. Lead with an imperative verb (Add, "
+        "Replace, Constrain, Inject, Require). No preamble.\n"
+        "- Be deduplicated semantically within the cluster. 'Add a "
+        "self-check step', 'Add a pre-response audit', and 'Add a "
+        "claim audit step' are the same action — keep one entry "
+        "with the highest-confidence framing.\n\n"
+        "Prefer fewer, sharper actions over padding."
+    )
+
+    tracer = get_request_tracer(route_name="scorecard.metric_summary")
+    async with tracer.async_span(
+        f"metric_summary.{req.source_filter}.{req.metric_name}",
+        input={"issues": extraction_result.issues_found, "scorecard": name},
+    ) as _span:
+        insight_result = await generate_insights(
+            extraction_result,
+            evaluation_name=evaluation_name,
+            clustering_instruction=clustering_instruction,
+            distillation_instruction=distillation_instruction,
+            max_learnings_per_cluster=2,
+        )
+
+        patterns = [
+            {
+                "category": p.category,
+                "description": p.description,
+                "count": p.count,
+                "metrics_involved": p.metrics_involved,
+                "examples": p.examples[:5],
+                "distinct_test_cases": p.distinct_test_cases,
+                "is_cross_metric": p.is_cross_metric,
+                "confidence": p.confidence,
+            }
+            for p in insight_result.patterns
+        ]
+        learnings = [
+            {
+                "title": le.title,
+                "content": le.content,
+                "tags": le.tags,
+                "confidence": le.confidence,
+                "recommended_actions": list(le.recommended_actions or []),
+                "scope": le.scope,
+                "when_not_to_apply": le.when_not_to_apply,
+            }
+            for le in insight_result.learnings
+        ]
+        learnings = _dedupe_and_cap_actions(learnings, req.max_action_items)
+        _span.set_attribute(
+            "output",
+            {
+                "patterns": len(patterns),
+                "learnings": len(learnings),
+                "pattern_titles": [p["description"][:80] for p in patterns],
+                "learning_titles": [le["title"] for le in learnings],
+            },
+        )
+
+    return {
+        "patterns": patterns,
+        "learnings": learnings,
+        "total_failed_available": total_failed_available,
+        "total_issues_analyzed": extraction_result.issues_found,
+        "metric_name": req.metric_name,
+        "lookback_days": req.lookback_days,
+        "generated_at": generated_at,
+    }
 
 
 @router.post("/{name}/sentiment")
