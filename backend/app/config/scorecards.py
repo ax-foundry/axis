@@ -65,6 +65,26 @@ class SentimentConfig(BaseModel):
     value_map: dict[str, float]
 
 
+class SignalMetricSpec(BaseModel):
+    """A single signal column to count in the signals view."""
+
+    key: str  # column name on the signals table, e.g. "Sentiment Category__sentiment"
+    match_values: list[str] = Field(default_factory=list)  # empty = count non-null
+    # Eval metric names this signal attaches to. Empty = universal (applies to all metrics).
+    metric_names: list[str] = Field(default_factory=list)
+
+
+class SignalsConfig(BaseModel):
+    """How to surface per-agent signal counts from a signals/cases table."""
+
+    table: str | None = None  # falls back to ScorecardSpec.sentiment_table
+    group_column: str
+    timestamp_column: str = "Timestamp"
+    case_id_column: str = "Case_ID"
+    metrics: list[SignalMetricSpec] = Field(default_factory=list)
+    detail_columns: list[str] = Field(default_factory=list)
+
+
 class ScorecardSpec(BaseModel):
     """A single scorecard definition."""
 
@@ -78,6 +98,10 @@ class ScorecardSpec(BaseModel):
     metrics: list[MetricSpec] = Field(default_factory=list)
     anomaly: AnomalyConfig | None = None
     sentiment: SentimentConfig | None = None
+    signals: SignalsConfig | None = None
+    # JSON blob columns (e.g. "signals") that anomaly_detail may project as raw strings.
+    # Filters and ORDER BY on these columns are still rejected.
+    json_passthrough_columns: list[str] = Field(default_factory=list)
     detail_columns: list[str] = Field(default_factory=list)
 
 

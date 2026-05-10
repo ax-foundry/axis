@@ -1,15 +1,18 @@
 """Generic, YAML-driven dashboard endpoints.
 
-Five fixed views (``summary``, ``timeseries``, ``anomalies``, ``anomaly_detail``,
-``sentiment``) compose hand-built parameterized SQL from a ``ScorecardSpec``
-loaded from ``custom/config/scorecards.yaml``. The view set is fixed in code
-so URLs stay predictable per shape; *what* each view queries is config-driven.
+Seven fixed views (``summary``, ``timeseries``, ``anomalies``, ``anomaly_detail``,
+``sentiment``, ``signals``, ``signal_detail``) compose hand-built parameterized
+SQL from a ``ScorecardSpec`` loaded from ``custom/config/scorecards.yaml``.
+The view set is fixed in code so URLs stay predictable per shape; *what* each
+view queries is config-driven.
 
-All identifiers (table, columns, sentiment value strings) come from trusted
+All identifiers (table, columns, sentinel value strings) come from trusted
 YAML and are validated against the live DuckDB schema at request time before
 being quoted into SQL. All client-supplied values bind via ``?`` placeholders.
 """
 
+import ast
+import json
 import logging
 import time
 from datetime import UTC, datetime, timedelta
@@ -24,6 +27,7 @@ from app.config.scorecards import (
     ConfigFilter,
     ScorecardSpec,
     SentimentConfig,
+    SignalsConfig,
     get_scorecards,
 )
 from app.routers.store import BLOCKED_BLOB_COLUMNS
@@ -83,6 +87,21 @@ class AnomaliesRequest(ScorecardRequest):
     source_filter: str | None = None
 
 
+class SignalsRequest(ScorecardRequest):
+    """Request body for the ``signals`` view."""
+
+    metric_name: str | None = None  # scope to signals tagged for this eval metric
+
+
+class SignalDetailRequest(ScorecardRequest):
+    """Request body for the ``signal_detail`` view."""
+
+    source_filter: str
+    signal_key: str | None = None  # omit to return all signals for the source
+    metric_name: str | None = None  # scope to signals tagged for this eval metric
+    limit: int = Field(default=100, ge=1, le=500)
+
+
 # ----------------------------------------------------------------------
 # Helpers
 # ----------------------------------------------------------------------
@@ -134,14 +153,20 @@ def _check_table(table: str) -> set[str]:
     return store.get_table_columns(table)
 
 
-def _check_col(col: str, allowed: set[str], where: str, table: str) -> None:
+def _check_col(
+    col: str,
+    allowed: set[str],
+    where: str,
+    table: str,
+    passthrough: frozenset[str] = frozenset(),
+) -> None:
     if col not in allowed:
         raise _bad_config(
             f"column '{col}' (used in {where}) is not present on table '{table}'",
             column=col,
             table=table,
         )
-    if col in BLOCKED_BLOB_COLUMNS:
+    if col in BLOCKED_BLOB_COLUMNS and col not in passthrough:
         raise _bad_config(
             f"column '{col}' is a JSON blob and cannot be projected/filtered",
             column=col,
@@ -500,8 +525,9 @@ async def anomaly_detail(name: str, req: AnomalyDetailRequest) -> dict[str, Any]
     _check_col(spec.timestamp_column, src_cols, "timestamp_column", spec.source_table)
     _check_col(spec.metric_label_column, src_cols, "metric_label_column", spec.source_table)
 
+    passthrough = frozenset(spec.json_passthrough_columns)
     for c in spec.detail_columns:
-        _check_col(c, src_cols, "detail_columns", spec.source_table)
+        _check_col(c, src_cols, "detail_columns", spec.source_table, passthrough)
     select_sql = ", ".join(f'"{c}"' for c in spec.detail_columns)
 
     base_where, base_params = _build_filters(
@@ -533,6 +559,28 @@ async def anomaly_detail(name: str, req: AnomalyDetailRequest) -> dict[str, Any]
         req.limit,
     ]
     rows = await _run_query(sql, params)
+    # Coerce passthrough JSON columns into a wire-valid JSON string. Three cases:
+    #   (1) None -> leave alone
+    #   (2) dict/list (DuckDB STRUCT/MAP path) -> json.dumps
+    #   (3) str -> may already be valid JSON, OR a Python str(dict) repr written
+    #       upstream (single quotes, None/True/False). If it doesn't parse as
+    #       JSON, fall back to ast.literal_eval and re-serialize.
+    for row in rows:
+        for col in spec.json_passthrough_columns:
+            val = row.get(col)
+            if val is None:
+                continue
+            if isinstance(val, str):
+                try:
+                    json.loads(val)
+                except json.JSONDecodeError:
+                    try:
+                        row[col] = json.dumps(ast.literal_eval(val), default=str)
+                    except (ValueError, SyntaxError):
+                        # Unparseable — leave as-is; client falls back gracefully.
+                        pass
+            else:
+                row[col] = json.dumps(val, default=str)
     return {"rows": rows, "row_count": len(rows)}
 
 
@@ -567,3 +615,251 @@ async def sentiment(name: str, req: ScorecardRequest) -> dict[str, Any]:
     params: list[Any] = [*_sentiment_case_params(snt), _cutoff(req.lookback_days)]
     rows = await _run_query(sql, params)
     return {"rows": rows, "row_count": len(rows)}
+
+
+# ----------------------------------------------------------------------
+# Signals helpers
+# ----------------------------------------------------------------------
+
+
+def _resolve_signals_table(spec: ScorecardSpec) -> str:
+    """Return the signals table name, falling back to sentiment_table."""
+    if spec.signals is None:
+        raise _bad_config("signals view requires signals block to be configured")
+    table = spec.signals.table or spec.sentiment_table
+    if not table:
+        raise _bad_config(
+            "signals configured but no table set (set signals.table or sentiment_table)"
+        )
+    return table
+
+
+def _filter_signal_metrics(metrics: list[Any], metric_name: str | None) -> list[Any]:
+    """Filter signal metrics by eval metric_name.
+
+    When metric_name is None, all metrics are returned unchanged.
+    When metric_name is set, a metric is included if its metric_names list is
+    empty (universal — applies to every eval metric) or contains metric_name.
+    """
+    if metric_name is None:
+        return metrics
+    return [m for m in metrics if not m.metric_names or metric_name in m.metric_names]
+
+
+def _build_signals_flat_sql(
+    cfg: SignalsConfig,
+    sig_cols: set[str],
+    table: str,
+    cutoff: datetime,
+    metric_name: str | None = None,
+) -> tuple[str, list[Any]]:
+    """Build a UNION ALL query returning one row per (group_key, signal_key, value).
+
+    Validates all metric keys against the live schema. Returns ("", []) when
+    cfg.metrics is empty (or filtered to empty by metric_name) so the caller can
+    short-circuit to empty rows.
+    """
+    _check_col(cfg.group_column, sig_cols, "signals.group_column", table)
+    _check_col(cfg.timestamp_column, sig_cols, "signals.timestamp_column", table)
+
+    blocks: list[str] = []
+    params: list[Any] = []
+
+    for m in _filter_signal_metrics(cfg.metrics, metric_name):
+        _check_col(m.key, sig_cols, f"signals.metrics[{m.key}]", table)
+        if m.match_values:
+            for val in m.match_values:
+                blocks.append(f"""
+                    SELECT
+                        "{cfg.group_column}" AS group_key,
+                        ? AS signal_key,
+                        ? AS signal_value,
+                        COUNT(*) AS count,
+                        MAX(TRY_CAST("{cfg.timestamp_column}" AS TIMESTAMP)) AS last_signal_at
+                    FROM "{table}"
+                    WHERE TRY_CAST("{cfg.timestamp_column}" AS TIMESTAMP) >= ?
+                      AND "{m.key}" = ?
+                    GROUP BY "{cfg.group_column}"
+                """)
+                params.extend([m.key, val, cutoff, val])
+        else:
+            blocks.append(f"""
+                SELECT
+                    "{cfg.group_column}" AS group_key,
+                    ? AS signal_key,
+                    NULL AS signal_value,
+                    COUNT(*) AS count,
+                    MAX(TRY_CAST("{cfg.timestamp_column}" AS TIMESTAMP)) AS last_signal_at
+                FROM "{table}"
+                WHERE TRY_CAST("{cfg.timestamp_column}" AS TIMESTAMP) >= ?
+                  AND "{m.key}" IS NOT NULL
+                GROUP BY "{cfg.group_column}"
+            """)
+            params.extend([m.key, cutoff])
+
+    if not blocks:
+        return "", []
+    return "\nUNION ALL\n".join(blocks), params
+
+
+def _build_signal_detail_sql(
+    cfg: SignalsConfig,
+    sig_cols: set[str],
+    table: str,
+    source_filter: str,
+    signal_key: str | None,
+    metric_name: str | None,
+    cutoff: datetime,
+    limit: int,
+) -> tuple[str, list[Any]]:
+    """Build SQL + params for the signal_detail view.
+
+    Returns one row per (case, matching signal). When signal_key is None, UNION
+    ALL across all configured metrics. metric_name further restricts to signals
+    tagged for that eval metric (universal signals — no metric_names — always pass).
+    """
+    _check_col(cfg.group_column, sig_cols, "signals.group_column", table)
+    _check_col(cfg.timestamp_column, sig_cols, "signals.timestamp_column", table)
+    _check_col(cfg.case_id_column, sig_cols, "signals.case_id_column", table)
+    for c in cfg.detail_columns:
+        _check_col(c, sig_cols, "signals.detail_columns", table)
+
+    if signal_key is not None:
+        metrics = [m for m in cfg.metrics if m.key == signal_key]
+        if not metrics:
+            raise _bad_request(
+                "invalid_request",
+                f"signal_key '{signal_key}' is not configured in signals.metrics",
+                signal_key=signal_key,
+            )
+        # Apply metric_name after signal_key: AND semantics. Empty result is valid.
+        metrics = _filter_signal_metrics(metrics, metric_name)
+    else:
+        metrics = _filter_signal_metrics(cfg.metrics, metric_name)
+        for m in metrics:
+            _check_col(m.key, sig_cols, f"signals.metrics[{m.key}]", table)
+
+    detail_selects = (
+        ", " + ", ".join(f'"{c}"' for c in cfg.detail_columns) if cfg.detail_columns else ""
+    )
+
+    blocks: list[str] = []
+    params: list[Any] = []
+
+    for m in metrics:
+        _check_col(m.key, sig_cols, f"signals.metrics[{m.key}]", table)
+        if m.match_values:
+            placeholders = ", ".join(["?"] * len(m.match_values))
+            value_filter = f'"{m.key}" IN ({placeholders})'
+        else:
+            value_filter = f'"{m.key}" IS NOT NULL'
+
+        blocks.append(f"""
+            SELECT
+                "{cfg.case_id_column}" AS case_id,
+                "{cfg.group_column}" AS source_name,
+                ? AS signal_key,
+                "{m.key}" AS signal_value,
+                "{cfg.timestamp_column}" AS timestamp{detail_selects}
+            FROM "{table}"
+            WHERE TRY_CAST("{cfg.timestamp_column}" AS TIMESTAMP) >= ?
+              AND "{cfg.group_column}" = ?
+              AND ({value_filter})
+        """)
+        block_params: list[Any] = [m.key, cutoff, source_filter]
+        if m.match_values:
+            block_params.extend(m.match_values)
+        params.extend(block_params)
+
+    if not blocks:
+        return "", []
+
+    union_sql = "\nUNION ALL\n".join(blocks)
+    sql = f"""
+        SELECT * FROM (
+            {union_sql}
+        ) _sig
+        ORDER BY TRY_CAST(timestamp AS TIMESTAMP) DESC
+        LIMIT ?
+    """
+    params.append(limit)
+    return sql, params
+
+
+@router.post("/{name}/signals")
+async def signals(name: str, req: SignalsRequest) -> dict[str, Any]:
+    """One row per group_key: total signal count and per-(signal_key, value) breakdown."""
+    spec = _resolve_scorecard(name)
+    if spec.signals is None:
+        raise _bad_config("signals view requires signals block to be configured")
+    table = _resolve_signals_table(spec)
+    cfg = spec.signals
+
+    sig_cols = _check_table(table)
+    cutoff = _cutoff(req.lookback_days)
+
+    sql, params = _build_signals_flat_sql(cfg, sig_cols, table, cutoff, req.metric_name)
+    if not sql:
+        return {"rows": [], "row_count": 0}
+
+    flat_rows = await _run_query(sql, params)
+
+    by_group: dict[str, dict[str, Any]] = {}
+    for row in flat_rows:
+        gk = str(row["group_key"])
+        if gk not in by_group:
+            by_group[gk] = {
+                "group_key": gk,
+                "total_signals": 0,
+                "by_signal": [],
+                "last_signal_at": None,
+            }
+        cnt = int(row["count"] or 0)
+        by_group[gk]["by_signal"].append(
+            {"signal_key": row["signal_key"], "value": row["signal_value"], "count": cnt}
+        )
+        by_group[gk]["total_signals"] += cnt
+        ts = row.get("last_signal_at")
+        if ts is not None:
+            cur = by_group[gk]["last_signal_at"]
+            if cur is None or ts > cur:
+                by_group[gk]["last_signal_at"] = ts
+
+    rows = sorted(by_group.values(), key=lambda r: r["group_key"])
+    return {"rows": rows, "row_count": len(rows)}
+
+
+@router.post("/{name}/signal_detail")
+async def signal_detail(name: str, req: SignalDetailRequest) -> dict[str, Any]:
+    """Case-level rows for a single source (and optionally a single signal_key)."""
+    spec = _resolve_scorecard(name)
+    if spec.signals is None:
+        raise _bad_config("signal_detail view requires signals block to be configured")
+    table = _resolve_signals_table(spec)
+    cfg = spec.signals
+
+    sig_cols = _check_table(table)
+    cutoff = _cutoff(req.lookback_days)
+
+    sql, params = _build_signal_detail_sql(
+        cfg, sig_cols, table, req.source_filter, req.signal_key, req.metric_name, cutoff, req.limit
+    )
+    if not sql:
+        return {"rows": [], "row_count": 0}
+
+    raw_rows = await _run_query(sql, params)
+
+    result_rows = []
+    for row in raw_rows:
+        context = {c: row.get(c) for c in cfg.detail_columns}
+        result_rows.append(
+            {
+                "case_id": row.get("case_id"),
+                "source_name": row.get("source_name"),
+                "signal_key": row.get("signal_key"),
+                "signal_value": row.get("signal_value"),
+                "timestamp": row.get("timestamp"),
+                "context": context,
+            }
+        )
+    return {"rows": result_rows, "row_count": len(result_rows)}
