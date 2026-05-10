@@ -90,9 +90,9 @@ def _action_fingerprint(text: str) -> str:
 def _dedupe_and_cap_actions(
     learnings: list[dict[str, Any]], max_total: int
 ) -> list[dict[str, Any]]:
-    """Prune each learning's ``recommended_actions`` so the total across all
-    learnings is ≤ ``max_total`` and no two surviving actions share a
-    fingerprint.
+    """Prune each learning's ``recommended_actions`` so the total across all learnings is ≤ ``max_total`` and no two surviving actions share a fingerprint.
+
+    Details:
 
     Why server-side: axion's distillation runs per-cluster, so a "global N"
     cap inside the prompt is advisory at best. Returning duplicate or
@@ -876,7 +876,7 @@ async def metric_summary(name: str, req: MetricSummaryRequest) -> dict[str, Any]
     # submission JSON); truncate per-row so a 35-row analysis doesn't
     # blow the LLM context window.
     #
-    # 12000 chars ≈ 3k tokens per field. With 5 optional fields × 35
+    # 12000 chars ≈ 3k tokens per field. With 5 optional fields x 35
     # rows that's a hard ceiling around 525k tokens; in practice most
     # rows are far shorter and only `additional_input` (submission
     # blob) routinely fills the budget.
@@ -1068,7 +1068,7 @@ async def metric_summary(name: str, req: MetricSummaryRequest) -> dict[str, Any]
         "(e.g. 'Athena skipped claims marked out-of-scope' is too "
         "metric-shaped; rewrite as the underlying domain failure that "
         "led to those skips).\n\n"
-        "Produce 1–2 recommended actions per cluster — fewer is fine, "
+        "Produce 1-2 recommended actions per cluster - fewer is fine, "
         "but never zero. Each action item must:\n"
         f"- Be a concrete change to {agent_label} — its system prompt, "
         "its tools, its retrieval pipeline, or its output format.\n"
