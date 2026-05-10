@@ -889,14 +889,15 @@ async def metric_summary(name: str, req: MetricSummaryRequest) -> dict[str, Any]
     def _truncate(value: Any) -> str | None:
         if value is None:
             return None
-        if not isinstance(value, str):
+        s: str = value if isinstance(value, str) else ""
+        if not s:
             try:
-                value = json.dumps(value, indent=2, default=str)
+                s = json.dumps(value, indent=2, default=str)
             except (TypeError, ValueError):
-                value = str(value)
-        if len(value) > _MAX_CONTEXT_CHARS:
-            return value[:_MAX_CONTEXT_CHARS] + "\n…[truncated]"
-        return value
+                s = str(value)
+        if len(s) > _MAX_CONTEXT_CHARS:
+            return s[:_MAX_CONTEXT_CHARS] + "\n…[truncated]"
+        return s
 
     # IssueExtractorService.field_mapping (issue_extractor_service.py L232)
     # only recognizes query/actual_output/expected_output/retrieved_content/

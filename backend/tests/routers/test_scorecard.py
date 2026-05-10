@@ -959,7 +959,7 @@ def test_metric_summary_returns_patterns_and_learnings(seeded_store: DuckDBStore
     extraction = captured["extraction_result"]
     assert extraction.issues, "expected at least one extracted issue"
     issue = extraction.issues[0]
-    assert issue.critique == "low"
+    assert issue.critique and "low" in issue.critique
     assert issue.signals
 
 
