@@ -42,8 +42,12 @@ scorecards:
         frustrated: 0.0
         confused: 0.0
 
+    # JSON blob columns to allow in detail_columns (projection only; filtering still blocked).
+    # json_passthrough_columns: [signals]
+
     # Columns returned by /anomaly_detail. Validated against the live schema
-    # at request time; blob columns (signals, evaluation_metadata, ...) are blocked.
+    # at request time; blob columns (signals, evaluation_metadata, ...) are blocked
+    # unless listed in json_passthrough_columns above.
     detail_columns:
       - dataset_id
       - run_id
@@ -51,3 +55,31 @@ scorecards:
       - metric_score
       - explanation
       - timestamp
+
+    # Per-agent signal counts from a cases/signals table (/signals and /signal_detail).
+    # `table` defaults to sentiment_table when omitted.
+    # `match_values` lists the values that count as "interesting" — omit to count any non-null row.
+    # `detail_columns` are projected into each case row's `context` envelope.
+    signals:
+      group_column: source_name
+      timestamp_column: "Timestamp"
+      case_id_column: "Case_ID"
+      # Each metric entry maps a signals-table column to one or more eval metrics.
+      # `metric_names` restricts which eval metrics this signal appears under when
+      # the caller passes ?metric_name=. Omit `metric_names` (or leave empty) to
+      # make the signal universal — returned for any metric_name filter value.
+      metrics:
+        - key: "Sentiment Category__sentiment"
+          match_values: ["frustrated", "confused"]
+          # no metric_names → universal (appears regardless of metric_name filter)
+        - key: "Decision Analysis__decision_status"
+          match_values: ["fail"]
+          metric_names: ["UW Completeness", "UW Faithfulness"]
+        - key: "Hallucination__detected"
+          match_values: ["true"]
+          metric_names: ["UW Faithfulness"]
+      detail_columns:
+        - "Sentiment Category__sentiment"
+        - "Sentiment Category__explanation"
+        - "Decision Analysis__decision_status"
+        - "Timestamp"

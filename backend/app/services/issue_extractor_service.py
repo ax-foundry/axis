@@ -74,6 +74,19 @@ class ExtractionConfig(BaseModel):
         default_factory=lambda: ["query", "actual_output", "expected_output", "signals"],
         description="Context fields to include from test cases",
     )
+    fold_signals_into_description: bool = Field(
+        default=False,
+        description=(
+            "If true, append a capped JSON dump of signals to the Axion issue "
+            "description. Use when the downstream prompt only reads description/"
+            "reasoning; off by default to keep token use predictable."
+        ),
+    )
+    max_signals_in_context: int = Field(
+        default=30,
+        ge=1,
+        description="Cap on signal entries forwarded into Axion item_context.",
+    )
 
 
 class ExtractedIssue(BaseModel):
@@ -636,6 +649,21 @@ Generate the {report_type.value} report now. Follow the output format exactly.""
                 item_context["retrieved_content"] = issue.retrieved_content
             if issue.conversation:
                 item_context["conversation"] = issue.conversation
+            # Signals carry structured failure evidence (per-claim verdicts, status,
+            # decision_source, etc.). Without these the LLM only sees score+critique
+            # and misses recurring signal-level patterns. Capped to bound tokens.
+            if issue.signals:
+                item_context["signals"] = list(issue.signals)[: self.config.max_signals_in_context]
+
+            description = issue.critique or ""
+            if issue.signals and self.config.fold_signals_into_description:
+                import json as _json
+
+                capped = list(issue.signals)[: self.config.max_signals_in_context]
+                signals_blob = _json.dumps(capped, default=str)[:2000]
+                description = (
+                    description + ("\n\n" if description else "") + f"Signals: {signals_blob}"
+                )
 
             axion_issue = AxionExtractedIssue(
                 test_case_id=issue.id,
@@ -644,7 +672,7 @@ Generate the {report_type.value} report now. Follow the output format exactly.""
                 signal_name="score",
                 value=issue.score,
                 score=issue.score or 0.0,
-                description=issue.critique or "",
+                description=description,
                 reasoning=issue.critique or "",
                 item_context=item_context,
                 source_path="",
@@ -672,6 +700,11 @@ async def generate_insights(
     extraction_result: IssueExtractionResult,
     model: str | None = None,
     provider: str = "openai",
+    *,
+    evaluation_name: str | None = None,
+    clustering_instruction: str | None = None,
+    distillation_instruction: str | None = None,
+    max_learnings_per_cluster: int | None = None,
 ) -> InsightResult:
     """Generate structured insights from extracted issues via axion InsightExtractor.
 
@@ -679,6 +712,22 @@ async def generate_insights(
         extraction_result: Axis extraction result
         model: LLM model name
         provider: LLM provider
+        evaluation_name: Optional handle that axion folds into its auto-built
+            domain-context blurb. We can't override the blurb directly because
+            ``InsightExtractor.analyze`` rebuilds it from the extraction_result
+            on every call — but it does read ``evaluation_name`` when present,
+            so a short identifier (e.g. ``"athena/UW Faithfulness"``) gives the
+            clustering step a clean subject handle. Rich call-site guardrails
+            (agent identity, "rows are failures, do not praise", etc.) belong
+            in ``clustering_instruction`` / ``distillation_instruction``.
+        clustering_instruction: Optional override of axion's clustering system
+            prompt. Useful for forbidding specific category shapes (e.g.
+            score-bucket categories) and naming the agent under analysis.
+        distillation_instruction: Optional override of axion's distillation
+            system prompt. Useful for capping action items, forbidding praise
+            on guaranteed-failure inputs, and demanding agent-specific framing.
+        max_learnings_per_cluster: Optional override (default 3 in axion).
+            Reduces total volume when many clusters are produced.
 
     Returns:
         InsightResult with patterns and learnings
@@ -686,8 +735,26 @@ async def generate_insights(
     service = IssueExtractorService()
     axion_result = service.to_axion_extraction_result(extraction_result)
 
+    if evaluation_name is not None:
+        # Axion's _build_domain_context wraps this in
+        # f"Evaluation '{evaluation_name}': N test cases, ..." so keep it short.
+        axion_result.evaluation_name = evaluation_name
+
     effective_model = model or settings.llm_model_name
-    extractor = InsightExtractor(model_name=effective_model, llm_provider=provider)
+
+    pipeline_kwargs: dict[str, Any] = {}
+    if clustering_instruction is not None:
+        pipeline_kwargs["clustering_instruction"] = clustering_instruction
+    if distillation_instruction is not None:
+        pipeline_kwargs["distillation_instruction"] = distillation_instruction
+    if max_learnings_per_cluster is not None:
+        pipeline_kwargs["max_learnings_per_cluster"] = max_learnings_per_cluster
+
+    extractor = InsightExtractor(
+        model_name=effective_model,
+        llm_provider=provider,
+        **pipeline_kwargs,
+    )
     return await extractor.analyze(axion_result)
 
 
