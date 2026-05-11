@@ -45,6 +45,7 @@ interface Message {
 interface DatasetOption {
   label: DatasetLabel;
   display: string;
+  description: string;
   available: boolean;
   rowCount: number;
 }
@@ -290,8 +291,6 @@ export function CopilotSidebar({ isOpen, onClose }: CopilotSidebarProps) {
     reset,
     selectedDataset,
     setSelectedDataset,
-    provider,
-    setProvider,
     startNewChat,
     selectedAgent,
     setSelectedAgent,
@@ -299,6 +298,16 @@ export function CopilotSidebar({ isOpen, onClose }: CopilotSidebarProps) {
   } = useCopilotStore();
 
   const agents = getAgentRegistry().filter((agent) => agent.active !== false);
+
+  // Auto-select the first registered plugin agent on mount. Without this, an
+  // unselected agent makes the request fall through to axis's stock
+  // OAICopilotAgent (no plugin = no Echo persona, tools, or guardrails). User
+  // can still toggle off by clicking the pill if they want the default agent.
+  useEffect(() => {
+    if (selectedAgent === null && agents.length > 0) {
+      setSelectedAgent(agents[0].name);
+    }
+  }, [selectedAgent, agents, setSelectedAgent]);
 
   const handleNewChat = useCallback(() => {
     cancel();
@@ -326,41 +335,45 @@ export function CopilotSidebar({ isOpen, onClose }: CopilotSidebarProps) {
 
   const datasetOptions: DatasetOption[] = [
     {
-      label: 'evaluation',
-      display: 'Evaluation',
-      available: duckRows('eval_data') > 0,
-      rowCount: duckRows('eval_data'),
-    },
-    {
       label: 'monitoring',
       display: 'Monitoring',
+      description:
+        'Live agent execution telemetry — latency, error counts, traces by agent and time window.',
       available: duckRows('monitoring_data') > 0,
       rowCount: duckRows('monitoring_data'),
     },
     {
       label: 'human_signals',
       display: 'Human Signals',
+      description:
+        'Human review labels and case-level signals from manual QA passes.',
       available: duckRows('human_signals_cases') > 0,
       rowCount: duckRows('human_signals_cases'),
     },
     {
       label: 'kpi',
       display: 'KPI',
+      description:
+        'Business KPIs and aggregated counts (volume, throughput, outcome metrics).',
       available: duckRows('kpi_data') > 0,
       rowCount: duckRows('kpi_data'),
+    },
+    {
+      label: 'evaluation',
+      display: 'Evaluation',
+      description:
+        'Eval run results — metric scores, pass/fail status, baselines per agent.',
+      available: duckRows('eval_data') > 0,
+      rowCount: duckRows('eval_data'),
     },
   ];
 
   const availableDatasets = datasetOptions.filter((d) => d.available);
   const selectedOption = datasetOptions.find((d) => d.label === selectedDataset);
 
-  // Auto-select first available
-  useEffect(() => {
-    if (!selectedDataset && availableDatasets.length > 0) {
-      setSelectedDataset(availableDatasets[0].label);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [availableDatasets.length, selectedDataset, setSelectedDataset]);
+  // Dataset selection is opt-in: the picker starts empty so the agent can
+  // decide for itself whether a dataset is needed. Clicking a pill selects it;
+  // clicking the same pill again clears the selection.
 
   // Auto-scroll on new messages / thoughts
   useEffect(() => {
@@ -524,8 +537,10 @@ export function CopilotSidebar({ isOpen, onClose }: CopilotSidebarProps) {
 
       {/* Dataset + Engine controls */}
       <div className="flex-shrink-0 border-b border-border bg-[#FAFAF8] dark:bg-gray-900">
-        {/* Agent selector pills — only shown when registry has agents and one is selected */}
-        {agents.length > 0 && selectedAgent !== null && (
+        {/* Agent selector pills — optional. Click again to deselect; when
+            none is selected, Echo decides whether the question is
+            agent-specific or asks the user to disambiguate. */}
+        {agents.length > 0 && (
           <div className="px-4 pb-1 pt-3">
             <p className="mb-1.5 text-[11px] font-medium uppercase tracking-wide text-text-muted">
               Agent
@@ -534,7 +549,9 @@ export function CopilotSidebar({ isOpen, onClose }: CopilotSidebarProps) {
               {agents.map((a) => (
                 <button
                   key={a.name}
-                  onClick={() => setSelectedAgent(a.name)}
+                  onClick={() =>
+                    setSelectedAgent(selectedAgent === a.name ? null : a.name)
+                  }
                   className={cn(
                     'flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-colors',
                     selectedAgent === a.name
@@ -559,9 +576,16 @@ export function CopilotSidebar({ isOpen, onClose }: CopilotSidebarProps) {
             {datasetOptions.map((opt) => (
               <button
                 key={opt.label}
-                onClick={() => opt.available && setSelectedDataset(opt.label)}
+                onClick={() => {
+                  if (!opt.available) return;
+                  setSelectedDataset(selectedDataset === opt.label ? null : opt.label);
+                }}
                 disabled={!opt.available}
-                title={opt.available ? undefined : `Load ${opt.display} data to enable`}
+                title={
+                  opt.available
+                    ? opt.description
+                    : `${opt.description}\n\n(Load ${opt.display} data to enable)`
+                }
                 className={cn(
                   'rounded-full px-2.5 py-0.5 text-[11px] font-medium transition-all',
                   selectedDataset === opt.label
@@ -577,24 +601,6 @@ export function CopilotSidebar({ isOpen, onClose }: CopilotSidebarProps) {
           </div>
         </div>
 
-        {/* Engine row */}
-        <div className="flex items-center gap-2 px-4 pb-2.5 pt-1">
-          <span className="text-xs font-medium text-text-muted">Engine:</span>
-          {(['oai-agents'] as const).map((p) => (
-            <button
-              key={p}
-              onClick={() => setProvider(p)}
-              className={cn(
-                'rounded-full px-3 py-1 text-xs font-medium transition-all',
-                provider === p
-                  ? 'bg-[#6B7FA3] text-white shadow-sm'
-                  : 'bg-gray-100 text-text-secondary hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600'
-              )}
-            >
-              {p === 'oai-agents' ? 'OpenAI Agents' : p}
-            </button>
-          ))}
-        </div>
       </div>
 
       {/* Messages */}
@@ -668,27 +674,8 @@ export function CopilotSidebar({ isOpen, onClose }: CopilotSidebarProps) {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input bar — replaced by agent picker when no agent is selected */}
-      {agents.length > 0 && selectedAgent === null ? (
-        <div className="flex flex-shrink-0 flex-col items-center gap-3 border-t border-border bg-white p-6 text-center dark:bg-gray-900">
-          <p className="text-sm text-text-muted">Select an agent to start</p>
-          <div className="flex flex-wrap justify-center gap-2">
-            {agents.map((a) => (
-              <button
-                key={a.name}
-                onClick={() => setSelectedAgent(a.name)}
-                className="hover:bg-muted flex items-center gap-2 rounded-full border border-border px-4 py-2 text-sm font-medium transition-colors"
-              >
-                {a.avatar && (
-                  <img src={a.avatar} alt="" className="h-5 w-5 rounded-full object-cover" />
-                )}
-                {a.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      ) : (
-        <div className="flex-shrink-0 border-t border-border bg-white px-3 py-3 dark:bg-gray-900">
+      {/* Input bar */}
+      <div className="flex-shrink-0 border-t border-border bg-white px-3 py-3 dark:bg-gray-900">
           <div className="flex items-end gap-2 rounded-xl border border-border bg-gray-50 px-3 py-2 focus-within:border-primary/40 focus-within:bg-white focus-within:shadow-sm dark:bg-gray-800 dark:focus-within:bg-gray-700">
             <textarea
               ref={textareaRef}
@@ -723,7 +710,6 @@ export function CopilotSidebar({ isOpen, onClose }: CopilotSidebarProps) {
             Enter to send · Shift+Enter for new line
           </p>
         </div>
-      )}
     </>
   );
 

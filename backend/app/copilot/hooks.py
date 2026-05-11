@@ -36,7 +36,7 @@ async def tool_span(
     """
     _tracer = get_copilot_tracer()
     async with _tracer.async_span(
-        "copilot.tool.call",
+        f"copilot.tool.{tool_name}",
         input=input_dict or {},
         **safe_span_attrs(tool_name=tool_name, dataset=deps.dataset_label),
     ) as _span:

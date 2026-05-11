@@ -1,14 +1,36 @@
 import logging
+import os
 
+import yaml
 from dotenv import load_dotenv
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-from .paths import _BACKEND_ENV_FILE
+from .paths import _BACKEND_ENV_FILE, resolve_config_path
 
 logger = logging.getLogger(__name__)
 
 _env_loaded = False
+
+
+def _read_branding_app_name() -> str:
+    """Read app_name from custom/config/theme.yaml branding section.
+
+    Handles both root-level branding and branding nested under a top-level
+    'theme' key. Returns the name uppercased (e.g. 'Alpha' -> 'ALPHA'), or ''
+    if the file is missing, the key is absent, or any error occurs.
+    """
+    try:
+        path = resolve_config_path("theme.yaml")
+        if not path.exists():
+            return ""
+        with path.open() as fh:
+            data = yaml.safe_load(fh) or {}
+        branding = data.get("branding") or data.get("theme", {}).get("branding") or {}
+        name = branding.get("app_name", "")
+        return str(name).strip().upper().replace(" ", "_") if name else ""
+    except Exception:
+        return ""
 
 
 def bootstrap_env() -> None:
@@ -19,6 +41,13 @@ def bootstrap_env() -> None:
 
     Idempotent — safe to call from ``main.py``, tests, CLI scripts, etc.
     Only the first call mutates ``os.environ``; subsequent calls are no-ops.
+
+    After loading the .env file, checks whether APP_NAME resolves to a
+    deployment-specific Langfuse project (LANGFUSE_{APP_NAME}_PUBLIC_KEY /
+    LANGFUSE_{APP_NAME}_SECRET_KEY). If those keys exist and the generic
+    LANGFUSE_PUBLIC_KEY is not already set, they are injected so that every
+    downstream tracer (axion, scorecard, copilot) automatically uses the
+    correct Langfuse project without per-router configuration.
     """
     global _env_loaded
     if _env_loaded:
@@ -26,6 +55,16 @@ def bootstrap_env() -> None:
     if _BACKEND_ENV_FILE.exists():
         load_dotenv(dotenv_path=_BACKEND_ENV_FILE, override=False)
         logger.debug("Loaded env from %s", _BACKEND_ENV_FILE)
+
+    _app = _read_branding_app_name()
+    if _app and not os.environ.get("LANGFUSE_PUBLIC_KEY"):
+        _pub = os.environ.get(f"LANGFUSE_{_app}_PUBLIC_KEY", "")
+        _sec = os.environ.get(f"LANGFUSE_{_app}_SECRET_KEY", "")
+        if _pub and _sec:
+            os.environ["LANGFUSE_PUBLIC_KEY"] = _pub
+            os.environ["LANGFUSE_SECRET_KEY"] = _sec
+            logger.debug("Langfuse project set from LANGFUSE_%s_* keys", _app)
+
     _env_loaded = True
 
 
