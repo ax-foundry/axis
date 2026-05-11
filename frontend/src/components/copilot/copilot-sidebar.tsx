@@ -345,24 +345,21 @@ export function CopilotSidebar({ isOpen, onClose }: CopilotSidebarProps) {
     {
       label: 'human_signals',
       display: 'Human Signals',
-      description:
-        'Human review labels and case-level signals from manual QA passes.',
+      description: 'Human review labels and case-level signals from manual QA passes.',
       available: duckRows('human_signals_cases') > 0,
       rowCount: duckRows('human_signals_cases'),
     },
     {
       label: 'kpi',
       display: 'KPI',
-      description:
-        'Business KPIs and aggregated counts (volume, throughput, outcome metrics).',
+      description: 'Business KPIs and aggregated counts (volume, throughput, outcome metrics).',
       available: duckRows('kpi_data') > 0,
       rowCount: duckRows('kpi_data'),
     },
     {
       label: 'evaluation',
       display: 'Evaluation',
-      description:
-        'Eval run results — metric scores, pass/fail status, baselines per agent.',
+      description: 'Eval run results — metric scores, pass/fail status, baselines per agent.',
       available: duckRows('eval_data') > 0,
       rowCount: duckRows('eval_data'),
     },
@@ -549,9 +546,7 @@ export function CopilotSidebar({ isOpen, onClose }: CopilotSidebarProps) {
               {agents.map((a) => (
                 <button
                   key={a.name}
-                  onClick={() =>
-                    setSelectedAgent(selectedAgent === a.name ? null : a.name)
-                  }
+                  onClick={() => setSelectedAgent(selectedAgent === a.name ? null : a.name)}
                   className={cn(
                     'flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-colors',
                     selectedAgent === a.name
@@ -600,7 +595,6 @@ export function CopilotSidebar({ isOpen, onClose }: CopilotSidebarProps) {
             ))}
           </div>
         </div>
-
       </div>
 
       {/* Messages */}
@@ -676,40 +670,40 @@ export function CopilotSidebar({ isOpen, onClose }: CopilotSidebarProps) {
 
       {/* Input bar */}
       <div className="flex-shrink-0 border-t border-border bg-white px-3 py-3 dark:bg-gray-900">
-          <div className="flex items-end gap-2 rounded-xl border border-border bg-gray-50 px-3 py-2 focus-within:border-primary/40 focus-within:bg-white focus-within:shadow-sm dark:bg-gray-800 dark:focus-within:bg-gray-700">
-            <textarea
-              ref={textareaRef}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder={`Ask ${copilotName}…`}
-              rows={1}
-              className="placeholder:text-text-muted/60 flex-1 resize-none bg-transparent text-sm leading-relaxed text-text-primary outline-none"
-              style={{ maxHeight: '160px' }}
-              disabled={isStreaming}
-            />
-            {isStreaming ? (
-              <button
-                onClick={cancel}
-                className="bg-error/10 hover:bg-error/20 mb-0.5 flex-shrink-0 rounded-lg p-1.5 text-error transition-colors"
-                title="Cancel"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            ) : (
-              <button
-                onClick={handleSend}
-                disabled={!input.trim()}
-                className="mb-0.5 flex-shrink-0 rounded-lg bg-primary p-1.5 text-white transition-colors hover:bg-primary-dark disabled:opacity-30"
-              >
-                <Send className="h-4 w-4" />
-              </button>
-            )}
-          </div>
-          <p className="text-text-muted/50 mt-1.5 text-center text-[10px]">
-            Enter to send · Shift+Enter for new line
-          </p>
+        <div className="flex items-end gap-2 rounded-xl border border-border bg-gray-50 px-3 py-2 focus-within:border-primary/40 focus-within:bg-white focus-within:shadow-sm dark:bg-gray-800 dark:focus-within:bg-gray-700">
+          <textarea
+            ref={textareaRef}
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder={`Ask ${copilotName}…`}
+            rows={1}
+            className="placeholder:text-text-muted/60 flex-1 resize-none bg-transparent text-sm leading-relaxed text-text-primary outline-none"
+            style={{ maxHeight: '160px' }}
+            disabled={isStreaming}
+          />
+          {isStreaming ? (
+            <button
+              onClick={cancel}
+              className="bg-error/10 hover:bg-error/20 mb-0.5 flex-shrink-0 rounded-lg p-1.5 text-error transition-colors"
+              title="Cancel"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          ) : (
+            <button
+              onClick={handleSend}
+              disabled={!input.trim()}
+              className="mb-0.5 flex-shrink-0 rounded-lg bg-primary p-1.5 text-white transition-colors hover:bg-primary-dark disabled:opacity-30"
+            >
+              <Send className="h-4 w-4" />
+            </button>
+          )}
         </div>
+        <p className="text-text-muted/50 mt-1.5 text-center text-[10px]">
+          Enter to send · Shift+Enter for new line
+        </p>
+      </div>
     </>
   );
 
