@@ -261,8 +261,8 @@ async def test_agent_tool_span_name_and_tool_name_attr() -> None:
         await summarize_fn(ctx_mock, include_numeric_stats=False)
 
     span_names = [n for n, _ in capturing.span_calls]
-    assert "copilot.tool.call" in span_names
-    tool_kw = next(kw for n, kw in capturing.span_calls if n == "copilot.tool.call")
+    assert "copilot.tool.summarize_data" in span_names
+    tool_kw = next(kw for n, kw in capturing.span_calls if n == "copilot.tool.summarize_data")
     assert tool_kw.get("tool_name") == "summarize_data"
 
 
@@ -341,8 +341,8 @@ async def test_oai_agent_tool_span_name_and_tool_name_attr() -> None:
         await summarize_data.on_invoke_tool(tool_ctx, '{"include_numeric_stats": false}')
 
     span_names = [n for n, _ in capturing.span_calls]
-    assert "copilot.tool.call" in span_names
-    tool_kw = next(kw for n, kw in capturing.span_calls if n == "copilot.tool.call")
+    assert "copilot.tool.summarize_data" in span_names
+    tool_kw = next(kw for n, kw in capturing.span_calls if n == "copilot.tool.summarize_data")
     assert tool_kw.get("tool_name") == "summarize_data"
 
 

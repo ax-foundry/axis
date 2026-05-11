@@ -475,15 +475,20 @@ export function useCopilotStream() {
       const nextHistory = [...conversationHistory, { role: 'user' as const, content: message }];
       appendToHistory({ role: 'user', content: message });
 
-      // Build data_context (schema hints) based on selected dataset
-      let dataContext: {
-        format: string | null;
-        row_count: number;
-        metric_columns: string[];
-        columns: string[];
-      } = { format: null, row_count: 0, metric_columns: [], columns: [] };
+      // Build data_context (schema hints) based on selected dataset.
+      // When no dataset is selected (e.g. eval-only conversations on Echo), we
+      // omit dataset_label and data_context entirely so the agent's prompt
+      // doesn't pay the schema-context tax for tools it isn't going to use.
+      const dataset = selectedDataset;
 
-      const dataset = selectedDataset || 'evaluation';
+      let dataContext:
+        | {
+            format: string | null;
+            row_count: number;
+            metric_columns: string[];
+            columns: string[];
+          }
+        | undefined;
 
       if (dataset === 'evaluation') {
         dataContext = {
@@ -521,8 +526,8 @@ export function useCopilotStream() {
       abortControllerRef.current = createCopilotStream(
         {
           message,
-          dataContext,
-          dataset_label: dataset,
+          ...(dataContext ? { dataContext } : {}),
+          ...(dataset ? { dataset_label: dataset } : {}),
           conversation_history: nextHistory,
           stream_url: streamUrl,
           session_id: sessionId,
