@@ -183,7 +183,7 @@ class TestReviewService:
             failure_observation_name="step-2",
         )
 
-        result = asyncio.get_event_loop().run_until_complete(save_review(req))
+        result = asyncio.run(save_review(req))
         assert result.success is True
         assert result.scores_created == 5  # verdict + 3 text + failure_step
         assert mock_client.create_score.call_count == 5
@@ -205,7 +205,7 @@ class TestReviewService:
         mock_get_loader.return_value = mock_loader
 
         req = ReviewCreateRequest(trace_id="trace-1", verdict="positive")
-        result = asyncio.get_event_loop().run_until_complete(save_review(req))
+        result = asyncio.run(save_review(req))
         assert result.success is True
         assert result.scores_created == 1  # only verdict
         assert result.dataset_item_created is False
@@ -231,7 +231,7 @@ class TestReviewService:
             add_to_dataset=True,
             dataset_name="my-dataset",
         )
-        result = asyncio.get_event_loop().run_until_complete(save_review(req))
+        result = asyncio.run(save_review(req))
         assert result.dataset_item_created is True
         assert result.dataset_name == "my-dataset"
         mock_client.create_dataset.assert_called_once_with(name="my-dataset")

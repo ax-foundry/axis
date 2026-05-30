@@ -257,6 +257,7 @@ class AgentReplayOverrides:
     review_step_types: list[str] | None = None
     search_fields: dict[str, str] | None = None
     recent_trace_names: list[str] | None = None
+    session_turn_name: str | None = None
 
 
 @dataclass
@@ -270,6 +271,7 @@ class ReplayConfig:
     search_fields: dict[str, str] = field(default_factory=dict)
     review_step_types: list[str] = field(default_factory=list)
     recent_trace_names: list[str] = field(default_factory=list)
+    session_turn_name: str | None = None
     agents_config: dict[str, AgentReplayOverrides] = field(default_factory=dict)
     langfuse_agents: dict[str, LangfuseAgentCreds] = field(default_factory=dict)
     search_db: ReplayDBConfig = field(default_factory=ReplayDBConfig)
@@ -304,6 +306,14 @@ class ReplayConfig:
             if override is not None:
                 return override
         return self.recent_trace_names
+
+    def get_session_turn_name(self, agent_name: str | None) -> str | None:
+        """Get session_turn_name for a specific agent, falling back to global."""
+        if agent_name and agent_name in self.agents_config:
+            override = self.agents_config[agent_name].session_turn_name
+            if override is not None:
+                return override
+        return self.session_turn_name
 
 
 def _build_prompt_patterns(raw: dict[str, Any] | None) -> Any:
@@ -423,6 +433,7 @@ def load_replay_config() -> ReplayConfig:
                         agent_rst = overrides.get("review_step_types")
                         agent_sf = overrides.get("search_fields")
                         agent_rtn = overrides.get("recent_trace_names")
+                        agent_stn = overrides.get("session_turn_name")
                         agents_config[str(name).lower()] = AgentReplayOverrides(
                             review_step_types=(
                                 [str(t).strip().upper() for t in agent_rst if str(t).strip()]
@@ -439,8 +450,10 @@ def load_replay_config() -> ReplayConfig:
                                 if isinstance(agent_rtn, list)
                                 else None
                             ),
+                            session_turn_name=str(agent_stn).strip() if agent_stn else None,
                         )
 
+                raw_stn = data.get("session_turn_name")
                 config = ReplayConfig(
                     default_limit=data.get("default_limit", 20),
                     default_days_back=data.get("default_days_back", 7),
@@ -451,6 +464,7 @@ def load_replay_config() -> ReplayConfig:
                     search_fields=extra_search_fields,
                     review_step_types=review_step_types,
                     recent_trace_names=recent_trace_names,
+                    session_turn_name=str(raw_stn).strip() if raw_stn else None,
                     agents_config=agents_config,
                     prompt_patterns=_build_prompt_patterns(data.get("prompt_patterns")),
                 )

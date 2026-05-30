@@ -7,6 +7,7 @@ import type {
   ReplayStatusResponse,
   ReviewCreateRequest,
   ReviewResponse,
+  SessionDetailResponse,
   SimulateRequest,
   SimulateResponse,
   StepFixture,
@@ -58,6 +59,14 @@ export async function getRecentTraces(params?: {
   if (params?.agent) qs.append('agent', params.agent);
   const query = qs.toString();
   return fetchApi(`/api/agent-replay/traces${query ? `?${query}` : ''}`);
+}
+
+export async function getSessionDetail(
+  sessionId: string,
+  agent?: string | null
+): Promise<SessionDetailResponse> {
+  const qs = agent ? `?agent=${encodeURIComponent(agent)}` : '';
+  return fetchApi(`/api/agent-replay/sessions/${encodeURIComponent(sessionId)}${qs}`);
 }
 
 export async function getTraceDetail(

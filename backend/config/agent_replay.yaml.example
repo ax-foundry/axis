@@ -35,11 +35,13 @@ agent_replay:
   # ── Extra search fields ──
   # Add search modes to the TracePicker dropdown beyond the default "Trace ID".
   # Format: { value: label }. Built-in values with special handling:
-  #   session_id — fetches all traces in a Langfuse session
+  #   session_id   — fetches all traces in a Langfuse session (flat trace list)
+  #   session_view — opens the multi-turn session conversation view
   # Any other value is passed as search_by to the search endpoint.
   #
   # search_fields:
-  #   session_id: Session ID
+  #   session_id: Session ID       # flat trace-list search by session
+  #   session_view: Session View   # multi-turn conversation transcript
 
   # ── Review panel: failure step types ──
   # Control which observation types appear in the "Failure Step" dropdown
@@ -67,7 +69,8 @@ agent_replay:
   #     review_step_types:
   #       - AGENT
   #     search_fields:
-  #       session_id: Session ID
+  #       session_id: Quote Locator   # flat trace list
+  #       session_view: Session View  # multi-turn conversation transcript
   #     recent_trace_names:
   #       - agent1
   #   agent2:

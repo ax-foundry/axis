@@ -9,6 +9,7 @@ from app.plugins.agent_replay.models.replay_schemas import (
     ObservationNodeResponse,
     RecentTracesResponse,
     ReplayStatusResponse,
+    SessionDetailResponse,
     StepSummary,
     TraceDetailResponse,
 )
@@ -80,6 +81,24 @@ async def get_status() -> ReplayStatusResponse:
 @router.get("/agents")
 async def get_agents() -> dict[str, list[str]]:
     return {"agents": replay_service.get_configured_agents()}
+
+
+@router.get("/sessions/{session_id}", response_model=SessionDetailResponse)
+async def get_session_detail(
+    session_id: str,
+    agent: str | None = Query(default=None, description="Agent name for per-agent credentials"),
+) -> SessionDetailResponse:
+    _check_enabled()
+    try:
+        return await replay_service.get_session_detail(
+            session_id=session_id,
+            agent_name=agent,
+        )
+    except replay_service.LangfuseNotConfiguredError as e:
+        raise HTTPException(status_code=503, detail=str(e))
+    except Exception as e:
+        logger.exception("Error fetching session detail")
+        raise HTTPException(status_code=500, detail=f"Failed to fetch session: {e}")
 
 
 @router.get("/search", response_model=RecentTracesResponse)

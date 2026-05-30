@@ -95,6 +95,26 @@ class RecentTracesResponse(BaseModel):
     total: int = 0
 
 
+class SessionTurn(BaseModel):
+    index: int
+    trace_id: str | None = None
+    trace_name: str | None = None
+    timestamp: str | None = None
+    user_message: str | None = None
+    assistant_message: str | None = None
+
+
+class SessionDetailResponse(BaseModel):
+    id: str
+    environment: str | None = None
+    created_at: str | None = None
+    project_id: str | None = None
+    turn_count: int = 0
+    turn_trace_name: str | None = None
+    trace_count: int = 0
+    turns: list[SessionTurn] = Field(default_factory=list)
+
+
 class SearchFieldOption(BaseModel):
     value: str
     label: str

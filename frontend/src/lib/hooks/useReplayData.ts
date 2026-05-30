@@ -5,6 +5,7 @@ import {
   getNodeDetail,
   getRecentTraces,
   getReplayStatus,
+  getSessionDetail,
   getStepDetail,
   getStepFixture,
   getTraceDetail,
@@ -52,6 +53,16 @@ export function useRecentTraces(
     queryFn: () => getRecentTraces(params ?? undefined),
     enabled: params != null,
     staleTime: 60_000,
+    retry: 1,
+  });
+}
+
+export function useSessionDetail(sessionId: string | null, agent?: string | null) {
+  return useQuery({
+    queryKey: ['session-detail', sessionId, agent],
+    queryFn: () => getSessionDetail(sessionId!, agent),
+    enabled: !!sessionId,
+    staleTime: 5 * 60_000,
     retry: 1,
   });
 }
