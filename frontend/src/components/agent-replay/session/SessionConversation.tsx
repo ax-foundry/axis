@@ -21,20 +21,20 @@ function TurnCard({ turn, onOpenTrace, agentAvatar, agentLabel }: TurnCardProps)
   const hasTrace = !!turn.trace_id;
 
   return (
-    <div className="overflow-hidden rounded-xl border border-border bg-surface shadow-sm transition-all hover:border-primary/20 hover:shadow-md">
+    <div className="overflow-hidden rounded-xl border border-border border-l-2 border-l-primary/30 bg-surface shadow-sm transition-all hover:border-l-primary/60 hover:shadow-md">
       {/* Turn header */}
       <div
-        className="border-border/50 flex cursor-pointer items-center gap-3 border-b bg-gradient-to-r from-primary/[0.02] to-transparent px-4 py-2.5"
+        className="flex cursor-pointer items-center gap-3 border-b border-border/50 bg-gradient-to-r from-primary/[0.04] to-transparent px-4 py-2.5"
         onClick={() => setExpanded(!expanded)}
       >
-        <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/15 text-[10px] font-bold text-primary">
+        <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-white shadow-sm">
           {turn.index + 1}
         </span>
         <span className="flex-1 text-[11px] font-semibold text-text-muted">
           {turn.trace_name ?? 'Turn'}
         </span>
         {turn.timestamp && (
-          <span className="text-text-muted/60 text-[10px]">
+          <span className="text-[10px] text-text-muted/60">
             {new Date(turn.timestamp).toLocaleTimeString([], {
               hour: '2-digit',
               minute: '2-digit',
@@ -47,7 +47,7 @@ function TurnCard({ turn, onOpenTrace, agentAvatar, agentLabel }: TurnCardProps)
               e.stopPropagation();
               onOpenTrace(turn.trace_id!);
             }}
-            className="flex items-center gap-1 rounded-lg border border-primary/25 bg-primary/5 px-2.5 py-1 text-[10px] font-semibold text-primary transition-all hover:border-primary/50 hover:bg-primary/10 hover:shadow-sm"
+            className="flex items-center gap-1.5 rounded-lg border border-primary/30 bg-primary/8 px-2.5 py-1 text-[10px] font-semibold text-primary transition-all hover:border-primary/60 hover:bg-primary/15 hover:shadow-sm"
             title="Open trace replay for this turn"
           >
             <ExternalLink className="h-2.5 w-2.5" />
@@ -58,10 +58,10 @@ function TurnCard({ turn, onOpenTrace, agentAvatar, agentLabel }: TurnCardProps)
 
       {/* Messages */}
       {expanded && (
-        <div className="divide-border/40 divide-y">
+        <div className="divide-y divide-border/40">
           {turn.user_message && (
-            <div className="flex gap-3 px-4 py-3">
-              <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-50 dark:bg-blue-950">
+            <div className="flex gap-3 border-l-2 border-l-blue-300/60 bg-blue-50/30 px-4 py-3">
+              <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-100 ring-1 ring-blue-200">
                 <User className="h-3.5 w-3.5 text-blue-500" />
               </div>
               <div className="min-w-0 flex-1">
@@ -76,15 +76,21 @@ function TurnCard({ turn, onOpenTrace, agentAvatar, agentLabel }: TurnCardProps)
           )}
 
           {turn.assistant_message && (
-            <div className="flex gap-3 bg-primary/[0.015] px-4 py-3">
+            <div className="flex gap-3 border-l-2 border-l-primary/40 bg-primary/[0.025] px-4 py-3">
               <div
                 className={cn(
-                  'mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center overflow-hidden rounded-full',
-                  !agentAvatar && 'bg-gradient-to-br from-primary/20 to-primary/5'
+                  'mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center overflow-hidden rounded-full ring-1',
+                  agentAvatar
+                    ? 'ring-primary/20'
+                    : 'bg-gradient-to-br from-primary/20 to-primary/5 ring-primary/15'
                 )}
               >
                 {agentAvatar ? (
-                  <img src={agentAvatar} alt={agentLabel ?? 'Assistant'} className="h-6 w-6 object-cover" />
+                  <img
+                    src={agentAvatar}
+                    alt={agentLabel ?? 'Assistant'}
+                    className="h-6 w-6 object-cover"
+                  />
                 ) : (
                   <Bot className="h-3.5 w-3.5 text-primary" />
                 )}
