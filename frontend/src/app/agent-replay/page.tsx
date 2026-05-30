@@ -286,7 +286,11 @@ export default function AgentReplayPage() {
               </div>
             )}
             {session && !sessionLoading && (
-              <SessionConversation turns={session.turns} onOpenTrace={setTraceId} agentName={selectedAgent} />
+              <SessionConversation
+                turns={session.turns}
+                onOpenTrace={setTraceId}
+                agentName={selectedAgent}
+              />
             )}
           </div>
         </div>

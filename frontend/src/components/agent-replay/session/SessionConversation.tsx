@@ -21,10 +21,10 @@ function TurnCard({ turn, onOpenTrace, agentAvatar, agentLabel }: TurnCardProps)
   const hasTrace = !!turn.trace_id;
 
   return (
-    <div className="overflow-hidden rounded-xl border border-border border-l-2 border-l-primary/30 bg-surface shadow-sm transition-all hover:border-l-primary/60 hover:shadow-md">
+    <div className="overflow-hidden rounded-xl border border-l-2 border-border border-l-primary/30 bg-surface shadow-sm transition-all hover:border-l-primary/60 hover:shadow-md">
       {/* Turn header */}
       <div
-        className="flex cursor-pointer items-center gap-3 border-b border-border/50 bg-gradient-to-r from-primary/[0.04] to-transparent px-4 py-2.5"
+        className="border-border/50 flex cursor-pointer items-center gap-3 border-b bg-gradient-to-r from-primary/[0.04] to-transparent px-4 py-2.5"
         onClick={() => setExpanded(!expanded)}
       >
         <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-white shadow-sm">
@@ -34,7 +34,7 @@ function TurnCard({ turn, onOpenTrace, agentAvatar, agentLabel }: TurnCardProps)
           {turn.trace_name ?? 'Turn'}
         </span>
         {turn.timestamp && (
-          <span className="text-[10px] text-text-muted/60">
+          <span className="text-text-muted/60 text-[10px]">
             {new Date(turn.timestamp).toLocaleTimeString([], {
               hour: '2-digit',
               minute: '2-digit',
@@ -47,7 +47,7 @@ function TurnCard({ turn, onOpenTrace, agentAvatar, agentLabel }: TurnCardProps)
               e.stopPropagation();
               onOpenTrace(turn.trace_id!);
             }}
-            className="flex items-center gap-1.5 rounded-lg border border-primary/30 bg-primary/8 px-2.5 py-1 text-[10px] font-semibold text-primary transition-all hover:border-primary/60 hover:bg-primary/15 hover:shadow-sm"
+            className="bg-primary/8 flex items-center gap-1.5 rounded-lg border border-primary/30 px-2.5 py-1 text-[10px] font-semibold text-primary transition-all hover:border-primary/60 hover:bg-primary/15 hover:shadow-sm"
             title="Open trace replay for this turn"
           >
             <ExternalLink className="h-2.5 w-2.5" />
@@ -58,7 +58,7 @@ function TurnCard({ turn, onOpenTrace, agentAvatar, agentLabel }: TurnCardProps)
 
       {/* Messages */}
       {expanded && (
-        <div className="divide-y divide-border/40">
+        <div className="divide-border/40 divide-y">
           {turn.user_message && (
             <div className="flex gap-3 border-l-2 border-l-blue-300/60 bg-blue-50/30 px-4 py-3">
               <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-100 ring-1 ring-blue-200">
