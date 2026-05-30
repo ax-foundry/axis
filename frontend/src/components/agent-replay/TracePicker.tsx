@@ -524,6 +524,7 @@ function TraceCard({
 
 interface TracePickerProps {
   onSelect: (traceId: string) => void;
+  onSelectSession?: (sessionId: string) => void;
   agent?: string | null;
   className?: string;
   initialQuery?: string;
@@ -532,6 +533,7 @@ interface TracePickerProps {
 
 export function TracePicker({
   onSelect,
+  onSelectSession,
   agent,
   className,
   initialQuery,
@@ -601,9 +603,12 @@ export function TracePicker({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const trimmed = inputValue.trim();
-    if (trimmed) {
-      setSubmittedQuery(trimmed);
+    if (!trimmed) return;
+    if (searchBy === 'session_view' && onSelectSession) {
+      onSelectSession(trimmed);
+      return;
     }
+    setSubmittedQuery(trimmed);
   };
 
   const handleShowRecent = () => {

@@ -11,3 +11,4 @@ export { FailureStepSelector } from './FailureStepSelector';
 export { DatasetPushControls } from './DatasetPushControls';
 export { ReviewPanel } from './ReviewPanel';
 export { WhatIfPanel } from './whatif';
+export { SessionConversation, SessionHeader } from './session';

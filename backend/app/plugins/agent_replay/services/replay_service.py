@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+import json
 import logging
 import re
 from datetime import datetime
@@ -15,6 +16,8 @@ from app.plugins.agent_replay.models.replay_schemas import (
     RecentTracesResponse,
     ReplayStatusResponse,
     SearchFieldOption,
+    SessionDetailResponse,
+    SessionTurn,
     StepSummary,
     TokenUsage,
     TraceDetailResponse,
@@ -464,7 +467,8 @@ async def search_traces(
             show_progress=False,
         )
         summaries = _traces_to_summaries(raw_traces)
-        return RecentTracesResponse(traces=summaries[:limit], total=len(summaries))
+        summaries.sort(key=lambda s: s.timestamp or "", reverse=False)
+        return RecentTracesResponse(traces=summaries, total=len(summaries))
 
     if search_by not in ("trace_id", "session_id"):
         from app.plugins.agent_replay.services.search_db import lookup_trace_ids
@@ -498,16 +502,25 @@ async def search_traces(
         except ReplayServiceError:
             return RecentTracesResponse(traces=[], total=0)
 
-    # Metadata search
+    # Metadata search — Langfuse v4 uses a JSON filter string instead of a metadata kwarg
     loader = _get_loader(agent_name)
     metadata_key = get_replay_config().search_metadata_key
+    metadata_filter = json.dumps([
+        {
+            "column": "metadata",
+            "key": metadata_key,
+            "operator": "=",
+            "value": query,
+            "type": "stringObject",
+        }
+    ])
     raw_traces = await asyncio.to_thread(
         loader.fetch_traces,
         limit=limit,
         days_back=days_back,
         fetch_full_traces=False,
         show_progress=False,
-        metadata={metadata_key: query},
+        filter=metadata_filter,
     )
 
     summaries = _traces_to_summaries(raw_traces)
@@ -739,3 +752,51 @@ async def get_node_detail(
         raise NodeNotFoundError(f"Node {node_id!r} not found in trace {trace_id!r}")
 
     return _serialize_tree_node(node, max_chars=500000)
+
+
+async def get_session_detail(
+    session_id: str,
+    agent_name: str | None = None,
+) -> SessionDetailResponse:
+    loader = _get_loader(agent_name)
+    turn_name = get_replay_config().get_session_turn_name(agent_name)
+
+    from axion.tracing import Session
+
+    session = await asyncio.to_thread(
+        Session.from_langfuse,
+        session_id,
+        loader=loader,
+        show_progress=False,
+        enrich=False,
+        turn_name=turn_name,
+    )
+
+    max_chars = get_replay_config().max_chars
+    turns: list[SessionTurn] = []
+    for turn in session.turns():
+        user_msg, _ = _truncate_content(turn.user, max_chars)
+        asst_msg, _ = _truncate_content(turn.assistant, max_chars)
+        ts = str(turn.timestamp) if turn.timestamp is not None else None
+        turns.append(
+            SessionTurn(
+                index=turn.index,
+                trace_id=turn.trace_id,
+                trace_name=turn.trace_name,
+                timestamp=ts,
+                user_message=user_msg if isinstance(user_msg, str) else None,
+                assistant_message=asst_msg if isinstance(asst_msg, str) else None,
+            )
+        )
+
+    created_at = session.created_at
+    return SessionDetailResponse(
+        id=str(session.id or session_id),
+        environment=session.environment,
+        created_at=str(created_at) if created_at is not None else None,
+        project_id=session.project_id,
+        turn_count=session.turn_count,
+        turn_trace_name=session.turn_trace_name,
+        trace_count=len(session.traces),
+        turns=turns,
+    )

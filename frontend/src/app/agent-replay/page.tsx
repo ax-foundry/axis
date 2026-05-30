@@ -23,6 +23,8 @@ import {
   NodeDetailPanel,
   ObservationTree,
   ReviewPanel,
+  SessionConversation,
+  SessionHeader,
   TRACE_IO_NODE_ID,
   TraceIOPanel,
   TracePicker,
@@ -36,7 +38,7 @@ import {
   getVisibleNodes,
 } from '@/components/agent-replay/ObservationTree';
 import { PageHeader } from '@/components/ui/PageHeader';
-import { useReplayStatus, useTraceDetail } from '@/lib/hooks/useReplayData';
+import { useReplayStatus, useSessionDetail, useTraceDetail } from '@/lib/hooks/useReplayData';
 import { cn } from '@/lib/utils';
 import { useReplayStore } from '@/stores/replay-store';
 
@@ -45,6 +47,7 @@ export default function AgentReplayPage() {
   const { data: status, isLoading: statusLoading } = useReplayStatus();
   const {
     traceId,
+    sessionId,
     selectedNodeId,
     expandedNodeIds,
     sidebarCollapsed,
@@ -52,6 +55,8 @@ export default function AgentReplayPage() {
     reviewPanelOpen,
     whatIf,
     setTraceId,
+    setSessionId,
+    backToConversation,
     setSelectedNodeId,
     setExpandedNodeIds,
     toggleNodeExpanded,
@@ -70,6 +75,11 @@ export default function AgentReplayPage() {
     isLoading: traceLoading,
     error: traceError,
   } = useTraceDetail(traceId, selectedAgent);
+  const {
+    data: session,
+    isLoading: sessionLoading,
+    error: sessionError,
+  } = useSessionDetail(sessionId, selectedAgent);
 
   // Sync available agents from status response
   useEffect(() => {
@@ -78,9 +88,10 @@ export default function AgentReplayPage() {
     }
   }, [status?.agents, setAvailableAgents]);
 
-  // Apply URL params: ?agent=<name> must be set before ?trace=<id> so the fetch uses the right credentials
+  // Apply URL params: ?agent=<name> must be set before ?trace= or ?session= so the fetch uses the right credentials
   const urlAgent = searchParams.get('agent');
   const urlTraceId = searchParams.get('trace');
+  const urlSessionId = searchParams.get('session');
   useEffect(() => {
     if (urlAgent && !selectedAgent) {
       setSelectedAgent(urlAgent);
@@ -91,6 +102,11 @@ export default function AgentReplayPage() {
       setTraceId(urlTraceId);
     }
   }, [urlTraceId, traceId, setTraceId, urlAgent, selectedAgent]);
+  useEffect(() => {
+    if (urlSessionId && !sessionId && !traceId && (!urlAgent || selectedAgent)) {
+      setSessionId(urlSessionId);
+    }
+  }, [urlSessionId, sessionId, traceId, setSessionId, urlAgent, selectedAgent]);
 
   // Auto-initialize tree on trace load: expand root + level-1, select first level-1 child
   useEffect(() => {
@@ -217,12 +233,19 @@ export default function AgentReplayPage() {
         title="Agent Replay"
         subtitle="Step through AI agent workflows from Langfuse"
         actions={
-          traceId ? (
+          sessionId && traceId ? (
+            <button
+              onClick={backToConversation}
+              className="flex items-center gap-1.5 rounded-lg border border-primary/20 bg-primary/5 px-3 py-1.5 text-sm font-semibold text-primary-dark transition-all hover:border-primary/30 hover:bg-primary/10 hover:shadow-sm"
+            >
+              ← Back to conversation
+            </button>
+          ) : traceId || sessionId ? (
             <button
               onClick={reset}
               className="rounded-lg border border-primary/20 bg-primary/5 px-3 py-1.5 text-sm font-semibold text-primary-dark transition-all hover:border-primary/30 hover:bg-primary/10 hover:shadow-sm"
             >
-              New Trace
+              {sessionId ? 'New Session' : 'New Trace'}
             </button>
           ) : undefined
         }
@@ -231,8 +254,46 @@ export default function AgentReplayPage() {
       {/* Agent selector bar */}
       <AgentIdentityBar trace={trace ?? undefined} />
 
+      {/* Session view: conversation transcript — shown when session loaded and not drilling into a trace */}
+      {sessionId && !traceId && (
+        <div className="flex min-h-0 flex-1 flex-col">
+          {session && <SessionHeader session={session} agentName={selectedAgent} />}
+          <div className="min-h-0 flex-1 overflow-y-auto bg-gradient-to-b from-surface via-primary/[0.01] to-primary/[0.03]">
+            {sessionLoading && (
+              <div className="flex flex-col items-center justify-center gap-3 pt-20">
+                <div className="h-10 w-10 animate-spin rounded-full border-[3px] border-primary/20 border-t-primary" />
+                <span className="text-sm text-text-muted">Loading session from Langfuse...</span>
+              </div>
+            )}
+            {sessionError && (
+              <div className="mx-auto max-w-lg px-6 pt-12">
+                <div className="rounded-2xl border border-red-200/60 bg-red-50/80 p-6 text-center shadow-sm">
+                  <div className="mb-3 inline-flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
+                    <AlertCircle className="h-6 w-6 text-red-500" />
+                  </div>
+                  <p className="text-sm font-medium text-red-700">
+                    {sessionError instanceof Error
+                      ? sessionError.message
+                      : 'Failed to load session'}
+                  </p>
+                  <button
+                    onClick={reset}
+                    className="mt-4 rounded-xl bg-red-100 px-5 py-2 text-sm font-medium text-red-700 transition-colors hover:bg-red-200"
+                  >
+                    Try Another Session
+                  </button>
+                </div>
+              </div>
+            )}
+            {session && !sessionLoading && (
+              <SessionConversation turns={session.turns} onOpenTrace={setTraceId} agentName={selectedAgent} />
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Pre-trace states: centered with gradient background */}
-      {!trace && (
+      {!trace && !sessionId && (
         <div className="min-h-0 flex-1 overflow-y-auto bg-gradient-to-b from-surface via-primary/[0.02] to-primary/[0.05]">
           <div className="mx-auto w-full max-w-4xl px-6 pb-12 pt-12">
             {/* Not configured state */}
@@ -263,9 +324,8 @@ export default function AgentReplayPage() {
             {status?.configured && !traceId && (
               <TracePicker
                 onSelect={setTraceId}
+                onSelectSession={setSessionId}
                 agent={selectedAgent}
-                initialQuery={searchParams.get('session') ?? undefined}
-                initialSearchBy={searchParams.get('session') ? 'session_id' : undefined}
               />
             )}
 

@@ -31,6 +31,7 @@ const INITIAL_WHATIF_STATE: WhatIfState = {
 
 interface ReplayState {
   traceId: string | null;
+  sessionId: string | null;
   selectedNodeId: string | null;
   expandedNodeIds: Record<string, boolean>;
   isPickerOpen: boolean;
@@ -52,6 +53,8 @@ interface ReplayState {
   whatIf: WhatIfState;
 
   setTraceId: (id: string | null) => void;
+  setSessionId: (id: string | null) => void;
+  backToConversation: () => void;
   setSelectedNodeId: (id: string | null) => void;
   toggleNodeExpanded: (id: string) => void;
   setExpandedNodeIds: (ids: Record<string, boolean>) => void;
@@ -85,6 +88,7 @@ interface ReplayState {
 
 export const useReplayStore = create<ReplayState>()((set) => ({
   traceId: null,
+  sessionId: null,
   selectedNodeId: null,
   expandedNodeIds: {},
   isPickerOpen: true,
@@ -100,6 +104,26 @@ export const useReplayStore = create<ReplayState>()((set) => ({
       selectedNodeId: null,
       expandedNodeIds: {},
       isPickerOpen: !id,
+      ...INITIAL_REVIEW_STATE,
+      whatIf: { ...INITIAL_WHATIF_STATE },
+    }),
+
+  setSessionId: (id) =>
+    set({
+      sessionId: id,
+      traceId: null,
+      selectedNodeId: null,
+      expandedNodeIds: {},
+      isPickerOpen: !id,
+      ...INITIAL_REVIEW_STATE,
+      whatIf: { ...INITIAL_WHATIF_STATE },
+    }),
+
+  backToConversation: () =>
+    set({
+      traceId: null,
+      selectedNodeId: null,
+      expandedNodeIds: {},
       ...INITIAL_REVIEW_STATE,
       whatIf: { ...INITIAL_WHATIF_STATE },
     }),
@@ -127,6 +151,7 @@ export const useReplayStore = create<ReplayState>()((set) => ({
   setSelectedAgent: (name) =>
     set({
       selectedAgent: name,
+      sessionId: null,
       traceId: null,
       selectedNodeId: null,
       expandedNodeIds: {},
@@ -138,6 +163,7 @@ export const useReplayStore = create<ReplayState>()((set) => ({
 
   reset: () =>
     set({
+      sessionId: null,
       traceId: null,
       selectedNodeId: null,
       expandedNodeIds: {},

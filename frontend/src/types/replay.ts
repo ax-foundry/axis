@@ -86,6 +86,26 @@ export interface RecentTracesResponse {
   total: number;
 }
 
+export interface SessionTurn {
+  index: number;
+  trace_id: string | null;
+  trace_name: string | null;
+  timestamp: string | null;
+  user_message: string | null;
+  assistant_message: string | null;
+}
+
+export interface SessionDetailResponse {
+  id: string;
+  environment: string | null;
+  created_at: string | null;
+  project_id: string | null;
+  turn_count: number;
+  turn_trace_name: string | null;
+  trace_count: number;
+  turns: SessionTurn[];
+}
+
 export interface SearchFieldOption {
   value: string;
   label: string;
