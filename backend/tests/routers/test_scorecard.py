@@ -1,6 +1,6 @@
 """Tests for the YAML-driven /api/scorecard/{name}/{view} router."""
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Any
 from unittest.mock import patch
 
@@ -8,9 +8,8 @@ import duckdb
 import pytest
 from fastapi.testclient import TestClient
 
-from app.config.scorecards import ScorecardsConfig, ScorecardSpec, SignalsConfig, SignalMetricSpec
+from app.config.scorecards import ScorecardsConfig, ScorecardSpec
 from app.services.duckdb_store import DuckDBStore
-
 
 # ----------------------------------------------------------------------
 # Fixtures
@@ -23,8 +22,9 @@ def _seeded_store() -> DuckDBStore:
     store._conn = duckdb.connect(":memory:")  # type: ignore[attr-defined]
     store.db_path = __file__  # any existing path satisfies has_table()'s exists() check
 
-    import anyio
     import threading
+
+    import anyio
 
     store._query_limiter = anyio.CapacityLimiter(8)  # type: ignore[attr-defined]
     store._cache_lock = threading.Lock()  # type: ignore[attr-defined]
@@ -32,7 +32,7 @@ def _seeded_store() -> DuckDBStore:
     store._sync_status = {}  # type: ignore[attr-defined]
     store._register_lock = threading.Lock()  # type: ignore[attr-defined]
 
-    now = datetime.now(tz=timezone.utc)
+    now = datetime.now(tz=UTC)
     yesterday = (now - timedelta(days=1)).isoformat()
     last_week = (now - timedelta(days=6)).isoformat()
     long_ago = (now - timedelta(days=400)).isoformat()
@@ -705,7 +705,7 @@ def test_signal_key_and_metric_name_are_anded(seeded_store: DuckDBStore) -> None
 
 
 def test_signals_view_metric_name_scoping(seeded_store: DuckDBStore) -> None:
-    """signals view respects metric_name: totals reflect only the scoped subset."""
+    """Signals view respects metric_name: totals reflect only the scoped subset."""
     from app.config.env import settings
     from app.main import app
 
@@ -999,14 +999,15 @@ def test_metric_summary_empty_when_no_failures(seeded_store: DuckDBStore) -> Non
 
 def test_metric_summary_includes_high_score_failures(seeded_store: DuckDBStore) -> None:
     """A row with passed=False and metric_score=0.8 must reach the LLM —
-    SQL's failure_filter is authoritative; no second-pass score gating."""
-    from datetime import datetime, timedelta, timezone
+    SQL's failure_filter is authoritative; no second-pass score gating.
+    """
+    from datetime import datetime, timedelta
     from unittest.mock import AsyncMock, MagicMock
 
     from app.config.env import settings
     from app.main import app
 
-    yesterday = (datetime.now(tz=timezone.utc) - timedelta(days=1)).isoformat()
+    yesterday = (datetime.now(tz=UTC) - timedelta(days=1)).isoformat()
     seeded_store._conn.execute(  # type: ignore[attr-defined]
         "INSERT INTO monitoring_data VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         (

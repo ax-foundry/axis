@@ -1,9 +1,9 @@
 import os
 from pathlib import Path
 
-
 _PROJECT_ROOT = Path(__file__).resolve().parents[3]
 _BACKEND_ENV_FILE = _PROJECT_ROOT / "backend" / ".env"
+
 
 def get_custom_dir() -> Path:
     """Return the custom directory, re-reading AXIS_CUSTOM_DIR each call.

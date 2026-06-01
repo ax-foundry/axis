@@ -23,7 +23,7 @@ PLUGIN_META = PluginMeta(
 )
 
 
-def register(app: FastAPI) -> None:  # noqa: ARG001
+def register(app: FastAPI) -> None:
     """Register the DemoAgent under the name ``"demo"``."""
     from example_agent.demo_agent import DemoAgent  # relative import: package is on sys.path
 

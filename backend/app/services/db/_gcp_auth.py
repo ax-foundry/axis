@@ -41,8 +41,7 @@ def build_bq_client(params: dict[str, Any]) -> Any:
         from google.cloud import bigquery  # type: ignore[import-untyped]
     except ImportError:
         raise DatabaseBackendError(
-            "BigQuery support not installed. "
-            "Install with: pip install 'axis[bigquery]'"
+            "BigQuery support not installed. " "Install with: pip install 'axis[bigquery]'"
         )
 
     project_id = params.get("project_id")
@@ -58,8 +57,7 @@ def build_bq_client(params: dict[str, Any]) -> Any:
             from google.oauth2 import service_account  # type: ignore[import-untyped]
         except ImportError:
             raise DatabaseBackendError(
-                "BigQuery support not installed. "
-                "Install with: pip install 'axis[bigquery]'"
+                "BigQuery support not installed. " "Install with: pip install 'axis[bigquery]'"
             )
 
         # Unescape newlines that may have been encoded during YAML/env transport

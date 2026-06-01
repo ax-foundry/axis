@@ -46,11 +46,7 @@ class ConnectionInfo:
 def _privacy_label(db_type: str, connection_params: dict[str, Any]) -> str:
     """Build a privacy-safe log label from the params dict."""
     # Never log the full dict — extract a non-secret identifier
-    raw = (
-        connection_params.get("host")
-        or connection_params.get("project_id")
-        or "?"
-    )
+    raw = connection_params.get("host") or connection_params.get("project_id") or "?"
     label_hash = hashlib.sha256(str(raw).encode()).hexdigest()[:8]
     return f"{db_type}:{label_hash}"
 

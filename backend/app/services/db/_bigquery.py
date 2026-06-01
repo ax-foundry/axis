@@ -45,8 +45,7 @@ def _require_bq() -> Any:
         return bigquery
     except ImportError:
         raise DatabaseBackendError(
-            "BigQuery support not installed. "
-            "Install with: pip install 'axis[bigquery]'"
+            "BigQuery support not installed. " "Install with: pip install 'axis[bigquery]'"
         )
 
 
@@ -323,6 +322,7 @@ class BigQueryBackend(DatabaseBackend):
         assert_read_only(query)
         _require_bq()
         from google.cloud import bigquery  # type: ignore[import-untyped]
+
         from app.config.env import settings
 
         client = self._get_client(params)
@@ -335,9 +335,9 @@ class BigQueryBackend(DatabaseBackend):
                 use_query_cache=True,
                 maximum_bytes_billed=max_bytes,
             )
-            result = client.query(
-                query, job_config=job_config, location=location
-            ).result(timeout=timeout_s)
+            result = client.query(query, job_config=job_config, location=location).result(
+                timeout=timeout_s
+            )
             rows = []
             for i, row in enumerate(result):
                 if i >= max_rows:
@@ -353,7 +353,7 @@ class BigQueryBackend(DatabaseBackend):
         return f"`{name}`"
 
     def quote_table(self, schema: str, table: str) -> str:
-        """schema = dataset for BigQuery. Uses backtick quoting."""
+        """Schema = dataset for BigQuery. Uses backtick quoting."""
         return f"`{schema}.{table}`"
 
     def quote_table_id(self, table: TableId) -> str:

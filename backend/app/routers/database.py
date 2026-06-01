@@ -216,7 +216,10 @@ async def _substitute_sentinels(
             request = request.model_copy(update={"password": SecretStr(real_password)})
 
     elif request.db_type == "bigquery":
-        if request.sa_private_key and request.sa_private_key.get_secret_value() == _PASSWORD_SENTINEL:
+        if (
+            request.sa_private_key
+            and request.sa_private_key.get_secret_value() == _PASSWORD_SENTINEL
+        ):
             from app.config.env import settings
 
             real_key = None

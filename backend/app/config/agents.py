@@ -9,7 +9,6 @@ from .paths import resolve_config_path
 logger = logging.getLogger(__name__)
 
 
-
 @dataclass
 class AgentConfig:
     """Agent display configuration for the SourceSelector."""

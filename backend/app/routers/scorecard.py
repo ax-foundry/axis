@@ -65,10 +65,41 @@ _AGG_SQL = {"avg": "AVG", "sum": "SUM", "max": "MAX", "min": "MIN", "count": "CO
 # "same action, different wording".
 _ACTION_FINGERPRINT_STOPWORDS = frozenset(
     {
-        "a", "add", "an", "and", "are", "as", "at", "be", "before", "by", "for",
-        "from", "in", "is", "it", "of", "on", "or", "should", "that", "the",
-        "this", "to", "use", "when", "with", "do", "don", "doesn", "t", "s",
-        "athena", "agent", "system", "model",
+        "a",
+        "add",
+        "an",
+        "and",
+        "are",
+        "as",
+        "at",
+        "be",
+        "before",
+        "by",
+        "for",
+        "from",
+        "in",
+        "is",
+        "it",
+        "of",
+        "on",
+        "or",
+        "should",
+        "that",
+        "the",
+        "this",
+        "to",
+        "use",
+        "when",
+        "with",
+        "do",
+        "don",
+        "doesn",
+        "t",
+        "s",
+        "athena",
+        "agent",
+        "system",
+        "model",
     }
 )
 
@@ -81,9 +112,7 @@ def _action_fingerprint(text: str) -> str:
     collapse to the same key.
     """
     cleaned = "".join(c.lower() if c.isalnum() else " " for c in text)
-    tokens = [
-        t for t in cleaned.split() if t and t not in _ACTION_FINGERPRINT_STOPWORDS
-    ]
+    tokens = [t for t in cleaned.split() if t and t not in _ACTION_FINGERPRINT_STOPWORDS]
     return " ".join(sorted(tokens[:5]))
 
 
@@ -124,9 +153,7 @@ def _dedupe_and_cap_actions(
         if existing is None or entry[2] > existing[2]:
             best_per_fp[fp] = entry
 
-    survivors = sorted(best_per_fp.values(), key=lambda e: e[2], reverse=True)[
-        :max_total
-    ]
+    survivors = sorted(best_per_fp.values(), key=lambda e: e[2], reverse=True)[:max_total]
     survivors_by_idx: dict[int, list[str]] = {}
     for idx, text, _ in survivors:
         survivors_by_idx.setdefault(idx, []).append(text)
@@ -727,9 +754,7 @@ async def metric_summary(name: str, req: MetricSummaryRequest) -> dict[str, Any]
     if not spec.detail_columns:
         raise _bad_config("metric_summary view requires detail_columns to be configured")
     if spec.anomaly is None or not spec.anomaly.failure_filter:
-        raise _bad_config(
-            "metric_summary view requires anomaly.failure_filter to be configured"
-        )
+        raise _bad_config("metric_summary view requires anomaly.failure_filter to be configured")
     _check_col(spec.group_column, src_cols, "group_column", spec.source_table)
     _check_col(spec.timestamp_column, src_cols, "timestamp_column", spec.source_table)
     _check_col(spec.metric_label_column, src_cols, "metric_label_column", spec.source_table)
@@ -752,9 +777,7 @@ async def metric_summary(name: str, req: MetricSummaryRequest) -> dict[str, Any]
         "additional_output",
     )
     extra_cols = [
-        c
-        for c in optional_context_cols
-        if c in src_cols and c not in spec.detail_columns
+        c for c in optional_context_cols if c in src_cols and c not in spec.detail_columns
     ]
     missing_optional = [c for c in optional_context_cols if c not in src_cols]
     projected_cols = list(spec.detail_columns) + extra_cols

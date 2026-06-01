@@ -12,7 +12,6 @@ from psycopg.rows import dict_row
 from psycopg_pool import AsyncConnectionPool
 
 from app.services.db._base import AsyncConnection, BoundParams, CatalogBackend, DatabaseBackend
-from app.services.db._errors import DatabaseBackendError
 from app.services.db._query_guard import assert_read_only
 from app.services.db._types import DatabaseType, TableId
 
