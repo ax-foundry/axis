@@ -37,6 +37,7 @@ class KpiDBConfig:
     row_limit: int = 50000
     columns: dict[str, str] = field(default_factory=dict)
     db_type: str = "postgres"
+    connection_params: dict[str, Any] = field(default_factory=dict)
     partition_column: str | None = None
     refresh_interval_minutes: int = 0
     incremental_column: str | None = None
@@ -73,6 +74,8 @@ class KpiDBConfig:
     @property
     def is_configured(self) -> bool:
         """Check if enough config is provided to connect."""
+        if self.db_type == "bigquery":
+            return bool(self.connection_params)
         if self.url:
             return True
         return bool(self.host and self.database)
@@ -334,6 +337,8 @@ def load_kpi_db_config() -> KpiDBConfig:
                 config = KpiDBConfig(
                     enabled=db_config.get("enabled", False),
                     auto_load=db_config.get("auto_load", False),
+                    db_type=db_config.get("db_type", "postgres"),
+                    connection_params=db_config.get("connection_params", {}) or {},
                     url=db_config.get("url") or settings.kpi_db_url,
                     host=db_config.get("host"),
                     port=db_config.get("port", 5432),

@@ -3,10 +3,9 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass
 
-from psycopg import sql
-
 from app.plugins.agent_replay.config import get_replay_config
 from app.services.db._registry import get_backend
+from app.services.db._types import TableId
 
 logger = logging.getLogger(__name__)
 
@@ -67,6 +66,11 @@ async def lookup_trace_ids(
             "Set agent_replay_db.enabled=true in agent_replay_db.yaml."
         )
     if not cfg.is_configured:
+        if cfg.db_type == "bigquery":
+            raise SearchDBNotConfiguredError(
+                "Agent replay lookup database is not configured. "
+                "Add connection_params.dataset to agent_replay_db.yaml."
+            )
         raise SearchDBNotConfiguredError(
             "Agent replay lookup database is not configured. "
             "Provide a url or host+database in agent_replay_db.yaml."
@@ -92,44 +96,49 @@ async def lookup_trace_ids(
         # Default to first configured column
         effective_column = next(iter(resolved.search_columns))
 
-    backend = get_backend("postgres")
-    url = backend.build_url(cfg)
+    backend = get_backend(cfg.db_type)
+    params = backend.build_connection_params(cfg)
 
-    # Build query with safe identifiers using resolved config
-    qualified_table = sql.Identifier(resolved.schema, resolved.table)
-    trace_col = sql.Identifier(resolved.trace_id_column)
-    search_col = sql.Identifier(effective_column)
+    # Build query using dialect-agnostic helpers
+    bp = backend.new_bound_params()
+    search_placeholder = backend.bind_param(bp, search_value, name="search_value")
 
+    # For BigQuery use connection_params.dataset as the schema so the table
+    # reference becomes `project.dataset.table` rather than `project.public.table`.
+    effective_schema = params.get("dataset") or resolved.schema
+    table_id = TableId(
+        project=params.get("project_id", ""),
+        schema=effective_schema,
+        table=resolved.table,
+    )
+    quoted_table = backend.quote_table_id(table_id)
+    trace_col = backend.quote_identifier(resolved.trace_id_column)
+    search_col = backend.quote_identifier(effective_column)
+
+    safe_limit = max(1, int(limit))
     if resolved.agent_name_column:
-        agent_col = sql.Identifier(resolved.agent_name_column)
-        query = sql.SQL(
-            "SELECT {trace_col}, {agent_col} FROM {table} WHERE {search_col} = %s LIMIT %s"
-        ).format(
-            trace_col=trace_col,
-            agent_col=agent_col,
-            table=qualified_table,
-            search_col=search_col,
+        agent_col = backend.quote_identifier(resolved.agent_name_column)
+        query_str = (
+            f"SELECT {trace_col}, {agent_col} FROM {quoted_table} "
+            f"WHERE {search_col} = {search_placeholder} LIMIT {safe_limit}"
         )
     else:
-        query = sql.SQL("SELECT {trace_col} FROM {table} WHERE {search_col} = %s LIMIT %s").format(
-            trace_col=trace_col,
-            table=qualified_table,
-            search_col=search_col,
+        query_str = (
+            f"SELECT {trace_col} FROM {quoted_table} "
+            f"WHERE {search_col} = {search_placeholder} LIMIT {safe_limit}"
         )
 
-    # Compose to string for the connection wrapper
-    query_str = query.as_string(None)  # type: ignore[arg-type]
+    bound = backend.to_params(bp)
 
     try:
         async with backend.pooled_connection(
-            url,
-            ssl_mode=cfg.ssl_mode if cfg.ssl_mode != "disable" else None,
+            params,
             statement_timeout_ms=cfg.query_timeout * 1000,
             connect_timeout=cfg.connect_timeout,
             min_size=cfg.pool_min_size,
             max_size=cfg.pool_max_size,
         ) as conn:
-            rows = await conn.fetch_all(query_str, (search_value, limit))
+            rows = await conn.fetch_all(query_str, bound)
     except Exception as exc:
         logger.exception("Agent replay DB lookup failed for %r", search_value)
         raise SearchDBQueryError(f"Database query failed: {exc}") from exc

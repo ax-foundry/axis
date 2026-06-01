@@ -83,6 +83,10 @@ class BigQueryConnection(AsyncConnection):
             use_query_cache=True,
             query_parameters=bq_params or [],
         )
+        project_id = self._params.get("project_id")
+        dataset = self._params.get("dataset")
+        if project_id and dataset:
+            job_config.default_dataset = bigquery.DatasetReference(project_id, dataset)
         location = self._params.get("location") or None
         job = self._client.query(query, job_config=job_config, location=location)
         result = job.result()
@@ -232,6 +236,10 @@ class BigQueryBackend(DatabaseBackend):
 
         def _run() -> Any:
             job_config = bigquery.QueryJobConfig(use_query_cache=True)
+            project_id = params.get("project_id")
+            dataset = params.get("dataset")
+            if project_id and dataset:
+                job_config.default_dataset = bigquery.DatasetReference(project_id, dataset)
             return client.query(query, job_config=job_config, location=location).result(
                 timeout=timeout_s, page_size=chunk_size
             )

@@ -74,7 +74,7 @@ def build_bq_client(params: dict[str, Any]) -> Any:
         }
         creds = service_account.Credentials.from_service_account_info(
             service_account_info,
-            scopes=["https://www.googleapis.com/auth/bigquery.readonly"],
+            scopes=["https://www.googleapis.com/auth/bigquery"],
         )
         client = bigquery.Client(project=project_id, credentials=creds)
         logger.info("BigQuery client created with service-account credentials")

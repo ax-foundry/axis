@@ -235,10 +235,13 @@ def _sql_literal(val: Any) -> str:
     return str(val)
 
 
-def _wrap_query_incremental(query: str, column: str, watermark: str) -> str:
+def _wrap_query_incremental(
+    query: str, column: str, watermark: str, backend: DatabaseBackend
+) -> str:
     """Wrap a query to only return rows newer than the watermark."""
     escaped_wm = watermark.replace("'", "''")
-    return f"SELECT * FROM ({query}) AS _inc WHERE _inc.\"{column}\" > '{escaped_wm}'"
+    quoted_col = backend.quote_identifier(column)
+    return f"SELECT * FROM ({query}) AS _inc WHERE _inc.{quoted_col} > '{escaped_wm}'"
 
 
 async def _get_partition_bounds(
@@ -825,6 +828,9 @@ async def _sync_split(
 
         if use_incremental:
             assert isinstance(incremental_column, str)
+            from app.services.db import get_backend as _get_backend
+
+            _inc_backend = _get_backend(getattr(config, "db_type", "postgres"))
             dataset_wm = store.get_watermark(dataset_table)
             results_wm = store.get_watermark(results_table)
             logger.info(
@@ -835,11 +841,13 @@ async def _sync_split(
                 dataset_query,
                 incremental_column,
                 dataset_wm,  # type: ignore[arg-type]
+                _inc_backend,
             )
             results_query = _wrap_query_incremental(
                 results_query,
                 incremental_column,
                 results_wm,  # type: ignore[arg-type]
+                _inc_backend,
             )
 
         dataset_cfg = _SubQueryConfig(config, dataset_query)

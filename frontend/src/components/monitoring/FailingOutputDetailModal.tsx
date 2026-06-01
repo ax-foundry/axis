@@ -701,6 +701,7 @@ export function FailingOutputDetailModal({
       [
         'id',
         'trace_id',
+        'session_id',
         'timestamp',
         'query',
         'actual_output',
@@ -827,6 +828,30 @@ export function FailingOutputDetailModal({
               >
                 <Copy className="h-3 w-3" />
                 {copiedField === 'trace_id' ? 'Copied!' : 'Copy'}
+              </button>
+            </div>
+          )}
+
+          {/* Session ID Banner */}
+          {record.session_id && (
+            <div className="flex items-center justify-between rounded-lg border border-border bg-gray-50 px-4 py-3 dark:bg-gray-900/50">
+              <div className="flex items-center gap-3">
+                <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/10">
+                  <ExternalLink className="h-3.5 w-3.5 text-primary" />
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-text-muted">Session ID (Langfuse)</p>
+                  <code className="font-mono text-sm font-medium text-text-primary">
+                    {record.session_id}
+                  </code>
+                </div>
+              </div>
+              <button
+                onClick={() => copyToClipboard(record.session_id || '', 'session_id')}
+                className="flex items-center gap-1 rounded-md border border-border bg-surface px-2.5 py-1 text-xs font-medium text-text-muted transition-colors hover:border-primary/30 hover:text-primary"
+              >
+                <Copy className="h-3 w-3" />
+                {copiedField === 'session_id' ? 'Copied!' : 'Copy'}
               </button>
             </div>
           )}

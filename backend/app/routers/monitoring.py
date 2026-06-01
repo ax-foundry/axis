@@ -122,6 +122,7 @@ MONITORING_COLUMN_NORMALIZATION = {
     "source_component": "source_component",
     # Additional fields from evaluation view
     "trace_id": "trace_id",
+    "session_id": "session_id",
     "observation_id": "observation_id",
     "dataset_created_at": "timestamp",  # Map view's dataset_created_at to timestamp as fallback
     "eval_mode": "eval_mode",
