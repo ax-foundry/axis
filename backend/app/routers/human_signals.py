@@ -321,7 +321,7 @@ async def _import_with_custom_query(config: Any) -> dict[str, Any]:
 
     try:
         backend = get_backend(getattr(config, "db_type", "postgres"))
-        db_url = backend.build_url(config)
+        db_params = backend.build_connection_params(config)
 
         dataset_query = config.dataset_query
         results_query = config.results_query
@@ -336,8 +336,7 @@ async def _import_with_custom_query(config: Any) -> dict[str, Any]:
 
         logger.info("Connecting to human signals database...")
         async with backend.connect(
-            db_url,
-            ssl_mode=config.ssl_mode,
+            db_params,
             statement_timeout_ms=timeout_ms,
         ) as conn:
             logger.info("Executing human signals dataset query...")

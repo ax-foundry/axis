@@ -284,7 +284,7 @@ async def auto_import_eval_from_database(request: Request) -> UploadResponse:
 
     try:
         backend = get_backend(getattr(eval_db_config, "db_type", "postgres"))
-        db_url = backend.build_url(eval_db_config)
+        db_params = backend.build_connection_params(eval_db_config)
 
         dataset_query = eval_db_config.dataset_query
         results_query = eval_db_config.results_query
@@ -298,8 +298,7 @@ async def auto_import_eval_from_database(request: Request) -> UploadResponse:
 
         logger.info("Connecting to eval database...")
         async with backend.connect(
-            db_url,
-            ssl_mode=eval_db_config.ssl_mode,
+            db_params,
             statement_timeout_ms=timeout_ms,
         ) as conn:
             logger.info("Executing eval dataset query...")

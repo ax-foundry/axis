@@ -66,6 +66,7 @@ class DatabaseConnectionRequest(BaseModel):
     @field_validator("port")
     @classmethod
     def validate_port(cls, v: int) -> int:
+        """Validate port is in the valid TCP range."""
         if v < 1 or v > 65535:
             raise ValueError("Port must be between 1 and 65535")
         return v
@@ -89,6 +90,7 @@ class TableIdentifier(BaseModel):
     @field_validator("name")
     @classmethod
     def validate_name(cls, v: str) -> str:
+        """Validate table name is non-empty."""
         if not v or not v.strip():
             raise ValueError("Table name cannot be empty")
         return v.strip()
@@ -152,6 +154,7 @@ class DatabaseImportRequest(BaseModel):
     @field_validator("limit")
     @classmethod
     def validate_limit(cls, v: int) -> int:
+        """Validate limit is positive and within bounds."""
         if v < 1:
             raise ValueError("Limit must be at least 1")
         if v > 10000:
@@ -255,11 +258,13 @@ class QueryPreviewRequest(BaseModel):
     @field_validator("query")
     @classmethod
     def validate_query(cls, v: str) -> str:
+        """Validate and sanitize the SQL query."""
         return _validate_sql_query(v)
 
     @field_validator("limit")
     @classmethod
     def validate_limit(cls, v: int) -> int:
+        """Validate limit is positive and within bounds."""
         if v < 1:
             raise ValueError("Limit must be at least 1")
         if v > 100:
@@ -278,11 +283,13 @@ class QueryImportRequest(BaseModel):
     @field_validator("query")
     @classmethod
     def validate_query(cls, v: str) -> str:
+        """Validate and sanitize the SQL query."""
         return _validate_sql_query(v)
 
     @field_validator("limit")
     @classmethod
     def validate_limit(cls, v: int) -> int:
+        """Validate limit is positive and within bounds."""
         if v < 1:
             raise ValueError("Limit must be at least 1")
         if v > 50000:

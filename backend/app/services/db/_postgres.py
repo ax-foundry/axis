@@ -42,10 +42,7 @@ class PostgresConnection(AsyncConnection):
         params: tuple[Any, ...] | list[Any] | dict[str, Any] | None = None,
     ) -> list[dict[str, Any]]:
         pg_params: tuple[Any, ...] | dict[str, Any] | None
-        if isinstance(params, list):
-            pg_params = tuple(params)
-        else:
-            pg_params = params  # type: ignore[assignment]
+        pg_params = tuple(params) if isinstance(params, list) else params  # type: ignore[assignment]
         async with self._conn.cursor() as cur:
             await cur.execute(query, pg_params)
             rows = await cur.fetchall()
@@ -57,10 +54,7 @@ class PostgresConnection(AsyncConnection):
         params: tuple[Any, ...] | list[Any] | dict[str, Any] | None = None,
     ) -> dict[str, Any] | None:
         pg_params: tuple[Any, ...] | dict[str, Any] | None
-        if isinstance(params, list):
-            pg_params = tuple(params)
-        else:
-            pg_params = params  # type: ignore[assignment]
+        pg_params = tuple(params) if isinstance(params, list) else params  # type: ignore[assignment]
         async with self._conn.cursor() as cur:
             await cur.execute(query, pg_params)
             return await cur.fetchone()  # type: ignore[return-value]
@@ -71,10 +65,7 @@ class PostgresConnection(AsyncConnection):
         params: tuple[Any, ...] | list[Any] | dict[str, Any] | None = None,
     ) -> None:
         pg_params: tuple[Any, ...] | dict[str, Any] | None
-        if isinstance(params, list):
-            pg_params = tuple(params)
-        else:
-            pg_params = params  # type: ignore[assignment]
+        pg_params = tuple(params) if isinstance(params, list) else params  # type: ignore[assignment]
         async with self._conn.cursor() as cur:
             await cur.execute(query, pg_params)
 
@@ -154,7 +145,7 @@ class PostgresBackend(DatabaseBackend):
 
         url = getattr(source, "url", None)
         password = getattr(source, "password", None)
-        if hasattr(password, "get_secret_value"):
+        if password is not None and hasattr(password, "get_secret_value"):
             password = password.get_secret_value()
 
         ssl_mode_val = getattr(source, "ssl_mode", "require") or "require"

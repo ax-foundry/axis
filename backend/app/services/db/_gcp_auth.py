@@ -20,14 +20,14 @@ def _cache_key(project_id: str | None, email: str | None, private_key: str | Non
 
 
 def build_bq_client(params: dict[str, Any]) -> Any:
-    """Return a cached ``bigquery.Client`` for *params*.
+    r"""Return a cached ``bigquery.Client`` for *params*.
 
     Authentication strategy (in order):
     1. ``sa_client_email`` + ``sa_private_key`` from params → service-account creds.
     2. ADC (Application Default Credentials) — ``gcloud auth application-default
        login`` or ``GOOGLE_APPLICATION_CREDENTIALS`` env var.
 
-    The private key undergoes ``\\\\n → \\n`` unescape so it survives YAML /
+    The private key undergoes ``\\n → \n`` unescape so it survives YAML /
     env-var transport (same as mithril_backend).
 
     Raises:
@@ -70,7 +70,7 @@ def build_bq_client(params: dict[str, Any]) -> Any:
             "token_uri": "https://oauth2.googleapis.com/token",
             "project_id": project_id or "",
         }
-        creds = service_account.Credentials.from_service_account_info(
+        creds = service_account.Credentials.from_service_account_info(  # type: ignore[no-untyped-call]
             service_account_info,
             scopes=["https://www.googleapis.com/auth/bigquery"],
         )

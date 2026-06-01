@@ -98,8 +98,9 @@ class DatabaseBackend(ABC):
 
     @abstractmethod
     def build_connection_params(self, source: Any) -> dict[str, Any]:
-        """Normalize *source* (config dataclass, Pydantic request, or dict)
-        into the backend's params dict.
+        """Normalize *source* into the backend's params dict.
+
+        Accepts a config dataclass, Pydantic request, or plain dict.
 
         Raises:
             DatabaseBackendError: If required keys are missing, with a

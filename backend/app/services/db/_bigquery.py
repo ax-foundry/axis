@@ -151,15 +151,14 @@ class BigQueryBackend(DatabaseBackend):
             raw = getattr(source, "connection_params", {}) or {}
             # Also check top-level fields (DatabaseConnectionRequest)
             if not raw:
+                _pk = getattr(source, "sa_private_key", None)
                 raw = {
                     "project_id": getattr(source, "project_id", None),
                     "dataset": getattr(source, "dataset", None),
                     "location": getattr(source, "location", None),
                     "sa_client_email": getattr(source, "sa_client_email", None),
                     "sa_private_key": (
-                        getattr(source, "sa_private_key", None).get_secret_value()
-                        if hasattr(getattr(source, "sa_private_key", None), "get_secret_value")
-                        else getattr(source, "sa_private_key", None)
+                        _pk.get_secret_value() if _pk is not None and hasattr(_pk, "get_secret_value") else _pk
                     ),
                 }
 
@@ -342,7 +341,7 @@ class BigQueryBackend(DatabaseBackend):
             for i, row in enumerate(result):
                 if i >= max_rows:
                     break
-                rows.append({k: v for k, v in row.items()})
+                rows.append(dict(row.items()))
             return rows
 
         return await asyncio.to_thread(_run)
