@@ -930,6 +930,12 @@ class TestLookupWithAgentName:
 
         mock_backend = MagicMock()
         mock_backend.build_url.return_value = "postgresql://localhost/test"
+        mock_backend.build_connection_params.return_value = {}
+        mock_backend.quote_table_id.side_effect = lambda tid: f'"{tid.table}"'
+        mock_backend.quote_identifier.side_effect = lambda col: f'"{col}"'
+        mock_backend.bind_param.return_value = "$1"
+        mock_backend.new_bound_params.return_value = MagicMock()
+        mock_backend.to_params.return_value = ("TKT-123",)
         mock_cm = AsyncMock()
         mock_cm.__aenter__ = AsyncMock(return_value=mock_conn)
         mock_cm.__aexit__ = AsyncMock(return_value=False)

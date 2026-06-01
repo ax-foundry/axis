@@ -505,15 +505,17 @@ async def search_traces(
     # Metadata search — Langfuse v4 uses a JSON filter string instead of a metadata kwarg
     loader = _get_loader(agent_name)
     metadata_key = get_replay_config().search_metadata_key
-    metadata_filter = json.dumps([
-        {
-            "column": "metadata",
-            "key": metadata_key,
-            "operator": "=",
-            "value": query,
-            "type": "stringObject",
-        }
-    ])
+    metadata_filter = json.dumps(
+        [
+            {
+                "column": "metadata",
+                "key": metadata_key,
+                "operator": "=",
+                "value": query,
+                "type": "stringObject",
+            }
+        ]
+    )
     raw_traces = await asyncio.to_thread(
         loader.fetch_traces,
         limit=limit,

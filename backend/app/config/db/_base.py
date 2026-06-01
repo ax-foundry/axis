@@ -7,9 +7,18 @@ class BaseDBImportConfig:
     """Base database import configuration with shared fields.
 
     All database configs (eval, monitoring, human_signals) inherit from this.
+
+    Postgres YAML uses flat fields (host, port, database, username, password,
+    ssl_mode). BigQuery YAML uses a nested ``connection_params`` dict:
+
+        db_type: bigquery
+        connection_params:
+          project_id: my-project
+          dataset: my_dataset
+          location: US
     """
 
-    # Connection
+    # Connection (Postgres flat fields — zero-touch backward compat)
     url: str | None = None
     host: str | None = None
     port: int = 5432
@@ -18,6 +27,9 @@ class BaseDBImportConfig:
     password: str | None = None
     ssl_mode: str = "prefer"
     db_type: str = "postgres"
+
+    # Generic params dict for non-Postgres backends (BigQuery, Snowflake, …)
+    connection_params: dict[str, Any] = field(default_factory=dict)
 
     # Query
     dataset_query: str | None = None
@@ -38,6 +50,8 @@ class BaseDBImportConfig:
     @property
     def is_configured(self) -> bool:
         """Check if enough config is provided to connect."""
+        if self.db_type == "bigquery":
+            return bool(self.connection_params)
         if self.url:
             return True
         return bool(self.host and self.database)
@@ -88,4 +102,5 @@ def parse_base_fields(
         "incremental_column": db_config.get("incremental_column"),
         "tables": db_config.get("tables", []) or [],
         "filters": db_config.get("filters", []) or [],
+        "connection_params": db_config.get("connection_params", {}) or {},
     }

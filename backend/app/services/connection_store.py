@@ -16,15 +16,16 @@ MAX_HANDLES = 100
 
 @dataclass
 class ConnectionInfo:
-    """Stored connection information."""
+    """Stored connection information.
 
-    host: str
-    port: int
-    database: str
-    username: str
-    password: str  # Stored in memory only, never logged
-    ssl_mode: str
-    db_type: str = "postgres"
+    ``connection_params`` holds backend-specific keys; its exact shape is an
+    internal contract between the backend and database_service. It is NEVER
+    logged — only a privacy-safe label derived from a subset of keys is used
+    in log lines.
+    """
+
+    db_type: str
+    connection_params: dict[str, Any]  # backend-specific keys; never logged
     created_at: datetime = field(default_factory=datetime.utcnow)
     expires_at: datetime = field(
         default_factory=lambda: datetime.utcnow() + timedelta(minutes=HANDLE_TTL_MINUTES)
@@ -42,6 +43,14 @@ class ConnectionInfo:
         self.last_request_at = datetime.utcnow()
 
 
+def _privacy_label(db_type: str, connection_params: dict[str, Any]) -> str:
+    """Build a privacy-safe log label from the params dict."""
+    # Never log the full dict — extract a non-secret identifier
+    raw = connection_params.get("host") or connection_params.get("project_id") or "?"
+    label_hash = hashlib.sha256(str(raw).encode()).hexdigest()[:8]
+    return f"{db_type}:{label_hash}"
+
+
 class ConnectionStore:
     """Thread-safe in-memory store for connection handles."""
 
@@ -57,30 +66,16 @@ class ConnectionStore:
             del self._store[handle]
             logger.debug(f"Cleaned up expired handle: {handle[:8]}...")
 
-    def _hash_host(self, host: str) -> str:
-        """Hash host for logging (privacy)."""
-        return hashlib.sha256(host.encode()).hexdigest()[:8]
-
     def create_handle(
         self,
-        host: str,
-        port: int,
-        database: str,
-        username: str,
-        password: str,
-        ssl_mode: str,
-        db_type: str = "postgres",
+        db_type: str,
+        connection_params: dict[str, Any],
     ) -> str:
         """Create a new connection handle.
 
         Args:
-            host: Database host
-            port: Database port
-            database: Database name
-            username: Database username
-            password: Database password
-            ssl_mode: SSL mode
-            db_type: Database type (default: "postgres")
+            db_type: Backend type identifier (e.g. "postgres", "bigquery")
+            connection_params: Backend-specific params dict. NEVER logged.
 
         Returns:
             UUID handle string
@@ -89,35 +84,22 @@ class ConnectionStore:
             ValueError: If max handles exceeded
         """
         with self._lock:
-            # Cleanup expired handles first
             self._cleanup_expired()
 
-            # Check rate limit
             if len(self._store) >= MAX_HANDLES:
                 raise ValueError(
                     f"Maximum concurrent connections ({MAX_HANDLES}) exceeded. "
                     "Please wait for existing connections to expire."
                 )
 
-            # Generate unique handle
             handle = str(uuid.uuid4())
-
-            # Store connection info
             self._store[handle] = ConnectionInfo(
-                host=host,
-                port=port,
-                database=database,
-                username=username,
-                password=password,
-                ssl_mode=ssl_mode,
                 db_type=db_type,
+                connection_params=connection_params,
             )
 
-            logger.info(
-                f"Created connection handle: {handle[:8]}... "
-                f"host_hash={self._hash_host(host)} db={database}"
-            )
-
+            label = _privacy_label(db_type, connection_params)
+            logger.info(f"Created connection handle: {handle[:8]}... label={label}")
             return handle
 
     def get_connection(self, handle: str) -> ConnectionInfo | None:
@@ -130,7 +112,6 @@ class ConnectionStore:
             ConnectionInfo if valid, None if expired or not found
         """
         with self._lock:
-            # Cleanup expired handles
             self._cleanup_expired()
 
             info = self._store.get(handle)
@@ -141,7 +122,6 @@ class ConnectionStore:
                 del self._store[handle]
                 return None
 
-            # Track request
             info.increment_request_count()
             return info
 

@@ -14,6 +14,10 @@ def get_backend(db_type: DatabaseType | str = DatabaseType.POSTGRES) -> Database
             from app.services.db._postgres import PostgresBackend
 
             _backends[db_type] = PostgresBackend()
+        elif db_type == DatabaseType.BIGQUERY:
+            from app.services.db._bigquery import BigQueryBackend
+
+            _backends[db_type] = BigQueryBackend()
         else:
             raise ValueError(f"Unsupported database type: {db_type}")
 
@@ -29,6 +33,10 @@ def get_catalog(db_type: DatabaseType | str = DatabaseType.POSTGRES) -> CatalogB
             from app.services.db._postgres import PostgresCatalog
 
             _catalogs[db_type] = PostgresCatalog()
+        elif db_type == DatabaseType.BIGQUERY:
+            from app.services.db._bigquery import BigQueryCatalog
+
+            _catalogs[db_type] = BigQueryCatalog()
         else:
             raise ValueError(f"Unsupported database type: {db_type}")
 

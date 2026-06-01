@@ -39,6 +39,7 @@ export const Columns = {
   // Observability fields
   TRACE: 'trace',
   TRACE_ID: 'trace_id',
+  SESSION_ID: 'session_id',
   OBSERVATION_ID: 'observation_id',
   LATENCY: 'Latency',
   COST_ESTIMATE: 'cost_estimate',
@@ -1104,6 +1105,7 @@ export interface MonitoringRecord {
   [Columns.METRIC_ID]?: string;
   [Columns.RUN_ID]?: string;
   [Columns.TRACE_ID]?: string;
+  [Columns.SESSION_ID]?: string;
   [Columns.OBSERVATION_ID]?: string;
 
   // Timestamps

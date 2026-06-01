@@ -1,8 +1,9 @@
 import type {
+  BigQueryConnection,
   ColumnInfo,
   ColumnMapping,
-  DatabaseConnection,
   FilterCondition,
+  PostgresConnection,
   TableIdentifier,
   TableInfo,
 } from '@/stores/database-store';
@@ -681,6 +682,8 @@ export interface QueryImportRequest {
  * Database defaults response from config (YAML > env vars > hardcoded)
  */
 export interface DatabaseDefaultsResponse {
+  db_type: string;
+  // Postgres fields
   url: string | null;
   host: string | null;
   port: number;
@@ -688,6 +691,12 @@ export interface DatabaseDefaultsResponse {
   username: string | null;
   has_password: boolean;
   ssl_mode: string;
+  // BigQuery fields
+  project_id: string | null;
+  dataset: string | null;
+  location: string | null;
+  has_sa_credentials: boolean;
+  // Shared
   table: string | null;
   has_defaults: boolean;
   // Wizard config fields
@@ -699,6 +708,11 @@ export interface DatabaseDefaultsResponse {
   row_limit: number;
 }
 
+/** Payload accepted by the connect endpoint (sa_private_key is component-local only). */
+export type DatabaseConnectPayload =
+  | PostgresConnection
+  | (BigQueryConnection & { sa_private_key?: string | null });
+
 /**
  * Get database connection defaults from config
  */
@@ -708,11 +722,12 @@ export async function databaseGetDefaults(store?: string): Promise<DatabaseDefau
 }
 
 /**
- * Connect to a PostgreSQL database and get a connection handle.
- * Pass store so the backend can resolve sentinel passwords from config.
+ * Connect to a database and get a connection handle.
+ * Pass store so the backend can resolve sentinel passwords/keys from config.
+ * sa_private_key (BigQuery) is component-local only — never stored in Zustand.
  */
 export async function databaseConnect(
-  conn: DatabaseConnection,
+  conn: DatabaseConnectPayload,
   store?: string
 ): Promise<ConnectResponse> {
   const params = store ? `?store=${encodeURIComponent(store)}` : '';

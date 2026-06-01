@@ -1,0 +1,44 @@
+# BigQuery evaluation database configuration template.
+#
+# Copy to custom/config/eval_db.yaml (or monitoring_db.yaml / human_signals_db.yaml)
+# and fill in your project / dataset details.
+#
+# INSTALL: pip install 'axis[bigquery]'
+#
+# Auth options (pick one):
+#   A) Leave sa_client_email and sa_private_key blank → uses ADC.
+#      Run: gcloud auth application-default login
+#      or set GOOGLE_APPLICATION_CREDENTIALS=/path/to/key.json
+#
+#   B) Set GCP_SA_CLIENT_EMAIL + GCP_SA_PRIVATE_KEY in backend/.env
+#      and leave the YAML fields blank (recommended for server deployments).
+#
+#   C) Fill in sa_client_email + sa_private_key in this file
+#      (only for trusted single-user deployments; keep the file out of git).
+
+enabled: true
+
+db_type: bigquery
+
+connection_params:
+  project_id: my-gcp-project
+  dataset: my_dataset
+  location: US          # BigQuery processing region (US, EU, us-central1, etc.)
+
+  # Leave blank to use server-side credentials (ADC or GCP_SA_* env vars).
+  sa_client_email: ""
+  sa_private_key: ""
+
+# SQL query to load evaluation data.
+# Use standard SQL; SELECT and WITH are allowed.
+dataset_query: |
+  SELECT
+    id            AS dataset_id,
+    question      AS query,
+    answer        AS actual_output,
+    created_at    AS timestamp
+  FROM `my-gcp-project.my_dataset.evaluations`
+  ORDER BY created_at DESC
+
+query_timeout: 120    # seconds; BigQuery jobs are long-running — use 120+
+row_limit: 50000

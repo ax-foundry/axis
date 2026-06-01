@@ -78,9 +78,11 @@ class ResolvedSearchConfig:
 
 @dataclass
 class ReplayDBConfig:
-    """Configuration for the optional PostgreSQL trace lookup database."""
+    """Configuration for the optional trace lookup database (Postgres or BigQuery)."""
 
     enabled: bool = False
+    db_type: str = "postgres"
+    connection_params: dict[str, Any] = field(default_factory=dict)
     url: str | None = None
     host: str | None = None
     port: int = 5432
@@ -102,6 +104,8 @@ class ReplayDBConfig:
     @property
     def is_configured(self) -> bool:
         """Check if enough config is provided to connect."""
+        if self.db_type == "bigquery":
+            return bool(self.connection_params)
         if self.url:
             return True
         return bool(self.host and self.database)
@@ -188,6 +192,8 @@ def load_replay_db_config() -> ReplayDBConfig:
 
                 config = ReplayDBConfig(
                     enabled=db.get("enabled", False),
+                    db_type=db.get("db_type", "postgres"),
+                    connection_params=db.get("connection_params", {}) or {},
                     url=db.get("url") or settings.agent_replay_db_url,
                     host=db.get("host"),
                     port=int(db.get("port", 5432)),
