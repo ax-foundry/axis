@@ -113,7 +113,7 @@ export function ScorecardDrilldownModal({
                       </span>
                     </td>
                     <td className="max-w-xs px-6 py-4">
-                      <p className="truncate text-sm text-text-muted" title={tc.explanation}>
+                      <p className="line-clamp-4 text-sm text-text-muted" title={tc.explanation}>
                         {tc.explanation || '-'}
                       </p>
                     </td>
