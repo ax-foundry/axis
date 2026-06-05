@@ -3,8 +3,10 @@
 import { CheckCircle2, Database, File, Loader2, Upload, X } from 'lucide-react';
 import { useCallback, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
+import { useQuery } from '@tanstack/react-query';
 
 import { useExampleDataset, useUploadFile } from '@/lib/hooks';
+import * as api from '@/lib/api';
 import { useAnnotationExampleDataset, useAnnotationUpload } from '@/lib/hooks/useAnnotationUpload';
 import {
   useCalibrationExampleDataset,
@@ -44,6 +46,14 @@ export function FileUpload({ targetStore = 'data' }: FileUploadProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [importMode, setImportMode] = useState<ImportMode>('file');
   const { setDatabaseModalOpen } = useUIStore();
+
+  const { data: dbDefaults } = useQuery({
+    queryKey: ['database-defaults', targetStore],
+    queryFn: () => api.databaseGetDefaults(targetStore),
+    staleTime: 60 * 1000,
+    retry: false,
+  });
+  const dbLabel = dbDefaults?.db_type === 'bigquery' ? 'BigQuery' : 'PostgreSQL';
 
   // Data store mutations
   const dataUploadMutation = useUploadFile();
@@ -157,7 +167,7 @@ export function FileUpload({ targetStore = 'data' }: FileUploadProps) {
             )}
           >
             <Database className="h-4 w-4" />
-            PostgreSQL
+            {dbLabel}
           </button>
         </div>
       )}
@@ -294,7 +304,7 @@ export function FileUpload({ targetStore = 'data' }: FileUploadProps) {
               <Database className="h-6 w-6 text-white" />
             </div>
             <div>
-              <p className="font-medium text-text-primary">Connect to PostgreSQL</p>
+              <p className="font-medium text-text-primary">Connect to {dbLabel}</p>
               <p className="mt-0.5 text-sm text-text-muted">
                 Import evaluation data directly from your database
               </p>
