@@ -32,6 +32,7 @@ psycopg[binary]>=3.1.0
 psycopg-pool>=3.1.0
 duckdb>=1.5.0
 pytz>=2024.1
+google-cloud-bigquery>=3.12.0
 
 # Graph database ([graph] optional extra in pyproject.toml)
 falkordb>=1.0.0
@@ -41,4 +42,4 @@ orjson>=3.10.0
 httpx>=0.28.0
 
 # Axion (evaluation framework)
-axion[langfuse] @ git+https://github.com/ax-foundry/axion.git@master
+axion[langfuse,bigquery] @ git+https://github.com/ax-foundry/axion.git@master
