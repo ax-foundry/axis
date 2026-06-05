@@ -891,9 +891,23 @@ async def _sync_split(
         if use_incremental and r1.rows_synced == 0 and r2.rows_synced == 0:
             logger.info(f"[{table_name}] Incremental returned 0 new rows — no changes in source")
 
-        # Rebuild join view only on full sync (views auto-reflect appended rows)
+        # Rebuild join view only on full sync (views auto-reflect appended rows).
+        # Only build if both sub-tables exist — a 0-row dataset_query returns
+        # success without creating the table, and the JOIN would fail.
         if not use_incremental:
-            await _build_join_view(store, table_name, dataset_table, results_table)
+            if store._has_internal_table(dataset_table) and store._has_internal_table(
+                results_table
+            ):
+                await _build_join_view(store, table_name, dataset_table, results_table)
+            else:
+                missing = [
+                    t
+                    for t in (dataset_table, results_table)
+                    if not store._has_internal_table(t)
+                ]
+                logger.warning(
+                    f"[{table_name}] Skipping join view — sub-tables not yet populated: {missing}"
+                )
 
         # Always recompute metadata
         if store._has_internal_table(table_name):
