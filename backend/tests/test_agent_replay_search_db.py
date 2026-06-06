@@ -271,6 +271,35 @@ class TestStatusSearchFields:
         assert len(data["search_fields"]) == 1
         assert data["search_fields"][0]["value"] == "trace_id"
 
+    def test_status_dedupes_field_declared_in_search_fields_and_columns(self, client):
+        """A value declared in both search_fields and search_columns appears once.
+
+        session_id is commonly configured in both agent_replay.search_fields and
+        agent_replay_db.search_columns; both route to the same Langfuse session
+        search, so the dropdown must not render a duplicate row. First label wins.
+        """
+        from app.plugins.agent_replay.config import ReplayDBConfig
+
+        mock_db = ReplayDBConfig(
+            enabled=True,
+            url="postgresql://localhost/test",
+            search_columns={"session_id": "Session ID"},
+        )
+        with patch(
+            "app.plugins.agent_replay.services.replay_service.get_replay_config"
+        ) as mock_config:
+            mock_config.return_value.search_db = mock_db
+            mock_config.return_value.search_fields = {"session_id": "Session ID"}
+            mock_config.return_value.langfuse_agents = {}
+            mock_config.return_value.default_limit = 20
+            mock_config.return_value.default_days_back = 7
+            response = client.get("/api/agent-replay/status")
+
+        data = response.json()
+        values = [f["value"] for f in data["search_fields"]]
+        assert values == ["trace_id", "session_id"]
+        assert values.count("session_id") == 1
+
 
 class TestSearchByValidation:
     """Test search_by query parameter validation."""
