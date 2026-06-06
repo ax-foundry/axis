@@ -221,6 +221,19 @@ async def get_dataset_data(
     store = get_store()
 
     if not store.has_table(table):
+        # A sync in flight (e.g. the backgrounded startup full sync) builds the
+        # table/view at the end, so during that ~minutes-long window the table
+        # is genuinely absent. Returning an empty 200 here makes the UI treat
+        # the dataset as "ready but empty" and fall back to partial client-side
+        # data. Surface a 503 dataset_warming instead — matching GET
+        # /store/query — so the frontend's retry config waits for the real data.
+        # A dataset that simply has no table and is not syncing (disabled/never
+        # configured) keeps the existing empty payload.
+        if store.get_sync_status(table).state == "syncing":
+            raise HTTPException(
+                status_code=503,
+                detail={"code": "dataset_warming", "table": table},
+            )
         return {
             "success": True,
             "data": [],
