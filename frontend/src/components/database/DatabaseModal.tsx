@@ -1,8 +1,10 @@
 'use client';
 
+import { useQuery } from '@tanstack/react-query';
 import { Check, Database, Loader2, Settings, Table, X } from 'lucide-react';
 import { useEffect } from 'react';
 
+import * as api from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { useDatabaseStore } from '@/stores/database-store';
 import { useUIStore } from '@/stores/ui-store';
@@ -33,8 +35,17 @@ function getStepIndex(step: DatabaseStep): number {
 }
 
 export function DatabaseModal() {
-  const { databaseModalOpen, setDatabaseModalOpen } = useUIStore();
+  const { databaseModalOpen, setDatabaseModalOpen, databaseTargetStore } = useUIStore();
   const { step, reset, isLoading } = useDatabaseStore();
+
+  const { data: dbDefaults } = useQuery({
+    queryKey: ['database-defaults', databaseTargetStore],
+    queryFn: () => api.databaseGetDefaults(databaseTargetStore),
+    staleTime: 60 * 1000,
+    retry: false,
+    enabled: databaseModalOpen,
+  });
+  const dbLabel = dbDefaults?.db_type === 'bigquery' ? 'BigQuery' : 'PostgreSQL';
 
   // Reset state when modal closes
   useEffect(() => {
@@ -82,7 +93,7 @@ export function DatabaseModal() {
             <div>
               <h2 className="text-lg font-semibold text-text-primary">Pull from Database</h2>
               <p className="text-sm text-text-muted">
-                Connect to PostgreSQL and import evaluation data
+                Connect to {dbLabel} and import evaluation data
               </p>
             </div>
           </div>
