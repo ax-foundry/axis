@@ -8,6 +8,10 @@ Postgres-only deployments are not affected by a missing optional dependency.
   INFORMATION_SCHEMA.TABLES.total_rows (which is stale for partitioned tables).
 - INFORMATION_SCHEMA queries require ``location`` set on the QueryJobConfig;
   omitting it causes region-mismatch errors for non-US datasets.
+- INFORMATION_SCHEMA queries must NOT set ``default_dataset`` on the job. The
+  views are referenced fully project-qualified, and a default dataset makes
+  BigQuery mis-resolve the path ("Dataset <project>:<dataset>.INFORMATION_SCHEMA
+  was not found"). _run_query skips default_dataset for these queries.
 - query_job.result(page_size=N).pages streams lazily — memory stays flat for
   large tables when rows are consumed page-by-page.
 - pandas.DataFrame.from_records([dict(row) for row in page]) handles STRUCT
@@ -84,7 +88,12 @@ class BigQueryConnection(AsyncConnection):
         )
         project_id = self._params.get("project_id")
         dataset = self._params.get("dataset")
-        if project_id and dataset:
+        # INFORMATION_SCHEMA paths are already fully project-qualified. Setting a
+        # default_dataset on the job corrupts their resolution — BigQuery folds the
+        # default dataset into the path and reports "Dataset <project>:<dataset>.
+        # INFORMATION_SCHEMA was not found". Catalog queries qualify every table, so
+        # skip the default dataset whenever the query targets INFORMATION_SCHEMA.
+        if project_id and dataset and "INFORMATION_SCHEMA" not in query:
             job_config.default_dataset = bigquery.DatasetReference(project_id, dataset)
         location = self._params.get("location") or None
         job = self._client.query(query, job_config=job_config, location=location)
