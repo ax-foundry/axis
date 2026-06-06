@@ -1,12 +1,12 @@
 'use client';
 
+import { useQuery } from '@tanstack/react-query';
 import { CheckCircle2, Database, File, Loader2, Upload, X } from 'lucide-react';
 import { useCallback, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { useQuery } from '@tanstack/react-query';
 
-import { useExampleDataset, useUploadFile } from '@/lib/hooks';
 import * as api from '@/lib/api';
+import { useExampleDataset, useUploadFile } from '@/lib/hooks';
 import { useAnnotationExampleDataset, useAnnotationUpload } from '@/lib/hooks/useAnnotationUpload';
 import {
   useCalibrationExampleDataset,
