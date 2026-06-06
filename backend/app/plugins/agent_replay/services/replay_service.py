@@ -345,35 +345,55 @@ def get_configured_agents() -> list[str]:
     return sorted(get_replay_config().langfuse_agents.keys())
 
 
+def _build_search_field_options(
+    pairs: list[tuple[str, str]],
+) -> list[SearchFieldOption]:
+    """Build search-field options, keeping the first label seen per value.
+
+    The same logical field (identified by ``value``) can be declared in both
+    ``agent_replay.search_fields`` and ``agent_replay_db.search_columns`` — e.g.
+    ``session_id``, which routes to the same Langfuse session search regardless
+    of which config declares it. Dedupe by value so the dropdown never renders
+    duplicate rows.
+    """
+    seen: set[str] = set()
+    options: list[SearchFieldOption] = []
+    for value, label in pairs:
+        if value in seen:
+            continue
+        seen.add(value)
+        options.append(SearchFieldOption(value=value, label=label))
+    return options
+
+
 def get_status() -> ReplayStatusResponse:
     has_global = bool(settings.langfuse_public_key and settings.langfuse_secret_key)
     has_agents = bool(get_replay_config().langfuse_agents)
     configured = has_global or has_agents
 
-    search_fields = [SearchFieldOption(value="trace_id", label="Trace ID")]
-    # Add YAML-configured search fields (e.g. session_id, case_id)
-    for sf_value, sf_label in get_replay_config().search_fields.items():
-        search_fields.append(SearchFieldOption(value=sf_value, label=sf_label))
-    # Add DB-column search fields
-    search_db = get_replay_config().search_db
-    if search_db.enabled and search_db.is_configured:
-        for col_name, col_label in search_db.search_columns.items():
-            search_fields.append(SearchFieldOption(value=col_name, label=col_label))
+    cfg = get_replay_config()
+    search_db = cfg.search_db
+    db_enabled = search_db.enabled and search_db.is_configured
+
+    # Global search fields: built-in trace_id, YAML search_fields, then DB
+    # columns — deduped by value (e.g. session_id is commonly declared in both
+    # search_fields and search_db.search_columns, which route identically).
+    global_pairs: list[tuple[str, str]] = [("trace_id", "Trace ID")]
+    global_pairs.extend(cfg.search_fields.items())
+    if db_enabled:
+        global_pairs.extend(search_db.search_columns.items())
+    search_fields = _build_search_field_options(global_pairs)
 
     # Build per-agent search fields and review step types
-    cfg = get_replay_config()
     agent_search_fields: dict[str, list[SearchFieldOption]] = {}
     agent_review_step_types: dict[str, list[str]] = {}
     for agent in get_configured_agents():
-        # Search fields: per-agent override → global → DB columns
-        fields = [SearchFieldOption(value="trace_id", label="Trace ID")]
-        for sf_value, sf_label in cfg.get_search_fields(agent).items():
-            fields.append(SearchFieldOption(value=sf_value, label=sf_label))
-        if search_db.enabled and search_db.is_configured:
-            resolved = search_db.get_agent_config(agent)
-            for col_name, col_label in resolved.search_columns.items():
-                fields.append(SearchFieldOption(value=col_name, label=col_label))
-        agent_search_fields[agent] = fields
+        # Per-agent override → global for both search_fields and DB columns.
+        agent_pairs: list[tuple[str, str]] = [("trace_id", "Trace ID")]
+        agent_pairs.extend(cfg.get_search_fields(agent).items())
+        if db_enabled:
+            agent_pairs.extend(search_db.get_agent_config(agent).search_columns.items())
+        agent_search_fields[agent] = _build_search_field_options(agent_pairs)
 
         # Review step types: per-agent override → global
         agent_rst = cfg.get_review_step_types(agent)
