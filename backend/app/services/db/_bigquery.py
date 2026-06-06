@@ -4,14 +4,13 @@ All ``google-cloud-bigquery`` imports are lazy (inside methods) so that
 Postgres-only deployments are not affected by a missing optional dependency.
 
 ## Verification notes (pre-implementation spike)
-- INFORMATION_SCHEMA.TABLE_STORAGE is more reliable for row counts than
-  INFORMATION_SCHEMA.TABLES.total_rows (which is stale for partitioned tables).
+- Table listing uses the dataset-qualified ``__TABLES__`` meta-table for row
+  counts and table/view discovery. INFORMATION_SCHEMA.TABLE_STORAGE is region-
+  scoped (not dataset-scoped), so ``project.dataset.INFORMATION_SCHEMA.
+  TABLE_STORAGE`` is invalid and errors with "Dataset <dataset>.INFORMATION_SCHEMA
+  was not found"; INFORMATION_SCHEMA.TABLES alone carries no row counts.
 - INFORMATION_SCHEMA queries require ``location`` set on the QueryJobConfig;
   omitting it causes region-mismatch errors for non-US datasets.
-- INFORMATION_SCHEMA queries must NOT set ``default_dataset`` on the job. The
-  views are referenced fully project-qualified, and a default dataset makes
-  BigQuery mis-resolve the path ("Dataset <project>:<dataset>.INFORMATION_SCHEMA
-  was not found"). _run_query skips default_dataset for these queries.
 - query_job.result(page_size=N).pages streams lazily — memory stays flat for
   large tables when rows are consumed page-by-page.
 - pandas.DataFrame.from_records([dict(row) for row in page]) handles STRUCT
@@ -88,12 +87,7 @@ class BigQueryConnection(AsyncConnection):
         )
         project_id = self._params.get("project_id")
         dataset = self._params.get("dataset")
-        # INFORMATION_SCHEMA paths are already fully project-qualified. Setting a
-        # default_dataset on the job corrupts their resolution — BigQuery folds the
-        # default dataset into the path and reports "Dataset <project>:<dataset>.
-        # INFORMATION_SCHEMA was not found". Catalog queries qualify every table, so
-        # skip the default dataset whenever the query targets INFORMATION_SCHEMA.
-        if project_id and dataset and "INFORMATION_SCHEMA" not in query:
+        if project_id and dataset:
             job_config.default_dataset = bigquery.DatasetReference(project_id, dataset)
         location = self._params.get("location") or None
         job = self._client.query(query, job_config=job_config, location=location)
@@ -391,14 +385,21 @@ class BigQueryBackend(DatabaseBackend):
         name: str | None = None,
         sql_type: str | None = None,
     ) -> str:
-        """Append a ``ScalarQueryParameter`` and return ``@name``."""
+        """Append a ``ScalarQueryParameter`` and return ``@name``.
+
+        When ``sql_type`` is omitted the type is inferred from the Python value
+        so integer params (LIMIT/OFFSET) bind as INT64 rather than STRING — a
+        STRING param in LIMIT is rejected by BigQuery. Only STRING values are
+        coerced via ``str()``; numeric/bool values are passed natively.
+        """
         _require_bq()
         from google.cloud.bigquery import ScalarQueryParameter  # type: ignore[import-untyped]
 
         idx = len(builder._items) + 1
         param_name = name or f"p{idx}"
-        bq_type = sql_type or "STRING"
-        builder._items.append(ScalarQueryParameter(param_name, bq_type, str(value)))
+        bq_type = sql_type or _infer_bq_scalar_type(value)
+        param_value = value if (value is None or bq_type != "STRING") else str(value)
+        builder._items.append(ScalarQueryParameter(param_name, bq_type, param_value))
         return f"@{param_name}"
 
     def to_params(self, builder: BoundParams) -> list[Any]:
@@ -423,17 +424,17 @@ class BigQueryCatalog(CatalogBackend):
         project = bq_conn._params.get("project_id", "")
         dataset = bq_conn._params.get("dataset", "")
 
-        # TABLE_STORAGE is more reliable than TABLES.row_count for partitioned tables
+        # __TABLES__ is dataset-qualified, region-agnostic, and returns both tables
+        # (type 1) and views (type 2) with accurate row counts in a single query.
+        # We deliberately avoid INFORMATION_SCHEMA here: TABLE_STORAGE is region-
+        # scoped (not dataset-scoped), so the dataset-qualified form errors with
+        # "Dataset <dataset>.INFORMATION_SCHEMA was not found", and TABLES alone
+        # carries no row counts. Views report row_count 0, which is expected.
         query = f"""
-            SELECT
-                t.table_name,
-                COALESCE(ts.total_rows, 0) AS row_estimate
-            FROM `{project}.{dataset}.INFORMATION_SCHEMA.TABLES` t
-            LEFT JOIN `{project}.{dataset}.INFORMATION_SCHEMA.TABLE_STORAGE` ts
-                ON t.table_schema = ts.table_schema
-                AND t.table_name = ts.table_name
-            WHERE t.table_type = 'BASE TABLE'
-            ORDER BY t.table_name
+            SELECT table_id AS table_name, row_count AS row_estimate
+            FROM `{project}.{dataset}.__TABLES__`
+            WHERE type IN (1, 2)
+            ORDER BY table_id
         """
         rows = await conn.fetch_all(query)
         return [
@@ -498,3 +499,20 @@ def _scalar_param(name: str, value: str) -> list[Any]:
     from google.cloud.bigquery import ScalarQueryParameter  # type: ignore[import-untyped]
 
     return [ScalarQueryParameter(name, "STRING", value)]
+
+
+def _infer_bq_scalar_type(value: Any) -> str:
+    """Map a Python scalar to a BigQuery ScalarQueryParameter type.
+
+    bool is checked before int because ``isinstance(True, int)`` is True.
+    Everything that isn't a known numeric/bool falls back to STRING. This keeps
+    integer params (notably LIMIT/OFFSET) typed as INT64 — BigQuery rejects a
+    STRING parameter in LIMIT ("LIMIT expects an integer literal or parameter").
+    """
+    if isinstance(value, bool):
+        return "BOOL"
+    if isinstance(value, int):
+        return "INT64"
+    if isinstance(value, float):
+        return "FLOAT64"
+    return "STRING"
