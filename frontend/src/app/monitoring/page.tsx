@@ -723,6 +723,12 @@ export default function MonitoringPage() {
     if (
       storeStatusChecked &&
       !datasetReady &&
+      // Don't fall back to the legacy client-side import while the DuckDB store
+      // is still syncing — the table/join view is built at the end of the sync,
+      // so importing now pulls partial, unjoined data (null timestamp/trace_id/
+      // metric_name → "No trend data" + "-" columns). Wait for the sync to
+      // finish and let server mode (datasetReady) take over.
+      !isSyncing &&
       dbConfig &&
       (dbConfig.auto_connect || dbConfig.auto_load) &&
       !hasAttemptedAutoConnect &&
@@ -743,6 +749,7 @@ export default function MonitoringPage() {
   }, [
     storeStatusChecked,
     datasetReady,
+    isSyncing,
     dbConfig,
     hasAttemptedAutoConnect,
     data.length,
@@ -1158,8 +1165,11 @@ export default function MonitoringPage() {
     selectedSourceName,
   ]);
 
-  // If no data loaded and DuckDB not ready, show empty state with upload
-  if (data.length === 0 && !datasetReady) {
+  // If no data loaded and DuckDB not ready, show empty state with upload.
+  // Also intercept when a sync is in flight even if partial client-side data is
+  // present — that data is unjoined/incomplete until the sync finishes, so we
+  // show the syncing screen rather than rendering null trend/trace columns.
+  if ((data.length === 0 || isSyncing) && !datasetReady) {
     // Show syncing banner while DuckDB startup sync is in progress
     if (isSyncing && !isAutoConnecting) {
       return (

@@ -675,8 +675,12 @@ async def _sync_internal_table(
                         )
 
                     def _insert_from_staging() -> None:
+                        # Match staging columns to the live schema BY NAME with
+                        # explicit casts (not positional SELECT *), so a per-CSV
+                        # type-inference drift in the incremental slice can't
+                        # silently null out string/timestamp columns.
+                        store._insert_aligned(table_name, staging)
                         with store._cursor() as cur:
-                            cur.execute(f"INSERT INTO {table_name} SELECT * FROM {staging}")
                             cur.execute(f"DROP TABLE IF EXISTS {staging}")
 
                     await anyio.to_thread.run_sync(_insert_from_staging)
@@ -891,23 +895,23 @@ async def _sync_split(
         if use_incremental and r1.rows_synced == 0 and r2.rows_synced == 0:
             logger.info(f"[{table_name}] Incremental returned 0 new rows — no changes in source")
 
-        # Rebuild join view only on full sync (views auto-reflect appended rows).
-        # Only build if both sub-tables exist — a 0-row dataset_query returns
-        # success without creating the table, and the JOIN would fail.
-        if not use_incremental:
-            if store._has_internal_table(dataset_table) and store._has_internal_table(
-                results_table
-            ):
-                await _build_join_view(store, table_name, dataset_table, results_table)
-            else:
-                missing = [
-                    t
-                    for t in (dataset_table, results_table)
-                    if not store._has_internal_table(t)
-                ]
-                logger.warning(
-                    f"[{table_name}] Skipping join view — sub-tables not yet populated: {missing}"
-                )
+        # Rebuild the join view on every sync (DDL-only DROP/CREATE VIEW — O(1)
+        # regardless of row count; the view's rows are computed lazily at query
+        # time). Doing it unconditionally — not just on full sync — closes a
+        # latent gap: if the first full sync had one empty sub-table the view is
+        # skipped, and because every refresh thereafter is incremental it would
+        # never be created. Only build if both sub-tables exist — a 0-row
+        # dataset_query returns success without creating the table, and the JOIN
+        # would fail.
+        if store._has_internal_table(dataset_table) and store._has_internal_table(results_table):
+            await _build_join_view(store, table_name, dataset_table, results_table)
+        else:
+            missing = [
+                t for t in (dataset_table, results_table) if not store._has_internal_table(t)
+            ]
+            logger.warning(
+                f"[{table_name}] Skipping join view — sub-tables not yet populated: {missing}"
+            )
 
         # Always recompute metadata
         if store._has_internal_table(table_name):

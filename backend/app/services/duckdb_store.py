@@ -184,20 +184,36 @@ class DuckDBStore:
             cur.execute(f"ALTER TABLE {staging} RENAME TO {table_name}")
             cur.execute("COMMIT")
 
+    # read_csv_auto options used everywhere we ingest a CSV. sample_size=-1
+    # scans the whole file for type detection (instead of inferring from a row
+    # sample), so a sparse early slice can no longer mis-type a string/timestamp
+    # column as NULL; null_padding=true tolerates ragged trailing columns. The
+    # full scan is one sequential pass — O(rows in this CSV), not the live table.
+    _CSV_READ_OPTS = "sample_size=-1, null_padding=true"
+
     def _write_csv_to_staging(self, table_name: str, csv_path: str) -> None:
         """Create staging table from a CSV file using DuckDB's read_csv_auto."""
         staging = f"{table_name}_staging"
         with self._cursor() as cur:
-            cur.execute(f"CREATE TABLE {staging} AS SELECT * FROM read_csv_auto('{csv_path}')")
+            cur.execute(
+                f"CREATE TABLE {staging} AS "
+                f"SELECT * FROM read_csv_auto('{csv_path}', {self._CSV_READ_OPTS})"
+            )
 
     def _write_csv_chunk_to_staging(self, table_name: str, csv_path: str, is_first: bool) -> None:
         """Write one CSV file to staging (create on first, append on subsequent)."""
         staging = f"{table_name}_staging"
         with self._cursor() as cur:
             if is_first:
-                cur.execute(f"CREATE TABLE {staging} AS SELECT * FROM read_csv_auto('{csv_path}')")
+                cur.execute(
+                    f"CREATE TABLE {staging} AS "
+                    f"SELECT * FROM read_csv_auto('{csv_path}', {self._CSV_READ_OPTS})"
+                )
             else:
-                cur.execute(f"INSERT INTO {staging} SELECT * FROM read_csv_auto('{csv_path}')")
+                cur.execute(
+                    f"INSERT INTO {staging} "
+                    f"SELECT * FROM read_csv_auto('{csv_path}', {self._CSV_READ_OPTS})"
+                )
 
     def _rename_staging_columns(self, table_name: str, rename_map: dict[str, str]) -> None:
         """Rename columns on the staging table via ALTER TABLE RENAME COLUMN."""
@@ -228,6 +244,47 @@ class DuckDBStore:
                 self._conn.unregister("_derived")
 
     # ------------------------------------------------------------------
+    # Schema-aligned insert (incremental sync into an existing table)
+    # ------------------------------------------------------------------
+
+    def _get_table_schema(self, table_name: str) -> list[tuple[str, str]]:
+        """Return ordered ``(column_name, column_type)`` for a table via DESCRIBE."""
+        with self._cursor() as cur:
+            described = cur.execute(f"DESCRIBE {table_name}").fetchdf()
+        return list(zip(described["column_name"], described["column_type"], strict=False))
+
+    def _insert_aligned(self, table_name: str, source_relation: str) -> None:
+        """Insert rows from ``source_relation`` into ``table_name`` matched BY NAME.
+
+        A positional ``INSERT ... SELECT *`` trusts that a separately-built
+        staging relation has the exact same column order *and* the exact same
+        inferred types as the live table. When the staging relation comes from a
+        per-CSV ``read_csv_auto`` (incremental slices), a column that sampled
+        sparse can be inferred as a different/NULL type, and the positional copy
+        then silently writes NULLs into the live column. This matches each live
+        column to the same-named source column and casts it to the live type;
+        columns absent from the source become a typed NULL, extra source columns
+        are ignored, and a genuinely incompatible value raises a loud cast error
+        instead of corrupting the column. Still a single ``INSERT ... SELECT``
+        over the staging relation — O(increment rows), so it scales.
+        """
+        live_schema = self._get_table_schema(table_name)
+        source_cols = self.get_table_columns(source_relation)
+        select_exprs = [
+            f'CAST("{name}" AS {dtype}) AS "{name}"'
+            if name in source_cols
+            else f'CAST(NULL AS {dtype}) AS "{name}"'
+            for name, dtype in live_schema
+        ]
+        col_list = ", ".join(f'"{name}"' for name, _ in live_schema)
+        select_list = ", ".join(select_exprs)
+        with self._cursor() as cur:
+            cur.execute(
+                f"INSERT INTO {table_name} ({col_list}) "
+                f"SELECT {select_list} FROM {source_relation}"
+            )
+
+    # ------------------------------------------------------------------
     # Append primitives (incremental sync)
     # ------------------------------------------------------------------
 
@@ -238,20 +295,40 @@ class DuckDBStore:
         for col in df.columns:
             if df[col].dtype == "object":
                 df[col] = df[col].where(df[col].isna(), df[col].astype(str))
+        # Materialize to a real staging table first: a registered DataFrame is
+        # connection-local and isn't visible to the child cursor _insert_aligned
+        # opens, whereas a persisted table is. Then align BY NAME into the live
+        # table and drop the staging.
+        staging = f"{table_name}_append_staging"
         with self._register_lock:
             self._conn.register("_append", df)
             try:
-                self._conn.execute(f"INSERT INTO {table_name} SELECT * FROM _append")
+                self._conn.execute(f"CREATE OR REPLACE TABLE {staging} AS SELECT * FROM _append")
             finally:
                 self._conn.unregister("_append")
+        try:
+            self._insert_aligned(table_name, staging)
+        finally:
+            with self._cursor() as cur:
+                cur.execute(f"DROP TABLE IF EXISTS {staging}")
         return len(df)
 
     def _append_csv(self, table_name: str, csv_path: str) -> int:
         """Append rows from a CSV file to an existing table. Returns rows appended."""
+        staging = f"{table_name}_append_staging"
         with self._cursor() as cur:
-            cur.execute(f"INSERT INTO {table_name} SELECT * FROM read_csv_auto('{csv_path}')")
-            count_row = cur.execute("SELECT changes()").fetchone()
-            return count_row[0] if count_row else 0
+            cur.execute(
+                f"CREATE OR REPLACE TABLE {staging} AS "
+                f"SELECT * FROM read_csv_auto('{csv_path}', {self._CSV_READ_OPTS})"
+            )
+        try:
+            before = self.query_value(f"SELECT COUNT(*) FROM {table_name}") or 0
+            self._insert_aligned(table_name, staging)
+            after = self.query_value(f"SELECT COUNT(*) FROM {table_name}") or 0
+        finally:
+            with self._cursor() as cur:
+                cur.execute(f"DROP TABLE IF EXISTS {staging}")
+        return int(after) - int(before)
 
     # ------------------------------------------------------------------
     # Watermark helpers (reuse _store_metadata KV table)
