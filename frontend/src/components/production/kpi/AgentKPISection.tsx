@@ -115,9 +115,10 @@ export function AgentKPISection({
     [availableSourceComponents]
   );
 
-  // Auto-select first source_component when available (no "All" option)
+  // Auto-select first source_component when available, and clear stale selections
   useEffect(() => {
-    if (availableSourceComponents.length > 0 && !selectedSourceComponent) {
+    if (availableSourceComponents.length === 0) return;
+    if (!selectedSourceComponent || !availableSourceComponents.includes(selectedSourceComponent)) {
       setSelectedSourceComponent(availableSourceComponents[0]);
     }
   }, [availableSourceComponents, selectedSourceComponent, setSelectedSourceComponent]);

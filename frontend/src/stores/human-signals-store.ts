@@ -136,6 +136,8 @@ interface HumanSignalsState {
   setVisibleColumns: (columns: string[]) => void;
   toggleColumn: (columnKey: string) => void;
 
+  setAvailableSubFilters: (sourceName: string) => void;
+
   // DuckDB store actions
   setSyncStatus: (status: DatasetSyncStatus | null) => void;
   setMetadata: (metadata: DatasetMetadata | null) => void;
@@ -144,7 +146,7 @@ interface HumanSignalsState {
 
 export const useHumanSignalsStore = create<HumanSignalsState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       format: null,
       columns: [],
       fileName: null,
@@ -193,8 +195,6 @@ export const useHumanSignalsStore = create<HumanSignalsState>()(
         };
 
         const sourceNames = extractUnique('source_name');
-        const sourceComponents = extractUnique('source_component');
-        const environments = extractUnique('environment');
 
         // Calculate time range from data
         const timestamps = cases
@@ -218,6 +218,34 @@ export const useHumanSignalsStore = create<HumanSignalsState>()(
           timeRange = { preset: '30d', ...getDateRangeFromPreset('30d') };
         }
 
+        const currentSource = get().selectedSourceName;
+        const resolvedSource =
+          currentSource && sourceNames.includes(currentSource)
+            ? currentSource
+            : sourceNames.length > 0
+              ? sourceNames[0]
+              : '';
+
+        // Scope sub-filter options to the resolved source so dropdowns never
+        // show cross-agent values, regardless of whether the source changed.
+        const scopedCases = resolvedSource
+          ? cases.filter((c) => c.source_name === resolvedSource)
+          : cases;
+        const scopedComponents = Array.from(
+          new Set(
+            scopedCases
+              .map((c) => c.source_component)
+              .filter((v): v is string => typeof v === 'string' && v.trim() !== '')
+          )
+        ).sort();
+        const scopedEnvironments = Array.from(
+          new Set(
+            scopedCases
+              .map((c) => c.environment)
+              .filter((v): v is string => typeof v === 'string' && v.trim() !== '')
+          )
+        ).sort();
+
         set({
           cases,
           format,
@@ -229,9 +257,9 @@ export const useHumanSignalsStore = create<HumanSignalsState>()(
           uploadedAt: new Date().toISOString(),
           error: null,
           availableSourceNames: sourceNames,
-          availableSourceComponents: sourceComponents,
-          availableEnvironments: environments,
-          selectedSourceName: '',
+          availableSourceComponents: scopedComponents,
+          availableEnvironments: scopedEnvironments,
+          selectedSourceName: resolvedSource,
           selectedSourceComponent: '',
           selectedEnvironment: '',
           metricFilters: {},
@@ -308,6 +336,27 @@ export const useHumanSignalsStore = create<HumanSignalsState>()(
             ? current.filter((k) => k !== columnKey)
             : [...current, columnKey];
           return { visibleColumns: next };
+        }),
+
+      setAvailableSubFilters: (sourceName) =>
+        set((state) => {
+          const filtered = sourceName
+            ? state.cases.filter((c) => c.source_name === sourceName)
+            : state.cases;
+          const unique = (key: keyof SignalsCaseRecord) =>
+            Array.from(
+              new Set(
+                filtered
+                  .map((c) => c[key])
+                  .filter((v): v is string => typeof v === 'string' && v.trim() !== '')
+              )
+            ).sort();
+          return {
+            availableSourceComponents: unique('source_component'),
+            availableEnvironments: unique('environment'),
+            selectedSourceComponent: '',
+            selectedEnvironment: '',
+          };
         }),
 
       // DuckDB store actions

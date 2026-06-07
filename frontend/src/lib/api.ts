@@ -1501,9 +1501,11 @@ export async function getStoreStatus(): Promise<StoreStatusResponse> {
  * Get metadata (columns, filter values, time range) for a dataset
  */
 export async function getDatasetMetadata(
-  dataset: 'monitoring' | 'human_signals' | 'eval'
+  dataset: 'monitoring' | 'human_signals' | 'eval',
+  sourceName?: string
 ): Promise<DatasetMetadataResponse> {
-  return fetchApi(`/api/store/metadata/${dataset}`);
+  const qs = sourceName ? `?source_name=${encodeURIComponent(sourceName)}` : '';
+  return fetchApi(`/api/store/metadata/${dataset}${qs}`);
 }
 
 /**
@@ -1557,9 +1559,13 @@ export async function getKpiTrends(
   return fetchApi(`/api/kpi/trends${s ? `?${s}` : ''}`);
 }
 
-export async function getKpiFilters(sourceComponent?: string): Promise<KpiFiltersResponse> {
+export async function getKpiFilters(
+  sourceComponent?: string,
+  sourceName?: string
+): Promise<KpiFiltersResponse> {
   const qs = new URLSearchParams();
   if (sourceComponent) qs.append('source_component', sourceComponent);
+  if (sourceName) qs.append('source_name', sourceName);
   const s = qs.toString();
   return fetchApi(`/api/kpi/filters${s ? `?${s}` : ''}`);
 }

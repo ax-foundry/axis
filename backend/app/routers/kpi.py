@@ -92,11 +92,12 @@ async def kpi_trends(
 @router.get("/filters", response_model=KpiFiltersResponse)
 async def kpi_filters(
     source_component: str | None = None,
+    source_name: str | None = None,
 ) -> KpiFiltersResponse:
     """Available filter values for dropdowns."""
     store = get_store()
     return await anyio.to_thread.run_sync(
-        lambda: get_kpi_filters(store, source_component=source_component),
+        lambda: get_kpi_filters(store, source_component=source_component, source_name=source_name),
         limiter=store.query_limiter,
     )
 

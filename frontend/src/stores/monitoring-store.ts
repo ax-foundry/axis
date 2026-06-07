@@ -160,6 +160,12 @@ interface MonitoringState {
   expandAllExecutiveSummaryNodes: (ids: string[]) => void;
   collapseAllExecutiveSummaryNodes: () => void;
 
+  setAvailableSubFilters: (filters: {
+    environments: string[];
+    sourceComponents: string[];
+    sourceTypes: string[];
+  }) => void;
+
   // DuckDB store actions
   setSyncStatus: (status: DatasetSyncStatus | null) => void;
   setMetadata: (metadata: DatasetMetadata | null) => void;
@@ -377,6 +383,16 @@ export const useMonitoringStore = create<MonitoringState>()(
       expandAllExecutiveSummaryNodes: (ids) => set({ executiveSummaryExpandedNodes: ids }),
 
       collapseAllExecutiveSummaryNodes: () => set({ executiveSummaryExpandedNodes: [] }),
+
+      setAvailableSubFilters: ({ environments, sourceComponents, sourceTypes }) =>
+        set({
+          availableEnvironments: environments,
+          availableSourceComponents: sourceComponents,
+          availableSourceTypes: sourceTypes,
+          selectedEnvironment: '',
+          selectedSourceComponent: '',
+          selectedSourceType: '',
+        }),
 
       // DuckDB store actions
       setSyncStatus: (status) =>
