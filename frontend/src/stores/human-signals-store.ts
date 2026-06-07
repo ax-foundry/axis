@@ -195,8 +195,6 @@ export const useHumanSignalsStore = create<HumanSignalsState>()(
         };
 
         const sourceNames = extractUnique('source_name');
-        const sourceComponents = extractUnique('source_component');
-        const environments = extractUnique('environment');
 
         // Calculate time range from data
         const timestamps = cases
