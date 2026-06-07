@@ -51,11 +51,13 @@ export function useKpiData() {
   });
 
   // Fetch filter options (source names, segments, etc.) and populate the KPI store.
-  // Pass source_component so segments are scoped to the selected component.
+  // Pass source_name and source_component to scope results to the active agent.
   const selectedSourceComponent = useKpiStore((s) => s.selectedSourceComponent);
+  const selectedSourceName = useKpiStore((s) => s.selectedSourceName);
   const { data: filtersData } = useQuery({
-    queryKey: ['kpi-filters', selectedSourceComponent || ''],
-    queryFn: () => api.getKpiFilters(selectedSourceComponent || undefined),
+    queryKey: ['kpi-filters', selectedSourceComponent || '', selectedSourceName || ''],
+    queryFn: () =>
+      api.getKpiFilters(selectedSourceComponent || undefined, selectedSourceName || undefined),
     staleTime: 60_000,
     ...SYNC_RETRY_CONFIG,
   });

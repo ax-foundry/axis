@@ -687,6 +687,7 @@ def get_kpi_filters(
     store: DuckDBStore,
     *,
     source_component: str | None = None,
+    source_name: str | None = None,
 ) -> KpiFiltersResponse:
     """Distinct filter values for dropdowns."""
     if not store.has_table(TABLE):
@@ -720,16 +721,20 @@ def get_kpi_filters(
         ]
 
     try:
+        conditions: list[str] = ["segment IS NOT NULL"]
+        params: list[str] = []
         if source_component:
-            rows = store.query_list(
-                f"SELECT DISTINCT segment FROM {TABLE}"
-                " WHERE segment IS NOT NULL AND source_component = ?"
-                " ORDER BY segment",
-                [source_component],
-            )
-            segments = [r["segment"] for r in rows]
-        else:
-            segments = _distinct("segment")
+            conditions.append("source_component = ?")
+            params.append(source_component)
+        if source_name:
+            conditions.append("source_name = ?")
+            params.append(source_name)
+        where = " AND ".join(conditions)
+        rows = store.query_list(
+            f"SELECT DISTINCT segment FROM {TABLE} WHERE {where} ORDER BY segment",
+            params if params else None,
+        )
+        segments = [r["segment"] for r in rows]
     except Exception:
         segments = []
 
@@ -767,7 +772,16 @@ def get_kpi_filters(
     ]
 
     try:
-        source_components = _distinct("source_component")
+        if source_name:
+            rows = store.query_list(
+                f"SELECT DISTINCT source_component FROM {TABLE}"
+                " WHERE source_component IS NOT NULL AND source_name = ?"
+                " ORDER BY source_component",
+                [source_name],
+            )
+            source_components = [r["source_component"] for r in rows]
+        else:
+            source_components = _distinct("source_component")
     except Exception:
         source_components = []
 

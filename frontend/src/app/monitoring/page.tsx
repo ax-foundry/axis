@@ -586,6 +586,7 @@ export default function MonitoringPage() {
     setActiveMetricCategoryTab,
     setSyncStatus,
     populateFiltersFromMetadata,
+    setAvailableSubFilters,
   } = useMonitoringStore();
 
   // Build MonitoringFilters from store filter state (for DuckDB-backed endpoints)
@@ -635,6 +636,9 @@ export default function MonitoringPage() {
   const populateFiltersRef = useRef(populateFiltersFromMetadata);
   populateFiltersRef.current = populateFiltersFromMetadata;
 
+  const setAvailableSubFiltersRef = useRef(setAvailableSubFilters);
+  setAvailableSubFiltersRef.current = setAvailableSubFilters;
+
   // Poll DuckDB store status on mount → keep polling until sync completes.
   // Handles cold starts where DuckDB may be in "syncing" or "not_synced" state
   // for several minutes before becoming "ready".
@@ -683,6 +687,31 @@ export default function MonitoringPage() {
       clearTimeout(timeoutId);
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // When the selected source changes in DuckDB mode, refresh the sub-filter options
+  // (environments, components, types) to only show values for that source.
+  // A cancellation flag guards against stale responses from rapid source switching.
+  const prevSourceName = useRef<string | null>(null);
+  useEffect(() => {
+    if (!datasetReady || !selectedSourceName) return;
+    if (prevSourceName.current === selectedSourceName) return;
+    prevSourceName.current = selectedSourceName;
+    let cancelled = false;
+    const capturedSource = selectedSourceName;
+    getDatasetMetadata('monitoring', capturedSource).then((res) => {
+      if (cancelled || prevSourceName.current !== capturedSource) return;
+      if (!res.metadata) return;
+      const fv = res.metadata.filter_values ?? {};
+      setAvailableSubFiltersRef.current({
+        environments: fv.environment ?? [],
+        sourceComponents: fv.source_component ?? [],
+        sourceTypes: fv.source_type ?? [],
+      });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [datasetReady, selectedSourceName]);
 
   // Table state
   const [tablePage, setTablePage] = useState(1);

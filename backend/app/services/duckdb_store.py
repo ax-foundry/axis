@@ -524,6 +524,34 @@ class DuckDBStore:
             pass
         return {}
 
+    def get_filter_values_for_source(
+        self, table_name: str, source_name: str
+    ) -> dict[str, list[str]]:
+        """Return filter_values restricted to rows where source_name matches."""
+        filter_fields = [f for f in FILTER_FIELDS if f != "source_name"]
+        result: dict[str, list[str]] = {}
+        try:
+            with self._cursor() as cur:
+                columns = cur.execute(f"DESCRIBE {table_name}").fetchdf()
+                existing_cols = set(columns["column_name"])
+                for fld in filter_fields:
+                    if fld not in existing_cols:
+                        continue
+                    vals = cur.execute(
+                        f'SELECT DISTINCT "{fld}" FROM {table_name} '
+                        f'WHERE source_name = ? AND "{fld}" IS NOT NULL ORDER BY "{fld}" LIMIT 200',
+                        [source_name],
+                    ).fetchdf()
+                    result[fld] = vals[fld].tolist()
+        except Exception:
+            logger.warning(
+                "get_filter_values_for_source failed for table=%s source=%s",
+                table_name,
+                source_name,
+                exc_info=True,
+            )
+        return result
+
     # ------------------------------------------------------------------
     # KV storage (reuses _store_metadata table)
     # ------------------------------------------------------------------

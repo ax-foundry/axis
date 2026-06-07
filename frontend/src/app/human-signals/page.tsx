@@ -1,7 +1,7 @@
 'use client';
 
 import { Database, Loader2, MessageSquareText, Upload } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { FileUpload } from '@/components/file-upload';
 import {
@@ -170,7 +170,16 @@ function Dashboard() {
     setTimeRangePreset,
     openCaseDetail,
     closeCaseDetail,
+    setAvailableSubFilters,
   } = useHumanSignalsStore();
+
+  // Re-scope sub-filter options to the selected agent whenever source changes
+  const prevSource = useRef<string | null>(null);
+  useEffect(() => {
+    if (prevSource.current === selectedSourceName) return;
+    prevSource.current = selectedSourceName;
+    setAvailableSubFilters(selectedSourceName);
+  }, [selectedSourceName, setAvailableSubFilters]);
 
   const filteredCases = useMemo(
     () =>

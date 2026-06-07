@@ -170,10 +170,14 @@ async def reset_dataset_watermark(dataset: str) -> dict[str, Any]:
 
 
 @router.get("/metadata/{dataset}")
-async def get_dataset_metadata(dataset: str) -> dict[str, Any]:
+async def get_dataset_metadata(
+    dataset: str,
+    source_name: str | None = Query(None, description="Filter filter_values to this source"),
+) -> dict[str, Any]:
     """Columns, time range, filter values for a dataset.
 
     Filter values are pre-computed at sync time for low-cardinality fields.
+    When source_name is provided, filter_values are computed live for that source.
     """
     table = _resolve_table(dataset)
     store = get_store()
@@ -181,6 +185,13 @@ async def get_dataset_metadata(dataset: str) -> dict[str, Any]:
         lambda: store.get_metadata(table),
         limiter=store.query_limiter,
     )
+    if source_name:
+        filtered_fv = await anyio.to_thread.run_sync(
+            lambda: store.get_filter_values_for_source(table, source_name),
+            limiter=store.query_limiter,
+        )
+        if filtered_fv:
+            metadata = {**metadata, "filter_values": filtered_fv}
     return {"success": True, "dataset": dataset, "metadata": metadata}
 
 
