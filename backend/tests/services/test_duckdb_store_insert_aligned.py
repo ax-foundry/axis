@@ -87,8 +87,14 @@ def test_insert_aligned_matches_by_name_not_position(store: DuckDBStore) -> None
     assert str(row["timestamp"]).startswith("2026-06-01 12:00:00")
 
 
-def test_insert_aligned_missing_column_becomes_typed_null(store: DuckDBStore) -> None:
-    """A live column absent from the source is inserted as a typed NULL (not an error)."""
+def test_insert_aligned_missing_column_raises(store: DuckDBStore) -> None:
+    """A live column absent from the source must abort the insert, not NULL-fill.
+
+    NULL-filling here is silent corruption: an upstream column rename/drop would
+    quietly write NULLs into the live column on every incremental slice (the
+    exact "-" columns symptom). Failing loudly turns it into a sync error, which
+    clears watermarks and forces a full rebuild on the next tick.
+    """
     staging = f"{_LIVE}_staging_missing"
     store._conn.execute(
         f"""
@@ -104,12 +110,12 @@ def test_insert_aligned_missing_column_becomes_typed_null(store: DuckDBStore) ->
         f"INSERT INTO {staging} VALUES ('trace-3', '2026-06-03 00:00:00', 'recall', 0.5)"
     )
 
-    store._insert_aligned(_LIVE, staging)
+    with pytest.raises(ValueError, match="environment"):
+        store._insert_aligned(_LIVE, staging)
 
-    row = _fetch(store, "trace-3")
-    assert row["environment"] is None
-    assert row["metric_name"] == "recall"
-    assert row["timestamp"] is not None
+    # Nothing was inserted — the live table is untouched.
+    count = store.query_value(f"SELECT COUNT(*) FROM {_LIVE} WHERE trace_id = 'trace-3'")
+    assert count == 0
 
 
 def test_insert_aligned_extra_source_column_is_ignored(store: DuckDBStore) -> None:

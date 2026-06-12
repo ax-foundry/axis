@@ -14,12 +14,11 @@ import {
 import { PageHeader } from '@/components/ui/PageHeader';
 import { SourceSelector } from '@/components/ui/SourceSelector';
 import { TimeRangeSelector } from '@/components/ui/TimeRangeSelector';
-import { getStoreStatus } from '@/lib/api';
-import { MAX_STORE_STATUS_POLLS } from '@/lib/hooks/sync-retry';
 import {
   useHumanSignalsAutoImport,
   useHumanSignalsDBConfig,
 } from '@/lib/hooks/useHumanSignalsUpload';
+import { useStoreReadiness } from '@/lib/hooks/useStoreReadiness';
 import { computeKPIs, filterSignalsCases } from '@/lib/human-signals-utils';
 import { useHumanSignalsStore } from '@/stores';
 
@@ -282,48 +281,29 @@ export default function HumanSignalsPage() {
 
   const [hasAttemptedAutoConnect, setHasAttemptedAutoConnect] = useState(false);
   const [autoConnectError, setAutoConnectError] = useState<string | null>(null);
-  const [storeStatusChecked, setStoreStatusChecked] = useState(false);
 
-  // Poll DuckDB store status on mount — keep polling while sync is in progress (capped)
-  useEffect(() => {
-    let cancelled = false;
-    let timeoutId: ReturnType<typeof setTimeout>;
-    let pollCount = 0;
-
-    const poll = async () => {
-      try {
-        const status = await getStoreStatus();
-        if (cancelled) return;
-        const ds = status.datasets?.human_signals_data;
-
-        if (ds) setSyncStatus(ds);
-
-        if (
-          (ds?.state === 'syncing' || ds?.state === 'not_synced') &&
-          ++pollCount < MAX_STORE_STATUS_POLLS
-        ) {
-          timeoutId = setTimeout(poll, 5000);
-          if (!storeStatusChecked) setStoreStatusChecked(true);
-          return;
-        }
-      } catch {
-        // Store not available — fallback
-      }
-      if (!cancelled) setStoreStatusChecked(true);
-    };
-
-    poll();
-    return () => {
-      cancelled = true;
-      clearTimeout(timeoutId);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // Poll DuckDB store status until the sync settles. The hook keeps isSyncing
+  // truthful for the entire sync (retries request errors, downshifts to slow
+  // polling instead of giving up), so the legacy client-side import below can
+  // never fire mid-sync and render partial data.
+  const { storeStatusChecked, storeEnabled, isSyncing } = useStoreReadiness(
+    'human_signals_data',
+    setSyncStatus
+  );
 
   useEffect(() => {
     if (
       storeStatusChecked &&
       !datasetReady &&
+      // Don't fall back to the legacy client-side import while the DuckDB store
+      // is still syncing — importing now would pull partial data. Wait for the
+      // sync to finish and let server mode (datasetReady) take over.
+      !isSyncing &&
+      // Require a store verdict before importing: storeEnabled is null while
+      // the status endpoint is unreachable (cold start/restart), and importing
+      // then would race the store coming up. A reachable backend with the
+      // store disabled reports enabled=false and proceeds.
+      storeEnabled !== null &&
       dbConfig &&
       (dbConfig.auto_connect || dbConfig.auto_load) &&
       !hasAttemptedAutoConnect &&
@@ -344,6 +324,8 @@ export default function HumanSignalsPage() {
   }, [
     storeStatusChecked,
     datasetReady,
+    isSyncing,
+    storeEnabled,
     dbConfig,
     hasAttemptedAutoConnect,
     hasData,
@@ -377,6 +359,39 @@ export default function HumanSignalsPage() {
   }
 
   if (!hasData) {
+    // DuckDB store sync in progress — show a persistent syncing state instead
+    // of the empty/upload state. The status poll never gives up mid-sync, so
+    // this resolves to the dashboard (datasetReady) when the sync completes.
+    if (isSyncing && !datasetReady) {
+      return (
+        <div className="min-h-screen">
+          <HumanSignalsHeader />
+          <div className="mx-auto max-w-7xl px-6 py-8">
+            <div className="mx-auto max-w-2xl">
+              <div className="card p-8">
+                <div className="flex flex-col items-center text-center">
+                  <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-primary/10">
+                    <Loader2 className="h-7 w-7 animate-spin text-primary" />
+                  </div>
+                  <h2 className="mb-2 text-lg font-semibold text-text-primary">
+                    Data Store Syncing
+                  </h2>
+                  <p className="max-w-md text-sm text-text-muted">
+                    The data store is initializing. This typically takes a few minutes after a cold
+                    start. The dashboard will load automatically once sync completes.
+                  </p>
+                  <div className="mt-4 flex items-center gap-2 text-sm text-text-muted">
+                    <Database className="h-4 w-4" />
+                    <span>Syncing in progress...</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <EmptyState
         isAutoConnecting={isAutoConnecting}

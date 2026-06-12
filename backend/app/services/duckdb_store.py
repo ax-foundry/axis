@@ -72,6 +72,10 @@ class DuckDBStore:
         self.db_path = db_path
         self._write_lock = asyncio.Lock()
         self._sync_status: dict[str, SyncStatus] = {}
+        # Tables with a sync coroutine actually running right now. Concurrency
+        # guard only — distinct from _sync_status, whose "syncing" state is also
+        # seeded at startup (before the sync task starts) for status consumers.
+        self._sync_inflight: set[str] = set()
         self._cached_metadata: dict[str, dict[str, Any]] = {}
         self._cache_lock = threading.Lock()
         self._query_limiter = anyio.CapacityLimiter(query_concurrency)
@@ -253,6 +257,32 @@ class DuckDBStore:
             described = cur.execute(f"DESCRIBE {table_name}").fetchdf()
         return list(zip(described["column_name"], described["column_type"], strict=False))
 
+    def _aligned_select_sql(self, table_name: str, source_relation: str) -> tuple[str, str]:
+        """Build the by-name projection of ``source_relation`` onto the live schema.
+
+        Returns ``(col_list, select_list)`` — the quoted live column list and
+        the matching ``CAST("col" AS type) AS "col"`` expressions. Extra source
+        columns are ignored. A live column with no same-named source column
+        raises instead of NULL-filling: an upstream rename/drop (or a rename
+        map that failed to apply) would otherwise silently append NULLs for
+        that column on every incremental — the exact "-" columns corruption.
+        The raised error fails the sync, which clears the watermarks, so the
+        next sync does a full rebuild and self-heals.
+        """
+        live_schema = self._get_table_schema(table_name)
+        source_cols = self.get_table_columns(source_relation)
+        missing = [name for name, _ in live_schema if name not in source_cols]
+        if missing:
+            raise ValueError(
+                f"Aligned insert into {table_name} aborted: source {source_relation} "
+                f"is missing live column(s) {missing}. Refusing to NULL-fill — "
+                f"a full rebuild will pick up the new schema."
+            )
+        select_exprs = [f'CAST("{name}" AS {dtype}) AS "{name}"' for name, dtype in live_schema]
+        col_list = ", ".join(f'"{name}"' for name, _ in live_schema)
+        select_list = ", ".join(select_exprs)
+        return col_list, select_list
+
     def _insert_aligned(self, table_name: str, source_relation: str) -> None:
         """Insert rows from ``source_relation`` into ``table_name`` matched BY NAME.
 
@@ -262,34 +292,111 @@ class DuckDBStore:
         per-CSV ``read_csv_auto`` (incremental slices), a column that sampled
         sparse can be inferred as a different/NULL type, and the positional copy
         then silently writes NULLs into the live column. This matches each live
-        column to the same-named source column and casts it to the live type;
-        columns absent from the source become a typed NULL, extra source columns
-        are ignored, and a genuinely incompatible value raises a loud cast error
-        instead of corrupting the column. Still a single ``INSERT ... SELECT``
-        over the staging relation — O(increment rows), so it scales.
+        column to the same-named source column and casts it to the live type
+        (see _aligned_select_sql for the missing-column contract); a genuinely
+        incompatible value raises a loud cast error instead of corrupting the
+        column. Still a single ``INSERT ... SELECT`` over the staging relation —
+        O(increment rows), so it scales.
         """
-        live_schema = self._get_table_schema(table_name)
-        source_cols = self.get_table_columns(source_relation)
-        select_exprs = [
-            f'CAST("{name}" AS {dtype}) AS "{name}"'
-            if name in source_cols
-            else f'CAST(NULL AS {dtype}) AS "{name}"'
-            for name, dtype in live_schema
-        ]
-        col_list = ", ".join(f'"{name}"' for name, _ in live_schema)
-        select_list = ", ".join(select_exprs)
+        col_list, select_list = self._aligned_select_sql(table_name, source_relation)
         with self._cursor() as cur:
             cur.execute(
                 f"INSERT INTO {table_name} ({col_list}) "
                 f"SELECT {select_list} FROM {source_relation}"
             )
 
+    def _upsert_aligned(
+        self,
+        table_name: str,
+        source_relation: str,
+        key_columns: list[str],
+        order_column: str | None = None,
+    ) -> None:
+        """Upsert rows from ``source_relation`` into ``table_name`` by natural key.
+
+        Incremental slices re-pull a lag window behind the watermark, so the
+        same key arrives more than once (late rows, re-scored rows, overlap).
+        A blind append would duplicate them; this replaces instead:
+
+        1. DELETE live rows whose key appears in the source (``IS NOT
+           DISTINCT FROM`` so NULL key parts still match), then
+        2. INSERT the aligned source rows, deduped within the slice to one row
+           per key — latest by ``order_column`` when given (last-write-wins),
+           arbitrary otherwise.
+
+        Both statements run on ONE cursor in ONE transaction: a failure (e.g.
+        a cast error) rolls back the DELETE, leaving the live table untouched.
+        Empty ``key_columns`` falls back to a plain aligned append.
+        """
+        if not key_columns:
+            self._insert_aligned(table_name, source_relation)
+            return
+
+        col_list, select_list = self._aligned_select_sql(table_name, source_relation)
+        live_cols = {name for name, _ in self._get_table_schema(table_name)}
+        bad_keys = [k for k in key_columns if k not in live_cols]
+        if bad_keys:
+            raise ValueError(
+                f"Upsert into {table_name} aborted: key column(s) {bad_keys} "
+                f"not present in the live schema."
+            )
+
+        key_list = ", ".join(f'"{k}"' for k in key_columns)
+        order_clause = ""
+        if order_column and order_column in live_cols:
+            order_clause = f' ORDER BY "{order_column}" DESC NULLS LAST'
+
+        # Materialize the aligned (casted) slice into a temp table first. A
+        # window function directly over the aliased casts trips a DuckDB
+        # binder bug (INTERNAL Error binding the column reference) when a cast
+        # alias shares its name with a differently-typed source column — and
+        # it also surfaces cast errors up front, before the DELETE runs.
+        tmp = f"{table_name}_upsert_tmp"
+        match_pred = " AND ".join(
+            f'{tmp}."{k}" IS NOT DISTINCT FROM {table_name}."{k}"' for k in key_columns
+        )
+        delete_sql = (
+            f"DELETE FROM {table_name} WHERE EXISTS (SELECT 1 FROM {tmp} WHERE {match_pred})"
+        )
+        insert_sql = (
+            f"INSERT INTO {table_name} ({col_list}) "
+            f"SELECT {col_list} FROM ("
+            f"SELECT *, ROW_NUMBER() OVER (PARTITION BY {key_list}{order_clause}) AS _rn "
+            f"FROM {tmp}"
+            f") AS _deduped WHERE _rn = 1"
+        )
+
+        with self._cursor() as cur:
+            cur.execute("BEGIN TRANSACTION")
+            try:
+                cur.execute(
+                    f"CREATE TEMP TABLE {tmp} AS SELECT {select_list} FROM {source_relation}"
+                )
+                cur.execute(delete_sql)
+                cur.execute(insert_sql)
+                cur.execute(f"DROP TABLE {tmp}")
+                cur.execute("COMMIT")
+            except Exception:
+                cur.execute("ROLLBACK")
+                with contextlib.suppress(duckdb.CatalogException):
+                    cur.execute(f"DROP TABLE IF EXISTS {tmp}")
+                raise
+
     # ------------------------------------------------------------------
     # Append primitives (incremental sync)
     # ------------------------------------------------------------------
 
-    def _append_chunk(self, table_name: str, df: pd.DataFrame) -> int:
-        """Append a DataFrame to an existing table via INSERT INTO. Returns rows appended."""
+    def _append_chunk(
+        self,
+        table_name: str,
+        df: pd.DataFrame,
+        key_columns: list[str] | None = None,
+        order_column: str | None = None,
+    ) -> int:
+        """Append (or upsert, when ``key_columns`` is set) a DataFrame.
+
+        The target table must already exist. Returns rows written.
+        """
         if df.empty:
             return 0
         for col in df.columns:
@@ -307,14 +414,23 @@ class DuckDBStore:
             finally:
                 self._conn.unregister("_append")
         try:
-            self._insert_aligned(table_name, staging)
+            self._upsert_aligned(table_name, staging, key_columns or [], order_column)
         finally:
             with self._cursor() as cur:
                 cur.execute(f"DROP TABLE IF EXISTS {staging}")
         return len(df)
 
-    def _append_csv(self, table_name: str, csv_path: str) -> int:
-        """Append rows from a CSV file to an existing table. Returns rows appended."""
+    def _append_csv(
+        self,
+        table_name: str,
+        csv_path: str,
+        key_columns: list[str] | None = None,
+        order_column: str | None = None,
+    ) -> int:
+        """Append (or upsert, when ``key_columns`` is set) rows from a CSV file.
+
+        The target table must already exist. Returns the net row-count change.
+        """
         staging = f"{table_name}_append_staging"
         with self._cursor() as cur:
             cur.execute(
@@ -323,7 +439,7 @@ class DuckDBStore:
             )
         try:
             before = self.query_value(f"SELECT COUNT(*) FROM {table_name}") or 0
-            self._insert_aligned(table_name, staging)
+            self._upsert_aligned(table_name, staging, key_columns or [], order_column)
             after = self.query_value(f"SELECT COUNT(*) FROM {table_name}") or 0
         finally:
             with self._cursor() as cur:
@@ -353,6 +469,37 @@ class DuckDBStore:
                 )
         except duckdb.CatalogException:
             pass
+
+    # ------------------------------------------------------------------
+    # Snapshots (whole-store copy for GCS-backed cold-start restore)
+    # ------------------------------------------------------------------
+
+    def create_snapshot(self, dest_path: str) -> None:
+        """Write a consistent copy of the whole store to ``dest_path``.
+
+        ``ATTACH`` + ``COPY FROM DATABASE`` on a cursor of the live connection
+        is transactional and copies tables, views, and ``_store_metadata`` —
+        so watermarks, last-sync, and rebuild KVs travel with the snapshot,
+        which is what lets a restored store resume with an *incremental* sync.
+        Callers must hold ``_write_lock`` so a concurrent sync can't swap
+        tables mid-copy.
+        """
+        dest = Path(dest_path)
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        if dest.exists():
+            dest.unlink()
+        with self._cursor() as cur:
+            row = cur.execute("SELECT current_database()").fetchone()
+            assert row is not None
+            catalog = row[0]
+            escaped_dest = dest_path.replace("'", "''")
+            cur.execute(f"ATTACH '{escaped_dest}' AS _snapshot_target")
+            try:
+                cur.execute(f'COPY FROM DATABASE "{catalog}" TO _snapshot_target')
+                # Flush the snapshot's WAL so the file is complete on disk.
+                cur.execute("CHECKPOINT _snapshot_target")
+            finally:
+                cur.execute("DETACH _snapshot_target")
 
     # ------------------------------------------------------------------
     # Metadata persistence (_store_metadata table)

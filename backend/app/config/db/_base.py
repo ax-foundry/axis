@@ -43,6 +43,20 @@ class BaseDBImportConfig:
     refresh_interval_minutes: int = 0
     incremental_column: str | None = None
 
+    # Incremental integrity (split-sync tables)
+    # Natural key per table: incremental slices upsert (DELETE+INSERT by key)
+    # instead of blind-appending, so re-pulled rows replace stale copies.
+    dataset_primary_key: list[str] = field(default_factory=list)
+    results_primary_key: list[str] = field(default_factory=list)
+    # Re-pull window: incremental queries restart this many minutes before the
+    # stored watermark, so late-arriving/updated source rows aren't skipped by
+    # the strict `>` watermark comparison. Only applied when the table has a
+    # primary key configured (lag without upsert would duplicate rows).
+    incremental_lag_minutes: int = 120
+    # Periodic full-rebuild backstop (hours between forced full syncs);
+    # 0 disables it.
+    full_rebuild_interval_hours: int = 0
+
     # Table restrictions and filters (for wizard UI)
     tables: list[str] = field(default_factory=list)
     filters: list[dict[str, str]] = field(default_factory=list)
@@ -82,6 +96,15 @@ def parse_base_fields(
     """
     query_timeout = min(db_config.get("query_timeout", 60), 120)
     row_limit = min(db_config.get("row_limit", 10000), 50000)
+
+    def _key_list(value: Any) -> list[str]:
+        """Accept a single column name or a list of column names."""
+        if not value:
+            return []
+        if isinstance(value, str):
+            return [value]
+        return [str(c) for c in value]
+
     return {
         "url": db_config.get("url") or env_url,
         "host": db_config.get("host"),
@@ -100,6 +123,10 @@ def parse_base_fields(
         "partition_column": db_config.get("partition_column"),
         "refresh_interval_minutes": db_config.get("refresh_interval_minutes", 0),
         "incremental_column": db_config.get("incremental_column"),
+        "dataset_primary_key": _key_list(db_config.get("dataset_primary_key")),
+        "results_primary_key": _key_list(db_config.get("results_primary_key")),
+        "incremental_lag_minutes": db_config.get("incremental_lag_minutes", 120),
+        "full_rebuild_interval_hours": db_config.get("full_rebuild_interval_hours", 0),
         "tables": db_config.get("tables", []) or [],
         "filters": db_config.get("filters", []) or [],
         "connection_params": db_config.get("connection_params", {}) or {},
