@@ -102,6 +102,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         from app.services.sync_engine import (
             _build_human_signals_derived_tables,
             periodic_sync_loop,
+            seed_sync_status,
             sync_with_lock,
         )
 
@@ -109,6 +110,11 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
         # Load persisted metadata from DuckDB (fast, populates hot cache)
         duckdb_store.load_metadata_from_db()
+
+        # Seed per-dataset sync status before uvicorn accepts requests, so no
+        # request can observe an auto-load dataset in the default "not_synced"
+        # state while its startup sync hasn't registered yet.
+        seed_sync_status(duckdb_store)
 
         # Always rebuild human_signals_cases from human_signals_data on startup
         # to pick up any changes to aggregation logic in human_signals_service.py.

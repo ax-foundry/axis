@@ -72,6 +72,10 @@ class DuckDBStore:
         self.db_path = db_path
         self._write_lock = asyncio.Lock()
         self._sync_status: dict[str, SyncStatus] = {}
+        # Tables with a sync coroutine actually running right now. Concurrency
+        # guard only — distinct from _sync_status, whose "syncing" state is also
+        # seeded at startup (before the sync task starts) for status consumers.
+        self._sync_inflight: set[str] = set()
         self._cached_metadata: dict[str, dict[str, Any]] = {}
         self._cache_lock = threading.Lock()
         self._query_limiter = anyio.CapacityLimiter(query_concurrency)
@@ -263,19 +267,26 @@ class DuckDBStore:
         sparse can be inferred as a different/NULL type, and the positional copy
         then silently writes NULLs into the live column. This matches each live
         column to the same-named source column and casts it to the live type;
-        columns absent from the source become a typed NULL, extra source columns
-        are ignored, and a genuinely incompatible value raises a loud cast error
-        instead of corrupting the column. Still a single ``INSERT ... SELECT``
-        over the staging relation — O(increment rows), so it scales.
+        extra source columns are ignored, and a genuinely incompatible value
+        raises a loud cast error instead of corrupting the column. A live column
+        with no same-named source column raises instead of NULL-filling: an
+        upstream rename/drop (or a rename map that failed to apply) would
+        otherwise silently append NULLs for that column on every incremental —
+        the exact corruption this method exists to prevent. The raised error
+        fails the sync, which clears the watermarks, so the next sync does a
+        full rebuild and self-heals. Still a single ``INSERT ... SELECT`` over
+        the staging relation — O(increment rows), so it scales.
         """
         live_schema = self._get_table_schema(table_name)
         source_cols = self.get_table_columns(source_relation)
-        select_exprs = [
-            f'CAST("{name}" AS {dtype}) AS "{name}"'
-            if name in source_cols
-            else f'CAST(NULL AS {dtype}) AS "{name}"'
-            for name, dtype in live_schema
-        ]
+        missing = [name for name, _ in live_schema if name not in source_cols]
+        if missing:
+            raise ValueError(
+                f"Aligned insert into {table_name} aborted: source {source_relation} "
+                f"is missing live column(s) {missing}. Refusing to NULL-fill — "
+                f"a full rebuild will pick up the new schema."
+            )
+        select_exprs = [f'CAST("{name}" AS {dtype}) AS "{name}"' for name, dtype in live_schema]
         col_list = ", ".join(f'"{name}"' for name, _ in live_schema)
         select_list = ", ".join(select_exprs)
         with self._cursor() as cur:

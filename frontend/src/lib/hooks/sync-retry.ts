@@ -1,10 +1,28 @@
 import { ApiError } from '@/lib/api';
 
 /**
- * Max number of times to poll getStoreStatus() during cold start.
- * 60 polls × 5s interval = 5 minutes max before giving up.
+ * Number of fast (5s) status polls during cold start before downshifting to
+ * the slow interval. 60 polls × 5s = 5 minutes at the fast cadence. Polling
+ * never stops while a sync is in progress — past this cap it continues at
+ * SLOW_POLL_INTERVAL_MS. (A hard stop here once cleared the syncing flag
+ * while the backend was still syncing, which dropped the page into the
+ * legacy client-side import and rendered partial, unjoined data.)
  */
 export const MAX_STORE_STATUS_POLLS = 60;
+
+/** Fast poll interval while a sync is in progress (cold start). */
+export const FAST_POLL_INTERVAL_MS = 5_000;
+
+/** Slow poll interval after MAX_STORE_STATUS_POLLS fast polls, and max error backoff. */
+export const SLOW_POLL_INTERVAL_MS = 30_000;
+
+/**
+ * Consecutive status-request failures before the page is allowed to proceed
+ * without a store verdict (CSV-only deployments where the store endpoints
+ * don't exist). Polling still continues in the background and recovers if
+ * the backend comes back.
+ */
+export const STORE_STATUS_FAILURE_THRESHOLD = 5;
 
 /**
  * Shared React Query retry config for DuckDB-backed endpoints.

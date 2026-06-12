@@ -26,6 +26,35 @@ def _resolve_table(dataset: str) -> str:
     return table
 
 
+def _dataset_auto_loads(table: str) -> bool:
+    """True if this table belongs to an active dataset that syncs at startup.
+
+    For such datasets, a missing table means data is on its way (or a sync
+    failed and the periodic scheduler will retry) — never "there is no data".
+    """
+    from app.config.db.duckdb import duckdb_config
+    from app.config.db.eval_db import eval_db_config
+    from app.config.db.human_signals import human_signals_db_config
+    from app.config.db.kpi import kpi_db_config
+    from app.config.db.monitoring import monitoring_db_config
+
+    config = {
+        "monitoring_data": monitoring_db_config,
+        "human_signals_data": human_signals_db_config,
+        "human_signals_cases": human_signals_db_config,
+        "eval_data": eval_db_config,
+        "kpi_data": kpi_db_config,
+    }.get(table)
+    if config is None or duckdb_config.sync_mode != "startup":
+        return False
+    return bool(
+        getattr(config, "enabled", False)
+        and getattr(config, "is_configured", False)
+        and getattr(config, "has_query", False)
+        and getattr(config, "should_auto_load", False)
+    )
+
+
 # ------------------------------------------------------------------
 # Sync endpoints
 # ------------------------------------------------------------------
@@ -238,9 +267,13 @@ async def get_dataset_data(
         # the dataset as "ready but empty" and fall back to partial client-side
         # data. Surface a 503 dataset_warming instead — matching GET
         # /store/query — so the frontend's retry config waits for the real data.
-        # A dataset that simply has no table and is not syncing (disabled/never
-        # configured) keeps the existing empty payload.
-        if store.get_sync_status(table).state == "syncing":
+        # For auto-load datasets the 503 also covers "not_synced" (a process
+        # that hasn't seeded/started its sync yet) and "error" (the periodic
+        # scheduler will retry) — an empty 200 would be a lie in both. A
+        # dataset that is genuinely inactive (disabled/unconfigured/manual)
+        # keeps the existing empty payload.
+        state = store.get_sync_status(table).state
+        if state == "syncing" or (_dataset_auto_loads(table) and state in ("not_synced", "error")):
             raise HTTPException(
                 status_code=503,
                 detail={"code": "dataset_warming", "table": table},

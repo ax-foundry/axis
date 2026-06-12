@@ -40,8 +40,7 @@ import {
   detectAnomalies,
   generateThresholdAlerts,
 } from '@/lib/anomaly-detection';
-import { getDatasetMetadata, getStoreStatus } from '@/lib/api';
-import { MAX_STORE_STATUS_POLLS } from '@/lib/hooks/sync-retry';
+import { getDatasetMetadata } from '@/lib/api';
 import {
   useMonitoringFailingOutputs,
   useMonitoringLatencyDist,
@@ -51,6 +50,7 @@ import {
   useMonitoringTrends,
 } from '@/lib/hooks/useMonitoringData';
 import { useMonitoringAutoImport, useMonitoringDBConfig } from '@/lib/hooks/useMonitoringUpload';
+import { useStoreReadiness } from '@/lib/hooks/useStoreReadiness';
 import { cn } from '@/lib/utils';
 import { useMonitoringStore, type MonitoringTimeRangePreset } from '@/stores';
 
@@ -625,10 +625,6 @@ export default function MonitoringPage() {
     [dbConfig]
   );
 
-  // Track whether the DuckDB store status check has completed
-  const [storeStatusChecked, setStoreStatusChecked] = useState(false);
-  // Track whether DuckDB is actively syncing (for UI banner)
-  const [isSyncing, setIsSyncing] = useState(false);
   // Avoid re-populating filters after the first successful metadata fetch
   const metadataPopulated = useRef(false);
 
@@ -639,54 +635,29 @@ export default function MonitoringPage() {
   const setAvailableSubFiltersRef = useRef(setAvailableSubFilters);
   setAvailableSubFiltersRef.current = setAvailableSubFilters;
 
-  // Poll DuckDB store status on mount → keep polling until sync completes.
-  // Handles cold starts where DuckDB may be in "syncing" or "not_synced" state
-  // for several minutes before becoming "ready".
-  // Capped at MAX_STORE_STATUS_POLLS to avoid infinite polling if sync is stuck.
+  // Poll DuckDB store status until the sync settles. The hook keeps isSyncing
+  // truthful for the entire sync (retries request errors, downshifts to slow
+  // polling instead of giving up), so the legacy client-side import below can
+  // never fire mid-sync and render partial, unjoined data.
+  const { storeStatusChecked, storeEnabled, isSyncing } = useStoreReadiness(
+    'monitoring_data',
+    setSyncStatus
+  );
+
+  // Populate filters from dataset metadata once the dataset is queryable
   useEffect(() => {
+    if (!datasetReady || metadataPopulated.current) return;
+    metadataPopulated.current = true;
     let cancelled = false;
-    let timeoutId: ReturnType<typeof setTimeout>;
-    let pollCount = 0;
-
-    const poll = async () => {
-      try {
-        const status = await getStoreStatus();
-        if (cancelled) return;
-        const monStatus = status.datasets?.monitoring_data;
-
-        if (monStatus) {
-          setSyncStatus(monStatus);
-          const syncing = monStatus.state === 'syncing' || monStatus.state === 'not_synced';
-          setIsSyncing(syncing);
-
-          if (monStatus.state === 'ready' && !metadataPopulated.current) {
-            metadataPopulated.current = true;
-            const meta = await getDatasetMetadata('monitoring');
-            if (!cancelled && meta.metadata) {
-              populateFiltersRef.current(meta.metadata);
-            }
-          }
-
-          // Keep polling while sync is in progress (every 5s, capped)
-          if (syncing && ++pollCount < MAX_STORE_STATUS_POLLS) {
-            timeoutId = setTimeout(poll, 5000);
-            if (!storeStatusChecked) setStoreStatusChecked(true);
-            return;
-          }
-          if (syncing) setIsSyncing(false); // give up — stop showing banner
-        }
-      } catch {
-        // Store not available — fallback to CSV mode
+    getDatasetMetadata('monitoring').then((meta) => {
+      if (!cancelled && meta.metadata) {
+        populateFiltersRef.current(meta.metadata);
       }
-      if (!cancelled) setStoreStatusChecked(true);
-    };
-
-    poll();
+    });
     return () => {
       cancelled = true;
-      clearTimeout(timeoutId);
     };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [datasetReady]);
 
   // When the selected source changes in DuckDB mode, refresh the sub-filter options
   // (environments, components, types) to only show values for that source.
@@ -758,6 +729,11 @@ export default function MonitoringPage() {
       // metric_name → "No trend data" + "-" columns). Wait for the sync to
       // finish and let server mode (datasetReady) take over.
       !isSyncing &&
+      // Require a store verdict before importing: storeEnabled is null while
+      // the status endpoint is unreachable (cold start/restart), and importing
+      // then would race the store coming up. A reachable backend with the
+      // store disabled reports enabled=false and proceeds.
+      storeEnabled !== null &&
       dbConfig &&
       (dbConfig.auto_connect || dbConfig.auto_load) &&
       !hasAttemptedAutoConnect &&
@@ -779,6 +755,7 @@ export default function MonitoringPage() {
     storeStatusChecked,
     datasetReady,
     isSyncing,
+    storeEnabled,
     dbConfig,
     hasAttemptedAutoConnect,
     data.length,

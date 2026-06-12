@@ -398,7 +398,12 @@ export const useMonitoringStore = create<MonitoringState>()(
       setSyncStatus: (status) =>
         set({
           syncStatus: status,
-          datasetReady: status?.state === 'ready',
+          // 'syncing' with rows > 0 means a rebuild/top-up over an existing
+          // table — staging+swap keeps the old table queryable, so keep
+          // serving it instead of dropping back to the empty/import state.
+          datasetReady:
+            status?.state === 'ready' ||
+            (status?.state === 'syncing' && (status?.rows ?? 0) > 0),
         }),
 
       setMetadata: (metadata) => set({ metadata }),

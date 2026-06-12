@@ -580,7 +580,9 @@ async def _sync_internal_table(
         params = _build_params(config)
         partition_column = getattr(config, "partition_column", None)
         sync_workers = duckdb_config.sync_workers
-        custom_columns = getattr(config, "columns", None) or {}
+        # YAML `columns:` parses into BaseDBImportConfig.column_rename_map —
+        # there is no `columns` attribute on the config objects.
+        custom_columns = getattr(config, "column_rename_map", None) or {}
         sync_timeout_ms = getattr(config, "query_timeout", 600) * 1000
 
         # --- Phase 1: Read from source (no DuckDB lock) ---
@@ -785,48 +787,51 @@ async def _sync_split(
     dataset_table, results_table = _SPLIT_TABLE_MAP[table_name]
 
     start = time.time()
-    current = store.get_sync_status(table_name)
-    if current.state == "syncing":
+    # Concurrency guard on the in-flight set, not the status state: the status
+    # is seeded to "syncing" at startup before the sync task runs, and gating
+    # on it would make the startup sync skip itself.
+    if table_name in store._sync_inflight:
         return SyncResult(table_name, 0, 0, "skipped", "Sync already running")
+    store._sync_inflight.add(table_name)
 
     store._sync_status[table_name] = SyncStatus(state="syncing")
 
-    incremental_column = getattr(config, "incremental_column", None)
-
-    # Determine if incremental sync is possible — log the reason
-    has_tables = store._has_internal_table(dataset_table) and store._has_internal_table(
-        results_table
-    )
-    has_watermarks = (
-        store.get_watermark(dataset_table) is not None
-        and store.get_watermark(results_table) is not None
-    )
-
-    if force_full:
-        fallback_reason = "force_full=True requested"
-    elif not incremental_column:
-        fallback_reason = "no incremental_column configured"
-    elif not has_tables:
-        fallback_reason = "DuckDB tables don't exist yet (first sync)"
-    elif not has_watermarks:
-        fallback_reason = "no watermarks stored (first sync or after reset)"
-    else:
-        fallback_reason = None
-
-    use_incremental = fallback_reason is None
-    sync_type = "incremental" if use_incremental else "full"
-
-    if use_incremental:
-        logger.info(f"[{table_name}] Starting INCREMENTAL sync (column={incremental_column})")
-    else:
-        logger.info(f"[{table_name}] Starting FULL sync — reason: {fallback_reason}")
-
-    # Capture row counts before sync so we can compute the delta for incremental
-    rows_before = 0
-    if use_incremental and store._has_internal_table(table_name):
-        rows_before = store.query_value(f"SELECT COUNT(*) FROM {table_name}") or 0
-
     try:
+        incremental_column = getattr(config, "incremental_column", None)
+
+        # Determine if incremental sync is possible — log the reason
+        has_tables = store._has_internal_table(dataset_table) and store._has_internal_table(
+            results_table
+        )
+        has_watermarks = (
+            store.get_watermark(dataset_table) is not None
+            and store.get_watermark(results_table) is not None
+        )
+
+        if force_full:
+            fallback_reason = "force_full=True requested"
+        elif not incremental_column:
+            fallback_reason = "no incremental_column configured"
+        elif not has_tables:
+            fallback_reason = "DuckDB tables don't exist yet (first sync)"
+        elif not has_watermarks:
+            fallback_reason = "no watermarks stored (first sync or after reset)"
+        else:
+            fallback_reason = None
+
+        use_incremental = fallback_reason is None
+        sync_type = "incremental" if use_incremental else "full"
+
+        if use_incremental:
+            logger.info(f"[{table_name}] Starting INCREMENTAL sync (column={incremental_column})")
+        else:
+            logger.info(f"[{table_name}] Starting FULL sync — reason: {fallback_reason}")
+
+        # Capture row counts before sync so we can compute the delta for incremental
+        rows_before = 0
+        if use_incremental and store._has_internal_table(table_name):
+            rows_before = store.query_value(f"SELECT COUNT(*) FROM {table_name}") or 0
+
         dataset_query = config.dataset_query
         results_query = config.results_query
 
@@ -949,6 +954,9 @@ async def _sync_split(
             last_incremental=now if use_incremental else None,
             incremental_rows=incremental_rows,
         )
+        # Persist last-sync time so a restarted process (or a restored snapshot)
+        # can seed an honest `last_sync` instead of None.
+        store.set_kv(f"_last_sync_{table_name}", now.isoformat())
         if use_incremental:
             logger.info(
                 f"[{table_name}] INCREMENTAL sync complete: "
@@ -967,6 +975,8 @@ async def _sync_split(
         logger.exception(f"Split sync failed for {table_name}")
         store._sync_status[table_name] = SyncStatus(state="error", error=str(e))
         return SyncResult(table_name, 0, time.time() - start, "error", str(e))
+    finally:
+        store._sync_inflight.discard(table_name)
 
 
 # ------------------------------------------------------------------
@@ -984,9 +994,10 @@ async def _sync_single_table(
     Used for datasets like kpi_data that have a single query (no dataset/results split).
     """
     start = time.time()
-    current = store.get_sync_status(table_name)
-    if current.state == "syncing":
+    # Concurrency guard on the in-flight set, not the status state — see _sync_split.
+    if table_name in store._sync_inflight:
         return SyncResult(table_name, 0, 0, "skipped", "Sync already running")
+    store._sync_inflight.add(table_name)
 
     store._sync_status[table_name] = SyncStatus(state="syncing")
 
@@ -1010,12 +1021,89 @@ async def _sync_single_table(
             truncated=result.truncated,
             sync_type="full",
         )
+        store.set_kv(f"_last_sync_{table_name}", now.isoformat())
         logger.info(f"[{table_name}] FULL sync complete: {rows} total rows, {duration:.1f}s")
         return SyncResult(table_name, rows, duration, "success", truncated=result.truncated)
     except Exception as e:
         logger.exception(f"Single-table sync failed for {table_name}")
         store._sync_status[table_name] = SyncStatus(state="error", error=str(e))
         return SyncResult(table_name, 0, time.time() - start, "error", str(e))
+    finally:
+        store._sync_inflight.discard(table_name)
+
+
+# ------------------------------------------------------------------
+# Startup status seeding
+# ------------------------------------------------------------------
+
+
+def _dataset_configs() -> list[tuple[Any, str]]:
+    """Return (config, table_name) pairs for all syncable datasets.
+
+    Imported lazily — config modules load YAML at import time.
+    """
+    from app.config.db.eval_db import eval_db_config
+    from app.config.db.human_signals import human_signals_db_config
+    from app.config.db.kpi import kpi_db_config
+    from app.config.db.monitoring import monitoring_db_config
+
+    return [
+        (monitoring_db_config, "monitoring_data"),
+        (human_signals_db_config, "human_signals_data"),
+        (eval_db_config, "eval_data"),
+        (kpi_db_config, "kpi_data"),
+    ]
+
+
+def seed_sync_status(store: DuckDBStore) -> None:
+    """Seed in-memory sync status for all active datasets before serving begins.
+
+    Runs synchronously in the FastAPI lifespan, before uvicorn accepts
+    requests. Closes the cold-start gap where an auto-load dataset sat in the
+    default "not_synced" state until the backgrounded startup sync task got
+    around to flipping it to "syncing" — during that window status consumers
+    (and the /data gate) treated the dataset as inactive and served empty
+    payloads instead of a dataset_warming signal.
+
+    - Table already present with persisted metadata (persistent local disk, or
+      a restored snapshot) → "ready", with last_sync recovered from the
+      _last_sync_{table} KV.
+    - Active auto-load dataset with no table yet → "syncing" (the startup sync
+      will take over and report real progress).
+    - Anything else (disabled, unconfigured, manual-mode) → left unseeded, so
+      it keeps the default "not_synced".
+    """
+    from app.config.db.duckdb import duckdb_config
+
+    for config, table in _dataset_configs():
+        is_enabled = getattr(config, "enabled", True)
+        is_configured = getattr(config, "is_configured", False)
+        has_query = getattr(config, "has_query", False)
+        if not (is_enabled and is_configured and has_query):
+            continue
+
+        if store.has_table(table):
+            row_count = store.get_metadata(table).get("row_count")
+            if row_count is not None:
+                last_sync: datetime | None = None
+                raw_last_sync = store.get_kv(f"_last_sync_{table}")
+                if raw_last_sync:
+                    try:
+                        last_sync = datetime.fromisoformat(raw_last_sync)
+                    except ValueError:
+                        last_sync = None
+                store._sync_status[table] = SyncStatus(
+                    state="ready",
+                    rows=int(row_count),
+                    last_sync=last_sync,
+                    sync_type="full",
+                )
+                logger.info(f"[{table}] Seeded status ready ({row_count} rows) from existing data")
+                continue
+
+        if duckdb_config.sync_mode == "startup" and getattr(config, "should_auto_load", False):
+            store._sync_status[table] = SyncStatus(state="syncing")
+            logger.info(f"[{table}] Seeded status syncing (awaiting startup sync)")
 
 
 # ------------------------------------------------------------------
