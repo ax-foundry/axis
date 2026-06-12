@@ -8,7 +8,7 @@ import time
 import uuid
 from collections.abc import AsyncIterator, Callable
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -242,6 +242,59 @@ def _wrap_query_incremental(
     escaped_wm = watermark.replace("'", "''")
     quoted_col = backend.quote_identifier(column)
     return f"SELECT * FROM ({query}) AS _inc WHERE _inc.{quoted_col} > '{escaped_wm}'"
+
+
+def _serialize_watermark(value: Any) -> str:
+    """Serialize a MAX(incremental_column) value for KV storage.
+
+    datetimes use ``isoformat(sep=" ")`` — byte-identical to ``str(datetime)``,
+    so watermarks stored by older versions parse the same way — and everything
+    else falls back to ``str()``.
+    """
+    if isinstance(value, datetime):
+        return value.isoformat(sep=" ")
+    return str(value)
+
+
+def _apply_watermark_lag(watermark: str, lag_minutes: int) -> str:
+    """Rewind a temporal watermark by ``lag_minutes`` for the incremental WHERE.
+
+    The incremental wrap uses a strict ``>`` against the stored watermark, so a
+    source row that lands late (BigQuery streaming inserts, re-scored results)
+    with an event time at-or-before the high-water mark would be skipped
+    forever. Re-pulling a lag window behind the watermark — combined with the
+    keyed upsert that absorbs the re-pulled overlap — makes incrementals
+    self-correcting for late and updated rows. A watermark that doesn't parse
+    as a datetime is returned unchanged (numeric/sequence watermarks don't
+    have a late-arrival problem of this shape).
+    """
+    if lag_minutes <= 0:
+        return watermark
+    try:
+        parsed = datetime.fromisoformat(watermark)
+    except ValueError:
+        return watermark
+    return (parsed - timedelta(minutes=lag_minutes)).isoformat(sep=" ")
+
+
+def _full_rebuild_due(last_rebuild_iso: str | None, interval_hours: int, now: datetime) -> bool:
+    """True when the periodic full-rebuild backstop is due for a table.
+
+    ``interval_hours <= 0`` disables the backstop. A missing or unparseable
+    last-rebuild timestamp counts as due — one extra full rebuild is the safe
+    direction.
+    """
+    if interval_hours <= 0:
+        return False
+    if not last_rebuild_iso:
+        return True
+    try:
+        last = datetime.fromisoformat(last_rebuild_iso)
+    except ValueError:
+        return True
+    if last.tzinfo is None:
+        last = last.replace(tzinfo=UTC)
+    return (now - last) >= timedelta(hours=interval_hours)
 
 
 async def _get_partition_bounds(
@@ -556,11 +609,16 @@ async def _sync_internal_table(
     table_name: str,
     store: DuckDBStore,
     append_mode: bool = False,
+    key_columns: list[str] | None = None,
+    order_column: str | None = None,
 ) -> SyncResult:
     """Sync a single table: read from source, write to DuckDB.
 
     When append_mode=False (default): staging + atomic swap (full rebuild).
-    When append_mode=True: INSERT INTO existing table (incremental append).
+    When append_mode=True: write into the existing table — a keyed upsert when
+    ``key_columns`` is set (re-pulled lag-window rows replace their stale live
+    copies, deduped to the latest by ``order_column``), a plain aligned append
+    otherwise.
 
     No sync status management — caller handles that.
     """
@@ -680,15 +738,19 @@ async def _sync_internal_table(
                         # Match staging columns to the live schema BY NAME with
                         # explicit casts (not positional SELECT *), so a per-CSV
                         # type-inference drift in the incremental slice can't
-                        # silently null out string/timestamp columns.
-                        store._insert_aligned(table_name, staging)
+                        # silently null out string/timestamp columns. With key
+                        # columns configured this is a keyed upsert, so the
+                        # lag-window overlap replaces instead of duplicating.
+                        store._upsert_aligned(table_name, staging, key_columns or [], order_column)
                         with store._cursor() as cur:
                             cur.execute(f"DROP TABLE IF EXISTS {staging}")
 
                     await anyio.to_thread.run_sync(_insert_from_staging)
                 else:
                     assert full_df is not None
-                    await anyio.to_thread.run_sync(lambda: store._append_chunk(table_name, full_df))
+                    await anyio.to_thread.run_sync(
+                        lambda: store._append_chunk(table_name, full_df, key_columns, order_column)
+                    )
             else:
                 # Full rebuild: staging + atomic swap
                 if use_copy:
@@ -835,6 +897,10 @@ async def _sync_split(
         dataset_query = config.dataset_query
         results_query = config.results_query
 
+        dataset_keys = list(getattr(config, "dataset_primary_key", None) or [])
+        results_keys = list(getattr(config, "results_primary_key", None) or [])
+        lag_minutes = int(getattr(config, "incremental_lag_minutes", 0) or 0)
+
         if use_incremental:
             assert isinstance(incremental_column, str)
             from app.services.db import get_backend as _get_backend
@@ -846,16 +912,38 @@ async def _sync_split(
                 f"[{table_name}] Watermarks: "
                 f"{dataset_table}={dataset_wm}, {results_table}={results_wm}"
             )
+            # Re-pull a lag window behind each watermark so late-arriving and
+            # updated rows aren't skipped by the strict `>`. Only when that
+            # sub-table upserts by key — lag without a key would re-append the
+            # overlap as duplicates.
+            assert dataset_wm is not None and results_wm is not None
+            dataset_wm_q = (
+                _apply_watermark_lag(dataset_wm, lag_minutes) if dataset_keys else dataset_wm
+            )
+            results_wm_q = (
+                _apply_watermark_lag(results_wm, lag_minutes) if results_keys else results_wm
+            )
+            if lag_minutes > 0 and (not dataset_keys or not results_keys):
+                keyless = [
+                    t
+                    for t, keys in ((dataset_table, dataset_keys), (results_table, results_keys))
+                    if not keys
+                ]
+                logger.warning(
+                    f"[{table_name}] incremental_lag_minutes={lag_minutes} configured but "
+                    f"{keyless} have no primary key — lag skipped there; late-arriving "
+                    f"rows in those tables are only picked up by full rebuilds."
+                )
             dataset_query = _wrap_query_incremental(
                 dataset_query,
                 incremental_column,
-                dataset_wm,  # type: ignore[arg-type]
+                dataset_wm_q,
                 _inc_backend,
             )
             results_query = _wrap_query_incremental(
                 results_query,
                 incremental_column,
-                results_wm,  # type: ignore[arg-type]
+                results_wm_q,
                 _inc_backend,
             )
 
@@ -865,10 +953,20 @@ async def _sync_split(
         try:
             r1, r2 = await asyncio.gather(
                 _sync_internal_table(
-                    dataset_cfg, dataset_table, store, append_mode=use_incremental
+                    dataset_cfg,
+                    dataset_table,
+                    store,
+                    append_mode=use_incremental,
+                    key_columns=dataset_keys if use_incremental else None,
+                    order_column=incremental_column if use_incremental else None,
                 ),
                 _sync_internal_table(
-                    results_cfg, results_table, store, append_mode=use_incremental
+                    results_cfg,
+                    results_table,
+                    store,
+                    append_mode=use_incremental,
+                    key_columns=results_keys if use_incremental else None,
+                    order_column=incremental_column if use_incremental else None,
                 ),
             )
         except Exception:
@@ -931,9 +1029,10 @@ async def _sync_split(
                     )
                     if max_val is not None:
                         old_wm = store.get_watermark(sub_table)
-                        store.set_watermark(sub_table, str(max_val))
+                        new_wm = _serialize_watermark(max_val)
+                        store.set_watermark(sub_table, new_wm)
                         logger.info(
-                            f"[{table_name}] Watermark saved: {sub_table}={old_wm} → {max_val}"
+                            f"[{table_name}] Watermark saved: {sub_table}={old_wm} → {new_wm}"
                         )
 
         # Human signals post-processing: always rebuild derived tables
@@ -957,6 +1056,9 @@ async def _sync_split(
         # Persist last-sync time so a restarted process (or a restored snapshot)
         # can seed an honest `last_sync` instead of None.
         store.set_kv(f"_last_sync_{table_name}", now.isoformat())
+        if not use_incremental:
+            # Feeds the periodic full-rebuild backstop's due-check.
+            store.set_kv(f"_last_full_rebuild_{table_name}", now.isoformat())
         if use_incremental:
             logger.info(
                 f"[{table_name}] INCREMENTAL sync complete: "
@@ -1022,6 +1124,8 @@ async def _sync_single_table(
             sync_type="full",
         )
         store.set_kv(f"_last_sync_{table_name}", now.isoformat())
+        # Single-table syncs are always full rebuilds.
+        store.set_kv(f"_last_full_rebuild_{table_name}", now.isoformat())
         logger.info(f"[{table_name}] FULL sync complete: {rows} total rows, {duration:.1f}s")
         return SyncResult(table_name, rows, duration, "success", truncated=result.truncated)
     except Exception as e:
@@ -1383,7 +1487,23 @@ async def periodic_sync_loop(store: DuckDBStore) -> None:
                 logger.info(f"Periodic sync triggering for: {due_names}")
                 coros = []
                 for config, table, _name in due:
-                    coros.append(sync_dataset(config, table, store))
+                    # Full-rebuild backstop rides the regular tick: when the
+                    # configured interval has elapsed since the last full sync,
+                    # this tick forces one. Catches everything incrementals
+                    # can't (schema drift, hard-deleted rows, retention-window
+                    # trims, accumulated drift).
+                    rebuild_hours = int(getattr(config, "full_rebuild_interval_hours", 0) or 0)
+                    force_full = _full_rebuild_due(
+                        store.get_kv(f"_last_full_rebuild_{table}"),
+                        rebuild_hours,
+                        datetime.now(tz=UTC),
+                    )
+                    if force_full:
+                        logger.info(
+                            f"[{table}] Periodic full rebuild due "
+                            f"(interval {rebuild_hours}h) — forcing full sync"
+                        )
+                    coros.append(sync_dataset(config, table, store, force_full=force_full))
                 results = await asyncio.gather(*coros, return_exceptions=True)
                 for (_, table, dataset_name), result in zip(due, results, strict=False):
                     last_run[table] = time.time()
