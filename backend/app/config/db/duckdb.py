@@ -1,4 +1,5 @@
 import logging
+import os
 from dataclasses import dataclass
 from typing import Any
 
@@ -28,6 +29,18 @@ class DuckDBConfig:
     query_concurrency: int = 8  # Max concurrent DuckDB read queries
     sync_workers: int = 1  # Parallel readers per dataset sync
 
+    # GCS snapshot restore (ephemeral-disk deployments like Cloud Run): upload
+    # a consistent copy of the store after each successful sync batch, and
+    # restore it on cold start so the service comes up "ready" in seconds and
+    # the startup sync runs as an incremental top-up instead of a from-scratch
+    # rebuild. Off by default — local dev/OSS deployments are untouched.
+    snapshot_enabled: bool = False
+    snapshot_bucket: str | None = None  # env override: AXIS_SNAPSHOT_BUCKET
+    snapshot_prefix: str = "snapshots"
+    # Ignore (don't restore) snapshots older than this — a stale snapshot is
+    # worse than a clean full sync once watermarked tables have drifted far.
+    snapshot_max_age_hours: int = 48
+
 
 def load_duckdb_config() -> DuckDBConfig:
     """Load DuckDB config from YAML file with hardcoded defaults."""
@@ -46,6 +59,7 @@ def load_duckdb_config() -> DuckDBConfig:
                 else:
                     # Backward compatibility: infer mode from legacy boolean.
                     sync_mode = "startup" if legacy_auto_sync is not False else "manual"
+                snapshot_cfg = db_config.get("snapshot") or {}
                 config = DuckDBConfig(
                     enabled=db_config.get("enabled", True),
                     path=db_config.get("path", "data/local_store.duckdb"),
@@ -55,6 +69,11 @@ def load_duckdb_config() -> DuckDBConfig:
                     max_sync_rows=db_config.get("max_sync_rows", 2_000_000),
                     query_concurrency=db_config.get("query_concurrency", 8),
                     sync_workers=db_config.get("sync_workers", 1),
+                    snapshot_enabled=snapshot_cfg.get("enabled", False),
+                    snapshot_bucket=os.environ.get("AXIS_SNAPSHOT_BUCKET")
+                    or snapshot_cfg.get("bucket"),
+                    snapshot_prefix=snapshot_cfg.get("prefix", "snapshots"),
+                    snapshot_max_age_hours=snapshot_cfg.get("max_age_hours", 48),
                 )
                 logger.info("Loaded DuckDB config from %s", DUCKDB_CONFIG_PATH)
                 return config

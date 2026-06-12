@@ -1516,6 +1516,12 @@ async def periodic_sync_loop(store: DuckDBStore) -> None:
                             f"Periodic sync complete for {dataset_name}: "
                             f"{result.rows_synced} rows, {result.duration_seconds:.1f}s"
                         )
+                if any(not isinstance(r, BaseException) and r.status == "success" for r in results):
+                    # Best-effort snapshot of the freshly-synced store for the
+                    # next cold start. No-op unless snapshots are enabled.
+                    from app.services.snapshot import snapshot_and_upload
+
+                    await snapshot_and_upload(store)
                 # Recalculate min_wait after running
                 now = time.time()
                 min_wait = float("inf")

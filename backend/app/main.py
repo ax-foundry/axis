@@ -99,12 +99,20 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
     if duckdb_config.enabled:
         from app.services.duckdb_store import get_store
+        from app.services.snapshot import restore_snapshot_if_available, snapshot_and_upload
         from app.services.sync_engine import (
             _build_human_signals_derived_tables,
             periodic_sync_loop,
             seed_sync_status,
             sync_with_lock,
         )
+
+        # On ephemeral-disk deployments, pull the latest GCS snapshot into
+        # place BEFORE the store opens the database file. Synchronous: uvicorn
+        # doesn't accept connections until this lifespan yields, so requests
+        # only ever see the restored store. No-op (False) unless snapshots are
+        # enabled, and any failure falls back to the normal cold start.
+        restore_snapshot_if_available(duckdb_config.path)
 
         duckdb_store = get_store()
 
@@ -143,8 +151,12 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         async def _start_periodic_scheduler() -> None:
             if _captured_startup_task is not None:
                 logger.info("Periodic scheduler waiting for startup sync to finish...")
-                await asyncio.shield(_captured_startup_task)
+                results = await asyncio.shield(_captured_startup_task)
                 logger.info("Startup sync done, periodic scheduler starting")
+                if any(getattr(r, "status", None) == "success" for r in results or []):
+                    # Best-effort: capture the freshly-synced store for the
+                    # next cold start. No-op unless snapshots are enabled.
+                    await snapshot_and_upload(duckdb_store)
             await periodic_sync_loop(duckdb_store)
 
         scheduler_task: asyncio.Task[object] = asyncio.create_task(_start_periodic_scheduler())

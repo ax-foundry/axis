@@ -258,8 +258,7 @@ class DuckDBStore:
         return list(zip(described["column_name"], described["column_type"], strict=False))
 
     def _aligned_select_sql(self, table_name: str, source_relation: str) -> tuple[str, str]:
-        """Build the by-name aligned projection of ``source_relation`` onto
-        ``table_name``'s live schema.
+        """Build the by-name projection of ``source_relation`` onto the live schema.
 
         Returns ``(col_list, select_list)`` — the quoted live column list and
         the matching ``CAST("col" AS type) AS "col"`` expressions. Extra source
@@ -370,7 +369,9 @@ class DuckDBStore:
         with self._cursor() as cur:
             cur.execute("BEGIN TRANSACTION")
             try:
-                cur.execute(f"CREATE TEMP TABLE {tmp} AS SELECT {select_list} FROM {source_relation}")
+                cur.execute(
+                    f"CREATE TEMP TABLE {tmp} AS SELECT {select_list} FROM {source_relation}"
+                )
                 cur.execute(delete_sql)
                 cur.execute(insert_sql)
                 cur.execute(f"DROP TABLE {tmp}")
@@ -392,8 +393,10 @@ class DuckDBStore:
         key_columns: list[str] | None = None,
         order_column: str | None = None,
     ) -> int:
-        """Append (or upsert, when ``key_columns`` is set) a DataFrame into an
-        existing table. Returns rows written."""
+        """Append (or upsert, when ``key_columns`` is set) a DataFrame.
+
+        The target table must already exist. Returns rows written.
+        """
         if df.empty:
             return 0
         for col in df.columns:
@@ -424,8 +427,10 @@ class DuckDBStore:
         key_columns: list[str] | None = None,
         order_column: str | None = None,
     ) -> int:
-        """Append (or upsert, when ``key_columns`` is set) rows from a CSV file
-        into an existing table. Returns the net row-count change."""
+        """Append (or upsert, when ``key_columns`` is set) rows from a CSV file.
+
+        The target table must already exist. Returns the net row-count change.
+        """
         staging = f"{table_name}_append_staging"
         with self._cursor() as cur:
             cur.execute(
@@ -464,6 +469,37 @@ class DuckDBStore:
                 )
         except duckdb.CatalogException:
             pass
+
+    # ------------------------------------------------------------------
+    # Snapshots (whole-store copy for GCS-backed cold-start restore)
+    # ------------------------------------------------------------------
+
+    def create_snapshot(self, dest_path: str) -> None:
+        """Write a consistent copy of the whole store to ``dest_path``.
+
+        ``ATTACH`` + ``COPY FROM DATABASE`` on a cursor of the live connection
+        is transactional and copies tables, views, and ``_store_metadata`` —
+        so watermarks, last-sync, and rebuild KVs travel with the snapshot,
+        which is what lets a restored store resume with an *incremental* sync.
+        Callers must hold ``_write_lock`` so a concurrent sync can't swap
+        tables mid-copy.
+        """
+        dest = Path(dest_path)
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        if dest.exists():
+            dest.unlink()
+        with self._cursor() as cur:
+            row = cur.execute("SELECT current_database()").fetchone()
+            assert row is not None
+            catalog = row[0]
+            escaped_dest = dest_path.replace("'", "''")
+            cur.execute(f"ATTACH '{escaped_dest}' AS _snapshot_target")
+            try:
+                cur.execute(f'COPY FROM DATABASE "{catalog}" TO _snapshot_target')
+                # Flush the snapshot's WAL so the file is complete on disk.
+                cur.execute("CHECKPOINT _snapshot_target")
+            finally:
+                cur.execute("DETACH _snapshot_target")
 
     # ------------------------------------------------------------------
     # Metadata persistence (_store_metadata table)
