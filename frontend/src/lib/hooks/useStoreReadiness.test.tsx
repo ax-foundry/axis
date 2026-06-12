@@ -180,9 +180,7 @@ describe('useStoreReadiness', () => {
     renderHook(() => useStoreReadiness('monitoring_data', onStatus));
     await flushMount();
 
-    expect(onStatus).toHaveBeenCalledWith(
-      expect.objectContaining({ state: 'syncing', rows: 10 })
-    );
+    expect(onStatus).toHaveBeenCalledWith(expect.objectContaining({ state: 'syncing', rows: 10 }));
 
     mockGetStoreStatus.mockResolvedValue(statusResponse('ready', 50));
     await advance(FAST_POLL_INTERVAL_MS);

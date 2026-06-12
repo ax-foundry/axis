@@ -151,9 +151,13 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         async def _start_periodic_scheduler() -> None:
             if _captured_startup_task is not None:
                 logger.info("Periodic scheduler waiting for startup sync to finish...")
+                # The task is typed Task[object]; sync_with_lock returns a
+                # list of SyncResult — narrow before iterating.
                 results = await asyncio.shield(_captured_startup_task)
                 logger.info("Startup sync done, periodic scheduler starting")
-                if any(getattr(r, "status", None) == "success" for r in results or []):
+                if isinstance(results, list) and any(
+                    getattr(r, "status", None) == "success" for r in results
+                ):
                     # Best-effort: capture the freshly-synced store for the
                     # next cold start. No-op unless snapshots are enabled.
                     await snapshot_and_upload(duckdb_store)

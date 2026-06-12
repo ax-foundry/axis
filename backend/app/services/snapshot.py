@@ -39,7 +39,9 @@ def _bucket() -> Any:
     Imported lazily — the google-cloud-storage dependency is only needed when
     snapshots are on.
     """
-    from google.cloud import storage
+    # google.cloud is a namespace package — mypy can't see the storage
+    # submodule unless google-cloud-storage is installed in its env.
+    from google.cloud import storage  # type: ignore[attr-defined]
 
     from app.config.db.duckdb import duckdb_config
 

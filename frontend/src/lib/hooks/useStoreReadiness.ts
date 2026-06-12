@@ -82,7 +82,9 @@ export function useStoreReadiness(
             // Fast polls during the normal cold-start window, then slow —
             // but never stop while the sync is still running.
             pollCount += 1;
-            schedule(pollCount < MAX_STORE_STATUS_POLLS ? FAST_POLL_INTERVAL_MS : SLOW_POLL_INTERVAL_MS);
+            schedule(
+              pollCount < MAX_STORE_STATUS_POLLS ? FAST_POLL_INTERVAL_MS : SLOW_POLL_INTERVAL_MS
+            );
           }
           // 'ready' | 'error' | 'not_synced' are settled — stop polling.
         }
