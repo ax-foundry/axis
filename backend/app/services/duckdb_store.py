@@ -88,6 +88,12 @@ class DuckDBStore:
         # Single persistent connection — all access goes through cursors
         self._conn = duckdb.connect(db_path)
 
+        # Create _store_metadata up front, while nothing else is running.
+        # Concurrent dataset syncs each CREATE IF NOT EXISTS it from their own
+        # cursor transactions, and on a fresh database DuckDB raises a catalog
+        # write-write conflict when two of those creates race.
+        self._ensure_metadata_table()
+
     @contextmanager
     def _cursor(self) -> Generator[duckdb.DuckDBPyConnection, None, None]:
         """Create a thread-safe cursor from the persistent connection."""

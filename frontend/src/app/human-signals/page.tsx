@@ -299,11 +299,13 @@ export default function HumanSignalsPage() {
       // is still syncing — importing now would pull partial data. Wait for the
       // sync to finish and let server mode (datasetReady) take over.
       !isSyncing &&
-      // Require a store verdict before importing: storeEnabled is null while
-      // the status endpoint is unreachable (cold start/restart), and importing
-      // then would race the store coming up. A reachable backend with the
-      // store disabled reports enabled=false and proceeds.
-      storeEnabled !== null &&
+      // Hard gate: the legacy import only ever runs when the backend
+      // explicitly reports the DuckDB store DISABLED (enabled=false, i.e.
+      // CSV-only deployments). null means no verdict yet (status endpoint
+      // unreachable) and true means the store owns this dataset — even in
+      // error/not_synced states the periodic sync recovers server-side,
+      // whereas importing client-side renders partial, unjoined data.
+      storeEnabled === false &&
       dbConfig &&
       (dbConfig.auto_connect || dbConfig.auto_load) &&
       !hasAttemptedAutoConnect &&
