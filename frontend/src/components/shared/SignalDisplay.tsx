@@ -1,8 +1,7 @@
 'use client';
 
 import { ChevronDown, ChevronRight, Star, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
-import React from 'react';
-import { useState } from 'react';
+import React, { useState } from 'react';
 
 import { pythonToJson } from '@/components/shared';
 import { formatScore } from '@/lib/scorecard-utils';
