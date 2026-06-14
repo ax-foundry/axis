@@ -1,7 +1,7 @@
 'use client';
 
 import { ChevronDown, ChevronRight, Star, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
-import { useState } from 'react';
+import React, { useState } from 'react';
 
 import { pythonToJson } from '@/components/shared';
 import { formatScore } from '@/lib/scorecard-utils';
@@ -34,6 +34,85 @@ function formatValue(value: unknown): string {
   if (Array.isArray(value)) return value.join(', ');
   if (typeof value === 'object') return JSON.stringify(value, null, 2);
   return String(value);
+}
+
+const SIGNAL_POSITIVE_VALUES = new Set([
+  'grounded',
+  'yes',
+  'true',
+  'pass',
+  'narrowed',
+  'switched_after_disproof',
+  'initial',
+  'low',
+]);
+const SIGNAL_NEGATIVE_VALUES = new Set([
+  'ungrounded',
+  'no',
+  'false',
+  'fail',
+  'switched_guessing',
+  'repeated',
+  'broadened',
+  'high',
+  'critical',
+]);
+const SIGNAL_NEUTRAL_VALUES = new Set(['medium', 'partial', 'unknown', 'indeterminate']);
+
+function getObjectPreview(obj: Record<string, unknown>): string | null {
+  const priorityFields = [
+    'stated_cause',
+    'claim_quote',
+    'description',
+    'text',
+    'message',
+    'summary',
+  ];
+  for (const f of priorityFields) {
+    if (typeof obj[f] === 'string' && obj[f]) return obj[f] as string;
+  }
+  return null;
+}
+
+function renderSignalFieldValue(val: unknown): React.ReactNode {
+  if (typeof val === 'boolean') {
+    return (
+      <span
+        className={cn(
+          'rounded px-1.5 py-0.5 text-xs font-medium',
+          val
+            ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400'
+            : 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400'
+        )}
+      >
+        {val ? 'Yes' : 'No'}
+      </span>
+    );
+  }
+  if (typeof val === 'string') {
+    const lower = val.toLowerCase();
+    if (SIGNAL_POSITIVE_VALUES.has(lower))
+      return (
+        <span className="rounded bg-green-100 px-1.5 py-0.5 text-xs font-medium text-green-700 dark:bg-green-900/40 dark:text-green-400">
+          {val}
+        </span>
+      );
+    if (SIGNAL_NEGATIVE_VALUES.has(lower))
+      return (
+        <span className="rounded bg-red-100 px-1.5 py-0.5 text-xs font-medium text-red-700 dark:bg-red-900/40 dark:text-red-400">
+          {val}
+        </span>
+      );
+    if (SIGNAL_NEUTRAL_VALUES.has(lower))
+      return (
+        <span className="rounded bg-yellow-100 px-1.5 py-0.5 text-xs font-medium text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-400">
+          {val}
+        </span>
+      );
+    return <span className="text-xs leading-relaxed text-text-secondary">{val}</span>;
+  }
+  if (typeof val === 'number') return <span className="text-xs text-text-secondary">{val}</span>;
+  return <span className="text-xs text-text-secondary">{JSON.stringify(val)}</span>;
 }
 
 // Parse group name like "statement_0 (Knowledge articles are...)" into cleaner display
@@ -77,7 +156,7 @@ export function SignalRow({ signal, isExpanded, onToggle }: SignalRowProps) {
     hasDetails ||
     isStatement ||
     isReason ||
-    (typeof signal.value === 'object' && signal.value !== null);
+    (typeof signal.value === 'object' && signal.value !== null && !Array.isArray(signal.value));
 
   return (
     <div className="border-border/30 border-b last:border-b-0">
@@ -134,6 +213,19 @@ export function SignalRow({ signal, isExpanded, onToggle }: SignalRowProps) {
               {String(signal.value).toUpperCase()}
             </span>
           </div>
+        ) : typeof signal.value === 'object' &&
+          signal.value !== null &&
+          !Array.isArray(signal.value) ? (
+          <span className="flex-1 truncate text-sm text-text-secondary">
+            {(() => {
+              const preview = getObjectPreview(signal.value as Record<string, unknown>);
+              return preview
+                ? preview.length > 72
+                  ? preview.slice(0, 72) + '…'
+                  : preview
+                : `${Object.keys(signal.value as object).length} fields`;
+            })()}
+          </span>
         ) : (
           <span
             className={cn(
@@ -167,11 +259,22 @@ export function SignalRow({ signal, isExpanded, onToggle }: SignalRowProps) {
           {hasDetails && (
             <p className="text-xs italic leading-relaxed text-text-muted">{signal.description}</p>
           )}
-          {typeof signal.value === 'object' && signal.value !== null && (
-            <pre className="max-h-32 overflow-x-auto overflow-y-auto rounded-md bg-gray-100 p-2 text-xs text-text-secondary dark:bg-gray-800">
-              {JSON.stringify(signal.value, null, 2)}
-            </pre>
-          )}
+          {typeof signal.value === 'object' &&
+            signal.value !== null &&
+            !Array.isArray(signal.value) && (
+              <div className="border-border/40 space-y-1.5 rounded-md border bg-gray-50 p-2.5 dark:bg-gray-900/50">
+                {Object.entries(signal.value as Record<string, unknown>)
+                  .filter(([, v]) => v !== null && v !== undefined && v !== '')
+                  .map(([k, v]) => (
+                    <div key={k} className="flex items-start gap-2">
+                      <span className="w-28 flex-shrink-0 pt-0.5 text-xs font-medium capitalize text-text-muted">
+                        {k.replace(/_/g, ' ')}
+                      </span>
+                      {renderSignalFieldValue(v)}
+                    </div>
+                  ))}
+              </div>
+            )}
         </div>
       )}
     </div>
@@ -209,8 +312,10 @@ export function SignalGroup({ groupName, signals, defaultExpanded }: SignalGroup
   // Parse the group name for cleaner display
   const { label, preview } = parseGroupName(groupName);
 
+  const safeSignals = Array.isArray(signals) ? signals : [];
+
   // Find verdict signal for this group
-  const verdictSignal = signals.find((s) => s.name === 'verdict');
+  const verdictSignal = safeSignals.find((s) => s.name === 'verdict');
   const verdictValue = verdictSignal ? String(verdictSignal.value).toLowerCase() : null;
   const isPositiveVerdict =
     verdictValue === 'yes' || verdictValue === 'true' || verdictSignal?.score === 1;
@@ -218,14 +323,14 @@ export function SignalGroup({ groupName, signals, defaultExpanded }: SignalGroup
     verdictValue === 'no' || verdictValue === 'false' || verdictSignal?.score === 0;
 
   // Sort signals: verdict first, then headline_display, then others
-  const sortedSignals = [...signals].sort((a, b) => {
+  const sortedSignals = [...safeSignals].sort((a, b) => {
     if (a.name === 'verdict') return -1;
     if (b.name === 'verdict') return 1;
     if (a.headline_display && !b.headline_display) return -1;
     if (!a.headline_display && b.headline_display) return 1;
     if (a.name === 'statement') return -1;
     if (b.name === 'statement') return 1;
-    return a.name.localeCompare(b.name);
+    return (a.name ?? '').localeCompare(b.name ?? '');
   });
 
   const isStatementGroup = groupName.startsWith('statement_');
@@ -283,7 +388,7 @@ export function SignalGroup({ groupName, signals, defaultExpanded }: SignalGroup
 
         {!preview && (
           <span className="text-xs text-text-muted">
-            ({signals.length} signal{signals.length !== 1 ? 's' : ''})
+            ({safeSignals.length} signal{safeSignals.length !== 1 ? 's' : ''})
           </span>
         )}
       </button>
