@@ -70,15 +70,37 @@ function formatValue(value: unknown): string {
 }
 
 const SIGNAL_POSITIVE_VALUES = new Set([
-  'grounded', 'yes', 'true', 'pass', 'narrowed', 'switched_after_disproof', 'initial', 'low',
+  'grounded',
+  'yes',
+  'true',
+  'pass',
+  'narrowed',
+  'switched_after_disproof',
+  'initial',
+  'low',
 ]);
 const SIGNAL_NEGATIVE_VALUES = new Set([
-  'ungrounded', 'no', 'false', 'fail', 'switched_guessing', 'repeated', 'broadened', 'high', 'critical',
+  'ungrounded',
+  'no',
+  'false',
+  'fail',
+  'switched_guessing',
+  'repeated',
+  'broadened',
+  'high',
+  'critical',
 ]);
 const SIGNAL_NEUTRAL_VALUES = new Set(['medium', 'partial', 'unknown', 'indeterminate']);
 
 function getObjectPreview(obj: Record<string, unknown>): string | null {
-  const priorityFields = ['stated_cause', 'claim_quote', 'description', 'text', 'message', 'summary'];
+  const priorityFields = [
+    'stated_cause',
+    'claim_quote',
+    'description',
+    'text',
+    'message',
+    'summary',
+  ];
   for (const f of priorityFields) {
     if (typeof obj[f] === 'string' && obj[f]) return obj[f] as string;
   }
@@ -88,7 +110,14 @@ function getObjectPreview(obj: Record<string, unknown>): string | null {
 function renderSignalFieldValue(val: unknown): React.ReactNode {
   if (typeof val === 'boolean') {
     return (
-      <span className={cn('rounded px-1.5 py-0.5 text-xs font-medium', val ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400' : 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400')}>
+      <span
+        className={cn(
+          'rounded px-1.5 py-0.5 text-xs font-medium',
+          val
+            ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400'
+            : 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400'
+        )}
+      >
         {val ? 'Yes' : 'No'}
       </span>
     );
@@ -96,11 +125,23 @@ function renderSignalFieldValue(val: unknown): React.ReactNode {
   if (typeof val === 'string') {
     const lower = val.toLowerCase();
     if (SIGNAL_POSITIVE_VALUES.has(lower))
-      return <span className="rounded bg-green-100 px-1.5 py-0.5 text-xs font-medium text-green-700 dark:bg-green-900/40 dark:text-green-400">{val}</span>;
+      return (
+        <span className="rounded bg-green-100 px-1.5 py-0.5 text-xs font-medium text-green-700 dark:bg-green-900/40 dark:text-green-400">
+          {val}
+        </span>
+      );
     if (SIGNAL_NEGATIVE_VALUES.has(lower))
-      return <span className="rounded bg-red-100 px-1.5 py-0.5 text-xs font-medium text-red-700 dark:bg-red-900/40 dark:text-red-400">{val}</span>;
+      return (
+        <span className="rounded bg-red-100 px-1.5 py-0.5 text-xs font-medium text-red-700 dark:bg-red-900/40 dark:text-red-400">
+          {val}
+        </span>
+      );
     if (SIGNAL_NEUTRAL_VALUES.has(lower))
-      return <span className="rounded bg-yellow-100 px-1.5 py-0.5 text-xs font-medium text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-400">{val}</span>;
+      return (
+        <span className="rounded bg-yellow-100 px-1.5 py-0.5 text-xs font-medium text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-400">
+          {val}
+        </span>
+      );
     return <span className="text-xs leading-relaxed text-text-secondary">{val}</span>;
   }
   if (typeof val === 'number') return <span className="text-xs text-text-secondary">{val}</span>;
@@ -410,12 +451,16 @@ function SignalRow({
               {String(signal.value).toUpperCase()}
             </span>
           </div>
-        ) : typeof signal.value === 'object' && signal.value !== null && !Array.isArray(signal.value) ? (
+        ) : typeof signal.value === 'object' &&
+          signal.value !== null &&
+          !Array.isArray(signal.value) ? (
           <span className="flex-1 truncate text-sm text-text-secondary">
             {(() => {
               const preview = getObjectPreview(signal.value as Record<string, unknown>);
               return preview
-                ? preview.length > 72 ? preview.slice(0, 72) + '…' : preview
+                ? preview.length > 72
+                  ? preview.slice(0, 72) + '…'
+                  : preview
                 : `${Object.keys(signal.value as object).length} fields`;
             })()}
           </span>
@@ -450,20 +495,22 @@ function SignalRow({
           {hasDetails && (
             <p className="text-xs italic leading-relaxed text-text-muted">{signal.description}</p>
           )}
-          {typeof signal.value === 'object' && signal.value !== null && !Array.isArray(signal.value) && (
-            <div className="space-y-1.5 rounded-md border border-border/40 bg-gray-50 p-2.5 dark:bg-gray-900/50">
-              {Object.entries(signal.value as Record<string, unknown>)
-                .filter(([, v]) => v !== null && v !== undefined && v !== '')
-                .map(([k, v]) => (
-                  <div key={k} className="flex items-start gap-2">
-                    <span className="w-28 flex-shrink-0 pt-0.5 text-xs font-medium capitalize text-text-muted">
-                      {k.replace(/_/g, ' ')}
-                    </span>
-                    {renderSignalFieldValue(v)}
-                  </div>
-                ))}
-            </div>
-          )}
+          {typeof signal.value === 'object' &&
+            signal.value !== null &&
+            !Array.isArray(signal.value) && (
+              <div className="border-border/40 space-y-1.5 rounded-md border bg-gray-50 p-2.5 dark:bg-gray-900/50">
+                {Object.entries(signal.value as Record<string, unknown>)
+                  .filter(([, v]) => v !== null && v !== undefined && v !== '')
+                  .map(([k, v]) => (
+                    <div key={k} className="flex items-start gap-2">
+                      <span className="w-28 flex-shrink-0 pt-0.5 text-xs font-medium capitalize text-text-muted">
+                        {k.replace(/_/g, ' ')}
+                      </span>
+                      {renderSignalFieldValue(v)}
+                    </div>
+                  ))}
+              </div>
+            )}
         </div>
       )}
     </div>
