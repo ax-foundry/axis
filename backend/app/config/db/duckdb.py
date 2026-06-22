@@ -1,6 +1,6 @@
 import logging
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 import yaml
@@ -28,6 +28,17 @@ class DuckDBConfig:
     max_sync_rows: int = 2_000_000  # Safety net -- warns + stops if hit
     query_concurrency: int = 8  # Max concurrent DuckDB read queries
     sync_workers: int = 1  # Parallel readers per dataset sync
+
+    # Dataset labels whose schemas the copilot cross-surfaces so a single chat
+    # turn can answer questions that span tables (e.g. sentiment lives in
+    # human_signals, not monitoring). All of these are loaded into the shared
+    # store by startup/periodic sync regardless of which one is "selected", so
+    # surfacing their schemas lets run_sql query the right table directly
+    # instead of telling the user to switch datasets. Order = priority (the
+    # first is the conventional default). Overridable via duckdb.yaml.
+    live_datasets: list[str] = field(
+        default_factory=lambda: ["monitoring", "kpi", "human_signals"]
+    )
 
     # GCS snapshot restore (ephemeral-disk deployments like Cloud Run): upload
     # a consistent copy of the store after each successful sync batch, and
@@ -69,6 +80,9 @@ def load_duckdb_config() -> DuckDBConfig:
                     max_sync_rows=db_config.get("max_sync_rows", 2_000_000),
                     query_concurrency=db_config.get("query_concurrency", 8),
                     sync_workers=db_config.get("sync_workers", 1),
+                    live_datasets=db_config.get(
+                        "live_datasets", ["monitoring", "kpi", "human_signals"]
+                    ),
                     snapshot_enabled=snapshot_cfg.get("enabled", False),
                     snapshot_bucket=os.environ.get("AXIS_SNAPSHOT_BUCKET")
                     or snapshot_cfg.get("bucket"),

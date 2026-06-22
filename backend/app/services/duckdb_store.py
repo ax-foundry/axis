@@ -30,6 +30,25 @@ DATASET_TABLE_MAP = {
     "kpi": "kpi_data",
 }
 
+
+def get_live_dataset_tables() -> list[tuple[str, str]]:
+    """``(label, table)`` for each configured live dataset.
+
+    This is the cross-surface set: the copilot injects every one of these
+    tables' schemas (the selected one in full, the rest compact) so it can
+    answer a question against the right table without the user switching
+    datasets. Driven by ``duckdb.live_datasets`` (YAML-overridable); unknown
+    labels are skipped so a config typo can't break schema building.
+    """
+    from app.config.db.duckdb import duckdb_config
+
+    return [
+        (label, DATASET_TABLE_MAP[label])
+        for label in duckdb_config.live_datasets
+        if label in DATASET_TABLE_MAP
+    ]
+
+
 # Low-cardinality columns always included regardless of cardinality check
 FILTER_FIELDS = [
     "environment",
