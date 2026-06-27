@@ -561,6 +561,24 @@ export async function loadHumanSignalsExampleDataset(
 }
 
 /**
+ * Fetch pre-aggregated human signals cases from the DuckDB store.
+ *
+ * Server-mode loader: when the backend owns the dataset (duckdb store enabled),
+ * the cases table is built server-side and exposed here. Returns the same shape
+ * as the upload/import responses so the store's single `setData` path applies.
+ */
+export async function getHumanSignalsCases(params?: {
+  page?: number;
+  page_size?: number;
+}): Promise<HumanSignalsUploadResponse> {
+  const qs = new URLSearchParams();
+  if (params?.page) qs.append('page', String(params.page));
+  if (params?.page_size) qs.append('page_size', String(params.page_size));
+  const query = qs.toString();
+  return fetchApi(`/api/human-signals/cases${query ? `?${query}` : ''}`);
+}
+
+/**
  * Human signals database configuration response
  */
 export interface HumanSignalsDBConfigResponse {

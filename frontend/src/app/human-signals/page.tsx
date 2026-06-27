@@ -14,6 +14,7 @@ import {
 import { PageHeader } from '@/components/ui/PageHeader';
 import { SourceSelector } from '@/components/ui/SourceSelector';
 import { TimeRangeSelector } from '@/components/ui/TimeRangeSelector';
+import { useHumanSignalsServerData } from '@/lib/hooks/useHumanSignalsServerData';
 import {
   useHumanSignalsAutoImport,
   useHumanSignalsDBConfig,
@@ -291,6 +292,13 @@ export default function HumanSignalsPage() {
     setSyncStatus
   );
 
+  // Server-mode loader: when the DuckDB store owns the dataset, fetch the
+  // pre-aggregated cases into the store. The legacy auto-import below only
+  // covers CSV-only (store DISABLED) deployments, so without this a
+  // store-enabled deployment would render the empty/upload state despite the
+  // cases existing server-side.
+  const { isLoading: serverLoading } = useHumanSignalsServerData();
+
   useEffect(() => {
     if (
       storeStatusChecked &&
@@ -356,7 +364,11 @@ export default function HumanSignalsPage() {
 
   // When DuckDB has data but cases aren't loaded yet, show loading
   // Guard: only while something is actually loading — prevents infinite spinner on import failure
-  if (!hasData && datasetReady && (storeIsLoading || isLoadingConfig || !storeStatusChecked)) {
+  if (
+    !hasData &&
+    datasetReady &&
+    (serverLoading || storeIsLoading || isLoadingConfig || !storeStatusChecked)
+  ) {
     return <AutoConnectLoading />;
   }
 
