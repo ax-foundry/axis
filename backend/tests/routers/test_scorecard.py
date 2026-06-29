@@ -5,11 +5,13 @@ from typing import Any
 from unittest.mock import patch
 
 import duckdb
+import pandas as pd
 import pytest
 from fastapi.testclient import TestClient
 
 from app.config.scorecards import ScorecardsConfig, ScorecardSpec
 from app.services.duckdb_store import DuckDBStore
+from app.services.human_signals_service import aggregate_cases
 
 # ----------------------------------------------------------------------
 # Fixtures
@@ -76,18 +78,20 @@ def _seeded_store() -> DuckDBStore:
     store._conn.execute("""
         CREATE TABLE human_signals_cases (
             "Case_ID" VARCHAR,
+            "Session_ID" VARCHAR,
             "Timestamp" VARCHAR,
             source_name VARCHAR,
+            source_component VARCHAR,
             "Sentiment Category__sentiment" VARCHAR
         )
     """)
     store._conn.executemany(
-        'INSERT INTO human_signals_cases VALUES (?, ?, ?, ?)',
+        'INSERT INTO human_signals_cases VALUES (?, ?, ?, ?, ?, ?)',
         [
-            ("c1", yesterday, "alpha", "positive"),
-            ("c2", yesterday, "alpha", "frustrated"),
-            ("c3", last_week, "beta", "neutral"),
-            ("c4", long_ago, "alpha", "positive"),  # outside lookback
+            ("c1", "s1", yesterday, "alpha", "chat", "positive"),
+            ("c2", "s2", yesterday, "alpha", "chat", "frustrated"),
+            ("c3", "s3", last_week, "beta", "chat", "neutral"),
+            ("c4", "s4", long_ago, "alpha", "chat", "positive"),  # outside lookback
         ],
     )
     return store
@@ -157,6 +161,65 @@ def client(seeded_store: DuckDBStore) -> Any:
         patch("app.routers.scorecard.get_scorecards", return_value=cfg),
     ):
         yield TestClient(app)
+
+
+# ----------------------------------------------------------------------
+# human_signals_cases derivation
+# ----------------------------------------------------------------------
+
+
+def _signals_df(rows: list[dict[str, Any]]) -> pd.DataFrame:
+    base = {
+        "timestamp": datetime.now(tz=UTC).isoformat(),
+        "metric_name": "Sentiment Category",
+        "signals": '{"sentiment":"positive"}',
+        "source_name": "abby",
+    }
+    return pd.DataFrame([{**base, **row} for row in rows])
+
+
+def test_aggregate_cases_derives_session_id_from_additional_input() -> None:
+    cases = aggregate_cases(
+        _signals_df(
+            [
+                {
+                    "dataset_id": "langfuse:workflow:wf-1",
+                    "additional_input": '{"session_id":"sess-explicit"}',
+                }
+            ]
+        )
+    )
+    assert cases[0]["Case_ID"] == "langfuse:workflow:wf-1"
+    assert cases[0]["Session_ID"] == "sess-explicit"
+
+
+def test_aggregate_cases_derives_session_id_from_chat_case_id() -> None:
+    cases = aggregate_cases(
+        _signals_df(
+            [
+                {
+                    "dataset_id": "langfuse:chat:sess-chat",
+                    "additional_input": "{}",
+                }
+            ]
+        )
+    )
+    assert cases[0]["Case_ID"] == "langfuse:chat:sess-chat"
+    assert cases[0]["Session_ID"] == "sess-chat"
+
+
+def test_aggregate_cases_does_not_derive_session_id_from_non_chat_case_id() -> None:
+    cases = aggregate_cases(
+        _signals_df(
+            [
+                {"dataset_id": "langfuse:workflow:sess-workflow", "additional_input": "{}"},
+                {"dataset_id": "arbitrary:colon:id", "additional_input": "{}"},
+            ]
+        )
+    )
+    by_case_id = {case["Case_ID"]: case for case in cases}
+    assert by_case_id["langfuse:workflow:sess-workflow"]["Session_ID"] is None
+    assert by_case_id["arbitrary:colon:id"]["Session_ID"] is None
 
 
 # ----------------------------------------------------------------------
@@ -435,6 +498,96 @@ def test_signal_detail_respects_limit(client: Any) -> None:
     )
     assert resp.status_code == 200, resp.text
     assert len(resp.json()["rows"]) <= 1
+
+
+# ----------------------------------------------------------------------
+# signal_lookup view — happy paths
+# ----------------------------------------------------------------------
+
+
+def test_signal_lookup_returns_requested_sessions_and_bypasses_match_values(client: Any) -> None:
+    resp = client.post(
+        "/api/scorecard/demo/signal_lookup",
+        json={
+            "lookback_days": 30,
+            "source_filter": "alpha",
+            "source_component": "chat",
+            "signal_key": "Sentiment Category__sentiment",
+            "session_ids": ["s1", "s2", "missing"],
+        },
+    )
+    assert resp.status_code == 200, resp.text
+    rows = resp.json()["rows"]
+    by_session = {r["session_id"]: r for r in rows}
+    assert set(by_session) == {"s1", "s2"}
+    # signal_detail filters to match_values ['frustrated', 'confused']; keyed lookup
+    # must return any non-null value for requested sessions, including positive.
+    assert by_session["s1"]["signal_value"] == "positive"
+    assert by_session["s2"]["signal_value"] == "frustrated"
+    assert by_session["s1"]["case_id"] == "c1"
+    assert by_session["s1"]["source_component"] == "chat"
+    assert by_session["s1"]["context"]["Sentiment Category__sentiment"] == "positive"
+
+
+def test_signal_lookup_returns_neutral_despite_match_values(client: Any) -> None:
+    resp = client.post(
+        "/api/scorecard/demo/signal_lookup",
+        json={
+            "lookback_days": 30,
+            "source_filter": "beta",
+            "source_component": "chat",
+            "signal_key": "Sentiment Category__sentiment",
+            "session_ids": ["s3"],
+        },
+    )
+    assert resp.status_code == 200, resp.text
+    rows = resp.json()["rows"]
+    assert len(rows) == 1
+    assert rows[0]["session_id"] == "s3"
+    assert rows[0]["signal_value"] == "neutral"
+
+
+def test_signal_lookup_respects_source_component(client: Any) -> None:
+    resp = client.post(
+        "/api/scorecard/demo/signal_lookup",
+        json={
+            "lookback_days": 30,
+            "source_filter": "alpha",
+            "source_component": "workflow",
+            "signal_key": "Sentiment Category__sentiment",
+            "session_ids": ["s1", "s2"],
+        },
+    )
+    assert resp.status_code == 200, resp.text
+    assert resp.json() == {"rows": [], "row_count": 0}
+
+
+def test_signal_lookup_respects_lookback(client: Any) -> None:
+    resp = client.post(
+        "/api/scorecard/demo/signal_lookup",
+        json={
+            "lookback_days": 30,
+            "source_filter": "alpha",
+            "source_component": "chat",
+            "signal_key": "Sentiment Category__sentiment",
+            "session_ids": ["s4"],
+        },
+    )
+    assert resp.status_code == 200, resp.text
+    assert resp.json() == {"rows": [], "row_count": 0}
+
+
+def test_signal_lookup_session_ids_are_bounded(client: Any) -> None:
+    resp = client.post(
+        "/api/scorecard/demo/signal_lookup",
+        json={
+            "lookback_days": 30,
+            "source_filter": "alpha",
+            "signal_key": "Sentiment Category__sentiment",
+            "session_ids": [f"s{i}" for i in range(501)],
+        },
+    )
+    assert resp.status_code == 422
 
 
 # ----------------------------------------------------------------------
@@ -998,7 +1151,8 @@ def test_metric_summary_empty_when_no_failures(seeded_store: DuckDBStore) -> Non
 
 
 def test_metric_summary_includes_high_score_failures(seeded_store: DuckDBStore) -> None:
-    """A row with passed=False and metric_score=0.8 must reach the LLM —
+    """A row with passed=False and metric_score=0.8 must reach the LLM.
+
     SQL's failure_filter is authoritative; no second-pass score gating.
     """
     from datetime import datetime, timedelta
