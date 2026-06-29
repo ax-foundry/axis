@@ -35,9 +35,7 @@ def client_no_auth() -> TestClient:
         yield TestClient(app)
 
 
-def _get_data(
-    client: TestClient, fake_store: MagicMock, state: str, auto_loads: bool
-) -> Response:
+def _get_data(client: TestClient, fake_store: MagicMock, state: str, auto_loads: bool) -> Response:
     fake_store.get_sync_status.return_value = SyncStatus(state=state)
     with (
         patch("app.routers.store.get_store", return_value=fake_store),
@@ -76,3 +74,56 @@ def test_missing_table_inactive_dataset_returns_empty(
     assert body["success"] is True
     assert body["data"] == []
     assert body["total"] == 0
+
+
+def test_monitoring_data_coerces_numeric_strings(
+    fake_store: MagicMock, client_no_auth: TestClient
+) -> None:
+    """Production DuckDB may infer metric_score as VARCHAR; API still returns numbers."""
+    fake_store.has_table.return_value = True
+    fake_store.get_table_columns.return_value = {
+        "dataset_id",
+        "timestamp",
+        "metric_name",
+        "metric_score",
+        "latency",
+        "threshold",
+        "cost_estimate",
+    }
+    fake_store.get_metadata.return_value = {"row_count": 1}
+    fake_store.query_list.return_value = [
+        {
+            "dataset_id": "row-1",
+            "metric_name": "Business Review Insightfulness",
+            "metric_score": "0.25",
+            "latency": "36.4",
+            "threshold": "0.5",
+            "cost_estimate": "0.012",
+        }
+    ]
+
+    with patch("app.routers.store.get_store", return_value=fake_store):
+        resp = client_no_auth.get("/api/store/data/monitoring")
+
+    assert resp.status_code == 200
+    row = resp.json()["data"][0]
+    assert row["metric_score"] == 0.25
+    assert row["latency"] == 36.4
+    assert row["threshold"] == 0.5
+    assert row["cost_estimate"] == 0.012
+
+
+def test_monitoring_data_leaves_non_numeric_strings_alone(
+    fake_store: MagicMock, client_no_auth: TestClient
+) -> None:
+    """The response normalizer must not rewrite non-numeric source values."""
+    fake_store.has_table.return_value = True
+    fake_store.get_table_columns.return_value = {"dataset_id", "metric_score"}
+    fake_store.get_metadata.return_value = {"row_count": 1}
+    fake_store.query_list.return_value = [{"dataset_id": "row-1", "metric_score": "not-scored"}]
+
+    with patch("app.routers.store.get_store", return_value=fake_store):
+        resp = client_no_auth.get("/api/store/data/monitoring")
+
+    assert resp.status_code == 200
+    assert resp.json()["data"][0]["metric_score"] == "not-scored"

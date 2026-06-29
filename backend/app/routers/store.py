@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import math
 import time
 from typing import Any, Literal
 
@@ -231,6 +232,29 @@ async def get_dataset_metadata(
 
 # Allowed sort columns (validated per-request against actual schema)
 ALLOWED_SORT_DIRS = {"asc", "desc"}
+NUMERIC_RESPONSE_COLUMNS = frozenset({"metric_score", "latency", "threshold", "cost_estimate"})
+
+
+def _coerce_numeric_response_values(rows: list[dict[str, Any]]) -> None:
+    """Normalize numeric store values before JSON serialization.
+
+    DuckDB can infer sparse BigQuery/COPY columns such as ``metric_score`` as
+    VARCHAR in one environment and DOUBLE in another. The monitoring UI treats
+    these fields as numbers, so coerce numeric strings at the API boundary while
+    preserving genuinely non-numeric values.
+    """
+    for row in rows:
+        for col in NUMERIC_RESPONSE_COLUMNS:
+            value = row.get(col)
+            if isinstance(value, str):
+                stripped = value.strip()
+                if not stripped:
+                    continue
+                try:
+                    numeric = float(stripped)
+                except ValueError:
+                    continue
+                row[col] = numeric if math.isfinite(numeric) else None
 
 
 @router.get("/data/{dataset}")
@@ -381,6 +405,8 @@ async def get_dataset_data(
         return total, rows
 
     total, rows = await anyio.to_thread.run_sync(_run_query, limiter=store.query_limiter)
+    if dataset == "monitoring":
+        _coerce_numeric_response_values(rows)
 
     return {
         "success": True,
