@@ -61,6 +61,24 @@ def extract_case_label(content: str | None) -> str:
     return "Unknown"
 
 
+def derive_session_id(case_id: str | None, additional_input: dict[str, Any] | None) -> str | None:
+    """Resolve a Langfuse chat session id for derived human signal cases."""
+    if additional_input:
+        raw_session_id = additional_input.get("session_id")
+        if raw_session_id is not None:
+            session_id = str(raw_session_id).strip()
+            if session_id:
+                return session_id
+
+    if not case_id:
+        return None
+    prefix = "langfuse:chat:"
+    if case_id.startswith(prefix):
+        session_id = case_id[len(prefix) :].strip()
+        return session_id or None
+    return None
+
+
 # ============================================
 # Format Detection
 # ============================================
@@ -288,7 +306,8 @@ def aggregate_cases(df: pd.DataFrame) -> list[dict[str, Any]]:
 
     for dataset_id, group in df.groupby("dataset_id"):
         first_row = group.iloc[0]
-        case: dict[str, Any] = {"Case_ID": str(dataset_id)}
+        case_id = str(dataset_id)
+        case: dict[str, Any] = {"Case_ID": case_id}
 
         # Extract source fields
         for field in ["source_name", "source_component", "source_type", "environment"]:
@@ -304,6 +323,11 @@ def aggregate_cases(df: pd.DataFrame) -> list[dict[str, Any]]:
         else:
             case["Slack_URL"] = None
             case["Agent_Name"] = case.get("source_name")  # Fallback to source_name
+
+        case["Session_ID"] = derive_session_id(
+            case_id,
+            additional_input if isinstance(additional_input, dict) else None,
+        )
 
         # Parse conversation
         conv_dict = safe_json_or_literal(_get_field(first_row, "conversation"))

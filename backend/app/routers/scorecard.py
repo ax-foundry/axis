@@ -1,7 +1,7 @@
 """Generic, YAML-driven dashboard endpoints.
 
-Eight fixed views (``summary``, ``timeseries``, ``anomalies``, ``anomaly_detail``,
-``sentiment``, ``signals``, ``signal_detail``, ``metric_summary``) compose hand-built
+Nine fixed views (``summary``, ``timeseries``, ``anomalies``, ``anomaly_detail``,
+``sentiment``, ``signals``, ``signal_detail``, ``signal_lookup``, ``metric_summary``) compose hand-built
 parameterized SQL from a ``ScorecardSpec`` loaded from ``custom/config/scorecards.yaml``.
 ``metric_summary`` is the only view that calls an LLM — it reuses ``anomaly_detail``'s
 SQL pattern to fetch failing rows then runs them through Axion's ``InsightExtractor``
@@ -222,6 +222,15 @@ class SignalDetailRequest(ScorecardRequest):
     signal_key: str | None = None  # omit to return all signals for the source
     metric_name: str | None = None  # scope to signals tagged for this eval metric
     limit: int = Field(default=100, ge=1, le=500)
+
+
+class SignalLookupRequest(ScorecardRequest):
+    """Request body for keyed signal lookup by normalized session id."""
+
+    source_filter: str
+    signal_key: str
+    session_ids: list[str] = Field(min_length=1, max_length=500)
+    source_component: str | None = None
 
 
 # ----------------------------------------------------------------------
@@ -1370,6 +1379,77 @@ def _build_signal_detail_sql(
     return sql, params
 
 
+def _build_signal_lookup_sql(
+    cfg: SignalsConfig,
+    sig_cols: set[str],
+    table: str,
+    source_filter: str,
+    signal_key: str,
+    session_ids: list[str],
+    source_component: str | None,
+    cutoff: datetime,
+) -> tuple[str, list[Any]]:
+    """Build SQL for keyed lookup by Session_ID.
+
+    Unlike signal_detail, keyed lookup intentionally bypasses
+    SignalMetricSpec.match_values: callers already know which cases they want,
+    and need any non-null signal value for the requested signal column.
+    """
+    _check_col(cfg.group_column, sig_cols, "signals.group_column", table)
+    _check_col(cfg.timestamp_column, sig_cols, "signals.timestamp_column", table)
+    _check_col(cfg.case_id_column, sig_cols, "signals.case_id_column", table)
+    _check_col("Session_ID", sig_cols, "signals.session_id_column", table)
+    for c in cfg.detail_columns:
+        _check_col(c, sig_cols, "signals.detail_columns", table)
+
+    if not any(m.key == signal_key for m in cfg.metrics):
+        raise _bad_request(
+            "invalid_request",
+            f"signal_key '{signal_key}' is not configured in signals.metrics",
+            signal_key=signal_key,
+        )
+    _check_col(signal_key, sig_cols, f"signals.metrics[{signal_key}]", table)
+
+    filters = [
+        f'TRY_CAST("{cfg.timestamp_column}" AS TIMESTAMP) >= ?',
+        f'"{cfg.group_column}" = ?',
+        f'"{signal_key}" IS NOT NULL',
+        f'"Session_ID" IN ({", ".join(["?"] * len(session_ids))})',
+    ]
+    params: list[Any] = [cutoff, source_filter, *session_ids]
+
+    if source_component is not None:
+        _check_col("source_component", sig_cols, "signals.source_component", table)
+        filters.append('"source_component" = ?')
+        params.append(source_component)
+
+    select_columns = [
+        '"Session_ID" AS session_id',
+        f'"{cfg.case_id_column}" AS case_id',
+        f'"{cfg.group_column}" AS source_name',
+    ]
+    if "source_component" in sig_cols:
+        select_columns.append('"source_component" AS source_component')
+    select_columns.extend(
+        [
+            "? AS signal_key",
+            f'"{signal_key}" AS signal_value',
+            f'"{cfg.timestamp_column}" AS timestamp',
+            *(f'"{c}"' for c in cfg.detail_columns),
+        ]
+    )
+
+    sql = f"""
+        SELECT
+            {", ".join(select_columns)}
+        FROM "{table}"
+        WHERE {" AND ".join(filters)}
+        ORDER BY TRY_CAST(timestamp AS TIMESTAMP) DESC
+    """
+    params.insert(0, signal_key)
+    return sql, params
+
+
 @router.post("/{name}/signals")
 async def signals(name: str, req: SignalsRequest) -> dict[str, Any]:
     """One row per group_key: total signal count and per-(signal_key, value) breakdown."""
@@ -1440,6 +1520,48 @@ async def signal_detail(name: str, req: SignalDetailRequest) -> dict[str, Any]:
             {
                 "case_id": row.get("case_id"),
                 "source_name": row.get("source_name"),
+                "signal_key": row.get("signal_key"),
+                "signal_value": row.get("signal_value"),
+                "timestamp": row.get("timestamp"),
+                "context": context,
+            }
+        )
+    return {"rows": result_rows, "row_count": len(result_rows)}
+
+
+@router.post("/{name}/signal_lookup")
+async def signal_lookup(name: str, req: SignalLookupRequest) -> dict[str, Any]:
+    """Return requested signal values keyed by normalized session id."""
+    spec = _resolve_scorecard(name)
+    if spec.signals is None:
+        raise _bad_config("signal_lookup view requires signals block to be configured")
+    table = _resolve_signals_table(spec)
+    cfg = spec.signals
+
+    sig_cols = _check_table(table)
+    cutoff = _cutoff(req.lookback_days)
+
+    sql, params = _build_signal_lookup_sql(
+        cfg,
+        sig_cols,
+        table,
+        req.source_filter,
+        req.signal_key,
+        req.session_ids,
+        req.source_component,
+        cutoff,
+    )
+    raw_rows = await _run_query(sql, params)
+
+    result_rows = []
+    for row in raw_rows:
+        context = {c: row.get(c) for c in cfg.detail_columns}
+        result_rows.append(
+            {
+                "session_id": row.get("session_id"),
+                "case_id": row.get("case_id"),
+                "source_name": row.get("source_name"),
+                "source_component": row.get("source_component"),
                 "signal_key": row.get("signal_key"),
                 "signal_value": row.get("signal_value"),
                 "timestamp": row.get("timestamp"),
