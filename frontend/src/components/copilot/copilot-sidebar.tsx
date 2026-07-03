@@ -23,11 +23,12 @@ import { getAgentRegistry } from '@/config/agents';
 import { useCopilotStream, useAIStatus, useStoreStatus } from '@/lib/hooks';
 import { useAppIconUrl, useBranding, useCopilotIcon } from '@/lib/theme';
 import { cn } from '@/lib/utils';
-import { useCopilotStore, type DatasetLabel } from '@/stores/copilot-store';
+import { useCopilotStore } from '@/stores/copilot-store';
 
 import { ExpandMessageModal } from './expand-message-modal';
 import { ThoughtSteps } from './thought-panel';
 
+import type { DatasetLabel, DownloadSpec } from '@/stores/copilot-store';
 import type { Thought } from '@/types';
 import type { Components } from 'react-markdown';
 
@@ -39,7 +40,16 @@ interface Message {
   timestamp: Date;
   thoughts?: Thought[];
   chart?: Record<string, unknown> | null;
-  download?: { export_sql: string; filename: string; row_count: number } | null;
+  download?: DownloadSpec | null;
+}
+
+interface ExportResponse {
+  success: boolean;
+  download_url: string;
+  filename: string;
+  expires_at: string;
+  row_count: number;
+  size_bytes: number;
 }
 
 interface DatasetOption {
@@ -101,6 +111,7 @@ function MessageBubble({ message }: { message: Message }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
 
   const isLong = message.content.length > COLLAPSE_THRESHOLD;
 
@@ -108,6 +119,58 @@ function MessageBubble({ message }: { message: Message }) {
     await navigator.clipboard.writeText(message.content);
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
+  };
+
+  const handleDownload = async (download: DownloadSpec) => {
+    setDownloadError(null);
+    try {
+      const res = await fetch('/api/store/export', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sql: download.export_sql,
+          filename: download.filename,
+        }),
+      });
+
+      const contentType = res.headers.get('content-type') ?? '';
+      if (!res.ok) {
+        let detail = `Export failed with status ${res.status}`;
+        if (contentType.includes('application/json')) {
+          const body = (await res.json()) as { detail?: unknown };
+          if (typeof body.detail === 'string') detail = body.detail;
+        } else {
+          const text = await res.text();
+          if (text) detail = text;
+        }
+        throw new Error(detail);
+      }
+
+      if (contentType.includes('application/json')) {
+        const body = (await res.json()) as ExportResponse;
+        if (!body.download_url) {
+          throw new Error('Export completed but no download URL was returned.');
+        }
+        const a = document.createElement('a');
+        a.href = body.download_url;
+        a.download = body.filename || download.filename;
+        a.rel = 'noopener noreferrer';
+        a.click();
+        return;
+      }
+
+      // Backward-compatible fallback for local/dev servers that still return CSV.
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = download.filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      const detail = err instanceof Error ? err.message : 'Export failed.';
+      setDownloadError(`I could not prepare that CSV export: ${detail}`);
+    }
   };
 
   // ── User bubble ──
@@ -160,27 +223,13 @@ function MessageBubble({ message }: { message: Message }) {
             </div>
             <button
               onClick={async () => {
-                const res = await fetch('/api/store/export', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    sql: message.download!.export_sql,
-                    filename: message.download!.filename,
-                  }),
-                });
-                if (!res.ok) return;
-                const blob = await res.blob();
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = message.download!.filename;
-                a.click();
-                URL.revokeObjectURL(url);
+                await handleDownload(message.download!);
               }}
               className="flex-shrink-0 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-primary-dark"
             >
               Download
             </button>
+            {downloadError && <p className="text-[11px] text-error">{downloadError}</p>}
           </div>
         )}
 

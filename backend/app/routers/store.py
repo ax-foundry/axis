@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import math
+import re
 import time
 from typing import Any, Literal
 
@@ -9,7 +10,13 @@ from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import Response
 from pydantic import BaseModel, Field
 
+from app.config.env import settings
 from app.services.duckdb_store import ALLOWED_TABLES, DATASET_TABLE_MAP, get_store
+from app.services.export_service import (
+    ExportStorageNotConfiguredError,
+    sanitize_export_filename,
+    stage_csv_export,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -427,46 +434,122 @@ class ExportRequest(BaseModel):
 
     sql: str
     filename: str = "export.csv"
-    max_rows: int = 100_000
+    max_rows: int | None = None
 
 
-@router.post("/export")
-async def export_sql_as_csv(req: ExportRequest) -> Response:
-    """Execute a SELECT and stream results as CSV without persisting a table.
+class ExportResponse(BaseModel):
+    """Response body for a staged CSV export."""
 
-    Used by the copilot download_data tool to avoid creating throwaway ds_* tables.
+    success: bool
+    download_url: str
+    filename: str
+    expires_at: str
+    row_count: int
+    size_bytes: int
+
+
+_EXPORT_SQL_UNSAFE_RE = re.compile(
+    r"\b(DROP|INSERT|UPDATE|DELETE|CREATE|ALTER|TRUNCATE|REPLACE|MERGE|"
+    r"GRANT|REVOKE|ATTACH|DETACH|COPY|EXPORT|IMPORT|INSTALL|LOAD)\b",
+    re.IGNORECASE,
+)
+
+
+def _has_export_sql_separator_or_comment(sql: str) -> bool:
+    """Return True when SQL contains statement separators or comments outside strings."""
+    in_single_quote = False
+    in_double_quote = False
+    i = 0
+    while i < len(sql):
+        char = sql[i]
+        nxt = sql[i + 1] if i + 1 < len(sql) else ""
+
+        if char == "'" and not in_double_quote:
+            if in_single_quote and nxt == "'":
+                i += 2
+                continue
+            in_single_quote = not in_single_quote
+            i += 1
+            continue
+
+        if char == '"' and not in_single_quote:
+            if in_double_quote and nxt == '"':
+                i += 2
+                continue
+            in_double_quote = not in_double_quote
+            i += 1
+            continue
+
+        if not in_single_quote and not in_double_quote and (
+            char == ";" or (char == "-" and nxt == "-") or (char == "/" and nxt == "*")
+        ):
+            return True
+
+        i += 1
+
+    return False
+
+
+@router.post("/export", response_model=None)
+async def export_sql_as_csv(req: ExportRequest) -> ExportResponse | Response:
+    """Execute a SELECT and return a CSV download.
+
+    When AXIS_EXPORT_BUCKET is configured, large exports are staged in GCS and
+    returned as signed URLs. Otherwise, fall back to the original direct CSV
+    response for local/OSS deployments.
     """
-    import re
-
     sql_stripped = req.sql.strip().rstrip(";")
 
+    if _has_export_sql_separator_or_comment(sql_stripped):
+        raise HTTPException(status_code=400, detail="SQL comments and multiple statements are not permitted.")
+
     # Safety: block DDL/DML
-    _SQL_UNSAFE_RE = re.compile(
-        r"\b(DROP|INSERT|UPDATE|DELETE|CREATE|ALTER|TRUNCATE|REPLACE|MERGE|"
-        r"GRANT|REVOKE|ATTACH|DETACH|COPY|EXPORT|IMPORT|INSTALL|LOAD)\b",
-        re.IGNORECASE,
-    )
-    if _SQL_UNSAFE_RE.search(
+    if _EXPORT_SQL_UNSAFE_RE.search(
         re.sub(r"--[^\n]*", " ", re.sub(r"/\*.*?\*/", " ", sql_stripped, flags=re.DOTALL))
     ):
         raise HTTPException(status_code=400, detail="Only SELECT statements are permitted.")
     if not sql_stripped.upper().lstrip().startswith(("SELECT", "WITH")):
         raise HTTPException(status_code=400, detail="Only SELECT statements are permitted.")
 
+    max_rows = req.max_rows if req.max_rows is not None else settings.export_max_rows
+    if max_rows <= 0:
+        raise HTTPException(status_code=400, detail="max_rows must be greater than 0.")
+    max_rows = min(max_rows, settings.export_max_rows)
+
     store = get_store()
     try:
-        csv = await anyio.to_thread.run_sync(
-            lambda: store.sql_to_csv(sql_stripped, max_rows=req.max_rows),
-            limiter=store.query_limiter,
+        result = await stage_csv_export(
+            store=store,
+            sql=sql_stripped,
+            filename=req.filename,
+            max_rows=max_rows,
+        )
+    except ExportStorageNotConfiguredError:
+        try:
+            csv = await anyio.to_thread.run_sync(
+                lambda: store.sql_to_csv(sql_stripped, max_rows=max_rows),
+                limiter=store.query_limiter,
+            )
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=f"Export failed: {exc}") from exc
+
+        safe_filename = sanitize_export_filename(req.filename)
+        return Response(
+            content=csv,
+            media_type="text/csv",
+            headers={"Content-Disposition": f'attachment; filename="{safe_filename}"'},
         )
     except Exception as exc:
-        raise HTTPException(status_code=400, detail=f"Export failed: {exc}") from exc
+        logger.exception("Failed to stage CSV export")
+        raise HTTPException(status_code=500, detail=f"Export failed: {exc}") from exc
 
-    safe_filename = req.filename if req.filename.endswith(".csv") else f"{req.filename}.csv"
-    return Response(
-        content=csv,
-        media_type="text/csv",
-        headers={"Content-Disposition": f'attachment; filename="{safe_filename}"'},
+    return ExportResponse(
+        success=True,
+        download_url=result.download_url,
+        filename=result.filename,
+        expires_at=result.expires_at.isoformat(),
+        row_count=result.row_count,
+        size_bytes=result.size_bytes,
     )
 
 

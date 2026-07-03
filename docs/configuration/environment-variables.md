@@ -23,6 +23,18 @@ AXIS reads environment variables from `.env` files using [Pydantic Settings](htt
 | `COPILOT_ENABLED` | `bool` | `true` | Enable the AI Copilot sidebar in the frontend |
 | `AXIS_PLUGINS_ENABLED` | `str` | `*` | Comma-separated plugin names to enable, or `*` for all. Empty string disables all |
 
+### Large CSV Exports
+
+When `AXIS_EXPORT_BUCKET` is set, production-scale CSV downloads are staged in GCS and served through short-lived signed URLs to avoid Cloud Run and Vercel response-size limits. When it is unset, AXIS falls back to direct `text/csv` responses, which is convenient for local and small OSS deployments but may hit platform response-size limits for large files.
+
+| Variable | Type | Default | Description |
+|----------|------|---------|-------------|
+| `AXIS_EXPORT_BUCKET` | `str` | -- | GCS bucket used to stage CSV export files |
+| `EXPORT_SIGNED_URL_TTL_SECONDS` | `int` | `900` | Signed download URL lifetime in seconds |
+| `EXPORT_MAX_ROWS` | `int` | `100000` | Default row cap for `/api/store/export` when the request does not specify `max_rows` |
+
+If `GCP_SA_CLIENT_EMAIL`, `GCP_SA_PRIVATE_KEY`, and `GCP_PROJECT_ID` are configured, AXIS uses those service-account credentials for export upload and signed URL generation. Otherwise it falls back to Application Default Credentials.
+
 ### AI / LLM
 
 | Variable | Type | Default | Description |
