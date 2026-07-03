@@ -104,6 +104,22 @@ class Settings(BaseSettings):
         description="If set, all /api/* requests must include a matching X-Api-Key header.",
     )
 
+    # Large CSV export storage. When configured, /api/store/export writes the
+    # CSV to GCS and returns a short-lived signed URL instead of returning the
+    # file through Cloud Run/Vercel response bodies.
+    axis_export_bucket: str | None = Field(
+        default=None,
+        description="GCS bucket for large CSV exports. Env: AXIS_EXPORT_BUCKET.",
+    )
+    export_signed_url_ttl_seconds: int = Field(
+        default=900,
+        description="Signed URL lifetime for staged exports, in seconds.",
+    )
+    export_max_rows: int = Field(
+        default=100_000,
+        description="Default maximum rows exported by /api/store/export.",
+    )
+
     # AI Configuration
     openai_api_base: str | None = Field(
         default=None, description="Optional base URL for OpenAI-compatible APIs."

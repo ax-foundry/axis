@@ -1052,6 +1052,19 @@ class DuckDBStore:
         csv: str = df.to_csv(index=False)
         return csv
 
+    def sql_to_csv_file(self, sql: str, csv_path: str, max_rows: int = 100_000) -> int:
+        """Execute a SELECT and write results to a CSV file. Returns exported row count."""
+        safe_max_rows = max(0, int(max_rows))
+        capped_sql = f"SELECT * FROM ({sql}) __q LIMIT {safe_max_rows}"
+        escaped_path = csv_path.replace("'", "''")
+        count_sql = f"SELECT COUNT(*) FROM ({capped_sql}) __count"
+        copy_sql = f"COPY ({capped_sql}) TO '{escaped_path}' (HEADER, DELIMITER ',')"
+        with self._cursor() as cur:
+            result = cur.execute(count_sql).fetchone()
+            row_count = int(result[0]) if result else 0
+            cur.execute(copy_sql)
+        return row_count
+
     def get_all_sync_status(self) -> dict[str, dict[str, Any]]:
         """Return sync status for all known tables (excluding staging/internal).
 

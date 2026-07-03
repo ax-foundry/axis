@@ -13,6 +13,11 @@ function newSessionId(): string {
 }
 
 export type DatasetLabel = 'evaluation' | 'monitoring' | 'human_signals' | 'kpi';
+export interface DownloadSpec {
+  export_sql: string;
+  filename: string;
+  row_count: number;
+}
 
 interface HistoryMessage {
   role: 'user' | 'assistant';
@@ -28,7 +33,7 @@ interface CopilotState {
   currentThought: Thought | null;
   finalResponse: string | null;
   finalChart: Record<string, unknown> | null;
-  finalDownload: { export_sql: string; filename: string; row_count: number } | null;
+  finalDownload: DownloadSpec | null;
   error: string | null;
 
   // Tools
@@ -58,7 +63,7 @@ interface CopilotState {
   setFinalResponse: (
     response: string,
     chart?: Record<string, unknown> | null,
-    download?: { export_sql: string; filename: string; row_count: number } | null
+    download?: DownloadSpec | null
   ) => void;
   setError: (error: string | null) => void;
   clearThoughts: () => void;

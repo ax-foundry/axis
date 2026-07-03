@@ -1,3 +1,4 @@
+import type { DownloadSpec } from '@/stores/copilot-store';
 import type { Thought, SSEEventType, ReportRequest, ReportResponse, InsightResult } from '@/types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? '';
@@ -9,7 +10,7 @@ export interface SSEHandlers {
     response: string;
     thoughts_count: number;
     chart?: Record<string, unknown> | null;
-    download?: { export_sql: string; filename: string; row_count: number } | null;
+    download?: DownloadSpec | null;
   }) => void;
   onError?: (error: { error: string }) => void;
   onDone?: () => void;
