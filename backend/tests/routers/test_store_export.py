@@ -86,3 +86,86 @@ def test_export_rejects_unsafe_sql() -> None:
     assert resp.status_code == 400
     assert "Only SELECT" in resp.json()["detail"]
     stage.assert_not_called()
+
+
+def test_export_rejects_sql_comments_and_multiple_statements() -> None:
+    stage = AsyncMock()
+
+    with (
+        patch.object(settings, "API_GATEWAY_KEY", ""),
+        patch("app.routers.store.stage_csv_export", stage),
+    ):
+        comment_resp = _client_no_auth().post(
+            "/api/store/export",
+            json={
+                "sql": "SELECT 1) u UNION ALL SELECT * FROM monitoring_data --",
+                "filename": "export.csv",
+            },
+        )
+        semicolon_resp = _client_no_auth().post(
+            "/api/store/export",
+            json={"sql": "SELECT 1; SELECT 2", "filename": "export.csv"},
+        )
+
+    assert comment_resp.status_code == 400
+    assert "comments and multiple statements" in comment_resp.json()["detail"]
+    assert semicolon_resp.status_code == 400
+    assert "comments and multiple statements" in semicolon_resp.json()["detail"]
+    stage.assert_not_called()
+
+
+def test_export_allows_comment_markers_inside_strings() -> None:
+    result = CsvExportResult(
+        download_url="https://signed.example/export.csv",
+        filename="export.csv",
+        expires_at=datetime(2026, 7, 3, 16, 0, tzinfo=UTC),
+        row_count=1,
+        object_name="exports/2026/07/03/object.csv",
+        size_bytes=16,
+    )
+    stage = AsyncMock(return_value=result)
+
+    with (
+        patch.object(settings, "API_GATEWAY_KEY", ""),
+        patch.object(settings, "export_max_rows", 100),
+        patch("app.routers.store.get_store", return_value=MagicMock()),
+        patch("app.routers.store.stage_csv_export", stage),
+    ):
+        resp = _client_no_auth().post(
+            "/api/store/export",
+            json={"sql": "SELECT '-- not a comment' AS note", "filename": "export.csv"},
+        )
+
+    assert resp.status_code == 200, resp.text
+    stage.assert_awaited_once()
+
+
+def test_export_caps_client_max_rows_to_configured_limit() -> None:
+    result = CsvExportResult(
+        download_url="https://signed.example/export.csv",
+        filename="export.csv",
+        expires_at=datetime(2026, 7, 3, 16, 0, tzinfo=UTC),
+        row_count=100,
+        object_name="exports/2026/07/03/object.csv",
+        size_bytes=1024,
+    )
+    stage = AsyncMock(return_value=result)
+
+    with (
+        patch.object(settings, "API_GATEWAY_KEY", ""),
+        patch.object(settings, "export_max_rows", 100),
+        patch("app.routers.store.get_store", return_value=MagicMock()),
+        patch("app.routers.store.stage_csv_export", stage),
+    ):
+        resp = _client_no_auth().post(
+            "/api/store/export",
+            json={
+                "sql": "SELECT * FROM monitoring_data",
+                "filename": "export.csv",
+                "max_rows": 1_000_000,
+            },
+        )
+
+    assert resp.status_code == 200, resp.text
+    stage.assert_awaited_once()
+    assert stage.await_args.kwargs["max_rows"] == 100

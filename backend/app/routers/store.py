@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import math
+import re
 import time
 from typing import Any, Literal
 
@@ -447,26 +448,63 @@ class ExportResponse(BaseModel):
     size_bytes: int
 
 
+_EXPORT_SQL_UNSAFE_RE = re.compile(
+    r"\b(DROP|INSERT|UPDATE|DELETE|CREATE|ALTER|TRUNCATE|REPLACE|MERGE|"
+    r"GRANT|REVOKE|ATTACH|DETACH|COPY|EXPORT|IMPORT|INSTALL|LOAD)\b",
+    re.IGNORECASE,
+)
+
+
+def _has_export_sql_separator_or_comment(sql: str) -> bool:
+    """Return True when SQL contains statement separators or comments outside strings."""
+    in_single_quote = False
+    in_double_quote = False
+    i = 0
+    while i < len(sql):
+        char = sql[i]
+        nxt = sql[i + 1] if i + 1 < len(sql) else ""
+
+        if char == "'" and not in_double_quote:
+            if in_single_quote and nxt == "'":
+                i += 2
+                continue
+            in_single_quote = not in_single_quote
+            i += 1
+            continue
+
+        if char == '"' and not in_single_quote:
+            if in_double_quote and nxt == '"':
+                i += 2
+                continue
+            in_double_quote = not in_double_quote
+            i += 1
+            continue
+
+        if not in_single_quote and not in_double_quote and (
+            char == ";" or (char == "-" and nxt == "-") or (char == "/" and nxt == "*")
+        ):
+            return True
+
+        i += 1
+
+    return False
+
+
 @router.post("/export", response_model=None)
 async def export_sql_as_csv(req: ExportRequest) -> ExportResponse | Response:
-    """
-    Execute a SELECT and return a CSV download.
+    """Execute a SELECT and return a CSV download.
 
     When AXIS_EXPORT_BUCKET is configured, large exports are staged in GCS and
     returned as signed URLs. Otherwise, fall back to the original direct CSV
     response for local/OSS deployments.
     """
-    import re
-
     sql_stripped = req.sql.strip().rstrip(";")
 
+    if _has_export_sql_separator_or_comment(sql_stripped):
+        raise HTTPException(status_code=400, detail="SQL comments and multiple statements are not permitted.")
+
     # Safety: block DDL/DML
-    _SQL_UNSAFE_RE = re.compile(
-        r"\b(DROP|INSERT|UPDATE|DELETE|CREATE|ALTER|TRUNCATE|REPLACE|MERGE|"
-        r"GRANT|REVOKE|ATTACH|DETACH|COPY|EXPORT|IMPORT|INSTALL|LOAD)\b",
-        re.IGNORECASE,
-    )
-    if _SQL_UNSAFE_RE.search(
+    if _EXPORT_SQL_UNSAFE_RE.search(
         re.sub(r"--[^\n]*", " ", re.sub(r"/\*.*?\*/", " ", sql_stripped, flags=re.DOTALL))
     ):
         raise HTTPException(status_code=400, detail="Only SELECT statements are permitted.")
@@ -476,6 +514,7 @@ async def export_sql_as_csv(req: ExportRequest) -> ExportResponse | Response:
     max_rows = req.max_rows if req.max_rows is not None else settings.export_max_rows
     if max_rows <= 0:
         raise HTTPException(status_code=400, detail="max_rows must be greater than 0.")
+    max_rows = min(max_rows, settings.export_max_rows)
 
     store = get_store()
     try:
