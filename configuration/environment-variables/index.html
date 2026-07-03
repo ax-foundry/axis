@@ -1339,6 +1339,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#large-csv-exports" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Large CSV Exports
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#ai-llm" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3252,6 +3263,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#large-csv-exports" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Large CSV Exports
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#ai-llm" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3473,6 +3495,39 @@
 </tr>
 </tbody>
 </table>
+<h3 id="large-csv-exports">Large CSV Exports<a class="headerlink" href="#large-csv-exports" title="Permanent link">&para;</a></h3>
+<p>When <code>AXIS_EXPORT_BUCKET</code> is set, production-scale CSV downloads are staged in GCS and served through short-lived signed URLs to avoid Cloud Run and Vercel response-size limits. When it is unset, AXIS falls back to direct <code>text/csv</code> responses, which is convenient for local and small OSS deployments but may hit platform response-size limits for large files.</p>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>AXIS_EXPORT_BUCKET</code></td>
+<td><code>str</code></td>
+<td>--</td>
+<td>GCS bucket used to stage CSV export files</td>
+</tr>
+<tr>
+<td><code>EXPORT_SIGNED_URL_TTL_SECONDS</code></td>
+<td><code>int</code></td>
+<td><code>900</code></td>
+<td>Signed download URL lifetime in seconds</td>
+</tr>
+<tr>
+<td><code>EXPORT_MAX_ROWS</code></td>
+<td><code>int</code></td>
+<td><code>100000</code></td>
+<td>Default row cap for <code>/api/store/export</code> when the request does not specify <code>max_rows</code></td>
+</tr>
+</tbody>
+</table>
+<p>If <code>GCP_SA_CLIENT_EMAIL</code>, <code>GCP_SA_PRIVATE_KEY</code>, and <code>GCP_PROJECT_ID</code> are configured, AXIS uses those service-account credentials for export upload and signed URL generation. Otherwise it falls back to Application Default Credentials.</p>
 <h3 id="ai-llm">AI / LLM<a class="headerlink" href="#ai-llm" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
