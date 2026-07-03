@@ -8,7 +8,7 @@ import time
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 from uuid import uuid4
 
 import anyio
@@ -97,7 +97,8 @@ def _service_account_credentials() -> Any | None:
         "token_uri": "https://oauth2.googleapis.com/token",
         "project_id": settings.gcp_project_id or "",
     }
-    return service_account.Credentials.from_service_account_info(
+    credentials_cls = cast(Any, service_account.Credentials)
+    return credentials_cls.from_service_account_info(
         service_account_info,
         scopes=["https://www.googleapis.com/auth/devstorage.read_write"],
     )
@@ -123,7 +124,7 @@ def _generate_signed_url(blob: Any, expires_at: datetime) -> str:
             scopes=["https://www.googleapis.com/auth/cloud-platform"]
         )
         request = Request()
-        credentials.refresh(request)
+        cast(Any, credentials).refresh(request)
         access_token = getattr(credentials, "token", None)
         service_account_email = getattr(credentials, "service_account_email", None)
         if service_account_email and access_token:
