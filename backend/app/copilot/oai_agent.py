@@ -1196,6 +1196,48 @@ COPILOT_TOOLS: list[FunctionTool] = [
 SYSTEM_PROMPT = compose_system_prompt()
 
 
+# Prepended to the compact schemas of the non-selected live datasets so the
+# model treats them as queryable fallbacks, not the primary focus.
+SECONDARY_LIVE_SCHEMA_HEADER = (
+    "-- OTHER LIVE DATASETS (loaded and queryable via run_sql; prefer the primary table\n"
+    "-- above — use these only when the question needs their columns, e.g. sentiment /\n"
+    "-- human review → human_signals_cases, business KPIs → kpi_data):"
+)
+
+
+async def _build_secondary_live_schemas(store: Any, primary_table: str) -> str:
+    """Compact DDL for every *other* loaded live dataset.
+
+    The selected dataset gets the full schema (numeric ranges + per-column
+    stats); the remaining live tables get a column-name/type catalog only —
+    enough for the model to know they exist and write ``run_sql`` against them,
+    without the extra per-table aggregation queries. Tables that aren't loaded
+    are skipped. This is what lets a sentiment question be answered from
+    ``human_signals_cases`` while ``monitoring`` is the selected dataset.
+    """
+    from app.services.duckdb_store import get_live_dataset_tables
+
+    blocks: list[str] = []
+    for label, t in get_live_dataset_tables():
+        if t == primary_table:
+            continue
+        if not await anyio.to_thread.run_sync(
+            lambda t=t: store.has_table(t), limiter=store.query_limiter
+        ):
+            continue
+        try:
+            meta_t = await anyio.to_thread.run_sync(
+                lambda t=t: store.get_metadata(t), limiter=store.query_limiter
+            )
+        except Exception:
+            continue
+        blocks.append(_build_schema_ddl(t, label, meta_t, {}, None))
+
+    if not blocks:
+        return ""
+    return SECONDARY_LIVE_SCHEMA_HEADER + "\n" + "\n\n".join(blocks)
+
+
 async def _build_schema_context(oai_ctx: "OAIContext") -> str:
     """Build a column catalog string to prepend to the user message.
 
@@ -1203,10 +1245,15 @@ async def _build_schema_context(oai_ctx: "OAIContext") -> str:
     OAI agent has the same column-level awareness without pydantic-ai's
     per-call system_prompt hook.
     """
-    if not oai_ctx.has_data:
-        return f"Note: No {oai_ctx.dataset_label} data is loaded in DuckDB yet.\n"
-
     store = oai_ctx.store
+    # Surface the other live datasets even when the selected one is empty, so a
+    # question that belongs to a different live table still gets answered.
+    secondary = await _build_secondary_live_schemas(store, oai_ctx.table_name)
+
+    if not oai_ctx.has_data:
+        note = f"Note: No {oai_ctx.dataset_label} data is loaded in DuckDB yet.\n"
+        return f"{note}\n{secondary}\n" if secondary else note
+
     table = oai_ctx.table_name
     try:
         meta = await anyio.to_thread.run_sync(
@@ -1248,7 +1295,9 @@ async def _build_schema_context(oai_ctx: "OAIContext") -> str:
 
     ddl = _build_schema_ddl(table, oai_ctx.dataset_label, meta, num_ranges, col_stats)
 
-    extra: list[str] = []
+    # Compact schemas for the other loaded live datasets come first so they sit
+    # directly under the primary table's DDL.
+    extra: list[str] = [secondary] if secondary else []
     from app.copilot.metric_catalog import get_metric_catalog_store
     from app.copilot.schema_hints import get_schema_hints_store
 
