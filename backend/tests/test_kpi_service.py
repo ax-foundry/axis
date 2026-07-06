@@ -8,7 +8,9 @@ from unittest.mock import patch
 
 from app.config.db.kpi import (
     KpiDBConfig,
+    _parse_display_per_source,
     _parse_kpi_override_prefixes,
+    _parse_kpi_overrides,
     _parse_prefix_list,
 )
 from app.services.kpi_service import (
@@ -19,10 +21,31 @@ from app.services.kpi_service import (
     _get_card_display_value,
     _get_display_name,
     _get_polarity,
+    _get_segment_visual_order,
     _get_unit,
     _matches_prefix,
     _parse_dynamic_display_name,
+    get_kpi_segment_comparison,
 )
+
+
+class FakeStore:
+    """Minimal store test double that records the segment-comparison SQL."""
+
+    def __init__(self) -> None:
+        """Initialise captured query state."""
+        self.sql: str | None = None
+        self.params: list[object] | None = None
+
+    def query_list(self, sql: str, params: list[object]) -> list[dict[str, object]]:
+        """Capture SQL and return deterministic segment rows."""
+        self.sql = sql
+        self.params = params
+        return [
+            {"segment": "tool.a", "agg_value": 0.95, "count": 10},
+            {"segment": "tool.b", "agg_value": 0.9, "count": 5},
+        ]
+
 
 # ---------------------------------------------------------------------------
 # Config parsing
@@ -82,6 +105,39 @@ class TestParseKpiOverridePrefixes:
         result = _parse_kpi_override_prefixes(raw)
         assert "good__" in result
         assert "bad__" not in result
+
+
+class TestParseSegmentVisualOrder:
+    def test_kpi_override_accepts_segment_visual_order(self) -> None:
+        result = _parse_kpi_overrides(
+            {"metric": {"segment_visual_order": "lowest_top", "unit": "percent"}}
+        )
+        assert result["metric"]["segment_visual_order"] == "lowest_top"
+
+    def test_kpi_override_rejects_invalid_segment_visual_order(self) -> None:
+        result = _parse_kpi_overrides({"metric": {"segment_visual_order": "sideways"}})
+        assert result == {}
+
+    def test_display_per_source_accepts_source_default_segment_visual_order(self) -> None:
+        result = _parse_display_per_source({"athena": {"segment_visual_order": "highest_top"}})
+        assert result["athena"]["segment_visual_order"] == "highest_top"
+
+    def test_display_per_source_accepts_kpi_segment_visual_order(self) -> None:
+        result = _parse_display_per_source(
+            {
+                "athena": {
+                    "kpi_overrides": {
+                        "tool_success_rate_by_name": {"segment_visual_order": "lowest_top"}
+                    }
+                }
+            }
+        )
+        assert (
+            result["athena"]["kpi_overrides"]["tool_success_rate_by_name"][
+                "segment_visual_order"
+            ]
+            == "lowest_top"
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -417,6 +473,58 @@ class TestGetPolarityWithPrefix:
         cfg = KpiDBConfig()
         with patch("app.services.kpi_service.kpi_db_config", cfg):
             assert _get_polarity("unknown") == "higher_better"
+
+
+class TestGetSegmentVisualOrder:
+    def test_default_is_highest_top(self) -> None:
+        cfg = KpiDBConfig()
+        with patch("app.services.kpi_service.kpi_db_config", cfg):
+            assert _get_segment_visual_order("metric") == "highest_top"
+
+    def test_global_kpi_override(self) -> None:
+        cfg = KpiDBConfig(
+            kpi_overrides={"metric": {"segment_visual_order": "lowest_top"}},
+        )
+        with patch("app.services.kpi_service.kpi_db_config", cfg):
+            assert _get_segment_visual_order("metric") == "lowest_top"
+
+    def test_source_default_overrides_global_kpi(self) -> None:
+        cfg = KpiDBConfig(
+            kpi_overrides={"metric": {"segment_visual_order": "lowest_top"}},
+            display_per_source={"athena": {"segment_visual_order": "highest_top"}},
+        )
+        with patch("app.services.kpi_service.kpi_db_config", cfg):
+            assert _get_segment_visual_order("metric", "athena") == "highest_top"
+
+    def test_source_kpi_override_has_highest_precedence(self) -> None:
+        cfg = KpiDBConfig(
+            display_per_source={
+                "athena": {
+                    "segment_visual_order": "highest_top",
+                    "kpi_overrides": {"metric": {"segment_visual_order": "lowest_top"}},
+                }
+            },
+        )
+        with patch("app.services.kpi_service.kpi_db_config", cfg):
+            assert _get_segment_visual_order("metric", "athena") == "lowest_top"
+
+
+class TestGetKpiSegmentComparison:
+    def test_response_defaults_to_highest_top_and_stable_sql_order(self) -> None:
+        cfg = KpiDBConfig()
+        store = FakeStore()
+
+        with patch("app.services.kpi_service.kpi_db_config", cfg):
+            response = get_kpi_segment_comparison(
+                store,  # type: ignore[arg-type]
+                kpi_name="metric",
+                source_name="athena",
+            )
+
+        assert response.segment_visual_order == "highest_top"
+        assert [s.segment for s in response.segments] == ["tool.a", "tool.b"]
+        assert store.sql is not None
+        assert "ORDER BY agg_value DESC, segment ASC" in store.sql
 
 
 class TestGetCardDisplayValueWithPrefix:

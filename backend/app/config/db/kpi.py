@@ -14,6 +14,7 @@ KPI_DB_CONFIG_PATH = resolve_config_path("kpi_db.yaml")
 VALID_CARD_DISPLAY_VALUES = {"latest", "avg_7d", "avg_30d"}
 VALID_TREND_LINES = {"daily", "avg_7d", "avg_30d"}
 VALID_UNITS = {"percent", "seconds", "count", "score"}
+VALID_SEGMENT_VISUAL_ORDERS = {"highest_top", "lowest_top"}
 
 
 @dataclass
@@ -130,6 +131,10 @@ def _parse_kpi_overrides(raw: Any) -> dict[str, dict[str, Any]]:
             "lower_better",
         ):
             parsed["polarity"] = str(overrides["polarity"])
+        if "segment_visual_order" in overrides:
+            val = str(overrides["segment_visual_order"])
+            if val in VALID_SEGMENT_VISUAL_ORDERS:
+                parsed["segment_visual_order"] = val
         if parsed:
             result[str(kpi_name)] = parsed
     return result
@@ -209,6 +214,10 @@ def _parse_display_per_source(raw: Any) -> dict[str, dict[str, Any]]:
             parsed["trend_lines"] = [
                 str(t) for t in source_cfg["trend_lines"] if str(t) in VALID_TREND_LINES
             ]
+        if "segment_visual_order" in source_cfg:
+            val = str(source_cfg["segment_visual_order"])
+            if val in VALID_SEGMENT_VISUAL_ORDERS:
+                parsed["segment_visual_order"] = val
         if "kpi_overrides" in source_cfg:
             parsed["kpi_overrides"] = _parse_kpi_overrides(source_cfg["kpi_overrides"])
         if parsed:

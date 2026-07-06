@@ -105,6 +105,7 @@ export function KPISegmentComparisonChart({
       },
       yaxis: {
         ...axisConfig,
+        ...(data.segment_visual_order === 'highest_top' ? { autorange: 'reversed' as const } : {}),
         automargin: true,
         showgrid: false,
         showline: false,

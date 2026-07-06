@@ -255,6 +255,28 @@ def _get_polarity(kpi_name: str, source_name: str | None = None) -> str:
     return "higher_better"
 
 
+def _get_segment_visual_order(kpi_name: str, source_name: str | None = None) -> str:
+    """Get the visual order for horizontal segment comparison charts.
+
+    Resolution order:
+    1. display_per_source[source].kpi_overrides[kpi].segment_visual_order
+    2. display_per_source[source].segment_visual_order
+    3. kpi_overrides[kpi].segment_visual_order
+    4. "highest_top" default
+    """
+    if source_name:
+        src_cfg = kpi_db_config.display_per_source.get(source_name, {})
+        src_kpi = src_cfg.get("kpi_overrides", {}).get(kpi_name, {})
+        if src_kpi.get("segment_visual_order") in ("highest_top", "lowest_top"):
+            return str(src_kpi["segment_visual_order"])
+        if src_cfg.get("segment_visual_order") in ("highest_top", "lowest_top"):
+            return str(src_cfg["segment_visual_order"])
+    global_kpi = kpi_db_config.kpi_overrides.get(kpi_name, {})
+    if global_kpi.get("segment_visual_order") in ("highest_top", "lowest_top"):
+        return str(global_kpi["segment_visual_order"])
+    return "highest_top"
+
+
 # -- SQL helpers ---------------------------------------------------------------
 
 
@@ -1343,7 +1365,7 @@ def get_kpi_segment_comparison(
     sql = (
         f"SELECT segment, {agg_fn}(numeric_value) AS agg_value, COUNT(*) AS count "
         f"FROM {TABLE} WHERE {where} AND segment IS NOT NULL "
-        f"GROUP BY segment ORDER BY agg_value DESC"
+        f"GROUP BY segment ORDER BY agg_value DESC, segment ASC"
     )
     rows = store.query_list(sql, params)
 
@@ -1351,6 +1373,7 @@ def get_kpi_segment_comparison(
         kpi_name=kpi_name,
         unit=unit,
         aggregation=aggregation,
+        segment_visual_order=_get_segment_visual_order(kpi_name, source_name),
         segments=[
             KpiSegmentBar(
                 segment=str(r["segment"]),
