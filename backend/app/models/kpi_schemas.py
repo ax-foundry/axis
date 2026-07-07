@@ -142,6 +142,7 @@ class KpiSegmentComparisonResponse(BaseModel):
     kpi_name: str
     unit: str
     aggregation: str  # "avg" or "sum"
+    segment_visual_order: str = "highest_top"  # "highest_top" or "lowest_top"
     segments: list[KpiSegmentBar]
 
 

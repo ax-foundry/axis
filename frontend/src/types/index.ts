@@ -1858,6 +1858,7 @@ export interface KpiSegmentComparisonResponse {
   kpi_name: string;
   unit: KpiUnit;
   aggregation: 'avg' | 'sum';
+  segment_visual_order: 'highest_top' | 'lowest_top';
   segments: KpiSegmentBar[];
 }
 
