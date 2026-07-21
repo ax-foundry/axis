@@ -23,6 +23,13 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
+# Aggregated case rows can be wide (they may carry per-case transcripts and
+# input blobs), so a single unbounded response can grow large enough for a host
+# to reject it. The /cases endpoint pages instead; this ceiling keeps a full
+# page bounded, and the frontend loader pages through the whole table with it.
+# A caller asking for more is clamped rather than allowed an oversized response.
+MAX_CASES_PAGE_SIZE = 100
+
 
 def _write_human_signals_to_duckdb(records: list[dict[str, Any]]) -> None:
     """Write human signals cases to human_signals_cases DuckDB table."""
@@ -571,6 +578,11 @@ async def get_human_signals_cases(
             status_code=404,
             detail="No human signals data available. Upload a CSV or trigger a database sync.",
         )
+
+    # Clamp to bound a single response (see MAX_CASES_PAGE_SIZE). Callers page
+    # through the table rather than pulling every wide row at once.
+    page = max(1, page)
+    page_size = max(1, min(page_size, MAX_CASES_PAGE_SIZE))
 
     def _query() -> tuple[int, list[dict[str, Any]]]:
         total = store.query_value("SELECT COUNT(*) FROM human_signals_cases") or 0

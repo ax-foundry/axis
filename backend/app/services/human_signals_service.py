@@ -341,7 +341,10 @@ def aggregate_cases(df: pd.DataFrame) -> list[dict[str, Any]]:
         else:
             case["Business"] = "Unknown"
 
-        case["Full_Conversation"] = messages
+        if human_signals_db_config.keeps_heavy_field(
+            "Full_Conversation", case.get("source_name")
+        ):
+            case["Full_Conversation"] = messages
 
         # Parse conversation stats
         conv_stats = safe_json_or_literal(_get_field(first_row, "conversation_stats"))
@@ -358,6 +361,10 @@ def aggregate_cases(df: pd.DataFrame) -> list[dict[str, Any]]:
 
         # Extract additional structured metadata columns
         for col in ["evaluation_metadata", "actual_reference", "additional_output"]:
+            if col == "additional_output" and not human_signals_db_config.keeps_heavy_field(
+                col, case.get("source_name")
+            ):
+                continue
             if col in df.columns or f"dataset_{col}" in df.columns:
                 raw = _get_field(first_row, col)
                 if pd.notna(raw):
@@ -367,8 +374,13 @@ def aggregate_cases(df: pd.DataFrame) -> list[dict[str, Any]]:
                     else:
                         case[col] = str(raw)
 
-        # Store full additional_input as JSON (beyond Slack_URL/Agent_Name already extracted)
-        if additional_input is not None:
+        # Store the full additional_input blob only for sources whose policy
+        # keeps it (see HumanSignalsDBConfig.heavy_field_sources). It is often
+        # the largest field on a case and is omitted by default; the fields
+        # derived from it (Slack_URL, Agent_Name, Session_ID) are set above.
+        if additional_input is not None and human_signals_db_config.keeps_heavy_field(
+            "additional_input", case.get("source_name")
+        ):
             case["additional_input"] = json.dumps(additional_input)
 
         # Flatten all metric signals as {metric_name}__{signal_key}
