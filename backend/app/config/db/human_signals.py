@@ -12,6 +12,18 @@ logger = logging.getLogger(__name__)
 
 HUMAN_SIGNALS_CONFIG_PATH = resolve_config_path("human_signals_db.yaml")
 
+# Large, detail-only fields that can inflate an aggregated case row. Each maps
+# to the source_names whose cases keep the field: "*" keeps it for every source,
+# [] omits it for all. The raw input blob is omitted by default — it is often
+# the largest field and unused by the aggregate views; keep the conversation
+# (the primary content) and the small structured output. Override per source
+# via the `heavy_field_sources` YAML block.
+DEFAULT_HEAVY_FIELD_SOURCES: dict[str, list[str]] = {
+    "additional_input": [],
+    "Full_Conversation": ["*"],
+    "additional_output": ["*"],
+}
+
 
 @dataclass
 class HumanSignalsDBConfig(BaseDBImportConfig):
@@ -24,11 +36,24 @@ class HumanSignalsDBConfig(BaseDBImportConfig):
     table: str | None = None
     visible_metrics: list[str] = field(default_factory=list)
     visible_kpis: list[str] = field(default_factory=list)
+    heavy_field_sources: dict[str, list[str]] = field(
+        default_factory=lambda: dict(DEFAULT_HEAVY_FIELD_SOURCES)
+    )
 
     @property
     def should_auto_load(self) -> bool:
         """Check if auto-load is enabled (either via auto_load or legacy auto_connect)."""
         return (self.auto_load or self.auto_connect) and self.is_configured
+
+    def keeps_heavy_field(self, field_name: str, source_name: str | None) -> bool:
+        """Whether a heavy detail field is stored on a case for the given source.
+
+        Kept when the field's allowlist contains "*" or the case's source_name.
+        Fields with no policy default to kept, so unlisted callers are
+        unaffected; the omit decision applies only to entries in the map.
+        """
+        allow = self.heavy_field_sources.get(field_name, ["*"])
+        return "*" in allow or (source_name or "") in allow
 
 
 def load_human_signals_db_config() -> HumanSignalsDBConfig:
@@ -52,6 +77,11 @@ def load_human_signals_db_config() -> HumanSignalsDBConfig:
                     env_url=settings.human_signals_db_url,
                 )
 
+                # Merge YAML overrides over the defaults per field, so a single
+                # field's policy can be changed without restating the rest.
+                heavy_field_sources = dict(DEFAULT_HEAVY_FIELD_SOURCES)
+                heavy_field_sources.update(db_config.get("heavy_field_sources") or {})
+
                 config = HumanSignalsDBConfig(
                     **base,
                     enabled=db_config.get("enabled", False),
@@ -61,6 +91,7 @@ def load_human_signals_db_config() -> HumanSignalsDBConfig:
                     table=db_config.get("table"),
                     visible_metrics=db_config.get("visible_metrics", []) or [],
                     visible_kpis=db_config.get("visible_kpis", []) or [],
+                    heavy_field_sources=heavy_field_sources,
                 )
                 logger.info("Loaded human signals DB config from %s", HUMAN_SIGNALS_CONFIG_PATH)
                 return config

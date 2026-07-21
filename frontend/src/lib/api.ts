@@ -579,6 +579,34 @@ export async function getHumanSignalsCases(params?: {
 }
 
 /**
+ * Page size for the cases loader. Aggregated case rows can be wide, so a single
+ * unbounded response can grow large enough for a host to reject it. The backend
+ * clamps page_size to this same ceiling (MAX_CASES_PAGE_SIZE), so requesting
+ * more would silently return a short page — keep them in sync.
+ */
+const HUMAN_SIGNALS_CASES_PAGE_SIZE = 100;
+
+/**
+ * Fetch every human signals case by paging through `/api/human-signals/cases`
+ * and concatenating the rows. Each page stays bounded; the merged result keeps
+ * the single-response shape the store expects (`data` = all rows, `row_count` =
+ * total).
+ */
+export async function getAllHumanSignalsCases(): Promise<HumanSignalsUploadResponse> {
+  const first = await getHumanSignalsCases({ page: 1, page_size: HUMAN_SIGNALS_CASES_PAGE_SIZE });
+  const total = first.row_count ?? first.data.length;
+  const rows = [...first.data];
+
+  const pageCount = Math.ceil(total / HUMAN_SIGNALS_CASES_PAGE_SIZE);
+  for (let page = 2; page <= pageCount; page++) {
+    const next = await getHumanSignalsCases({ page, page_size: HUMAN_SIGNALS_CASES_PAGE_SIZE });
+    rows.push(...next.data);
+  }
+
+  return { ...first, data: rows, row_count: total };
+}
+
+/**
  * Human signals database configuration response
  */
 export interface HumanSignalsDBConfigResponse {

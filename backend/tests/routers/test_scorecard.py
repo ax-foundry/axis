@@ -222,6 +222,40 @@ def test_aggregate_cases_does_not_derive_session_id_from_non_chat_case_id() -> N
     assert by_case_id["arbitrary:colon:id"]["Session_ID"] is None
 
 
+def test_aggregate_cases_omits_raw_additional_input_by_default() -> None:
+    # The raw additional_input blob must stay off the aggregated case by
+    # default (it can be large); fields derived from it still land.
+    big_blob = '{"tool_calls": ["' + "x" * 100_000 + '"], "session_id": "sess-explicit"}'
+    cases = aggregate_cases(
+        _signals_df([{"dataset_id": "langfuse:workflow:wf-big", "additional_input": big_blob}])
+    )
+    case = cases[0]
+    assert "additional_input" not in case
+    assert case["Session_ID"] == "sess-explicit"
+
+
+def test_aggregate_cases_keeps_additional_input_when_source_allowlisted() -> None:
+    # The omit/keep is per-source config: a heavy field can be re-enabled for a
+    # specific source_name via heavy_field_sources.
+    from app.services import human_signals_service as svc
+
+    blob = '{"tool_calls": [], "session_id": "sess-explicit"}'
+    df = _signals_df(
+        [
+            {
+                "dataset_id": "langfuse:workflow:wf-1",
+                "additional_input": blob,
+                "source_name": "source-a",
+            }
+        ]
+    )
+    with patch.object(
+        svc.human_signals_db_config, "heavy_field_sources", {"additional_input": ["source-a"]}
+    ):
+        cases = aggregate_cases(df)
+    assert "additional_input" in cases[0]
+
+
 # ----------------------------------------------------------------------
 # Per-view happy paths
 # ----------------------------------------------------------------------
