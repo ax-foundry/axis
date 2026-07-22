@@ -341,7 +341,19 @@ def load_kpi_db_config() -> KpiDBConfig:
             if yaml_config.get("kpi_db"):
                 db_config = yaml_config["kpi_db"]
                 query_timeout = min(db_config.get("query_timeout", 60), 120)
-                row_limit = min(db_config.get("row_limit", 50000), 50000)
+                # NOTE: unlike the eval/monitoring/human_signals imports, the KPI
+                # sync runs `query` verbatim and never appends a LIMIT, so this
+                # value is not enforced. It is parsed and surfaced (store/config
+                # routers report it) but does not bound the sync. Warn rather than
+                # clamp: clamping would imply a ceiling that nothing applies.
+                row_limit = int(db_config.get("row_limit", 50000))
+                if row_limit != KpiDBConfig.row_limit:
+                    logger.warning(
+                        "kpi_db: row_limit=%d is not enforced - the KPI sync executes "
+                        "its query without a LIMIT. Bound the row count in the query "
+                        "itself (e.g. the created_at window) instead.",
+                        row_limit,
+                    )
 
                 config = KpiDBConfig(
                     enabled=db_config.get("enabled", False),
