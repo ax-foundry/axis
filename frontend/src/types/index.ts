@@ -1851,13 +1851,20 @@ export interface KpiSegmentBar {
   segment: string;
   agg_value: number;
   count: number;
+  // Non-zero only for 'weighted' aggregation: (join-key, kpi) pairs that had
+  // more than one row, so the weight/value pairing was ambiguous. Expected to
+  // be 0; a persistent non-zero means the weight KPI is not emitted at the
+  // same grain as the rate KPI.
+  conflict_pairs?: number;
 }
 
 export interface KpiSegmentComparisonResponse {
   success: boolean;
   kpi_name: string;
   unit: KpiUnit;
-  aggregation: 'avg' | 'sum';
+  // 'weighted' is SUM(weight * value) / SUM(weight). Still an average, but not
+  // the plain per-row AVG that 'avg' means — label the two differently.
+  aggregation: 'avg' | 'sum' | 'weighted';
   segment_visual_order: 'highest_top' | 'lowest_top';
   segments: KpiSegmentBar[];
 }

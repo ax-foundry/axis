@@ -6,13 +6,18 @@ dynamic display name parsing, and display config resolution.
 
 from unittest.mock import patch
 
+import duckdb
+import pytest
+
 from app.config.db.kpi import (
     KpiDBConfig,
     _parse_display_per_source,
     _parse_kpi_override_prefixes,
     _parse_kpi_overrides,
     _parse_prefix_list,
+    _parse_weighted_kpis,
 )
+from app.services.duckdb_store import DuckDBStore
 from app.services.kpi_service import (
     SumKpiSpec,
     _build_where,
@@ -25,6 +30,7 @@ from app.services.kpi_service import (
     _get_unit,
     _matches_prefix,
     _parse_dynamic_display_name,
+    _weighted_kpi_spec,
     get_kpi_segment_comparison,
 )
 
@@ -133,9 +139,7 @@ class TestParseSegmentVisualOrder:
             }
         )
         assert (
-            result["athena"]["kpi_overrides"]["tool_success_rate_by_name"][
-                "segment_visual_order"
-            ]
+            result["athena"]["kpi_overrides"]["tool_success_rate_by_name"]["segment_visual_order"]
             == "lowest_top"
         )
 
@@ -534,3 +538,167 @@ class TestGetCardDisplayValueWithPrefix:
         )
         with patch("app.services.kpi_service.kpi_db_config", cfg):
             assert _get_card_display_value("flow_x") == "avg_7d"
+
+
+# ---------------------------------------------------------------------------
+# Call-weighted rate KPIs
+# ---------------------------------------------------------------------------
+
+
+class TestParseWeightedKpis:
+    def test_valid_entry(self) -> None:
+        parsed = _parse_weighted_kpis(
+            {"rate": {"weight_kpi": "count", "join_keys": ["dataset_id", "segment"]}}
+        )
+        assert parsed == {"rate": {"weight_kpi": "count", "join_keys": ["dataset_id", "segment"]}}
+
+    def test_rejects_missing_weight_kpi(self) -> None:
+        assert _parse_weighted_kpis({"rate": {"join_keys": ["dataset_id"]}}) == {}
+
+    def test_rejects_empty_join_keys(self) -> None:
+        """Without a join key the pivot collapses every row onto one pair."""
+        assert _parse_weighted_kpis({"rate": {"weight_kpi": "count"}}) == {}
+        assert _parse_weighted_kpis({"rate": {"weight_kpi": "count", "join_keys": []}}) == {}
+
+    def test_strips_blank_join_keys(self) -> None:
+        parsed = _parse_weighted_kpis(
+            {"rate": {"weight_kpi": "count", "join_keys": [" segment ", "", None]}}
+        )
+        assert parsed["rate"]["join_keys"] == ["segment"]
+
+    def test_non_dict_input(self) -> None:
+        assert _parse_weighted_kpis("nope") == {}
+        assert _parse_weighted_kpis({"rate": "nope"}) == {}
+
+
+class TestWeightedKpiSpec:
+    def test_returns_none_for_unconfigured_kpi(self) -> None:
+        with patch("app.services.kpi_service.kpi_db_config", KpiDBConfig()):
+            assert _weighted_kpi_spec("rate") is None
+
+    def test_builds_spec_from_config(self) -> None:
+        cfg = KpiDBConfig(
+            weighted_kpis={"rate": {"weight_kpi": "count", "join_keys": ["dataset_id", "segment"]}}
+        )
+        with patch("app.services.kpi_service.kpi_db_config", cfg):
+            spec = _weighted_kpi_spec("rate")
+        assert spec is not None
+        assert spec.weight_kpi == "count"
+        assert spec.join_keys == ["dataset_id", "segment"]
+
+    def test_rejects_non_identifier_join_key(self) -> None:
+        """join_keys are interpolated into SQL, so they are validated not trusted."""
+        cfg = KpiDBConfig(
+            weighted_kpis={"rate": {"weight_kpi": "count", "join_keys": ["seg; DROP TABLE x"]}}
+        )
+        with patch("app.services.kpi_service.kpi_db_config", cfg):
+            assert _weighted_kpi_spec("rate") is None
+
+
+def _weighted_store() -> DuckDBStore:
+    """A DuckDBStore over :memory: seeded so weighted and unweighted disagree.
+
+    tool.a is called 8x at a perfect rate and 4x at half; tool.b is called twice
+    and always fails. Averaging the four rate rows gives 0.625; weighting each by
+    its call count gives 10/14 -- the rate a caller actually experiences.
+    """
+    store = DuckDBStore.__new__(DuckDBStore)
+    store._conn = duckdb.connect(":memory:")  # type: ignore[attr-defined]
+    store.db_path = __file__
+
+    import threading
+
+    import anyio
+
+    store._query_limiter = anyio.CapacityLimiter(8)  # type: ignore[attr-defined]
+    store._cache_lock = threading.Lock()  # type: ignore[attr-defined]
+    store._cached_metadata = {}  # type: ignore[attr-defined]
+    store._sync_status = {}  # type: ignore[attr-defined]
+    store._register_lock = threading.Lock()  # type: ignore[attr-defined]
+
+    store._conn.execute(
+        "CREATE TABLE kpi_data (created_at TIMESTAMP, source_name VARCHAR, "
+        "source_type VARCHAR, kpi_name VARCHAR, kpi_category VARCHAR, "
+        "dataset_id VARCHAR, numeric_value DOUBLE, source_component VARCHAR, "
+        "environment VARCHAR, segment VARCHAR)"
+    )
+    rows = [
+        ("d1", "count", 8.0, "tool.a"),
+        ("d1", "rate", 1.0, "tool.a"),
+        ("d1", "count", 2.0, "tool.b"),
+        ("d1", "rate", 0.0, "tool.b"),
+        ("d2", "count", 4.0, "tool.a"),
+        ("d2", "rate", 0.5, "tool.a"),
+        # segment IS NULL -- trace-grain row, must not become its own bar
+        ("d1", "rate", 0.9, None),
+    ]
+    for dataset_id, kpi, value, segment in rows:
+        store._conn.execute(
+            "INSERT INTO kpi_data VALUES (now(), 'athena', 'tools', ?, "
+            "'automation_usage', ?, ?, 'workflow', 'production', ?)",
+            [kpi, dataset_id, value, segment],
+        )
+    return store
+
+
+WEIGHTED_CFG = KpiDBConfig(
+    weighted_kpis={"rate": {"weight_kpi": "count", "join_keys": ["dataset_id", "segment"]}}
+)
+
+
+class TestSegmentComparisonWeighted:
+    def test_weights_each_tool_by_its_call_count(self) -> None:
+        with patch("app.services.kpi_service.kpi_db_config", WEIGHTED_CFG):
+            resp = get_kpi_segment_comparison(_weighted_store(), kpi_name="rate")
+
+        assert resp.aggregation == "weighted"
+        bars = {b.segment: b for b in resp.segments}
+        # tool.a: (8*1.0 + 4*0.5) / (8 + 4); a plain AVG would give 0.75.
+        assert bars["tool.a"].agg_value == pytest.approx(10 / 12)
+        assert bars["tool.a"].count == 2
+        assert bars["tool.b"].agg_value == pytest.approx(0.0)
+
+    def test_unweighted_kpi_is_untouched(self) -> None:
+        """The weighted branch is inert for a KPI with no weighted_kpis entry."""
+        with patch("app.services.kpi_service.kpi_db_config", KpiDBConfig()):
+            resp = get_kpi_segment_comparison(_weighted_store(), kpi_name="rate")
+
+        assert resp.aggregation == "avg"
+        bars = {b.segment: b for b in resp.segments}
+        assert bars["tool.a"].agg_value == pytest.approx(0.75)  # (1.0 + 0.5) / 2
+
+    def test_excludes_null_segment_rows(self) -> None:
+        with patch("app.services.kpi_service.kpi_db_config", WEIGHTED_CFG):
+            resp = get_kpi_segment_comparison(_weighted_store(), kpi_name="rate")
+        assert None not in [b.segment for b in resp.segments]
+        assert len(resp.segments) == 2
+
+    def test_reports_grain_conflicts_instead_of_absorbing_them(self) -> None:
+        """Two count rows on one join key: MAX() picks one, the counter says so."""
+        store = _weighted_store()
+        store._conn.execute(  # type: ignore[attr-defined]
+            "INSERT INTO kpi_data VALUES (now(), 'athena', 'tools', 'count', "
+            "'automation_usage', 'd1', 99.0, 'workflow', 'production', 'tool.a')"
+        )
+        with patch("app.services.kpi_service.kpi_db_config", WEIGHTED_CFG):
+            resp = get_kpi_segment_comparison(store, kpi_name="rate")
+
+        bars = {b.segment: b for b in resp.segments}
+        assert bars["tool.a"].conflict_pairs == 1
+        assert bars["tool.b"].conflict_pairs == 0
+
+    def test_composes_to_the_true_overall_rate(self) -> None:
+        """Per-tool weighted rate x per-tool call count == the true call-weighted rate.
+
+        This is what lets a caller build the headline number from two existing
+        endpoint calls instead of a third server-side aggregate.
+        """
+        store = _weighted_store()
+        with patch("app.services.kpi_service.kpi_db_config", WEIGHTED_CFG):
+            rates = get_kpi_segment_comparison(store, kpi_name="rate")
+        with patch("app.services.kpi_service.kpi_db_config", KpiDBConfig(sum_kpi_prefixes=["cou"])):
+            counts = get_kpi_segment_comparison(store, kpi_name="count")
+
+        calls = {b.segment: b.agg_value for b in counts.segments}
+        composed = sum(calls[b.segment] * b.agg_value for b in rates.segments) / sum(calls.values())
+        assert composed == pytest.approx(10 / 14)

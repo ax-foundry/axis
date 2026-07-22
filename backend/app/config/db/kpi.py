@@ -61,6 +61,8 @@ class KpiDBConfig:
     visible_kpi_prefixes: list[str] = field(default_factory=list)
     # Prefix-based SUM aggregation (count-type KPIs)
     sum_kpi_prefixes: list[str] = field(default_factory=list)
+    # Call-weighted rate KPIs: rate_kpi -> {weight_kpi, join_keys}
+    weighted_kpis: dict[str, dict[str, Any]] = field(default_factory=dict)
     # Prefix-scoped display overrides (supports label_format for dynamic names)
     kpi_override_prefixes: dict[str, dict[str, Any]] = field(default_factory=dict)
     # Sankey chart definitions
@@ -232,6 +234,43 @@ def _parse_prefix_list(raw: Any) -> list[str]:
     return [str(item).strip() for item in raw if item and str(item).strip()]
 
 
+def _parse_weighted_kpis(raw: Any) -> dict[str, dict[str, Any]]:
+    """Parse weighted_kpis from YAML config.
+
+    Each entry names a rate KPI whose rows should be weighted by a second,
+    count-type KPI describing the same unit of work:
+
+        weighted_kpis:
+          tool_success_rate_by_name:
+            weight_kpi: tool_call_count_by_name
+            join_keys: [dataset_id, segment]
+
+    ``join_keys`` is required rather than defaulted. With no join key the
+    weight and value rows collapse onto a single pair per group, silently
+    producing a number that means nothing. An entry missing either field is
+    dropped with a warning so the KPI falls back to plain AVG.
+    """
+    if not isinstance(raw, dict):
+        return {}
+    result: dict[str, dict[str, Any]] = {}
+    for kpi_name, cfg in raw.items():
+        if not isinstance(cfg, dict):
+            continue
+        weight_kpi = cfg.get("weight_kpi")
+        join_keys = [str(k).strip() for k in (cfg.get("join_keys") or []) if k and str(k).strip()]
+        if not weight_kpi or not join_keys:
+            logger.warning(
+                "weighted_kpis[%s]: needs weight_kpi and non-empty join_keys - skipped",
+                kpi_name,
+            )
+            continue
+        result[str(kpi_name)] = {
+            "weight_kpi": str(weight_kpi),
+            "join_keys": join_keys,
+        }
+    return result
+
+
 def _parse_kpi_override_prefixes(raw: Any) -> dict[str, dict[str, Any]]:
     """Parse prefix-scoped display overrides from YAML config.
 
@@ -387,6 +426,7 @@ def load_kpi_db_config() -> KpiDBConfig:
                     ),
                     visible_kpi_prefixes=_parse_prefix_list(db_config.get("visible_kpi_prefixes")),
                     sum_kpi_prefixes=_parse_prefix_list(db_config.get("sum_kpi_prefixes")),
+                    weighted_kpis=_parse_weighted_kpis(db_config.get("weighted_kpis")),
                     kpi_override_prefixes=_parse_kpi_override_prefixes(
                         db_config.get("kpi_override_prefixes")
                     ),

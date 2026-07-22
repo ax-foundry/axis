@@ -9,7 +9,16 @@ import { formatKpiChartValue, formatKpiValue } from '@/lib/kpi-format';
 import { useColors } from '@/lib/theme';
 import { useKpiStore } from '@/stores';
 
-import type { KpiUnit } from '@/types';
+import type { KpiSegmentComparisonResponse, KpiUnit } from '@/types';
+
+// The backend picks the aggregation per KPI, so the header has to say which one
+// produced these bars. 'weighted' is a call-weighted mean, not the plain AVG
+// that 'avg' is — calling it "Average value" would misdescribe the number.
+const AGGREGATION_LABEL: Record<KpiSegmentComparisonResponse['aggregation'], string> = {
+  sum: 'Total count',
+  avg: 'Average value',
+  weighted: 'Call-weighted average',
+};
 
 function hexToRgba(hex: string, alpha: number): string {
   const r = parseInt(hex.slice(1, 3), 16);
@@ -133,7 +142,7 @@ export function KPISegmentComparisonChart({
   return (
     <div>
       <div className="mb-1 flex items-center gap-3 px-1 text-xs text-text-muted">
-        <span>{data.aggregation === 'sum' ? 'Total count' : 'Average value'} per segment</span>
+        <span>{AGGREGATION_LABEL[data.aggregation] ?? 'Value'} per segment</span>
         <span className="flex items-center gap-1 rounded bg-amber-50 px-2 py-0.5 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400">
           <Info className="h-3 w-3" />
           Comparing all segments (segment filter not applied)
