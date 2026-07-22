@@ -330,6 +330,71 @@ def _daily_agg_expr(spec: SumKpiSpec, params: list[object]) -> str:
     return f"CASE WHEN ({combined}) THEN SUM(numeric_value) ELSE AVG(numeric_value) END"
 
 
+@dataclass
+class WeightedKpiSpec:
+    """Specification for a rate KPI aggregated as SUM(weight*value)/SUM(weight)."""
+
+    kpi_name: str
+    weight_kpi: str
+    join_keys: list[str]
+
+
+_IDENTIFIER_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+
+
+def _weighted_kpi_spec(kpi_name: str) -> WeightedKpiSpec | None:
+    """Return the weighting spec for a KPI, or None if it isn't call-weighted.
+
+    join_keys are config-supplied and interpolated into SQL, so they are
+    validated as plain identifiers here rather than trusted.
+    """
+    cfg = kpi_db_config.weighted_kpis.get(kpi_name)
+    if not cfg:
+        return None
+    join_keys = [str(k) for k in cfg.get("join_keys", [])]
+    if not all(_IDENTIFIER_RE.match(k) for k in join_keys):
+        logger.warning("weighted_kpis[%s]: non-identifier join_key - ignoring", kpi_name)
+        return None
+    return WeightedKpiSpec(
+        kpi_name=kpi_name,
+        weight_kpi=str(cfg["weight_kpi"]),
+        join_keys=join_keys,
+    )
+
+
+def _weighted_agg_sql(spec: WeightedKpiSpec, where: str, group_col: str) -> str:
+    """Build call-weighted aggregation SQL grouped by ``group_col``.
+
+    The weight and the value live in two separate rows of kpi_data, so they are
+    pivoted onto one row per join key before aggregating. Averaging the rate
+    rows directly would give a tool called twice the same say as one called ten
+    thousand times; weighting by call count gives the rate a caller actually
+    experiences.
+
+    ``count`` reports the number of contributing pairs, and ``conflict_pairs``
+    counts join keys that matched more than one weight or value row -- the
+    pivot's MAX() silently picks one of them, so the count is what tells a
+    caller the number is not trustworthy.
+    """
+    keys = ", ".join(spec.join_keys)
+    return (
+        f"WITH pairs AS ("
+        f"SELECT {keys}, "
+        f"MAX(CASE WHEN kpi_name = ? THEN numeric_value END) AS w, "
+        f"MAX(CASE WHEN kpi_name = ? THEN numeric_value END) AS v, "
+        f"COUNT(*) FILTER (WHERE kpi_name = ?) AS wn, "
+        f"COUNT(*) FILTER (WHERE kpi_name = ?) AS vn "
+        f"FROM {TABLE} WHERE {where} GROUP BY {keys}) "
+        f"SELECT {group_col} AS segment, "
+        f"SUM(w * v) / NULLIF(SUM(CASE WHEN v IS NOT NULL THEN w END), 0) AS agg_value, "
+        f"CAST(COUNT(*) FILTER (WHERE v IS NOT NULL) AS BIGINT) AS count, "
+        f"CAST(SUM(CASE WHEN wn > 1 OR vn > 1 THEN 1 ELSE 0 END) AS BIGINT) AS conflict_pairs "
+        f"FROM pairs WHERE {group_col} IS NOT NULL GROUP BY {group_col} "
+        f"HAVING SUM(CASE WHEN v IS NOT NULL THEN w END) > 0 "
+        f"ORDER BY agg_value DESC, {group_col} ASC"
+    )
+
+
 def _build_where(
     *,
     source_name: str | None = None,
@@ -1343,31 +1408,56 @@ def get_kpi_segment_comparison(
     with trend/card aggregation).  Segment filter is intentionally
     omitted so all segments are compared.
     """
-    where, params = _build_where(
-        source_name=source_name,
-        environment=environment,
-        source_type=source_type,
-        source_component=source_component,
-        segment=None,  # intentionally ignored
-        time_start=time_start,
-        time_end=time_end,
-        kpi_names=[kpi_name],
-    )
-
     unit = _get_unit(kpi_name, source_name)
+    weighted = _weighted_kpi_spec(kpi_name)
 
-    # Determine aggregation function (SUM for count KPIs, AVG otherwise)
-    spec = _sum_kpi_spec(source_name)
-    is_sum = kpi_name in spec.exact_names or _matches_prefix(kpi_name, spec.prefixes)
-    agg_fn = "SUM" if is_sum else "AVG"
-    aggregation = "sum" if is_sum else "avg"
+    if weighted is not None:
+        # Both the value rows and the weight rows must be in scope for the pivot.
+        where, params = _build_where(
+            source_name=source_name,
+            environment=environment,
+            source_type=source_type,
+            source_component=source_component,
+            segment=None,  # intentionally ignored
+            time_start=time_start,
+            time_end=time_end,
+            kpi_names=[weighted.weight_kpi, kpi_name],
+        )
+        aggregation = "weighted"
+        sql = _weighted_agg_sql(weighted, where, "segment")
+        # The four CASE/FILTER placeholders precede the WHERE clause's params.
+        params = [weighted.weight_kpi, kpi_name, weighted.weight_kpi, kpi_name, *params]
+    else:
+        where, params = _build_where(
+            source_name=source_name,
+            environment=environment,
+            source_type=source_type,
+            source_component=source_component,
+            segment=None,  # intentionally ignored
+            time_start=time_start,
+            time_end=time_end,
+            kpi_names=[kpi_name],
+        )
+        # Determine aggregation function (SUM for count KPIs, AVG otherwise)
+        spec = _sum_kpi_spec(source_name)
+        is_sum = kpi_name in spec.exact_names or _matches_prefix(kpi_name, spec.prefixes)
+        agg_fn = "SUM" if is_sum else "AVG"
+        aggregation = "sum" if is_sum else "avg"
+        sql = (
+            f"SELECT segment, {agg_fn}(numeric_value) AS agg_value, COUNT(*) AS count "
+            f"FROM {TABLE} WHERE {where} AND segment IS NOT NULL "
+            f"GROUP BY segment ORDER BY agg_value DESC, segment ASC"
+        )
 
-    sql = (
-        f"SELECT segment, {agg_fn}(numeric_value) AS agg_value, COUNT(*) AS count "
-        f"FROM {TABLE} WHERE {where} AND segment IS NOT NULL "
-        f"GROUP BY segment ORDER BY agg_value DESC, segment ASC"
-    )
     rows = store.query_list(sql, params)
+    conflicts = sum(int(r.get("conflict_pairs") or 0) for r in rows)
+    if conflicts:
+        logger.warning(
+            "segment-comparison %s: %d join key(s) matched multiple rows - "
+            "weighted values for those segments are unreliable",
+            kpi_name,
+            conflicts,
+        )
 
     return KpiSegmentComparisonResponse(
         kpi_name=kpi_name,
@@ -1379,6 +1469,7 @@ def get_kpi_segment_comparison(
                 segment=str(r["segment"]),
                 agg_value=float(r["agg_value"]),
                 count=int(r["count"]),
+                conflict_pairs=int(r.get("conflict_pairs") or 0),
             )
             for r in rows
         ],

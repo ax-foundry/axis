@@ -132,7 +132,12 @@ class KpiSegmentBar(BaseModel):
 
     segment: str
     agg_value: float
+    # Rows aggregated for this segment. Under "weighted" aggregation this is the
+    # number of contributing join-key pairs, not the summed weight.
     count: int
+    # Join keys that matched more than one weight or value row. Non-zero means the
+    # pivot picked one arbitrarily, so agg_value for that segment is unreliable.
+    conflict_pairs: int = 0
 
 
 class KpiSegmentComparisonResponse(BaseModel):
@@ -141,7 +146,7 @@ class KpiSegmentComparisonResponse(BaseModel):
     success: bool = True
     kpi_name: str
     unit: str
-    aggregation: str  # "avg" or "sum"
+    aggregation: str  # "avg", "sum", or "weighted"
     segment_visual_order: str = "highest_top"  # "highest_top" or "lowest_top"
     segments: list[KpiSegmentBar]
 
