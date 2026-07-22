@@ -75,6 +75,7 @@ def load_human_signals_db_config() -> HumanSignalsDBConfig:
                     db_config,
                     env_password=settings.human_signals_db_password,
                     env_url=settings.human_signals_db_url,
+                    dataset="human_signals_db",
                 )
 
                 # Merge YAML overrides over the defaults per field, so a single

@@ -6,7 +6,7 @@ import yaml
 
 from ..env import settings
 from ..paths import resolve_config_path
-from ._base import BaseDBImportConfig, parse_base_fields
+from ._base import BaseDBImportConfig, clamp_row_limit, parse_base_fields
 
 logger = logging.getLogger(__name__)
 
@@ -41,6 +41,7 @@ def load_eval_db_config() -> EvalDBConfig:
                     db_config,
                     env_password=settings.eval_db_password,
                     env_url=settings.eval_db_url,
+                    dataset="eval_db",
                 )
 
                 config = EvalDBConfig(
@@ -57,7 +58,7 @@ def load_eval_db_config() -> EvalDBConfig:
     # Fall back to env vars
     if settings.eval_db_url or settings.eval_db_host:
         query_timeout = min(settings.eval_db_query_timeout, 120)
-        row_limit = min(settings.eval_db_row_limit, 50000)
+        row_limit = clamp_row_limit(settings.eval_db_row_limit, dataset="eval_db")
 
         config = EvalDBConfig(
             enabled=True,

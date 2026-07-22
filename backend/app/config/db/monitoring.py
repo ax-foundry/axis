@@ -150,6 +150,7 @@ def load_monitoring_db_config() -> MonitoringDBConfig:
                     db_config,
                     env_password=settings.monitoring_db_password,
                     env_url=settings.monitoring_db_url,
+                    dataset="monitoring_db",
                 )
 
                 t_good, t_pass, t_per_source = _parse_thresholds(db_config)

@@ -1,5 +1,32 @@
+import logging
 from dataclasses import dataclass, field
 from typing import Any
+
+logger = logging.getLogger(__name__)
+
+# Hard ceiling on rows loaded from any import query. Sized against the Cloud Run
+# memory budget, not against what the source table holds.
+MAX_ROW_LIMIT = 50000
+
+
+def clamp_row_limit(requested: int, *, dataset: str) -> int:
+    """Clamp a configured row_limit to MAX_ROW_LIMIT, logging when it bites.
+
+    Silently reducing the value hides the fact that a sync is truncating: the
+    operator sets 500000, the import loads 50000, and nothing in the logs or the
+    config surface says otherwise. Warn instead so the ceiling is visible.
+    """
+    if requested > MAX_ROW_LIMIT:
+        logger.warning(
+            "%s: configured row_limit %d exceeds the %d ceiling - loading at most %d rows. "
+            "Rows beyond the limit are dropped by the import query's ORDER BY.",
+            dataset,
+            requested,
+            MAX_ROW_LIMIT,
+            MAX_ROW_LIMIT,
+        )
+        return MAX_ROW_LIMIT
+    return requested
 
 
 @dataclass
@@ -86,6 +113,7 @@ def parse_base_fields(
     *,
     env_password: str | None = None,
     env_url: str | None = None,
+    dataset: str = "db import",
 ) -> dict[str, Any]:
     """Parse shared BaseDBImportConfig fields from a YAML dict.
 
@@ -93,9 +121,10 @@ def parse_base_fields(
         db_config: Parsed YAML dictionary for the database block.
         env_password: Fallback password from env var (used when YAML value is empty).
         env_url: Fallback URL from env var (used when YAML value is empty).
+        dataset: Name used to identify this config in the row_limit warning.
     """
     query_timeout = min(db_config.get("query_timeout", 60), 120)
-    row_limit = min(db_config.get("row_limit", 10000), 50000)
+    row_limit = clamp_row_limit(db_config.get("row_limit", 10000), dataset=dataset)
 
     def _key_list(value: Any) -> list[str]:
         """Accept a single column name or a list of column names."""
