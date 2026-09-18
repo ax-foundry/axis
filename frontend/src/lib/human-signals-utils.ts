@@ -21,6 +21,13 @@ function isTruthySignal(value: unknown): boolean {
   return Boolean(value);
 }
 
+/** A raw signal value counts as present when it is non-null and not a blank string. */
+function isPresentSignal(value: unknown): boolean {
+  if (value === null || value === undefined) return false;
+  if (typeof value === 'string') return value.trim() !== '';
+  return true;
+}
+
 // ---------------------------------------------------------------------------
 // Numeric formatting helpers
 // ---------------------------------------------------------------------------
@@ -112,7 +119,7 @@ function buildWeeklyNumericSparkline(
   fieldKey: string,
   aggregation: string
 ): { date: string; value: number }[] {
-  const weekly = new Map<string, number[]>();
+  const weekly = new Map<string, { values: number[] }>();
 
   cases.forEach((c) => {
     if (!c.Timestamp) return;
@@ -123,19 +130,23 @@ function buildWeeklyNumericSparkline(
     const ws = new Date(d);
     ws.setDate(diff);
     const weekKey = ws.toISOString().split('T')[0];
-    const val = Number(c[fieldKey]);
-    if (!isNaN(val)) {
-      const bucket = weekly.get(weekKey) ?? [];
-      bucket.push(val);
-      weekly.set(weekKey, bucket);
+    const bucket = weekly.get(weekKey) ?? { values: [] };
+    const rawValue = c[fieldKey];
+    if (isPresentSignal(rawValue)) {
+      const val = Number(rawValue);
+      if (Number.isFinite(val)) {
+        bucket.values.push(val);
+      }
     }
+    weekly.set(weekKey, bucket);
   });
 
   return Array.from(weekly.entries())
+    .filter(([, bucket]) => bucket.values.length > 0)
     .sort(([a], [b]) => a.localeCompare(b))
-    .map(([date, vals]) => ({
+    .map(([date, bucket]) => ({
       date,
-      value: computeAggregation(vals, aggregation),
+      value: computeAggregation(bucket.values, aggregation),
     }));
 }
 
@@ -148,7 +159,10 @@ function buildWeeklySparkline(
   format?: string,
   matchValue?: string
 ): { date: string; value: number }[] {
-  const weekly = new Map<string, { total: number; trueCount: number; sum: number }>();
+  const weekly = new Map<
+    string,
+    { total: number; present: number; trueCount: number; sum: number }
+  >();
 
   cases.forEach((c) => {
     if (!c.Timestamp) return;
@@ -159,8 +173,9 @@ function buildWeeklySparkline(
     const ws = new Date(d);
     ws.setDate(diff);
     const weekKey = ws.toISOString().split('T')[0];
-    const bucket = weekly.get(weekKey) ?? { total: 0, trueCount: 0, sum: 0 };
+    const bucket = weekly.get(weekKey) ?? { total: 0, present: 0, trueCount: 0, sum: 0 };
     bucket.total++;
+    if (isPresentSignal(c[fieldKey])) bucket.present++;
     if (
       matchValue
         ? String(c[fieldKey] ?? '').toLowerCase() === matchValue.toLowerCase()
@@ -172,6 +187,7 @@ function buildWeeklySparkline(
   });
 
   return Array.from(weekly.entries())
+    .filter(([, bucket]) => bucket.present > 0)
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([date, b]) => ({
       date,
@@ -225,10 +241,30 @@ export function computeKPIs(
     // Numeric aggregation KPIs (discriminant: kpi.aggregation is present)
     if (kpi.metric && kpi.signal && kpi.aggregation) {
       const fieldKey = `${kpi.metric}__${kpi.signal}`;
-      const values = cases.map((c) => Number(c[fieldKey])).filter((v) => !isNaN(v) && isFinite(v));
+      const values = cases
+        .map((c) => c[fieldKey])
+        .filter(isPresentSignal)
+        .map(Number)
+        .filter((v) => Number.isFinite(v));
+      const metricName = kpi.metric.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+
+      if (values.length === 0) {
+        return {
+          key: fieldKey,
+          label: kpi.label,
+          value: '—',
+          icon: kpi.icon,
+          highlight: kpi.highlight,
+          polarity,
+          format: kpi.format,
+          aggregation: kpi.aggregation,
+          totalCases: total,
+          metricName,
+        };
+      }
+
       const agg = computeAggregation(values, kpi.aggregation);
       const sparkline = buildWeeklyNumericSparkline(cases, fieldKey, kpi.aggregation);
-      const metricName = kpi.metric.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 
       return {
         key: fieldKey,
@@ -249,6 +285,23 @@ export function computeKPIs(
     // Metric signal KPIs (boolean rate or match_value rate)
     if (kpi.metric && kpi.signal) {
       const fieldKey = `${kpi.metric}__${kpi.signal}`;
+      const presentCount = cases.filter((c) => isPresentSignal(c[fieldKey])).length;
+      const metricName = kpi.metric.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+
+      if (presentCount === 0) {
+        return {
+          key: fieldKey,
+          label: kpi.label,
+          value: '—',
+          icon: kpi.icon,
+          highlight: kpi.highlight,
+          polarity,
+          format: kpi.format,
+          totalCases: total,
+          metricName,
+        };
+      }
+
       const trueCount = kpi.match_value
         ? cases.filter(
             (c) => String(c[fieldKey] ?? '').toLowerCase() === kpi.match_value!.toLowerCase()
@@ -256,7 +309,6 @@ export function computeKPIs(
         : cases.filter((c) => isTruthySignal(c[fieldKey])).length;
       const rate = total > 0 ? (trueCount / total) * 100 : 0;
       const sparkline = buildWeeklySparkline(cases, fieldKey, kpi.format, kpi.match_value);
-      const metricName = kpi.metric.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 
       if (kpi.format === 'percent') {
         return {
