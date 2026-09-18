@@ -141,6 +141,27 @@ describe('computeKPIs', () => {
     expect(zeroResult.rawValue).toBe(0);
   });
 
+  it('omits numeric sparkline weeks where present values are all non-numeric', () => {
+    const numericKPI: SignalsKPIConfig = {
+      metric: 'quality',
+      signal: 'score',
+      aggregation: 'mean',
+      label: 'Mean Score',
+      icon: 'gauge',
+    };
+    const key = 'quality__score';
+    const cases = [
+      makeCase('1', '2024-01-01T12:00:00Z', { [key]: 'abc' }),
+      makeCase('2', '2024-01-02T12:00:00Z', { [key]: 'abc' }),
+      makeCase('3', '2024-01-08T12:00:00Z', { [key]: 4 }),
+      makeCase('4', '2024-01-09T12:00:00Z', { [key]: 6 }),
+    ];
+
+    const [result] = computeKPIs(cases, [numericKPI]);
+
+    expect(result.sparkline).toEqual([{ date: '2024-01-08', value: 5 }]);
+  });
+
   it('omits sparkline weeks where the signal is absent from every case', () => {
     const cases = [
       makeCase('1', '2024-01-01T12:00:00Z'),

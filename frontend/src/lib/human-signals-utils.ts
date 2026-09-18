@@ -119,7 +119,7 @@ function buildWeeklyNumericSparkline(
   fieldKey: string,
   aggregation: string
 ): { date: string; value: number }[] {
-  const weekly = new Map<string, { present: number; values: number[] }>();
+  const weekly = new Map<string, { values: number[] }>();
 
   cases.forEach((c) => {
     if (!c.Timestamp) return;
@@ -130,10 +130,9 @@ function buildWeeklyNumericSparkline(
     const ws = new Date(d);
     ws.setDate(diff);
     const weekKey = ws.toISOString().split('T')[0];
-    const bucket = weekly.get(weekKey) ?? { present: 0, values: [] };
+    const bucket = weekly.get(weekKey) ?? { values: [] };
     const rawValue = c[fieldKey];
     if (isPresentSignal(rawValue)) {
-      bucket.present++;
       const val = Number(rawValue);
       if (Number.isFinite(val)) {
         bucket.values.push(val);
@@ -143,7 +142,7 @@ function buildWeeklyNumericSparkline(
   });
 
   return Array.from(weekly.entries())
-    .filter(([, bucket]) => bucket.present > 0)
+    .filter(([, bucket]) => bucket.values.length > 0)
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([date, bucket]) => ({
       date,
