@@ -33,32 +33,63 @@ export default function SourceScorecardPage() {
   const [rows, setRows] = useState<Row[]>([]);
   const [selected, setSelected] = useState<Row | null>(null);
   const [contributors, setContributors] = useState<Record<string, unknown>[]>([]);
+  const [contributorError, setContributorError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const lookbackDays = Number(search.get('lookback') || 30);
 
   useEffect(() => {
+    const controller = new AbortController();
+    let active = true;
     setLoading(true);
     setError(null);
     fetchApi<{ rows: Row[] }>(`/api/source-scorecard/${encodeURIComponent(name)}/${view}`, {
       method: 'POST',
-      body: JSON.stringify({ lookback_days: Number(search.get('lookback') || 30) }),
+      body: JSON.stringify({ lookback_days: lookbackDays }),
+      signal: controller.signal,
     })
-      .then((data) => setRows(data.rows))
-      .catch((cause: Error) => setError(cause.message))
-      .finally(() => setLoading(false));
-  }, [name, search, view]);
+      .then((data) => active && setRows(data.rows))
+      .catch((cause: Error) => active && setError(cause.message))
+      .finally(() => active && setLoading(false));
+    return () => {
+      active = false;
+      controller.abort();
+    };
+  }, [lookbackDays, name, view]);
+
+  useEffect(() => {
+    setSelected(null);
+    setContributors([]);
+    setContributorError(null);
+    setPage(1);
+  }, [name, view]);
 
   useEffect(() => {
     if (!selected) return;
+    const controller = new AbortController();
+    let active = true;
+    setContributorError(null);
     fetchApi<{ rows: Record<string, unknown>[] }>(
       `/api/source-scorecard/${encodeURIComponent(name)}/${view}/contributors`,
       {
         method: 'POST',
-        body: JSON.stringify({ metric_key: selected.metric_key, page, page_size: 25 }),
+        body: JSON.stringify({
+          metric_key: selected.metric_key,
+          lookback_days: lookbackDays,
+          page,
+          page_size: 25,
+        }),
+        signal: controller.signal,
       }
-    ).then((data) => setContributors(data.rows));
-  }, [name, page, selected, view]);
+    )
+      .then((data) => active && setContributors(data.rows))
+      .catch((cause: Error) => active && setContributorError(cause.message));
+    return () => {
+      active = false;
+      controller.abort();
+    };
+  }, [lookbackDays, name, page, selected, view]);
 
   const selectView = (next: View) =>
     router.replace(`?view=${next}&lookback=${search.get('lookback') || 30}`);
@@ -103,8 +134,8 @@ export default function SourceScorecardPage() {
               </tr>
             </thead>
             <tbody>
-              {rows.map((row) => (
-                <tr key={row.metric_key} className="border-b border-border">
+              {rows.map((row, index) => (
+                <tr key={`${row.metric_key}-${index}`} className="border-b border-border">
                   <td className="p-3">{row.label}</td>
                   <td className="p-3">{row.value ?? '—'}</td>
                   <td className="p-3">{statusText(row)}</td>
@@ -135,6 +166,7 @@ export default function SourceScorecardPage() {
           className="mt-8 rounded border border-border p-4"
         >
           <h2 className="font-semibold">{selected.label} contributors</h2>
+          {contributorError && <p role="alert">Contributor query error: {contributorError}</p>}
           <ul className="mt-3 space-y-2">
             {contributors.map((row, index) => (
               <li key={index} className="font-mono text-xs">

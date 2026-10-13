@@ -153,6 +153,25 @@ def test_all_four_views_render_from_the_same_generic_fixture() -> None:
     assert all(response.status_code == 200 for response in responses)
 
 
+def test_aggregate_separates_result_contract_identities() -> None:
+    from app.routers import source_scorecard
+
+    client, auth, store, config = _client()
+    with auth, store, config:
+        source_scorecard.get_store()._conn.execute(
+            "UPDATE source_kpis SET cohort = 'not_instrumented' WHERE work_item_id = 'work-2'"
+        )
+        response = client.post("/api/source-scorecard/fixture/flow", json={})
+    assert response.status_code == 200, response.text
+    rows = response.json()["rows"]
+    assert {
+        (row["cohort"], row["value"], row["numerator"], row["denominator"]) for row in rows
+    } == {
+        ("instrumented", 0.0, 0.0, 2.0),
+        ("not_instrumented", 1.0, 1.0, 2.0),
+    }
+
+
 def test_unconfigured_filter_and_metric_are_rejected() -> None:
     client, auth, store, config = _client()
     with auth, store, config:

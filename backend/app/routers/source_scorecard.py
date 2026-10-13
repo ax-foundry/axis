@@ -19,12 +19,9 @@ from app.services.duckdb_store import get_store
 router = APIRouter()
 
 View = Literal["overview", "flow", "quality", "reliability"]
-_METADATA = {
+_IDENTITY_METADATA = {
     "version_column": "definition_version",
     "unit_column": "unit",
-    "numerator_column": "numerator",
-    "denominator_column": "denominator",
-    "sample_size_column": "sample_size",
     "availability_column": "availability",
     "availability_reason_column": "availability_reason",
     "cohort_column": "cohort",
@@ -32,6 +29,11 @@ _METADATA = {
     "comparison_window_column": "comparison_window",
     "source_watermark_column": "source_watermark",
     "instrumentation_horizon_column": "instrumentation_horizon",
+}
+_ADDITIVE_METADATA = {
+    "numerator_column": "numerator",
+    "denominator_column": "denominator",
+    "sample_size_column": "sample_size",
 }
 
 
@@ -130,11 +132,21 @@ async def _query(sql: str, params: list[Any]) -> list[dict[str, Any]]:
 
 
 def _metadata_select(spec: SourceScorecardSpec, columns: set[str], table: str) -> str:
-    """Select the fixed metadata DTO without accepting client-selected columns."""
-    return ", ".join(
-        f"ANY_VALUE({_column(getattr(spec, field), columns, table)}) AS {alias}"
-        for field, alias in _METADATA.items()
-    )
+    """Select result identities and consistently aggregate their additive fields."""
+    identities = [
+        f"{_column(getattr(spec, field), columns, table)} AS {alias}"
+        for field, alias in _IDENTITY_METADATA.items()
+    ]
+    additive = [
+        f"SUM({_column(getattr(spec, field), columns, table)}) AS {alias}"
+        for field, alias in _ADDITIVE_METADATA.items()
+    ]
+    return ", ".join([*identities, *additive])
+
+
+def _metadata_group_by(spec: SourceScorecardSpec, columns: set[str], table: str) -> str:
+    """Return the fixed result-contract identity used for aggregate grouping."""
+    return ", ".join(_column(getattr(spec, field), columns, table) for field in _IDENTITY_METADATA)
 
 
 @router.post("/{name}/{view}")
@@ -158,8 +170,9 @@ async def view(name: str, view: View, request: SourceScorecardRequest) -> dict[s
             spec, table, columns, request, keys, end=now, window_days=request.lookback_days
         )
         sql = f'''SELECT {key} AS metric_key, {value},
-                         {_metadata_select(spec, columns, table)}
-                  FROM "{table}" WHERE {where} GROUP BY {key}'''
+                          {_metadata_select(spec, columns, table)}
+                   FROM "{table}" WHERE {where}
+                   GROUP BY {key}, {_metadata_group_by(spec, columns, table)}'''
         rows.extend(await _query(sql, params))
         if request.comparison_days:
             where, params = _where(
