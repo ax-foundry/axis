@@ -31,6 +31,7 @@ from app.routers import (
     monitoring_analytics,
     reports,
     scorecard,
+    source_scorecard,
     store,
 )
 
@@ -265,6 +266,9 @@ app.include_router(
 )
 app.include_router(store.router, prefix="/api/store", tags=["store"])
 app.include_router(scorecard.router, prefix="/api/scorecard", tags=["scorecard"])
+app.include_router(
+    source_scorecard.router, prefix="/api/source-scorecard", tags=["source-scorecard"]
+)
 app.include_router(kpi.router, prefix="/api/kpi", tags=["kpi"])
 app.include_router(datasets.router, prefix="/api/datasets", tags=["datasets"])
 

@@ -1,0 +1,26 @@
+# Generic source scorecards. Copy to custom/config/source_scorecards.yaml.
+# Tables and every projected/filterable column are allowlisted here; no formulas or SQL belong here.
+source_scorecards:
+  example_source:
+    metric_key_column: metric_key
+    value_column: value
+    contributor_id_column: work_item_id
+    timestamp_column: observed_at
+    version_column: definition_version
+    unit_column: unit
+    numerator_column: numerator
+    denominator_column: denominator
+    sample_size_column: sample_size
+    availability_column: availability
+    availability_reason_column: availability_reason
+    cohort_column: cohort
+    observation_window_column: observation_window
+    comparison_window_column: comparison_window
+    source_watermark_column: source_watermark
+    instrumentation_horizon_column: instrumentation_horizon
+    filter_dimensions: [environment, team]
+    detail_columns: [work_item_id, observed_at, cohort, availability, availability_reason]
+    metrics:
+      - { key: throughput, label: Throughput, table: source_kpis, sections: [overview, flow] }
+      - { key: correctness, label: Correctness, table: source_kpis, sections: [overview, quality] }
+      - { key: freshness, label: Freshness, table: source_monitoring, sections: [overview, reliability] }
