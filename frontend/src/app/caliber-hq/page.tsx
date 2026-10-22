@@ -6,11 +6,12 @@ import { useState, useCallback } from 'react';
 import { StepNavigation, UploadStep, AnnotateStep, BuildEvalStep } from '@/components/align';
 import { CaliberConfigModal } from '@/components/align/config/CaliberConfigModal';
 import { PageHeader } from '@/components/ui/PageHeader';
-import { useCalibrationStore } from '@/stores/calibration-store';
+import { useCalibrationStore, useCurrentAnnotations } from '@/stores/calibration-store';
 import { Columns } from '@/types';
 
 export default function CalibrationPage() {
-  const { currentStep, resetAll, data, humanAnnotations } = useCalibrationStore();
+  const { currentStep, resetAll, data } = useCalibrationStore();
+  const humanAnnotations = useCurrentAnnotations();
   const [configModalOpen, setConfigModalOpen] = useState(false);
 
   const annotationCount = Object.keys(humanAnnotations).length;

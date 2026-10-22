@@ -5,7 +5,7 @@ import { useState } from 'react';
 
 import { useAlignEvaluate, useAlignStatus } from '@/lib/hooks';
 import { cn } from '@/lib/utils';
-import { useCalibrationStore } from '@/stores/calibration-store';
+import { useCalibrationStore, useCurrentAnnotations } from '@/stores/calibration-store';
 
 import { FewShotBuilder } from '../configure/FewShotBuilder';
 import { ModelSelector } from '../configure/ModelSelector';
@@ -18,7 +18,6 @@ type ConfigTab = 'model' | 'prompt' | 'examples' | 'settings';
 export function ConfigureStep() {
   const {
     data,
-    humanAnnotations,
     judgeConfig,
     setJudgeConfig,
     resetJudgeConfig,
@@ -30,6 +29,7 @@ export function ConfigureStep() {
     evaluationProgress,
     evaluationError,
   } = useCalibrationStore();
+  const humanAnnotations = useCurrentAnnotations();
 
   const { data: statusData } = useAlignStatus();
   const evaluateMutation = useAlignEvaluate();
