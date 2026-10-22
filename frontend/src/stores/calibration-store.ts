@@ -1,5 +1,8 @@
+import { useMemo } from 'react';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+
+import { Columns } from '@/types';
 
 import type {
   DataFormat,
@@ -42,6 +45,27 @@ const DEFAULT_EVALUATION_CRITERIA = `Evaluate whether the response:
 
 Accept (1) if the response meets all criteria satisfactorily.
 Reject (0) if the response fails any criteria significantly.`;
+
+/**
+ * The annotations that belong to the records currently loaded.
+ *
+ * Annotations persist across uploads, keyed by dataset_id, so a re-upload after a
+ * reload gets its labels back. The stored map can therefore also hold labels for
+ * records from an earlier file; counts and judge requests must use this subset.
+ */
+export function annotationsForRecords(
+  data: EvaluationRecord[],
+  annotations: Record<string, AnnotationWithNotes>
+): Record<string, AnnotationWithNotes> {
+  const current: Record<string, AnnotationWithNotes> = {};
+  for (const record of data) {
+    const id = String(record[Columns.DATASET_ID]);
+    if (id in annotations) {
+      current[id] = annotations[id];
+    }
+  }
+  return current;
+}
 
 const DEFAULT_JUDGE_CONFIG: JudgeConfig = {
   model: 'gpt-4o',
@@ -214,7 +238,9 @@ export const useCalibrationStore = create<CalibrationState>()(
           case 'review':
             return state.data.length > 0;
           case 'build':
-            return Object.values(state.humanAnnotations).some((a) => a.score !== undefined);
+            return Object.values(annotationsForRecords(state.data, state.humanAnnotations)).some(
+              (a) => a.score !== undefined
+            );
           default:
             return false;
         }
@@ -291,9 +317,9 @@ export const useCalibrationStore = create<CalibrationState>()(
       getAnnotationProgress: () => {
         const state = get();
         const total = state.data.length;
-        const annotated = Object.values(state.humanAnnotations).filter(
-          (a) => a.score !== undefined
-        ).length;
+        const annotated = Object.values(
+          annotationsForRecords(state.data, state.humanAnnotations)
+        ).filter((a) => a.score !== undefined).length;
         const percentage = total > 0 ? Math.round((annotated / total) * 100) : 0;
         return { total, annotated, percentage };
       },
@@ -446,6 +472,13 @@ export const useCalibrationStore = create<CalibrationState>()(
     }
   )
 );
+
+/** Annotations for the loaded records only; see {@link annotationsForRecords}. */
+export function useCurrentAnnotations(): Record<string, AnnotationWithNotes> {
+  const data = useCalibrationStore((state) => state.data);
+  const humanAnnotations = useCalibrationStore((state) => state.humanAnnotations);
+  return useMemo(() => annotationsForRecords(data, humanAnnotations), [data, humanAnnotations]);
+}
 
 // Export default config for use elsewhere
 export { DEFAULT_JUDGE_CONFIG, DEFAULT_SYSTEM_PROMPT, DEFAULT_EVALUATION_CRITERIA };

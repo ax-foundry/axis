@@ -3,7 +3,7 @@
 import { ArrowRight, ArrowLeft } from 'lucide-react';
 import { useEffect, useCallback, useState } from 'react';
 
-import { useCalibrationStore } from '@/stores/calibration-store';
+import { useCalibrationStore, useCurrentAnnotations } from '@/stores/calibration-store';
 import { Columns } from '@/types';
 
 import { AlignAnnotationCard } from '../annotation/AlignAnnotationCard';
@@ -13,7 +13,6 @@ import { CaliberConfigModal } from '../config/CaliberConfigModal';
 export function AnnotateStep() {
   const {
     data,
-    humanAnnotations,
     currentAnnotationIndex,
     displayColumns,
     setAnnotation,
@@ -22,6 +21,7 @@ export function AnnotateStep() {
     setCurrentStep,
     getAnnotationProgress,
   } = useCalibrationStore();
+  const humanAnnotations = useCurrentAnnotations();
 
   const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
 

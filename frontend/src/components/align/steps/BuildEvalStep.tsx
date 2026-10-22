@@ -20,7 +20,7 @@ import { useState } from 'react';
 
 import { useAlignEvaluate, useAlignStatus, useClusterPatterns } from '@/lib/hooks';
 import { cn } from '@/lib/utils';
-import { useCalibrationStore } from '@/stores/calibration-store';
+import { useCalibrationStore, useCurrentAnnotations } from '@/stores/calibration-store';
 
 import { ComparisonTable } from '../analyze/ComparisonTable';
 import { ConfusionMatrix } from '../analyze/ConfusionMatrix';
@@ -39,7 +39,6 @@ type ResultsTab = 'comparison' | 'metrics' | 'insights';
 export function BuildEvalStep() {
   const {
     data,
-    humanAnnotations,
     judgeConfig,
     errorPatterns,
     setJudgeConfig,
@@ -59,6 +58,7 @@ export function BuildEvalStep() {
     learningArtifacts,
     pipelineMetadata,
   } = useCalibrationStore();
+  const humanAnnotations = useCurrentAnnotations();
 
   const { data: statusData } = useAlignStatus();
   const evaluateMutation = useAlignEvaluate();

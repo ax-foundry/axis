@@ -5,7 +5,7 @@ import { useState } from 'react';
 
 import { useClusterPatterns } from '@/lib/hooks';
 import { cn } from '@/lib/utils';
-import { useCalibrationStore } from '@/stores/calibration-store';
+import { useCalibrationStore, useCurrentAnnotations } from '@/stores/calibration-store';
 
 import type { ClusteringMethod, ErrorPattern } from '@/types';
 
@@ -84,8 +84,8 @@ interface PatternSidebarProps {
 }
 
 export function PatternSidebar({ onSelectRecordIds }: PatternSidebarProps) {
-  const { humanAnnotations, errorPatterns, isClusteringPatterns, judgeConfig } =
-    useCalibrationStore();
+  const { errorPatterns, isClusteringPatterns, judgeConfig } = useCalibrationStore();
+  const humanAnnotations = useCurrentAnnotations();
 
   const [selectedMethod, setSelectedMethod] = useState<ClusteringMethod>('llm');
   const clusterMutation = useClusterPatterns();

@@ -4,7 +4,7 @@ import { BookOpen, Plus, Sparkles, Loader2 } from 'lucide-react';
 import { useState } from 'react';
 
 import { useAlignSuggestExamples } from '@/lib/hooks';
-import { useCalibrationStore } from '@/stores/calibration-store';
+import { useCalibrationStore, useCurrentAnnotations } from '@/stores/calibration-store';
 
 import { FewShotExampleCard } from './FewShotExampleCard';
 import { BinaryScoreSelector } from '../annotation/BinaryScoreSelector';
@@ -19,7 +19,8 @@ interface FewShotBuilderProps {
 }
 
 export function FewShotBuilder({ examples, onAddExample, onRemoveExample }: FewShotBuilderProps) {
-  const { data, humanAnnotations } = useCalibrationStore();
+  const { data } = useCalibrationStore();
+  const humanAnnotations = useCurrentAnnotations();
   const suggestMutation = useAlignSuggestExamples();
 
   const [isAdding, setIsAdding] = useState(false);

@@ -13,7 +13,7 @@ import {
 
 import { useAlignEvaluate } from '@/lib/hooks';
 import { cn } from '@/lib/utils';
-import { useCalibrationStore } from '@/stores/calibration-store';
+import { useCalibrationStore, useCurrentAnnotations } from '@/stores/calibration-store';
 
 import { ComparisonTable } from '../analyze/ComparisonTable';
 import { ConfusionMatrix } from '../analyze/ConfusionMatrix';
@@ -25,7 +25,6 @@ type AnalyzeSubTab = 'metrics' | 'comparison' | 'insights';
 export function AnalyzeStep() {
   const {
     data,
-    humanAnnotations,
     judgeConfig,
     evaluationResults,
     alignmentMetrics,
@@ -38,6 +37,7 @@ export function AnalyzeStep() {
     setCurrentStep,
     clearEvaluationResults,
   } = useCalibrationStore();
+  const humanAnnotations = useCurrentAnnotations();
 
   const evaluateMutation = useAlignEvaluate();
 
