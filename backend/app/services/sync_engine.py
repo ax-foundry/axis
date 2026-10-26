@@ -1041,7 +1041,12 @@ async def _sync_split(
             await _build_human_signals_derived_tables(store, sync_id)
 
         duration = time.time() - start
-        rows = store.query_value(f"SELECT COUNT(*) FROM {table_name}") or 0
+        # No join view (a sub-table synced zero rows) means nothing to serve yet.
+        rows = (
+            store.query_value(f"SELECT COUNT(*) FROM {table_name}") or 0
+            if store._has_internal_table(table_name)
+            else 0
+        )
         incremental_rows = max(rows - rows_before, 0) if use_incremental else 0
         now = datetime.now(tz=UTC)
         store._sync_status[table_name] = SyncStatus(
