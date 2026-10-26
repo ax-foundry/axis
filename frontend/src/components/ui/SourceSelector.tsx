@@ -1,7 +1,7 @@
 'use client';
 
 import { Bot } from 'lucide-react';
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 
 import { getAgentConfig, getAgentRegistry } from '@/config/agents';
 import { cn } from '@/lib/utils';
@@ -77,11 +77,18 @@ export function SourceSelector({ className, scope }: SourceSelectorProps) {
     }
   }, [sources, selectedSourceName, handleSelect]);
 
+  // Keep the selected tab visible when the row overflows
+  const scrollRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = scrollRef.current?.querySelector<HTMLElement>('[aria-current="true"]');
+    el?.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
+  }, [selectedSourceName, sources]);
+
   if (sources.length === 0) return null;
 
   return (
     <div className={cn('border-b border-border bg-surface', className)}>
-      <div className="mx-auto flex max-w-7xl items-stretch px-6">
+      <div ref={scrollRef} className="mx-auto flex max-w-7xl items-stretch overflow-x-auto px-6">
         {/* Individual agent tabs */}
         {sources.map((source) => {
           const config = getAgentConfig(source);
@@ -117,8 +124,9 @@ function AgentTab({
   return (
     <button
       onClick={onClick}
+      aria-current={isSelected}
       className={cn(
-        'relative flex items-center gap-2 px-5 py-2.5 transition-colors',
+        'relative flex flex-shrink-0 items-center gap-2 whitespace-nowrap px-5 py-2.5 transition-colors',
         isSelected ? '' : 'hover:text-text-primary'
       )}
     >
