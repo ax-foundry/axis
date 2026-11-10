@@ -652,9 +652,7 @@ class TestFetchSummariesFromMatches:
                 )
 
                 raise LangfuseNotConfiguredError("bad agent")
-            loader = MagicMock()
-            loader.fetch_traces.return_value = [MagicMock()]
-            return loader
+            return MagicMock()
 
         from app.plugins.agent_replay.models.replay_schemas import TraceSummary
 
@@ -664,7 +662,7 @@ class TestFetchSummariesFromMatches:
                 side_effect=mock_get_loader,
             ),
             patch(
-                "app.plugins.agent_replay.services.replay_service._traces_to_summaries",
+                "app.plugins.agent_replay.services.replay_service.read_trace_summaries",
                 return_value=[
                     TraceSummary(
                         id="t1",

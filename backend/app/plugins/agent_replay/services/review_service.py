@@ -15,6 +15,7 @@ from app.plugins.agent_replay.models.review_schemas import (
     TraceReviewsResponse,
 )
 from app.plugins.agent_replay.services._shared import get_loader as _get_loader
+from app.plugins.agent_replay.services.langfuse_reads import read_review_scores
 
 logger = logging.getLogger(__name__)
 
@@ -211,27 +212,7 @@ async def save_review(request: ReviewCreateRequest) -> ReviewResponse:
 
 def _get_trace_reviews_sync(trace_id: str, agent_name: str | None) -> TraceReviewsResponse:
     client = _get_client(agent_name)
-    trace_data = client.api.trace.get(trace_id)
-
-    scores: list[ReviewScoreItem] = []
-    raw_scores = getattr(trace_data, "scores", []) or []
-    for s in raw_scores:
-        name = getattr(s, "name", "")
-        if not name.startswith("review."):
-            continue
-        scores.append(
-            ReviewScoreItem(
-                id=str(getattr(s, "id", "")),
-                name=name,
-                value=getattr(s, "value", None),
-                string_value=getattr(s, "comment", None),
-                observation_id=getattr(s, "observation_id", None)
-                or getattr(s, "observationId", None),
-                created_at=str(getattr(s, "created_at", "") or getattr(s, "createdAt", "") or ""),
-                source=getattr(s, "source", None),
-            )
-        )
-
+    scores = read_review_scores(client, trace_id, prefix="review.")
     return TraceReviewsResponse(trace_id=trace_id, scores=scores)
 
 

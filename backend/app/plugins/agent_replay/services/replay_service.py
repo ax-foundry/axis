@@ -2,10 +2,9 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
-import json
 import logging
 import re
-from datetime import datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from app.config.env import settings
@@ -55,6 +54,10 @@ from app.plugins.agent_replay.services._shared import (
 )
 from app.plugins.agent_replay.services._shared import (
     truncate_content as _truncate_content,
+)
+from app.plugins.agent_replay.services.langfuse_reads import (
+    read_trace_summaries,
+    search_trace_ids_by_metadata,
 )
 
 logger = logging.getLogger(__name__)
@@ -336,6 +339,13 @@ def _traces_to_summaries(raw_traces: list[Any]) -> list[TraceSummary]:
     return summaries
 
 
+async def _summaries_for_ids(loader: Any, trace_ids: list[str]) -> list[TraceSummary]:
+    """Cards for ``trace_ids`` in order: root fields, input/output previews, summed cost."""
+    return await asyncio.to_thread(
+        read_trace_summaries, loader.client, trace_ids, build_preview=_build_preview
+    )
+
+
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
@@ -445,13 +455,7 @@ async def _fetch_summaries_from_matches(
     for agent_name, trace_ids in groups.items():
         try:
             loader = _get_loader(agent_name)
-            raw_traces = await asyncio.to_thread(
-                loader.fetch_traces,
-                trace_ids=trace_ids,
-                fetch_full_traces=False,
-                show_progress=False,
-            )
-            all_summaries.extend(_traces_to_summaries(raw_traces))
+            all_summaries.extend(await _summaries_for_ids(loader, trace_ids))
         except LangfuseNotConfiguredError:
             logger.warning(
                 "Skipping agent group %s: Langfuse not configured",
@@ -522,30 +526,19 @@ async def search_traces(
         except ReplayServiceError:
             return RecentTracesResponse(traces=[], total=0)
 
-    # Metadata search — Langfuse v4 uses a JSON filter string instead of a metadata kwarg
+    # Metadata search: matched server-side before the limit, so an older match is
+    # still found and a query with no match finds nothing.
     loader = _get_loader(agent_name)
     metadata_key = get_replay_config().search_metadata_key
-    metadata_filter = json.dumps(
-        [
-            {
-                "column": "metadata",
-                "key": metadata_key,
-                "operator": "=",
-                "value": query,
-                "type": "stringObject",
-            }
-        ]
+    trace_ids = await asyncio.to_thread(
+        search_trace_ids_by_metadata,
+        loader.client,
+        metadata_key,
+        query,
+        datetime.now(UTC) - timedelta(days=days_back),
+        limit,
     )
-    raw_traces = await asyncio.to_thread(
-        loader.fetch_traces,
-        limit=limit,
-        days_back=days_back,
-        fetch_full_traces=False,
-        show_progress=False,
-        filter=metadata_filter,
-    )
-
-    summaries = _traces_to_summaries(raw_traces)
+    summaries = await _summaries_for_ids(loader, trace_ids)
     return RecentTracesResponse(traces=summaries, total=len(summaries))
 
 
@@ -558,7 +551,7 @@ async def get_recent_traces(
 ) -> RecentTracesResponse:
     loader = _get_loader(agent_name)
 
-    raw_traces = await asyncio.to_thread(
+    listed = await asyncio.to_thread(
         loader.fetch_traces,
         limit=limit,
         days_back=days_back,
@@ -568,7 +561,7 @@ async def get_recent_traces(
         show_progress=False,
     )
 
-    summaries = _traces_to_summaries(raw_traces)
+    summaries = await _summaries_for_ids(loader, [str(t.id) for t in listed])
     return RecentTracesResponse(traces=summaries, total=len(summaries))
 
 
