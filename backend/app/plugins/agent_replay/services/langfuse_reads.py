@@ -37,6 +37,8 @@ ID_BATCH = 50
 # Reads keyed by id need a start-time window; this one covers any trace.
 ALL_TIME = timedelta(days=3650)
 CLOCK_SLACK = timedelta(minutes=5)
+# The first window a recent-traces listing reads, widened until it holds enough traces.
+RECENT_FIRST_WINDOW = timedelta(hours=1)
 
 
 class LangfuseReadIncomplete(RuntimeError):
@@ -99,15 +101,15 @@ def _float(value: Any) -> float | None:
         return None
 
 
-def _span_seconds(rows: Sequence[Any]) -> float | None:
+def trace_span_seconds(rows: Sequence[Any]) -> float | None:
     """
     Seconds from the trace's first row start to its last row end.
 
     This is the trace latency the trace read reported. A root row's own latency can be
     far shorter: a root under a remote parent may end before the work it started.
     """
-    starts = [r.start_time for r in rows if isinstance(r.start_time, datetime)]
-    ends = [r.end_time for r in rows if isinstance(r.end_time, datetime)]
+    starts = [s for s in (getattr(r, "start_time", None) for r in rows) if isinstance(s, datetime)]
+    ends = [e for e in (getattr(r, "end_time", None) for r in rows) if isinstance(e, datetime)]
     if not starts or not ends:
         return None
     return max((max(ends) - min(starts)).total_seconds(), 0.0)
@@ -171,12 +173,75 @@ def read_trace_summaries(
                 step_names=[],
                 session_id=payload.get("sessionId"),
                 total_cost=float(sum(costs)) if costs else None,
-                latency_s=_span_seconds(group),
+                latency_s=trace_span_seconds(group),
                 input_preview=preview(payload.get("input")),
                 output_preview=preview(payload.get("output")),
             )
         )
     return summaries
+
+
+def _min_starts(rows: Sequence[Any]) -> dict[str, datetime]:
+    """Each trace's earliest row start among ``rows``."""
+    starts: dict[str, datetime] = {}
+    for row in rows:
+        start = getattr(row, "start_time", None)
+        if row.trace_id and isinstance(start, datetime):
+            starts[row.trace_id] = min(start, starts.get(row.trace_id, start))
+    return starts
+
+
+def _card_start(card: TraceSummary) -> datetime | None:
+    try:
+        return datetime.fromisoformat(card.timestamp) if card.timestamp else None
+    except ValueError:
+        return None
+
+
+def read_recent_summaries(
+    client: Any,
+    since: datetime,
+    limit: int,
+    name: str | None = None,
+    tags: list[str] | None = None,
+    build_preview: Callable[[Any], dict[str, str] | None] | None = None,
+) -> list[TraceSummary]:
+    """
+    Cards for the newest ``limit`` traces that started after ``since``, newest first.
+
+    Reading every row since ``since`` costs one row per observation of every trace in
+    the window, so the read starts with the last hour and widens until it holds
+    ``limit`` traces. A trace that started before the read window can still have rows
+    in it, so candidates are ranked on each trace's true start, from its card.
+    """
+    conditions: list[dict[str, Any]] = []
+    if name:
+        conditions.append({"type": "string", "column": "traceName", "operator": "=", "value": name})
+    if tags:
+        conditions.append(
+            {"type": "arrayOptions", "column": "tags", "operator": "all of", "value": tags}
+        )
+    filter_json = json.dumps(conditions)
+
+    now = datetime.now(UTC)
+    width = RECENT_FIRST_WINDOW
+    while True:
+        lo = max(since, now - width)
+        rows = _observations(client, "core", filter_json, lo, "recent traces")
+        starts = _min_starts(rows)
+        if len(starts) < limit and lo > since:
+            width *= 4
+            continue
+        # The newest candidates by their rows in the window; a trace that began
+        # earlier ranks too high here and is dropped once its true start is known.
+        candidates = sorted(starts, key=lambda tid: starts[tid], reverse=True)
+        cards = read_trace_summaries(client, candidates[: limit * 2], build_preview=build_preview)
+        dated = [(s, c) for c in cards if (s := _card_start(c)) is not None and s >= lo]
+        if len(dated) < limit and lo > since:
+            width *= 4
+            continue
+        dated.sort(key=lambda sc: (sc[0], sc[1].id), reverse=True)
+        return [c for _, c in dated[:limit]]
 
 
 def search_trace_ids_by_metadata(
@@ -201,11 +266,7 @@ def search_trace_ids_by_metadata(
         ]
     )
     rows = _observations(client, "core", filter_json, since, "metadata search")
-    starts: dict[str, datetime] = {}
-    for row in rows:
-        start = row.start_time
-        if row.trace_id and isinstance(start, datetime):
-            starts[row.trace_id] = min(start, starts.get(row.trace_id, start))
+    starts = _min_starts(rows)
     newest = sorted(starts, key=lambda tid: starts[tid], reverse=True)
     return newest[:limit]
 
@@ -265,4 +326,6 @@ def read_review_scores(client: Any, trace_id: str, prefix: str) -> list[ReviewSc
                 source=str(source) if source is not None else None,
             )
         )
+    # Newest first, as the trace read listed them.
+    items.sort(key=lambda s: s.created_at or "", reverse=True)
     return items

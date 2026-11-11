@@ -56,8 +56,10 @@ from app.plugins.agent_replay.services._shared import (
     truncate_content as _truncate_content,
 )
 from app.plugins.agent_replay.services.langfuse_reads import (
+    read_recent_summaries,
     read_trace_summaries,
     search_trace_ids_by_metadata,
+    trace_span_seconds,
 )
 
 logger = logging.getLogger(__name__)
@@ -294,6 +296,12 @@ def _build_preview(obj: Any, max_keys: int = 4) -> dict[str, str] | None:
 def _traces_to_summaries(raw_traces: list[Any]) -> list[TraceSummary]:
     from axion.tracing import TraceCollection
 
+    # The trace's span over its rows, matching the cards built by read_trace_summaries;
+    # a full trace's own latency is its root row's, which can end before the work does.
+    spans = {
+        str(getattr(raw, "id", "")): trace_span_seconds(getattr(raw, "observations", None) or [])
+        for raw in raw_traces
+    }
     collection = TraceCollection(raw_traces)
     summaries: list[TraceSummary] = []
     for trace in collection:
@@ -312,8 +320,8 @@ def _traces_to_summaries(raw_traces: list[Any]) -> list[TraceSummary]:
                 total_cost = float(raw_cost)
 
         raw_latency = getattr(trace, "latency", None)
-        latency_s: float | None = None
-        if raw_latency is not None:
+        latency_s: float | None = spans.get(trace_id)
+        if latency_s is None and raw_latency is not None:
             with contextlib.suppress(TypeError, ValueError):
                 latency_s = float(raw_latency)
 
@@ -550,18 +558,15 @@ async def get_recent_traces(
     agent_name: str | None = None,
 ) -> RecentTracesResponse:
     loader = _get_loader(agent_name)
-
-    listed = await asyncio.to_thread(
-        loader.fetch_traces,
-        limit=limit,
-        days_back=days_back,
+    summaries = await asyncio.to_thread(
+        read_recent_summaries,
+        loader.client,
+        datetime.now(UTC) - timedelta(days=days_back),
+        limit,
         name=name,
         tags=tags,
-        fetch_full_traces=False,
-        show_progress=False,
+        build_preview=_build_preview,
     )
-
-    summaries = await _summaries_for_ids(loader, [str(t.id) for t in listed])
     return RecentTracesResponse(traces=summaries, total=len(summaries))
 
 

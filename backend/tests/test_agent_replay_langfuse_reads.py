@@ -15,6 +15,7 @@ from fastapi.testclient import TestClient
 from app.plugins.agent_replay.services import langfuse_reads
 from app.plugins.agent_replay.services.langfuse_reads import (
     LangfuseReadIncomplete,
+    read_recent_summaries,
     read_review_scores,
     read_trace_summaries,
     search_trace_ids_by_metadata,
@@ -67,9 +68,14 @@ class FakeObservations:
     def get_many(self, **kw):
         self.calls.append(kw)
         conds = json.loads(kw["filter"])
-        out = list(self.rows)
+        lo, hi = kw["from_start_time"], kw["to_start_time"]
+        out = [r for r in self.rows if lo <= r.start_time < hi]
         for c in conds:
-            if c["type"] == "stringOptions":
+            if c["type"] == "string" and c["column"] == "traceName":
+                out = [r for r in out if r.trace_name == c["value"]]
+            elif c["type"] == "arrayOptions":
+                out = [r for r in out if set(c["value"]) <= set(r.tags or [])]
+            elif c["type"] == "stringOptions":
                 attr = {"traceId": "trace_id", "id": "id"}[c["column"]]
                 out = [r for r in out if getattr(r, attr) in c["value"]]
             elif c["type"] == "stringObject":
@@ -181,6 +187,77 @@ class TestReadTraceSummaries:
             read_trace_summaries(client, ["t1"])
 
 
+def _trace(tid, start, *, last_row=None, name=None, tags=None):
+    """A trace's root row at ``start`` and, optionally, a child row at ``last_row``."""
+    rows = [
+        _row(
+            id=f"{tid}-root",
+            trace_id=tid,
+            is_root_observation=True,
+            start_time=start,
+            end_time=start,
+            trace_name=name,
+            tags=tags,
+        )
+    ]
+    if last_row is not None:
+        rows.append(
+            _row(
+                id=f"{tid}-late",
+                trace_id=tid,
+                parent_observation_id=f"{tid}-root",
+                start_time=last_row,
+                end_time=last_row,
+                trace_name=name,
+                tags=tags,
+            )
+        )
+    return rows
+
+
+class TestReadRecentSummaries:
+    def test_widens_the_window_until_it_holds_enough_traces(self):
+        now = datetime.now(UTC)
+        rows = (
+            _trace("a", now - timedelta(minutes=30))
+            + _trace("b", now - timedelta(hours=3))
+            + _trace("c", now - timedelta(hours=30))
+        )
+        client = _client(rows)
+        cards = read_recent_summaries(client, now - timedelta(days=7), 2)
+        assert [c.id for c in cards] == ["a", "b"]
+        windows = [
+            c["from_start_time"] for c in client.api.observations.calls if c["fields"] == "core"
+        ]
+        assert now - windows[0] <= timedelta(hours=1, minutes=1)
+        assert windows == sorted(windows, reverse=True)
+
+    def test_a_trace_started_before_the_window_does_not_outrank_newer_ones(self):
+        now = datetime.now(UTC)
+        rows = _trace(
+            "long", now - timedelta(hours=2), last_row=now - timedelta(minutes=5)
+        ) + _trace("new", now - timedelta(minutes=30))
+        cards = read_recent_summaries(_client(rows), now - timedelta(days=1), 1)
+        assert [c.id for c in cards] == ["new"]
+
+    def test_returns_every_trace_since_when_there_are_fewer_than_limit(self):
+        now = datetime.now(UTC)
+        rows = _trace("a", now - timedelta(minutes=5)) + _trace("b", now - timedelta(hours=5))
+        rows += _trace("too_old", now - timedelta(days=3))
+        cards = read_recent_summaries(_client(rows), now - timedelta(days=1), 10)
+        assert [c.id for c in cards] == ["a", "b"]
+
+    def test_name_and_tags_filter_on_the_server(self):
+        now = datetime.now(UTC)
+        rows = _trace("hit", now - timedelta(minutes=5), name="chat", tags=["x", "y"])
+        rows += _trace("other_name", now - timedelta(minutes=6), name="batch", tags=["x"])
+        rows += _trace("other_tags", now - timedelta(minutes=7), name="chat", tags=["y"])
+        cards = read_recent_summaries(
+            _client(rows), now - timedelta(days=1), 5, name="chat", tags=["x"]
+        )
+        assert [c.id for c in cards] == ["hit"]
+
+
 class TestSearchTraceIdsByMetadata:
     def test_match_past_the_first_page_is_found(self):
         """The server pages a match that is older than a page of newest traces."""
@@ -269,6 +346,15 @@ class TestReadReviewScores:
         kw = client.api.scores_v3.get_many_v3.call_args.kwargs
         assert kw["trace_id"] == "t1"
         assert kw["limit"] <= 100
+
+    def test_newest_first(self):
+        client = self._client(
+            [
+                _score(id="old", name="review.a", created_at=T0),
+                _score(id="new", name="review.b", created_at=T0 + timedelta(hours=1)),
+            ]
+        )
+        assert [s.id for s in read_review_scores(client, "t1", "review.")] == ["new", "old"]
 
     def test_boolean_values_read_one_or_zero(self):
         client = self._client(
