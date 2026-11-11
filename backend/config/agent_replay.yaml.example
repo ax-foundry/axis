@@ -26,7 +26,7 @@ agent_replay:
   default_limit: 20              # Max recent traces to show (1-100)
   default_days_back: 7           # How far back to look for traces (1-90)
   max_chars: 50000               # Default truncation limit for step content (1-200000)
-  search_metadata_key: caseReference  # Langfuse metadata key used for smart search
+  search_metadata_key: caseReference  # Metadata key a non-trace-id query is matched on (per-agent override below)
   whatif_enabled: true            # Enable/disable the What-If Simulator (env: AGENT_REPLAY_WHATIF_ENABLED)
   # whatif_disabled_agents:        # Disable What-If for specific agents (by source_name)
   #   - agent1
@@ -61,11 +61,14 @@ agent_replay:
   #   - agent2
 
   # ── Per-agent overrides ──
-  # Override search_fields, review_step_types, and recent_trace_names
-  # per agent (by source_name). Falls back to global values when not specified.
+  # Override search_fields, review_step_types, recent_trace_names,
+  # session_turn_name and search_metadata_key per agent (by source_name).
+  # Falls back to global values when not specified. An empty
+  # search_metadata_key turns metadata search off for that agent.
   #
   # agents:
   #   agent1:
+  #     search_metadata_key: quote_locator
   #     review_step_types:
   #       - AGENT
   #     search_fields:

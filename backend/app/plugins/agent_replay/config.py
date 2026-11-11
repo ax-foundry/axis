@@ -264,6 +264,8 @@ class AgentReplayOverrides:
     search_fields: dict[str, str] | None = None
     recent_trace_names: list[str] | None = None
     session_turn_name: str | None = None
+    # None falls back to the global key; an empty string turns metadata search off.
+    search_metadata_key: str | None = None
 
 
 @dataclass
@@ -320,6 +322,18 @@ class ReplayConfig:
             if override is not None:
                 return override
         return self.session_turn_name
+
+    def get_search_metadata_key(self, agent_name: str | None) -> str:
+        """
+        Metadata key a non-trace-id query is matched on, falling back to global.
+
+        An empty key means the agent has no searchable metadata key.
+        """
+        if agent_name and agent_name in self.agents_config:
+            override = self.agents_config[agent_name].search_metadata_key
+            if override is not None:
+                return override
+        return self.search_metadata_key
 
 
 def _build_prompt_patterns(raw: dict[str, Any] | None) -> Any:
@@ -440,6 +454,11 @@ def load_replay_config() -> ReplayConfig:
                         agent_sf = overrides.get("search_fields")
                         agent_rtn = overrides.get("recent_trace_names")
                         agent_stn = overrides.get("session_turn_name")
+                        agent_smk = (
+                            str(overrides.get("search_metadata_key") or "").strip()
+                            if "search_metadata_key" in overrides
+                            else None
+                        )
                         agents_config[str(name).lower()] = AgentReplayOverrides(
                             review_step_types=(
                                 [str(t).strip().upper() for t in agent_rst if str(t).strip()]
@@ -457,6 +476,7 @@ def load_replay_config() -> ReplayConfig:
                                 else None
                             ),
                             session_turn_name=str(agent_stn).strip() if agent_stn else None,
+                            search_metadata_key=agent_smk,
                         )
 
                 raw_stn = data.get("session_turn_name")
@@ -464,7 +484,9 @@ def load_replay_config() -> ReplayConfig:
                     default_limit=data.get("default_limit", 20),
                     default_days_back=data.get("default_days_back", 7),
                     max_chars=data.get("max_chars", 50000),
-                    search_metadata_key=data.get("search_metadata_key", "caseReference"),
+                    search_metadata_key=str(
+                        data.get("search_metadata_key", "caseReference") or ""
+                    ).strip(),
                     whatif_enabled=data.get("whatif_enabled", True),
                     whatif_disabled_agents=disabled_agents,
                     search_fields=extra_search_fields,

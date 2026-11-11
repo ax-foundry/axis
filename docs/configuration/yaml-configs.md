@@ -678,6 +678,19 @@ agent_replay:
 | `max_chars` | `int` | `50000` | Truncation limit for observation input/output content (1--200,000) |
 | `search_metadata_key` | `str` | `caseReference` | Langfuse metadata key used for smart search matching |
 
+A query in the Trace ID box that is not a trace id is matched on the metadata key `search_metadata_key`, over every observation in the window.
+Each agent can set its own key under `agents`; an agent without one uses the global key, and an empty key turns metadata search off for that agent:
+
+```yaml
+agent_replay:
+  search_metadata_key: caseReference
+  agents:
+    athena:
+      search_metadata_key: quote_locator
+    abby:
+      search_metadata_key: ""
+```
+
 !!! info "Langfuse credentials are env-var-only"
     API keys (`LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY`, per-agent variants) are never
     stored in YAML. Set them as environment variables or in `backend/.env`.
