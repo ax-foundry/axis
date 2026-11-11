@@ -536,8 +536,10 @@ async def search_traces(
 
     # Metadata search: matched server-side before the limit, so an older match is
     # still found and a query with no match finds nothing.
+    metadata_key = get_replay_config().get_search_metadata_key(agent_name)
+    if not metadata_key:
+        return RecentTracesResponse(traces=[], total=0)
     loader = _get_loader(agent_name)
-    metadata_key = get_replay_config().search_metadata_key
     trace_ids = await asyncio.to_thread(
         search_trace_ids_by_metadata,
         loader.client,
